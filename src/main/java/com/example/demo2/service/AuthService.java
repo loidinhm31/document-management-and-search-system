@@ -8,6 +8,8 @@ import com.example.demo2.enums.AuthProvider;
 import com.example.demo2.repository.RefreshTokenRepository;
 import com.example.demo2.repository.UserRepository;
 import com.example.demo2.util.JwtUtil;
+import io.micrometer.common.util.StringUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -122,10 +124,36 @@ public class AuthService {
         return refreshToken.getToken();
     }
 
+    @Transactional(readOnly = true)
     public User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = ((org.springframework.security.core.userdetails.User) authentication.getPrincipal()).getUsername();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    @Transactional
+    public void logout(HttpServletRequest request) {
+        try {
+            String token = extractTokenFromRequest(request);
+            if (token != null && jwtUtil.validateToken(token)) {
+                String userEmail = jwtUtil.extractUsername(token);
+                User user = userRepository.findByEmail(userEmail)
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+
+                // Clear refresh tokens
+                refreshTokenRepository.deleteByUser(user);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error during logout process", e);
+        }
+    }
+
+    private String extractTokenFromRequest(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.isNotEmpty(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
     }
 }
