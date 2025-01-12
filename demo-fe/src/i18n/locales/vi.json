@@ -1,0 +1,39 @@
+{
+  "common": {
+    "error": "Lỗi",
+    "success": "Thành công",
+    "warning": "Cảnh báo",
+    "info": "Thông tin"
+  },
+  "auth": {
+    "login": {
+      "success": "Đăng nhập thành công",
+      "error": "Thông tin đăng nhập không hợp lệ",
+      "required": "Vui lòng đăng nhập để tiếp tục"
+    },
+    "logout": {
+      "success": "Đăng xuất thành công"
+    },
+    "register": {
+      "success": "Đăng ký thành công",
+      "error": "Đăng ký thất bại"
+    }
+  },
+  "api": {
+    "error": {
+      "unauthorized": "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại",
+      "forbidden": "Bạn không có quyền truy cập tài nguyên này",
+      "notFound": "Không tìm thấy tài nguyên",
+      "serverError": "Đã xảy ra lỗi máy chủ",
+      "networkError": "Lỗi kết nối. Vui lòng kiểm tra kết nối mạng",
+      "unknown": "Đã xảy ra lỗi không xác định"
+    }
+  },
+  "validation": {
+    "required": "{{field}} là bắt buộc",
+    "email": "Email không hợp lệ",
+    "minLength": "{{field}} phải có ít nhất {{min}} ký tự",
+    "maxLength": "{{field}} không được vượt quá {{max}} ký tự",
+    "passwordMatch": "Mật khẩu không khớp"
+  }
+}

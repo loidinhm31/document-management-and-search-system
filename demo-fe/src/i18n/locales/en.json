@@ -1,0 +1,39 @@
+{
+  "common": {
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "auth": {
+    "login": {
+      "success": "Login successful",
+      "error": "Invalid credentials",
+      "required": "Please login to continue"
+    },
+    "logout": {
+      "success": "Logout successful"
+    },
+    "register": {
+      "success": "Registration successful",
+      "error": "Registration failed"
+    }
+  },
+  "api": {
+    "error": {
+      "unauthorized": "Unauthorized access. Please login again",
+      "forbidden": "You don't have permission to access this resource",
+      "notFound": "Resource not found",
+      "serverError": "Internal server error occurred",
+      "networkError": "Network error. Please check your connection",
+      "unknown": "An unknown error occurred"
+    }
+  },
+  "validation": {
+    "required": "{{field}} is required",
+    "email": "Invalid email format",
+    "minLength": "{{field}} must be at least {{min}} characters",
+    "maxLength": "{{field}} must not exceed {{max}} characters",
+    "passwordMatch": "Passwords do not match"
+  }
+}
