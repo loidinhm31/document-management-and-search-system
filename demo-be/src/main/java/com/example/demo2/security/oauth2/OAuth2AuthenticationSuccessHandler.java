@@ -1,10 +1,9 @@
-package com.example.demo2.config;
+package com.example.demo2.security.oauth2;
 
 import com.example.demo2.models.User;
-import com.example.demo2.repositories.RoleRepository;
+import com.example.demo2.repositories.UserRepository;
 import com.example.demo2.security.jwt.JwtUtils;
 import com.example.demo2.security.services.UserDetailsImpl;
-import com.example.demo2.services.UserService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,29 +18,22 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class OAuth2LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
+public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
 
     @Autowired
-    private final UserService userService;
+    private final UserRepository userRepository;
 
     @Autowired
     private final JwtUtils jwtUtils;
 
-    @Autowired
-    RoleRepository roleRepository;
-
     @Value("${frontend.url}")
     private String frontendUrl;
-
-    String username;
-    String idAttributeKey;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws ServletException, IOException {
@@ -53,19 +45,18 @@ public class OAuth2LoginSuccessHandler extends SavedRequestAwareAuthenticationSu
 
         // Extract necessary attributes
         String email = (String) attributes.get("email");
-        System.out.println("OAuth2LoginSuccessHandler: " + username + " : " + email);
 
         Set<SimpleGrantedAuthority> authorities = oauth2User.getAuthorities().stream()
                 .map(authority -> new SimpleGrantedAuthority(authority.getAuthority()))
                 .collect(Collectors.toSet());
-        User user = userService.findByEmail(email).orElseThrow(
+        User user = userRepository.findByEmail(email).orElseThrow(
                 () -> new RuntimeException("User not found"));
         authorities.add(new SimpleGrantedAuthority(user.getRole().getRoleName().name()));
 
         // Create UserDetailsImpl instance
         UserDetailsImpl userDetails = new UserDetailsImpl(
                 null,
-                username,
+                user.getUsername(),
                 email,
                 null,
                 false,

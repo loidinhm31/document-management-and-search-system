@@ -1,31 +1,19 @@
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  name: string;
-}
-
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  email: string;
-  name: string;
-}
-
 export interface User {
-  id: number;
+  userId: number;
+  username: string;
   email: string;
-  name: string;
-  provider: "EMAIL" | "GOOGLE";
-  roles: string[];
+  accountNonLocked: boolean;
+  accountNonExpired: boolean;
+  credentialsNonExpired: boolean;
   enabled: boolean;
-  imageUrl?: string | null;
-  providerId?: string | null;
+  credentialsExpiryDate: string;
+  accountExpiryDate: string;
+  twoFactorEnabled: boolean;
+  signUpMethod: "email" | "google";
+  roles: string[];
+  createdDate: string;
+  updatedDate: string;
+  imageUrl?: string;
 }
 
 export interface JwtPayload {
@@ -34,4 +22,57 @@ export interface JwtPayload {
   is2faEnabled?: boolean;
   exp: number;
   iat: number;
+}
+
+export interface UserProfileResponse {
+  id: number;
+  username: string;
+  email: string;
+  accountNonLocked: boolean;
+  accountNonExpired: boolean;
+  credentialsNonExpired: boolean;
+  enabled: boolean;
+  credentialsExpiryDate: string | null;
+  accountExpiryDate: string | null;
+  isTwoFactorEnabled: boolean;
+  roles: string[];
+}
+
+export interface UpdateCredentialsRequest {
+  username?: string;
+  password?: string;
+}
+
+export interface AccountStatusRequest {
+  userId: number;
+  status: boolean;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface SignupRequest {
+  username: string;
+  email: string;
+  password: string;
+  role?: string[];
+}
+
+export interface LoginResponse {
+  jwtToken: string;
+  username: string;
+  roles: string[];
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  error?: {
+    status: number;
+    message: string;
+    details?: string;
+  };
+  timestamp: string;
 }

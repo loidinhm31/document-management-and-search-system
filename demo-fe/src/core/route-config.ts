@@ -2,6 +2,9 @@ import React, { lazy } from "react";
 
 const Login = lazy(() => import("@/pages/login-page"));
 const Home = lazy(() => import("@/pages/home-page"));
+const Profile = lazy(() => import("@/pages/profile-page"));
+const UserList = lazy(() => import("@/pages/admin/user-list-page"));
+const UserDetails = lazy(() => import("@/pages/admin/user-detail-page"));
 
 export interface Route {
   path: string;
@@ -10,14 +13,19 @@ export interface Route {
   isSecure: boolean;
   permission: string[];
   subPages?: Route[];
+  adminRequired?: boolean;
 }
 
 export const RoutePaths = {
+  UNAUTHORIZED: "/unauthorized",
   HOME: "/home",
   LOGIN: "/login",
   EMPTY: "/empty",
-  ARM_BOT: "/arm-bot",
-  UNAUTHORIZED: "/unauthorized",
+  PROFILE: "/profile",
+  ADMIN: {
+    USERS: "/admin/users",
+    USER_DETAILS: "/admin/users/:userId",
+  },
 } as const;
 
 export const routes: Route[] = [
@@ -34,6 +42,33 @@ export const routes: Route[] = [
     pageTitle: "Login",
     component: Login,
     isSecure: false,
+    permission: [],
+    subPages: [],
+  },
+  {
+    path: RoutePaths.PROFILE,
+    pageTitle: "Profile",
+    component: Profile,
+    isSecure: true,
+    permission: [],
+    subPages: [],
+  },
+  // Admin Routes
+  {
+    path: RoutePaths.ADMIN.USERS,
+    pageTitle: "User Management",
+    component: UserList,
+    isSecure: true,
+    adminRequired: true,
+    permission: [],
+    subPages: [],
+  },
+  {
+    path: RoutePaths.ADMIN.USER_DETAILS,
+    pageTitle: "User Details",
+    component: UserDetails,
+    isSecure: true,
+    adminRequired: true,
     permission: [],
     subPages: [],
   },

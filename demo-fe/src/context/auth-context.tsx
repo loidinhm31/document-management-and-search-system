@@ -1,6 +1,7 @@
+// src/context/auth-context.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import axiosInstance from "@/services/axios.config";
+import { AuthService } from "@/services/auth.service";
 import { User } from "@/types/auth";
 
 interface AuthContextType {
@@ -12,7 +13,6 @@ interface AuthContextType {
   setIsAdmin: (isAdmin: boolean) => void;
 }
 
-// Create context with a default value matching the interface
 const AuthContext = createContext<AuthContextType>({
   token: null,
   setToken: () => {},
@@ -22,7 +22,6 @@ const AuthContext = createContext<AuthContextType>({
   setIsAdmin: () => {},
 });
 
-// Export the provider component
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem("JWT_TOKEN"));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -30,36 +29,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   const fetchUser = async () => {
-    const user = localStorage.getItem("USER");
-    if (!user) return;
-
     try {
-      const parsedUser = JSON.parse(user);
-      if (parsedUser?.username) {
-        const { data } = await axiosInstance.get(`/auth/user`);
-        const roles = data.roles;
+      const response = await AuthService.getCurrentUser();
+      const userData = response.data.data;
 
-        if (roles.includes("ROLE_ADMIN")) {
-          localStorage.setItem("IS_ADMIN", "true");
-          setIsAdmin(true);
-        } else {
-          localStorage.removeItem("IS_ADMIN");
-          setIsAdmin(false);
-        }
-        setCurrentUser(data);
+      // Check if user has admin role
+      const isUserAdmin = userData.roles.includes("ROLE_ADMIN");
+      if (isUserAdmin) {
+        localStorage.setItem("IS_ADMIN", "true");
+        setIsAdmin(true);
+      } else {
+        localStorage.removeItem("IS_ADMIN");
+        setIsAdmin(false);
       }
+
+      setCurrentUser(userData);
     } catch (error) {
       console.error("Error fetching current user", error);
+      // If we get an authentication error, clear the token and user data
+      if (error?.response?.status === 401) {
+        localStorage.removeItem("JWT_TOKEN");
+        localStorage.removeItem("USER");
+        localStorage.removeItem("IS_ADMIN");
+        setToken(null);
+        setCurrentUser(null);
+        setIsAdmin(false);
+      }
       toast({
         title: "Error",
-        description: "Error fetching current user",
+        description: "Failed to fetch user information",
+        variant: "destructive"
       });
     }
   };
 
+  // Fetch user data when token changes or component mounts
   useEffect(() => {
     if (token) {
       fetchUser();
+    } else {
+      // Clear user data if there's no token
+      setCurrentUser(null);
+      setIsAdmin(false);
     }
   }, [token]);
 
@@ -79,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Export the hook as a named constant
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

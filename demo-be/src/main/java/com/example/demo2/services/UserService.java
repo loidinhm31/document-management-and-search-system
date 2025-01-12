@@ -1,38 +1,47 @@
 package com.example.demo2.services;
 
 import com.example.demo2.dtos.UserDTO;
+import com.example.demo2.dtos.request.LoginRequest;
+import com.example.demo2.dtos.request.SignupRequest;
 import com.example.demo2.models.Role;
 import com.example.demo2.models.User;
+import com.example.demo2.security.response.LoginResponse;
+import com.example.demo2.security.response.UserInfoResponse;
+import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface UserService {
-    void updateUserRole(Long userId, String roleName);
+    // Authentication operations
+    LoginResponse authenticateUser(LoginRequest loginRequest);
+    void registerUser(SignupRequest signupRequest);
+    UserInfoResponse getUserInfo(UserDetails userDetails);
 
-    List<User> getAllUsers();
-
-    UserDTO getUserById(Long id);
-
-    User findByUsername(String username);
-
-    void updateAccountLockStatus(Long userId, boolean lock);
-
-    List<Role> getAllRoles();
-
-    void updateAccountExpiryStatus(Long userId, boolean expire);
-
-    void updateAccountEnabledStatus(Long userId, boolean enabled);
-
-    void updateCredentialsExpiryStatus(Long userId, boolean expire);
-
-    void updatePassword(Long userId, String password);
-
+    // Password operations
     void generatePasswordResetToken(String email);
-
     void resetPassword(String token, String newPassword);
+    void updatePassword(Long userId, String newPassword);
 
-    Optional<User> findByEmail(String email);
+    // User management operations
+    List<User> getAllUsers();
+    UserDTO getUserById(Long id);
+    User getUserByUsername(String username);
+    void updateUserRole(Long userId, String roleName);
+    void updateAccountLockStatus(Long userId, boolean locked);
+    void updateAccountExpiryStatus(Long userId, boolean expired);
+    void updateAccountEnabledStatus(Long userId, boolean enabled);
+    void updateCredentialsExpiryStatus(Long userId, boolean expired);
 
-    User registerUser(User user);
+    // 2FA operations
+    GoogleAuthenticatorKey generate2FASecret(String username);
+    void verify2FACode(String username, String code);
+    boolean validate2FACode(Long userId, int code);
+    void enable2FA(Long userId);
+    void disable2FA(String username);
+    boolean get2FAStatus(String username);
+    String getQrCodeUrl(GoogleAuthenticatorKey key, String username);
+
+    // Role operations
+    List<Role> getAllRoles();
 }
