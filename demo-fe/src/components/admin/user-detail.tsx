@@ -21,7 +21,7 @@ const formSchema = z.object({
   username: z.string().min(1, "Username is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().optional(),
-  role: z.string().optional()
+  role: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -42,7 +42,7 @@ export default function UserDetail() {
     accountNonLocked: true,
     accountNonExpired: true,
     credentialsNonExpired: true,
-    enabled: true
+    enabled: true,
   });
   const { toast } = useToast();
 
@@ -52,8 +52,8 @@ export default function UserDetail() {
       username: "",
       email: "",
       password: "",
-      role: ""
-    }
+      role: "",
+    },
   });
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function UserDetail() {
       try {
         const [userResponse, rolesResponse] = await Promise.all([
           AdminService.getUser(parseInt(userId)),
-          AdminService.getAllRoles()
+          AdminService.getAllRoles(),
         ]);
         console.log("userResponse", userResponse);
 
@@ -71,7 +71,7 @@ export default function UserDetail() {
         form.reset({
           username: userData.userName,
           email: userData.email,
-          role: userData.role?.roleName
+          role: userData.role?.roleName,
         });
 
         setSelectedRole(userData.role?.roleName || "");
@@ -79,14 +79,14 @@ export default function UserDetail() {
           accountNonLocked: userData.accountNonLocked,
           accountNonExpired: userData.accountNonExpired,
           credentialsNonExpired: userData.credentialsNonExpired,
-          enabled: userData.enabled
+          enabled: userData.enabled,
         });
         setRoles(rolesResponse.data.data);
       } catch (_error) {
         toast({
           title: "Error",
           description: "Failed to fetch user details",
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -107,14 +107,15 @@ export default function UserDetail() {
 
         toast({
           title: "Success",
-          description: "Password updated successfully"
+          description: "Password updated successfully",
+          variant: "success",
         });
       }
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update password",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -125,27 +126,25 @@ export default function UserDetail() {
     try {
       await AdminService.updateUserRole(parseInt(userId), {
         userId: parseInt(userId),
-        roleName: value
+        roleName: value,
       });
       setSelectedRole(value);
       toast({
         title: "Success",
-        description: "User role updated successfully"
+        description: "User role updated successfully",
+        variant: "success",
       });
     } catch (error) {
-      console.error('Error updating role:', error);
+      console.error("Error updating role:", error);
       toast({
         title: "Error",
         description: "Failed to update user role",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  const handleAccountStateChange = async (
-    key: keyof typeof accountStates,
-    value: boolean
-  ) => {
+  const handleAccountStateChange = async (key: keyof typeof accountStates, value: boolean) => {
     if (!userId) return;
 
     try {
@@ -165,17 +164,18 @@ export default function UserDetail() {
           break;
       }
 
-      setAccountStates(prev => ({ ...prev, [key]: value }));
+      setAccountStates((prev) => ({ ...prev, [key]: value }));
 
       toast({
         title: "Success",
-        description: `Account ${key} updated successfully`
+        description: `Account ${key} updated successfully`,
+        variant: "success",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: `Failed to update ${key}`,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -191,11 +191,7 @@ export default function UserDetail() {
   // Rest of the component JSX remains the same
   return (
     <div className="space-y-6">
-      <Button
-        variant="ghost"
-        onClick={() => navigate("/admin/users")}
-        className="mb-4"
-      >
+      <Button variant="ghost" onClick={() => navigate("/admin/users")} className="mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Users
       </Button>
@@ -244,15 +240,9 @@ export default function UserDetail() {
                     <FormItem>
                       <FormLabel>New Password</FormLabel>
                       <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Enter new password"
-                          {...field}
-                        />
+                        <Input type="password" placeholder="Enter new password" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        Leave blank to keep current password
-                      </FormDescription>
+                      <FormDescription>Leave blank to keep current password</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -272,19 +262,13 @@ export default function UserDetail() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label>User Role</Label>
-              <Select
-                value={selectedRole}
-                onValueChange={handleRoleChange}
-              >
+              <Select value={selectedRole} onValueChange={handleRoleChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
                   {roles.map((role) => (
-                    <SelectItem
-                      key={role.roleId}
-                      value={role.roleName}
-                    >
+                    <SelectItem key={role.roleId} value={role.roleName}>
                       {role.roleName.replace("ROLE_", "")}
                     </SelectItem>
                   ))}
@@ -296,60 +280,44 @@ export default function UserDetail() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Account Enabled</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Allow or disable user access
-                  </p>
+                  <p className="text-sm text-muted-foreground">Allow or disable user access</p>
                 </div>
                 <Switch
                   checked={accountStates.enabled}
-                  onCheckedChange={(checked) =>
-                    handleAccountStateChange("enabled", checked)
-                  }
+                  onCheckedChange={(checked) => handleAccountStateChange("enabled", checked)}
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Account Locked</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Temporarily lock account access
-                  </p>
+                  <p className="text-sm text-muted-foreground">Temporarily lock account access</p>
                 </div>
                 <Switch
                   checked={!accountStates.accountNonLocked}
-                  onCheckedChange={(checked) =>
-                    handleAccountStateChange("accountNonLocked", !checked)
-                  }
+                  onCheckedChange={(checked) => handleAccountStateChange("accountNonLocked", !checked)}
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Account Expired</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Mark account as expired
-                  </p>
+                  <p className="text-sm text-muted-foreground">Mark account as expired</p>
                 </div>
                 <Switch
                   checked={!accountStates.accountNonExpired}
-                  onCheckedChange={(checked) =>
-                    handleAccountStateChange("accountNonExpired", !checked)
-                  }
+                  onCheckedChange={(checked) => handleAccountStateChange("accountNonExpired", !checked)}
                 />
               </div>
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Credentials Expired</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Force password reset
-                  </p>
+                  <p className="text-sm text-muted-foreground">Force password reset</p>
                 </div>
                 <Switch
                   checked={!accountStates.credentialsNonExpired}
-                  onCheckedChange={(checked) =>
-                    handleAccountStateChange("credentialsNonExpired", !checked)
-                  }
+                  onCheckedChange={(checked) => handleAccountStateChange("credentialsNonExpired", !checked)}
                 />
               </div>
             </div>

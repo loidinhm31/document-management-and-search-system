@@ -65,6 +65,7 @@ export default function RegisterPage() {
       toast({
         title: "Success",
         description: "Registration successful! Please log in to continue.",
+        variant: "success",
       });
 
       navigate("/login");

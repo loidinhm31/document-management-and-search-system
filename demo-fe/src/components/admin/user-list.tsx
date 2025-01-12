@@ -8,11 +8,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import axiosInstance from "@/services/axios.config";
 import { AdminService } from "@/services/admin.service";
 
 interface User {
@@ -38,7 +37,7 @@ export default function UserList() {
         toast({
           title: "Error",
           description: "Failed to fetch users",
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -51,18 +50,17 @@ export default function UserList() {
   const handleUpdateStatus = async (userId: number, enabled: boolean) => {
     try {
       await AdminService.updateAccountEnabledStatus(userId, enabled);
-      setUsers(users.map(user =>
-        user.userId === userId ? { ...user, enabled } : user
-      ));
+      setUsers(users.map((user) => (user.userId === userId ? { ...user, enabled } : user)));
       toast({
         title: "Success",
-        description: "User status updated successfully"
+        description: "User status updated successfully",
+        variant: "success",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update user status",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -74,7 +72,7 @@ export default function UserList() {
       month: "short",
       day: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     }).format(date);
   };
 
@@ -91,9 +89,7 @@ export default function UserList() {
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
         <div className="space-y-1.5">
           <CardTitle>User Management</CardTitle>
-          <CardDescription>
-            View and manage user accounts
-          </CardDescription>
+          <CardDescription>View and manage user accounts</CardDescription>
         </div>
       </CardHeader>
       <CardContent>
@@ -139,14 +135,8 @@ export default function UserList() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => navigate(`${user.userId}`)}
-                        >
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleUpdateStatus(user.userId, !user.enabled)}
-                        >
+                        <DropdownMenuItem onClick={() => navigate(`${user.userId}`)}>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleUpdateStatus(user.userId, !user.enabled)}>
                           {user.enabled ? "Disable Account" : "Enable Account"}
                         </DropdownMenuItem>
                       </DropdownMenuContent>

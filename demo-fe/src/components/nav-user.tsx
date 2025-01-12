@@ -36,7 +36,8 @@ export function NavUser() {
     // Show success message
     toast({
       title: "Success",
-      description: "You have been logged out successfully."
+      description: "You have been logged out successfully.",
+      variant: "success",
     });
 
     // Redirect to login

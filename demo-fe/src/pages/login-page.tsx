@@ -75,7 +75,8 @@ const LoginPage = () => {
     // Show success message
     toast({
       title: "Success",
-      description: "Login successful!"
+      description: "Login successful!",
+      variant: "success",
     });
 
     // Redirect to home

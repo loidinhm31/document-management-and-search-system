@@ -1,17 +1,17 @@
 "use client";
 
 import * as React from "react";
-
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+const DEFAULT_TOAST_DURATION = 5000; // 5 seconds default duration
 
 type ToasterToast = ToastProps & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
+  duration?: number; // Add duration property
 };
 
 const actionTypes = {
@@ -32,21 +32,21 @@ type ActionType = typeof actionTypes;
 
 type Action =
   | {
-      type: ActionType["ADD_TOAST"];
-      toast: ToasterToast;
-    }
+  type: ActionType["ADD_TOAST"];
+  toast: ToasterToast;
+}
   | {
-      type: ActionType["UPDATE_TOAST"];
-      toast: Partial<ToasterToast>;
-    }
+  type: ActionType["UPDATE_TOAST"];
+  toast: Partial<ToasterToast>;
+}
   | {
-      type: ActionType["DISMISS_TOAST"];
-      toastId?: ToasterToast["id"];
-    }
+  type: ActionType["DISMISS_TOAST"];
+  toastId?: ToasterToast["id"];
+}
   | {
-      type: ActionType["REMOVE_TOAST"];
-      toastId?: ToasterToast["id"];
-    };
+  type: ActionType["REMOVE_TOAST"];
+  toastId?: ToasterToast["id"];
+};
 
 interface State {
   toasts: ToasterToast[];
@@ -54,7 +54,7 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
-const addToRemoveQueue = (toastId: string) => {
+const addToRemoveQueue = (toastId: string, duration: number = DEFAULT_TOAST_DURATION) => {
   if (toastTimeouts.has(toastId)) {
     return;
   }
@@ -62,10 +62,10 @@ const addToRemoveQueue = (toastId: string) => {
   const timeout = setTimeout(() => {
     toastTimeouts.delete(toastId);
     dispatch({
-      type: "REMOVE_TOAST",
+      type: "DISMISS_TOAST",
       toastId: toastId,
     });
-  }, TOAST_REMOVE_DELAY);
+  }, duration);
 
   toastTimeouts.set(toastId, timeout);
 };
@@ -87,8 +87,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action;
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId);
       } else {
@@ -102,9 +100,9 @@ export const reducer = (state: State, action: Action): State => {
         toasts: state.toasts.map((t) =>
           t.id === toastId || toastId === undefined
             ? {
-                ...t,
-                open: false,
-              }
+              ...t,
+              open: false,
+            }
             : t,
         ),
       };
@@ -134,9 +132,11 @@ function dispatch(action: Action) {
   });
 }
 
-type Toast = Omit<ToasterToast, "id">;
+interface Toast extends Omit<ToasterToast, "id"> {
+  duration?: number;
+}
 
-function toast({ ...props }: Toast) {
+function toast({ duration = DEFAULT_TOAST_DURATION, ...props }: Toast) {
   const id = genId();
 
   const update = (props: ToasterToast) =>
@@ -144,6 +144,7 @@ function toast({ ...props }: Toast) {
       type: "UPDATE_TOAST",
       toast: { ...props, id },
     });
+
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id });
 
   dispatch({
@@ -158,8 +159,11 @@ function toast({ ...props }: Toast) {
     },
   });
 
+  // Set the timeout for auto-dismissal
+  addToRemoveQueue(id, duration);
+
   return {
-    id: id,
+    id,
     dismiss,
     update,
   };
