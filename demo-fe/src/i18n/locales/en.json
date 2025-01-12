@@ -35,5 +35,77 @@
     "minLength": "{{field}} must be at least {{min}} characters",
     "maxLength": "{{field}} must not exceed {{max}} characters",
     "passwordMatch": "Passwords do not match"
+  },
+  "admin": {
+    "users": {
+      "title": "User Management",
+      "description": "View and manage user accounts",
+      "headers": {
+        "username": "Username",
+        "email": "Email",
+        "createdDate": "Created Date",
+        "status": "Status"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "actions": {
+        "viewDetails": "View Details",
+        "enableAccount": "Enable Account",
+        "disableAccount": "Disable Account",
+        "updateStatus": {
+          "success": "User status updated successfully",
+          "enable": "User account has been enabled",
+          "disable": "User account has been disabled",
+          "error": "Failed to update user status"
+        },
+        "updateRole": {
+          "success": "User role updated successfully",
+          "error": "Failed to update user role"
+        },
+        "updatePassword": {
+          "success": "User password updated successfully",
+          "error": "Failed to update user password"
+        },
+        "updateAccount": {
+          "lockSuccess": "Account lock status updated successfully",
+          "expirySuccess": "Account expiry status updated successfully",
+          "credentialsSuccess": "Credentials expiry status updated successfully",
+          "error": "Failed to update account status"
+        }
+      },
+      "messages": {
+        "fetchError": "Failed to fetch users",
+        "updateSuccess": "User status updated successfully",
+        "updateError": "Failed to update user status"
+      },
+      "navigation": {
+        "backToUsers": "Back to Users"
+      },
+      "details": {
+        "title": "User Information",
+        "description": "View and manage user details",
+        "username": "Username",
+        "email": "Email",
+        "roleAndPermissions": {
+          "title": "Role & Permissions",
+          "description": "Manage user role and account status",
+          "userRole": "User Role",
+          "selectRole": "Select role"
+        },
+        "accountStatus": {
+          "enabled": "Account Enabled",
+          "enabledDescription": "Allow or disable user access",
+          "locked": "Account Locked",
+          "lockedDescription": "Temporarily lock account access",
+          "expired": "Account Expired",
+          "expiredDescription": "Mark account as expired",
+          "credentialsExpired": "Credentials Expired",
+          "credentialsExpiredDescription": "Force password reset"
+        }
+      }
+    }
   }
 }
+

@@ -1,5 +1,7 @@
+import { Globe } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
+
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,7 +9,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Globe } from "lucide-react";
 
 const LanguageSwitcher = () => {
   const { i18n } = useTranslation();

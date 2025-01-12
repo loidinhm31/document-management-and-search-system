@@ -1,10 +1,22 @@
-import { Users, Shield, Settings2, Home } from "lucide-react";
+import { Home, Settings2, Shield, Users } from "lucide-react";
 import * as React from "react";
 import { useLocation } from "react-router-dom";
 
+import LanguageSwitcher from "@/components/language-switcher";
 import { LogoHeader } from "@/components/logo-header";
 import { NavUser } from "@/components/nav-user";
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarRail, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -16,13 +28,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Home",
       icon: Home,
       href: "/home",
-      isActive: location.pathname === "/home"
+      isActive: location.pathname === "/home",
     },
     {
       title: "Settings",
       icon: Settings2,
       href: "/settings",
-      isActive: location.pathname === "/settings"
+      isActive: location.pathname === "/settings",
     },
   ];
 
@@ -31,14 +43,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "User Management",
       icon: Users,
       href: "/admin/users",
-      isActive: location.pathname.startsWith("/admin/users")
+      isActive: location.pathname.startsWith("/admin/users"),
     },
     {
       title: "Roles",
       icon: Shield,
       href: "/admin/roles",
-      isActive: location.pathname.startsWith("/admin/roles")
-    }
+      isActive: location.pathname.startsWith("/admin/roles"),
+    },
   ];
 
   return (
@@ -84,7 +96,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         )}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser />
+        <div className="flex items-center justify-between px-4">
+          <NavUser />
+          <LanguageSwitcher />
+        </div>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

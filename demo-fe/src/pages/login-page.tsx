@@ -14,24 +14,28 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { APP_API_URL } from "@/env";
 import { useToast } from "@/hooks/use-toast";
-import { AuthService } from "@/services/auth.service";
 import { LoginRequest } from "@/types/auth";
+import { useTranslation } from "react-i18next";
+import { useAuthService } from "@/hooks/use-auth-service";
 
 // Define schema for login form
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required")
+  password: z.string().min(1, "Password is required"),
 });
 
 // Define schema for 2FA verification form
 const twoFactorSchema = z.object({
-  code: z.string().min(6, "Code must be 6 digits").max(6)
+  code: z.string().min(6, "Code must be 6 digits").max(6),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 type TwoFactorFormValues = z.infer<typeof twoFactorSchema>;
 
 const LoginPage = () => {
+  const { t } = useTranslation();
+  const { login, verify2FA } = useAuthService();
+
   const navigate = useNavigate();
   const { setToken } = useAuth();
   const { toast } = useToast();
@@ -46,23 +50,23 @@ const LoginPage = () => {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       username: "",
-      password: ""
-    }
+      password: "",
+    },
   });
 
   // Initialize 2FA form
   const twoFactorForm = useForm<TwoFactorFormValues>({
     resolver: zodResolver(twoFactorSchema),
     defaultValues: {
-      code: ""
-    }
+      code: "",
+    },
   });
 
   // Handle successful login
   const handleSuccessfulLogin = (token: string, decodedToken: any) => {
     const user = {
       username: decodedToken.sub,
-      roles: decodedToken.roles ? decodedToken.roles.split(",") : []
+      roles: decodedToken.roles ? decodedToken.roles.split(",") : [],
     };
 
     // Store tokens and user info
@@ -87,7 +91,7 @@ const LoginPage = () => {
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const response = await AuthService.login(data as LoginRequest);
+      const response = await login(data as LoginRequest);
       const { data: responseData } = response.data;
 
       if (responseData.jwtToken) {
@@ -103,7 +107,7 @@ const LoginPage = () => {
       toast({
         title: "Error",
         description: "Invalid credentials",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -114,14 +118,14 @@ const LoginPage = () => {
   const onTwoFactorSubmit = async (data: TwoFactorFormValues) => {
     setIsLoading(true);
     try {
-      await AuthService.verify2FA(data.code, jwtToken);
+      await verify2FA(data.code, jwtToken);
       const decodedToken = jwtDecode<any>(jwtToken);
       handleSuccessfulLogin(jwtToken, decodedToken);
     } catch (error) {
       toast({
         title: "Error",
         description: "Invalid verification code",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -133,13 +137,9 @@ const LoginPage = () => {
       <div className="w-full max-w-md space-y-6">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">
-              {step === 1 ? "Welcome back" : "Two-Factor Authentication"}
-            </CardTitle>
+            <CardTitle className="text-2xl">{step === 1 ? "Welcome back" : "Two-Factor Authentication"}</CardTitle>
             <CardDescription>
-              {step === 1
-                ? "Login with your email or Google account"
-                : "Enter the verification code to continue"}
+              {step === 1 ? "Login with your email or Google account" : "Enter the verification code to continue"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -175,12 +175,7 @@ const LoginPage = () => {
                           <FormItem>
                             <FormLabel>Username</FormLabel>
                             <FormControl>
-                              <Input
-                                {...field}
-                                type="text"
-                                disabled={isLoading}
-                                placeholder="Enter your username"
-                              />
+                              <Input {...field} type="text" disabled={isLoading} placeholder="Enter your username" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

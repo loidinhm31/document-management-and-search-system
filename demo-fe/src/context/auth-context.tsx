@@ -1,7 +1,7 @@
-// src/context/auth-context.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
+
 import { useToast } from "@/hooks/use-toast";
-import { AuthService } from "@/services/auth.service";
+import { authService } from "@/services/auth.service";
 import { User } from "@/types/auth";
 
 interface AuthContextType {
@@ -26,11 +26,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem("JWT_TOKEN"));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(localStorage.getItem("IS_ADMIN") === "true");
-  const { toast } = useToast();
 
   const fetchUser = async () => {
     try {
-      const response = await AuthService.getCurrentUser();
+      const response = await authService.getCurrentUser();
       const userData = response.data.data;
 
       // Check if user has admin role
@@ -44,9 +43,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setCurrentUser(userData);
-    } catch (error) {
-      console.error("Error fetching current user", error);
-      // If we get an authentication error, clear the token and user data
+    } catch (error: any) {
+      // Error handling is already done by the service
       if (error?.response?.status === 401) {
         localStorage.removeItem("JWT_TOKEN");
         localStorage.removeItem("USER");
@@ -55,11 +53,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCurrentUser(null);
         setIsAdmin(false);
       }
-      toast({
-        title: "Error",
-        description: "Failed to fetch user information",
-        variant: "destructive"
-      });
     }
   };
 

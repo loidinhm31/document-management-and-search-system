@@ -35,5 +35,76 @@
     "minLength": "{{field}} phải có ít nhất {{min}} ký tự",
     "maxLength": "{{field}} không được vượt quá {{max}} ký tự",
     "passwordMatch": "Mật khẩu không khớp"
+  },
+  "admin": {
+    "users": {
+      "title": "Quản lý người dùng",
+      "description": "Xem và quản lý tài khoản người dùng",
+      "headers": {
+        "username": "Tên đăng nhập",
+        "email": "Email",
+        "createdDate": "Ngày tạo",
+        "status": "Trạng thái"
+      },
+      "status": {
+        "active": "Hoạt động",
+        "inactive": "Không hoạt động"
+      },
+      "actions": {
+        "viewDetails": "Xem chi tiết",
+        "enableAccount": "Kích hoạt tài khoản",
+        "disableAccount": "Vô hiệu hóa tài khoản",
+        "updateStatus": {
+          "success": "Cập nhật trạng thái người dùng thành công",
+          "enable": "Đã kích hoạt tài khoản người dùng",
+          "disable": "Đã vô hiệu hóa tài khoản người dùng",
+          "error": "Không thể cập nhật trạng thái người dùng"
+        },
+        "updateRole": {
+          "success": "Cập nhật vai trò người dùng thành công",
+          "error": "Không thể cập nhật vai trò người dùng"
+        },
+        "updatePassword": {
+          "success": "Cập nhật mật khẩu người dùng thành công",
+          "error": "Không thể cập nhật mật khẩu người dùng"
+        },
+        "updateAccount": {
+          "lockSuccess": "Cập nhật trạng thái khóa tài khoản thành công",
+          "expirySuccess": "Cập nhật trạng thái hết hạn tài khoản thành công",
+          "credentialsSuccess": "Cập nhật trạng thái hết hạn thông tin đăng nhập thành công",
+          "error": "Không thể cập nhật trạng thái tài khoản"
+        }
+      },
+      "messages": {
+        "fetchError": "Không thể tải danh sách người dùng",
+        "updateSuccess": "Cập nhật trạng thái người dùng thành công",
+        "updateError": "Không thể cập nhật trạng thái người dùng"
+      },
+      "navigation": {
+        "backToUsers": "Quay lại danh sách người dùng"
+      },
+      "details": {
+        "title": "Thông tin người dùng",
+        "description": "Xem và quản lý chi tiết người dùng",
+        "username": "Tên đăng nhập",
+        "email": "Thư điện tử",
+        "roleAndPermissions": {
+          "title": "Vai trò & Quyền hạn",
+          "description": "Quản lý vai trò và trạng thái tài khoản",
+          "userRole": "Vai trò người dùng",
+          "selectRole": "Chọn vai trò"
+        },
+        "accountStatus": {
+          "enabled": "Kích hoạt tài khoản",
+          "enabledDescription": "Cho phép hoặc vô hiệu hóa quyền truy cập",
+          "locked": "Khóa tài khoản",
+          "lockedDescription": "Tạm thời khóa quyền truy cập tài khoản",
+          "expired": "Tài khoản hết hạn",
+          "expiredDescription": "Đánh dấu tài khoản là hết hạn",
+          "credentialsExpired": "Thông tin đăng nhập hết hạn",
+          "credentialsExpiredDescription": "Yêu cầu đổi mật khẩu mới"
+        }
+      }
+    }
   }
 }

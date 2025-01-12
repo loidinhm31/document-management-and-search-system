@@ -1,39 +1,71 @@
 import axiosInstance from "@/services/axios.config";
+import { BaseService } from "@/services/base.service";
 import { LoginRequest, SignupRequest } from "@/types/auth";
 
-export const AuthService = {
-  login: (data: LoginRequest) =>
-    axiosInstance.post("/v1/auth/login", data),
 
-  register: (data: SignupRequest) =>
-    axiosInstance.post("/v1/auth/register", data),
+class AuthService extends BaseService {
+  login(data: LoginRequest) {
+    return this.handleApiResponse(
+      axiosInstance.post("/v1/auth/login", data)
+    );
+  }
 
-  forgotPassword: (email: string) =>
-    axiosInstance.post("/v1/auth/password/forgot", null, {
-      params: { email }
-    }),
+  register(data: SignupRequest) {
+    return this.handleApiResponse(
+      axiosInstance.post("/v1/auth/register", data)
+    );
+  }
 
-  resetPassword: (token: string, newPassword: string) =>
-    axiosInstance.post("/v1/auth/password/reset", {
-      token,
-      newPassword
-    }),
+  forgotPassword(email: string) {
+    return this.handleApiResponse(
+      axiosInstance.post("/v1/auth/password/forgot", null, {
+        params: { email }
+      })
+    );
+  }
 
-  verify2FA: (code: string, jwtToken?: string) =>
-    axiosInstance.post("/v1/auth/2fa/verify", {
-      code,
-      jwtToken
-    }),
+  resetPassword(token: string, newPassword: string) {
+    return this.handleApiResponse(
+      axiosInstance.post("/v1/auth/password/reset", {
+        token,
+        newPassword
+      })
+    );
+  }
 
-  enable2FA: () =>
-    axiosInstance.post("/v1/auth/2fa/enable"),
+  verify2FA(code: string, jwtToken?: string) {
+    return this.handleApiResponse(
+      axiosInstance.post("/v1/auth/2fa/verify", {
+        code,
+        jwtToken
+      })
+    );
+  }
 
-  disable2FA: () =>
-    axiosInstance.post("/v1/auth/2fa/disable"),
+  enable2FA() {
+    return this.handleApiResponse(
+      axiosInstance.post("/v1/auth/2fa/enable")
+    );
+  }
 
-  get2FAStatus: () =>
-    axiosInstance.get("/v1/auth/2fa/status"),
+  disable2FA() {
+    return this.handleApiResponse(
+      axiosInstance.post("/v1/auth/2fa/disable")
+    );
+  }
 
-  getCurrentUser: () =>
-    axiosInstance.get("/v1/auth/user"),
-};
+  get2FAStatus() {
+    return this.handleApiResponse(
+      axiosInstance.get("/v1/auth/2fa/status")
+    );
+  }
+
+  getCurrentUser() {
+    return this.handleApiResponse(
+      axiosInstance.get("/v1/auth/user")
+    );
+  }
+}
+
+// Create a single instance
+export const authService = new AuthService();

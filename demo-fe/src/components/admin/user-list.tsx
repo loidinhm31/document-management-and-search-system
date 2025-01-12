@@ -1,5 +1,6 @@
 import { Calendar, Loader2, MoreHorizontal } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -11,34 +12,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
-import { AdminService } from "@/services/admin.service";
-
-interface User {
-  userId: number;
-  username: string;
-  email: string;
-  enabled: boolean;
-  createdDate: string;
-}
+import { adminService } from "@/services/admin.service";
+import { User } from "@/types/auth";
 
 export default function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await AdminService.getAllUsers();
-        setUsers(response.data.data);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch users",
-          variant: "destructive",
-        });
+        const response = await adminService.getAllUsers();
+        setUsers(response.data.data as User[]);
       } finally {
         setLoading(false);
       }
@@ -49,25 +36,16 @@ export default function UserList() {
 
   const handleUpdateStatus = async (userId: number, enabled: boolean) => {
     try {
-      await AdminService.updateAccountEnabledStatus(userId, enabled);
+      await adminService.updateAccountEnabledStatus(userId, enabled);
       setUsers(users.map((user) => (user.userId === userId ? { ...user, enabled } : user)));
-      toast({
-        title: "Success",
-        description: "User status updated successfully",
-        variant: "success",
-      });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update user status",
-        variant: "destructive",
-      });
+      console.error("Error updating user status:", error);
     }
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat(undefined, {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -88,8 +66,8 @@ export default function UserList() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
         <div className="space-y-1.5">
-          <CardTitle>User Management</CardTitle>
-          <CardDescription>View and manage user accounts</CardDescription>
+          <CardTitle>{t("admin.users.title")}</CardTitle>
+          <CardDescription>{t("admin.users.description")}</CardDescription>
         </div>
       </CardHeader>
       <CardContent>
@@ -97,11 +75,11 @@ export default function UserList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Username</TableHead>
-                <TableHead className="w-[250px]">Email</TableHead>
-                <TableHead className="w-[200px]">Created Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
+                <TableHead className="w-[200px]">{t("admin.users.headers.username")}</TableHead>
+                <TableHead className="w-[250px]">{t("admin.users.headers.email")}</TableHead>
+                <TableHead className="w-[200px]">{t("admin.users.headers.createdDate")}</TableHead>
+                <TableHead>{t("admin.users.headers.status")}</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -123,7 +101,7 @@ export default function UserList() {
                           : "bg-red-50 text-red-700 ring-red-600/20"
                       }`}
                     >
-                      {user.enabled ? "Active" : "Inactive"}
+                      {user.enabled ? t("admin.users.status.active") : t("admin.users.status.inactive")}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -135,9 +113,13 @@ export default function UserList() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`${user.userId}`)}>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`${user.userId}`)}>
+                          {t("admin.users.actions.viewDetails")}
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleUpdateStatus(user.userId, !user.enabled)}>
-                          {user.enabled ? "Disable Account" : "Enable Account"}
+                          {user.enabled
+                            ? t("admin.users.actions.disableAccount")
+                            : t("admin.users.actions.enableAccount")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
