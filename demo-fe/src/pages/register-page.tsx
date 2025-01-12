@@ -1,6 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import * as z from "zod";
 
@@ -9,11 +11,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
+import { useAuthService } from "@/hooks/use-auth-service";
 import { useToast } from "@/hooks/use-toast";
-import { AuthService } from "@/services/auth.service";
 import { SignupRequest } from "@/types/auth";
 
-// Form validation schema using zod
 const signupSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
   email: z.string().email("Invalid email address"),
@@ -29,12 +30,13 @@ const signupSchema = z.object({
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { token } = useAuth();
   const { toast } = useToast();
+  const { register } = useAuthService();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Initialize form with react-hook-form and zod resolver
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
@@ -44,14 +46,12 @@ export default function RegisterPage() {
     },
   });
 
-  // Redirect if already logged in
   useEffect(() => {
     if (token) {
       navigate("/");
     }
   }, [token, navigate]);
 
-  // Handle form submission
   const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     try {
@@ -61,10 +61,11 @@ export default function RegisterPage() {
         password: data.password,
         role: ["ROLE_USER"],
       };
-      await AuthService.register(signupData);
+      await register(signupData);
+
       toast({
-        title: "Success",
-        description: "Registration successful! Please log in to continue.",
+        title: t("common.success"),
+        description: t("auth.register.success"),
         variant: "success",
       });
 
@@ -72,13 +73,17 @@ export default function RegisterPage() {
     } catch (error: any) {
       const message = error?.response?.data?.error?.message;
       if (message?.includes("Username")) {
-        form.setError("username", { message: "Username is already taken" });
+        form.setError("username", {
+          message: t("validation.usernameExists"),
+        });
       } else if (message?.includes("Email")) {
-        form.setError("email", { message: "Email is already in use" });
+        form.setError("email", {
+          message: t("validation.emailExists"),
+        });
       } else {
         toast({
-          title: "Error",
-          description: "Registration failed. Please try again.",
+          title: t("common.error"),
+          description: t("auth.register.error"),
           variant: "destructive",
         });
       }
@@ -91,22 +96,12 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle>Create an Account</CardTitle>
-          <CardDescription>Enter your details to create a new account</CardDescription>
+          <CardTitle>{t("auth.register.title")}</CardTitle>
+          <CardDescription>{t("auth.register.description")}</CardDescription>
         </CardHeader>
 
         <CardContent>
           <div className="grid gap-6">
-            {/* OAuth Buttons */}
-            <div className="grid gap-2">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-              </div>
-            </div>
-
-            {/* Registration Form */}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
@@ -114,9 +109,9 @@ export default function RegisterPage() {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Username</FormLabel>
+                      <FormLabel>{t("auth.register.form.username.label")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your username" {...field} />
+                        <Input placeholder={t("auth.register.form.username.placeholder")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -128,9 +123,9 @@ export default function RegisterPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t("auth.register.form.email.label")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your email" type="email" {...field} />
+                        <Input placeholder={t("auth.register.form.email.placeholder")} type="email" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -142,9 +137,9 @@ export default function RegisterPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>{t("auth.register.form.password.label")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Create a password" type="password" {...field} />
+                        <Input placeholder={t("auth.register.form.password.placeholder")} type="password" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -152,17 +147,29 @@ export default function RegisterPage() {
                 />
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Create account"}
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {t("auth.register.buttons.submit")}
                 </Button>
               </form>
             </Form>
 
             <div className="text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
+              {t("auth.register.login.prompt")}{" "}
               <Button variant="link" className="p-0" asChild>
-                <Link to="/login">Login</Link>
+                <Link to="/login">{t("auth.register.login.link")}</Link>
               </Button>
             </div>
+
+            <p className="text-center text-xs text-muted-foreground">
+              {t("legal.consent")}{" "}
+              <Button variant="link" className="h-auto p-0 text-xs font-normal">
+                {t("legal.tos")}
+              </Button>{" "}
+              {t("common.and")}{" "}
+              <Button variant="link" className="h-auto p-0 text-xs font-normal">
+                {t("legal.privacy")}
+              </Button>
+            </p>
           </div>
         </CardContent>
       </Card>

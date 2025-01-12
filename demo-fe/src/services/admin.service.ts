@@ -1,5 +1,7 @@
 import i18next from "i18next";
+
 import axiosInstance from "@/services/axios.config";
+
 import { BaseService } from "./base.service";
 
 class AdminService extends BaseService {

@@ -67,5 +67,4 @@ class AuthService extends BaseService {
   }
 }
 
-// Create a single instance
 export const authService = new AuthService();

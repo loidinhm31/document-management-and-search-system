@@ -3,10 +3,42 @@
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
-    "info": "Information"
+    "info": "Information",
+    "and": "and"
   },
   "auth": {
     "login": {
+      "title": "Welcome back",
+      "description": "Login with your email or Google account",
+      "2fa": {
+        "title": "Two-Factor Authentication",
+        "description": "Enter the verification code to continue"
+      },
+      "form": {
+        "username": {
+          "label": "Username",
+          "placeholder": "Enter your username"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": "Enter your password",
+          "forgot": "Forgot password?"
+        },
+        "verificationCode": {
+          "label": "Verification Code",
+          "placeholder": "Enter 6-digit code"
+        },
+        "or": "Or continue with email"
+      },
+      "buttons": {
+        "signIn": "Sign In",
+        "verify": "Verify Code",
+        "google": "Login with Google"
+      },
+      "signup": {
+        "prompt": "Don't have an account?",
+        "link": "Sign up"
+      },
       "success": "Login successful",
       "error": "Invalid credentials",
       "required": "Please login to continue"
@@ -15,8 +47,86 @@
       "success": "Logout successful"
     },
     "register": {
-      "success": "Registration successful",
-      "error": "Registration failed"
+      "title": "Create an Account",
+      "description": "Enter your details to create a new account",
+      "form": {
+        "username": {
+          "label": "Username",
+          "placeholder": "Enter your username"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "Enter your email"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": "Create a password"
+        }
+      },
+      "buttons": {
+        "submit": "Create account"
+      },
+      "login": {
+        "prompt": "Already have an account?",
+        "link": "Login"
+      },
+      "success": "Registration successful! Please log in to continue.",
+      "error": "Registration failed. Please try again."
+    }
+  },
+  "legal": {
+    "consent": "By clicking continue, you agree to our",
+    "tos": "Terms of Service",
+    "privacy": "Privacy Policy"
+  },
+  "profile": {
+    "title": "Profile",
+    "lastLogin": {
+      "title": "Last Login Session",
+      "label": "Last login"
+    },
+    "password": {
+      "resetSuccess": "Password has been reset successfully",
+      "resetError": "Failed to reset password"
+    },
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "description": "Two-factor authentication adds an extra layer of security to your account",
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "actions": {
+        "enable": "Enable 2FA",
+        "disable": "Disable 2FA",
+        "verify": "Verify"
+      },
+      "verificationCodePlaceholder": "Enter 6-digit code",
+      "messages": {
+        "enableSuccess": "2FA has been enabled",
+        "disableSuccess": "2FA has been disabled",
+        "enableError": "Failed to enable 2FA",
+        "disableError": "Failed to disable 2FA",
+        "verifyError": "Invalid verification code",
+        "verificationRequired": "Please enter verification code",
+        "statusError": "Failed to fetch 2FA status"
+      }
+    },
+    "updateProfile": {
+      "title": "Update Profile",
+      "fields": {
+        "username": "Username",
+        "email": "Email",
+        "newPassword": "New Password",
+        "passwordPlaceholder": "Enter new password"
+      },
+      "actions": {
+        "update": "Update Profile"
+      },
+      "messages": {
+        "success": "Profile updated successfully",
+        "error": "Failed to update profile"
+      }
     }
   },
   "api": {

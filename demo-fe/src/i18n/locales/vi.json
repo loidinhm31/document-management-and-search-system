@@ -3,10 +3,42 @@
     "error": "Lỗi",
     "success": "Thành công",
     "warning": "Cảnh báo",
-    "info": "Thông tin"
+    "info": "Thông tin",
+    "and": "và"
   },
   "auth": {
     "login": {
+      "title": "Welcome back",
+      "description": "Login with your email or Google account",
+      "2fa": {
+        "title": "Two-Factor Authentication",
+        "description": "Enter the verification code to continue"
+      },
+      "form": {
+        "username": {
+          "label": "Username",
+          "placeholder": "Enter your username"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": "Enter your password",
+          "forgot": "Forgot password?"
+        },
+        "verificationCode": {
+          "label": "Verification Code",
+          "placeholder": "Enter 6-digit code"
+        },
+        "or": "Or continue with email"
+      },
+      "buttons": {
+        "signIn": "Sign In",
+        "verify": "Verify Code",
+        "google": "Login with Google"
+      },
+      "signup": {
+        "prompt": "Don't have an account?",
+        "link": "Sign up"
+      },
       "success": "Đăng nhập thành công",
       "error": "Thông tin đăng nhập không hợp lệ",
       "required": "Vui lòng đăng nhập để tiếp tục"
@@ -17,6 +49,61 @@
     "register": {
       "success": "Đăng ký thành công",
       "error": "Đăng ký thất bại"
+    }
+  },
+  "legal": {
+    "consent": "By clicking continue, you agree to our",
+    "tos": "Điều khoản dịch vụ",
+    "privacy": "Chính sách bảo mật"
+  },
+  "profile": {
+    "title": "Profile",
+    "lastLogin": {
+      "title": "Last Login Session",
+      "label": "Last login"
+    },
+    "password": {
+      "resetSuccess": "Password has been reset successfully",
+      "resetError": "Failed to reset password"
+    },
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "description": "Two-factor authentication adds an extra layer of security to your account",
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "actions": {
+        "enable": "Enable 2FA",
+        "disable": "Disable 2FA",
+        "verify": "Verify"
+      },
+      "verificationCodePlaceholder": "Enter 6-digit code",
+      "messages": {
+        "enableSuccess": "2FA has been enabled",
+        "disableSuccess": "2FA has been disabled",
+        "enableError": "Failed to enable 2FA",
+        "disableError": "Failed to disable 2FA",
+        "verifyError": "Invalid verification code",
+        "verificationRequired": "Please enter verification code",
+        "statusError": "Failed to fetch 2FA status"
+      }
+    },
+    "updateProfile": {
+      "title": "Update Profile",
+      "fields": {
+        "username": "Username",
+        "email": "Email",
+        "newPassword": "New Password",
+        "passwordPlaceholder": "Enter new password"
+      },
+      "actions": {
+        "update": "Update Profile"
+      },
+      "messages": {
+        "success": "Profile updated successfully",
+        "error": "Failed to update profile"
+      }
     }
   },
   "api": {
@@ -87,7 +174,7 @@
         "title": "Thông tin người dùng",
         "description": "Xem và quản lý chi tiết người dùng",
         "username": "Tên đăng nhập",
-        "email": "Thư điện tử",
+        "email": "Email",
         "roleAndPermissions": {
           "title": "Vai trò & Quyền hạn",
           "description": "Quản lý vai trò và trạng thái tài khoản",

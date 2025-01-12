@@ -1,3 +1,5 @@
+import { ApiResponse } from "@/types/auth";
+
 export interface Role {
   roleId: number;
   roleName: string;
@@ -18,4 +20,12 @@ export interface UserData {
   signUpMethod: string;
   createdDate: string;
   updatedDate: string;
+}
+
+export interface TwoFactorResponse extends ApiResponse<string> {
+  data: string;
+}
+
+export interface TwoFactorStatusResponse extends ApiResponse<boolean> {
+  data: boolean;
 }

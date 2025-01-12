@@ -3,6 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
 import * as z from "zod";
@@ -13,15 +14,19 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { APP_API_URL } from "@/env";
-import { useToast } from "@/hooks/use-toast";
-import { LoginRequest } from "@/types/auth";
-import { useTranslation } from "react-i18next";
 import { useAuthService } from "@/hooks/use-auth-service";
+import { useToast } from "@/hooks/use-toast";
+import { LoginRequest, LoginResponse } from "@/types/auth";
 
-// Define schema for login form
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .regex(
+      /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
+      "Password must contain at least one digit, lowercase, uppercase, and special character",
+    ),
 });
 
 // Define schema for 2FA verification form
@@ -40,8 +45,7 @@ const LoginPage = () => {
   const { setToken } = useAuth();
   const { toast } = useToast();
 
-  // State for managing login flow
-  const [step, setStep] = useState(1); // 1 = login, 2 = 2FA
+  const [step, setStep] = useState(1);
   const [jwtToken, setJwtToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -76,37 +80,34 @@ const LoginPage = () => {
     // Update auth context
     setToken(token);
 
-    // Show success message
     toast({
-      title: "Success",
-      description: "Login successful!",
+      title: t("common.success"),
+      description: t("auth.login.success"),
       variant: "success",
     });
 
-    // Redirect to home
     navigate("/");
   };
 
-  // Handle login submission
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
       const response = await login(data as LoginRequest);
-      const { data: responseData } = response.data;
+      const responseData = response.data.data as LoginResponse;
 
       if (responseData.jwtToken) {
         const decodedToken = jwtDecode<any>(responseData.jwtToken);
         if (decodedToken.is2faEnabled) {
           setJwtToken(responseData.jwtToken);
-          setStep(2); // Move to 2FA verification
+          setStep(2);
         } else {
           handleSuccessfulLogin(responseData.jwtToken, decodedToken);
         }
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
-        title: "Error",
-        description: "Invalid credentials",
+        title: t("common.error"),
+        description: t("auth.login.error"),
         variant: "destructive",
       });
     } finally {
@@ -114,17 +115,16 @@ const LoginPage = () => {
     }
   };
 
-  // Handle 2FA verification
   const onTwoFactorSubmit = async (data: TwoFactorFormValues) => {
     setIsLoading(true);
     try {
       await verify2FA(data.code, jwtToken);
       const decodedToken = jwtDecode<any>(jwtToken);
       handleSuccessfulLogin(jwtToken, decodedToken);
-    } catch (error) {
+    } catch (_error) {
       toast({
-        title: "Error",
-        description: "Invalid verification code",
+        title: t("common.error"),
+        description: t("auth.login.2fa.error"),
         variant: "destructive",
       });
     } finally {
@@ -137,14 +137,11 @@ const LoginPage = () => {
       <div className="w-full max-w-md space-y-6">
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">{step === 1 ? "Welcome back" : "Two-Factor Authentication"}</CardTitle>
-            <CardDescription>
-              {step === 1 ? "Login with your email or Google account" : "Enter the verification code to continue"}
-            </CardDescription>
+            <CardTitle>{t(step === 1 ? "auth.login.title" : "auth.login.2fa.title")}</CardTitle>
+            <CardDescription>{t(step === 1 ? "auth.login.description" : "auth.login.2fa.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             {step === 1 ? (
-              // Login Form
               <Form {...loginForm}>
                 <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
                   <div className="grid gap-6">
@@ -155,7 +152,7 @@ const LoginPage = () => {
                       <span>
                         <FcGoogle className="text-2xl" />
                       </span>
-                      <span className="font-semibold sm:text-customText text-xs">Login with Google</span>
+                      <span className="font-semibold sm:text-customText text-xs">{t("auth.login.buttons.google")}</span>
                     </Link>
 
                     <div className="relative">
@@ -163,7 +160,7 @@ const LoginPage = () => {
                         <span className="w-full border-t" />
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+                        <span className="bg-background px-2 text-muted-foreground">{t("auth.login.form.or")}</span>
                       </div>
                     </div>
 
@@ -173,9 +170,14 @@ const LoginPage = () => {
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>{t("auth.login.form.username.label")}</FormLabel>
                             <FormControl>
-                              <Input {...field} type="text" disabled={isLoading} placeholder="Enter your username" />
+                              <Input
+                                {...field}
+                                type="text"
+                                disabled={isLoading}
+                                placeholder={t("auth.login.form.username.placeholder")}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -188,14 +190,14 @@ const LoginPage = () => {
                         render={({ field }) => (
                           <FormItem>
                             <div className="flex items-center justify-between">
-                              <FormLabel>Password</FormLabel>
+                              <FormLabel>{t("auth.login.form.password.label")}</FormLabel>
                               <Button
                                 variant="link"
                                 className="px-0 font-normal"
                                 onClick={() => navigate("/forgot-password")}
                                 type="button"
                               >
-                                Forgot password?
+                                {t("auth.login.form.password.forgot")}
                               </Button>
                             </div>
                             <FormControl>
@@ -203,7 +205,7 @@ const LoginPage = () => {
                                 {...field}
                                 type="password"
                                 disabled={isLoading}
-                                placeholder="Enter your password"
+                                placeholder={t("auth.login.form.password.placeholder")}
                               />
                             </FormControl>
                             <FormMessage />
@@ -214,25 +216,24 @@ const LoginPage = () => {
 
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Sign In
+                      {t("auth.login.buttons.signIn")}
                     </Button>
 
                     <p className="text-center text-sm text-muted-foreground">
-                      Don't have an account?{" "}
+                      {t("auth.login.signup.prompt")}{" "}
                       <Button
                         variant="link"
                         className="px-0 font-normal"
                         onClick={() => navigate("/register")}
                         type="button"
                       >
-                        Sign up
+                        {t("auth.login.signup.link")}
                       </Button>
                     </p>
                   </div>
                 </form>
               </Form>
             ) : (
-              // 2FA Verification Form
               <Form {...twoFactorForm}>
                 <form onSubmit={twoFactorForm.handleSubmit(onTwoFactorSubmit)} className="space-y-6">
                   <FormField
@@ -240,13 +241,13 @@ const LoginPage = () => {
                     name="code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Verification Code</FormLabel>
+                        <FormLabel>{t("auth.login.form.verificationCode.label")}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             type="text"
                             disabled={isLoading}
-                            placeholder="Enter 6-digit code"
+                            placeholder={t("auth.login.form.verificationCode.placeholder")}
                             maxLength={6}
                           />
                         </FormControl>
@@ -257,7 +258,7 @@ const LoginPage = () => {
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Verify Code
+                    {t("auth.login.buttons.verify")}
                   </Button>
                 </form>
               </Form>
@@ -266,13 +267,13 @@ const LoginPage = () => {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          By clicking continue, you agree to our{" "}
+          {t("legal.consent")}{" "}
           <Button variant="link" className="h-auto p-0 text-xs font-normal">
-            Terms of Service
+            {t("legal.tos")}
           </Button>{" "}
-          and{" "}
+          {t("common.and")}{" "}
           <Button variant="link" className="h-auto p-0 text-xs font-normal">
-            Privacy Policy
+            {t("legal.privacy")}
           </Button>
         </p>
       </div>

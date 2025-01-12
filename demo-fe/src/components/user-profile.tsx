@@ -3,6 +3,7 @@ import { jwtDecode } from "jwt-decode";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { UserService } from "@/services/user.service";
+import { userService } from "@/services/user.service";
 
 const formSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -23,6 +24,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const UserProfile = () => {
+  const { t } = useTranslation();
   const { currentUser, token } = useAuth();
   const { toast } = useToast();
   const [loginSession, setLoginSession] = useState<string | null>(null);
@@ -38,43 +40,47 @@ const UserProfile = () => {
   const [loading, setLoading] = useState({
     page: true,
     form: false,
-    twoFactor: false
+    twoFactor: false,
   });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: currentUser?.username || "",
-      password: ""
-    }
+      password: "",
+    },
   });
 
   // Fetch 2FA status on mount
   useEffect(() => {
     const fetch2FAStatus = async () => {
       try {
-        const response = await UserService.get2FAStatus();
-        setIs2faEnabled(response.data.data);
+        const response = await userService.get2FAStatus();
+        if (response.data && typeof response.data.data === "boolean") {
+          setIs2faEnabled(response.data.data);
+        }
       } catch (error) {
         toast({
-          title: "Error",
-          description: "Failed to fetch 2FA status",
-          variant: "destructive"
+          title: t("common.error"),
+          description: t("profile.twoFactor.messages.statusError"),
+          variant: "destructive",
         });
       } finally {
-        setLoading(prev => ({ ...prev, page: false }));
+        setLoading((prev) => ({ ...prev, page: false }));
       }
     };
 
     fetch2FAStatus();
-  }, []);
+  }, [t]);
 
   // Set login session from token
   useEffect(() => {
     if (token) {
       const decodedToken = jwtDecode(token);
-      const lastLogin = new Date(decodedToken.iat * 1000).toLocaleString();
-      setLoginSession(lastLogin);
+      if ("iat" in decodedToken) {
+        const lastLogin = new Date(decodedToken.iat * 1000).toLocaleString();
+        setLoginSession(lastLogin);
+      }
     }
   }, [token]);
 
@@ -82,7 +88,7 @@ const UserProfile = () => {
   useEffect(() => {
     if (currentUser) {
       form.reset({
-        username: currentUser.username
+        username: currentUser.username,
       });
 
       if (currentUser.credentialsExpiryDate) {
@@ -93,41 +99,44 @@ const UserProfile = () => {
 
   // Enable 2FA
   const enable2FA = async () => {
-    setLoading(prev => ({ ...prev, twoFactor: true }));
+    setLoading((prev) => ({ ...prev, twoFactor: true }));
     try {
-      const response = await UserService.enable2FA();
-      setQrCodeUrl(response.data.data);
-      setStep(2);
-    } catch (error) {
+      const response = await userService.enable2FA();
+      const qrCode = response.data.data;
+      if (typeof qrCode === "string") {
+        setQrCodeUrl(qrCode);
+        setStep(2);
+      }
+    } catch (_error) {
       toast({
-        title: "Error",
-        description: "Failed to enable 2FA",
-        variant: "destructive"
+        title: t("common.error"),
+        description: t("profile.twoFactor.messages.enableError"),
+        variant: "destructive",
       });
     } finally {
-      setLoading(prev => ({ ...prev, twoFactor: false }));
+      setLoading((prev) => ({ ...prev, twoFactor: false }));
     }
   };
 
   // Disable 2FA
   const disable2FA = async () => {
-    setLoading(prev => ({ ...prev, twoFactor: true }));
+    setLoading((prev) => ({ ...prev, twoFactor: true }));
     try {
-      await UserService.disable2FA();
+      await userService.disable2FA();
       setIs2faEnabled(false);
       setQrCodeUrl("");
       toast({
-        title: "Success",
-        description: "2FA has been disabled"
+        title: t("common.success"),
+        description: t("profile.twoFactor.messages.disableSuccess"),
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
-        title: "Error",
-        description: "Failed to disable 2FA",
-        variant: "destructive"
+        title: t("common.error"),
+        description: t("profile.twoFactor.messages.disableError"),
+        variant: "destructive",
       });
     } finally {
-      setLoading(prev => ({ ...prev, twoFactor: false }));
+      setLoading((prev) => ({ ...prev, twoFactor: false }));
     }
   };
 
@@ -135,56 +144,56 @@ const UserProfile = () => {
   const verify2FA = async () => {
     if (!verificationCode) {
       toast({
-        title: "Error",
-        description: "Please enter verification code",
-        variant: "destructive"
+        title: t("common.error"),
+        description: t("profile.twoFactor.messages.verificationRequired"),
+        variant: "destructive",
       });
       return;
     }
 
-    setLoading(prev => ({ ...prev, twoFactor: true }));
+    setLoading((prev) => ({ ...prev, twoFactor: true }));
     try {
-      await UserService.verify2FA(verificationCode);
+      await userService.verify2FA(verificationCode);
       setIs2faEnabled(true);
       setStep(1);
       toast({
-        title: "Success",
-        description: "2FA has been enabled"
+        title: t("common.success"),
+        description: t("profile.twoFactor.messages.enableSuccess"),
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Invalid verification code",
-        variant: "destructive"
+        title: t("common.error"),
+        description: t("profile.twoFactor.messages.verifyError"),
+        variant: "destructive",
       });
     } finally {
-      setLoading(prev => ({ ...prev, twoFactor: false }));
+      setLoading((prev) => ({ ...prev, twoFactor: false }));
     }
   };
 
   // Update user credentials
   const onSubmit = async (data: FormValues) => {
-    setLoading(prev => ({ ...prev, form: true }));
+    setLoading((prev) => ({ ...prev, form: true }));
     try {
       const updateData: any = { username: data.username };
       if (data.password) {
         updateData.password = data.password;
       }
 
-      await UserService.updateCredentials(updateData);
+      await userService.updateCredentials(updateData);
       form.reset({ ...data, password: "" });
       toast({
-        title: "Success",
-        description: "Profile updated successfully"
+        title: t("common.success"),
+        description: t("profile.updateProfile.messages.success"),
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive"
+        title: t("common.error"),
+        description: t("profile.updateProfile.messages.error"),
+        variant: "destructive",
       });
     } finally {
-      setLoading(prev => ({ ...prev, form: false }));
+      setLoading((prev) => ({ ...prev, form: false }));
     }
   };
 
@@ -206,42 +215,35 @@ const UserProfile = () => {
               <Avatar className="h-12 w-12">
                 <AvatarFallback>{currentUser?.username?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
-              <CardTitle>{currentUser?.username}</CardTitle>
+              <CardTitle>{t("profile.title")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <Accordion type="single" collapsible>
               <AccordionItem value="credentials">
-                <AccordionTrigger>Update Profile</AccordionTrigger>
+                <AccordionTrigger>{t("profile.updateProfile.title")}</AccordionTrigger>
                 <AccordionContent>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input
-                        id="username"
-                        {...form.register("username")}
-                      />
+                      <Label htmlFor="username">{t("profile.updateProfile.fields.username")}</Label>
+                      <Input id="username" {...form.register("username")} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        value={currentUser?.email}
-                        disabled
-                      />
+                      <Label htmlFor="email">{t("profile.updateProfile.fields.email")}</Label>
+                      <Input id="email" value={currentUser?.email} disabled />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password">New Password</Label>
+                      <Label htmlFor="password">{t("profile.updateProfile.fields.newPassword")}</Label>
                       <Input
                         id="password"
                         type="password"
                         {...form.register("password")}
-                        placeholder="Enter new password"
+                        placeholder={t("profile.updateProfile.fields.passwordPlaceholder")}
                       />
                     </div>
                     <Button type="submit" disabled={loading.form}>
                       {loading.form && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Update Profile
+                      {t("profile.updateProfile.actions.update")}
                     </Button>
                   </form>
                 </AccordionContent>
@@ -250,7 +252,7 @@ const UserProfile = () => {
 
             {loginSession && (
               <div className="rounded-lg border p-4">
-                <h3 className="font-semibold">Last Login Session</h3>
+                <h3 className="font-semibold">{t("profile.lastLogin.title")}</h3>
                 <p className="text-sm text-muted-foreground">{loginSession}</p>
               </div>
             )}
@@ -261,18 +263,18 @@ const UserProfile = () => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Two-Factor Authentication</CardTitle>
-              <div className={`rounded-full px-2 py-1 text-xs ${
-                is2faEnabled ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-              }`}>
-                {is2faEnabled ? "Enabled" : "Disabled"}
+              <CardTitle>{t("profile.twoFactor.title")}</CardTitle>
+              <div
+                className={`rounded-full px-2 py-1 text-xs ${
+                  is2faEnabled ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                }`}
+              >
+                {is2faEnabled ? t("profile.twoFactor.status.enabled") : t("profile.twoFactor.status.disabled")}
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Two-factor authentication adds an extra layer of security to your account
-            </p>
+            <p className="text-sm text-muted-foreground">{t("profile.twoFactor.description")}</p>
 
             <Button
               onClick={is2faEnabled ? disable2FA : enable2FA}
@@ -280,7 +282,7 @@ const UserProfile = () => {
               disabled={loading.twoFactor}
             >
               {loading.twoFactor && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {is2faEnabled ? "Disable 2FA" : "Enable 2FA"}
+              {is2faEnabled ? t("profile.twoFactor.actions.disable") : t("profile.twoFactor.actions.enable")}
             </Button>
 
             {step === 2 && qrCodeUrl && (
@@ -291,13 +293,13 @@ const UserProfile = () => {
 
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Enter verification code"
+                    placeholder={t("profile.twoFactor.verificationCodePlaceholder")}
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
                   />
                   <Button onClick={verify2FA} disabled={loading.twoFactor}>
                     {loading.twoFactor && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Verify
+                    {t("profile.twoFactor.actions.verify")}
                   </Button>
                 </div>
               </div>
