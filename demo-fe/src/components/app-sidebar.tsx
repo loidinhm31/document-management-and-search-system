@@ -1,5 +1,6 @@
 import { Home, Settings2, Shield, Users } from "lucide-react";
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
 import LanguageSwitcher from "@/components/language-switcher";
@@ -16,37 +17,35 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isAdmin } = useAuth();
   const location = useLocation();
+  const { t } = useTranslation();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   const mainNavItems = [
     {
-      title: "Home",
+      title: t("navigation.main.home"),
       icon: Home,
       href: "/home",
       isActive: location.pathname === "/home",
-    },
-    {
-      title: "Settings",
-      icon: Settings2,
-      href: "/settings",
-      isActive: location.pathname === "/settings",
     },
   ];
 
   const adminNavItems = [
     {
-      title: "User Management",
+      title: t("navigation.admin.userManagement"),
       icon: Users,
       href: "/admin/users",
       isActive: location.pathname.startsWith("/admin/users"),
     },
     {
-      title: "Roles",
+      title: t("navigation.admin.roles"),
       icon: Shield,
       href: "/admin/roles",
       isActive: location.pathname.startsWith("/admin/roles"),
@@ -56,12 +55,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <LogoHeader />
+        <div className="flex items-center justify-between px-2 h-[52px]">
+          {/* Show only logo when collapsed */}
+          <div className={`${isCollapsed ? "w-full flex justify-center" : ""}`}>
+            <LogoHeader />
+          </div>
+          {/* Hide language switcher when collapsed */}
+          {!isCollapsed && <LanguageSwitcher />}
+        </div>
       </SidebarHeader>
       <SidebarContent>
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("navigation.main.title")}</SidebarGroupLabel>
           <SidebarMenu>
             {mainNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
@@ -76,10 +82,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
-        {/* Admin Navigation - Only shown for admin users */}
+        {/* Admin Navigation */}
         {isAdmin && (
           <SidebarGroup>
-            <SidebarGroupLabel>Administration</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("navigation.admin.title")}</SidebarGroupLabel>
             <SidebarMenu>
               {adminNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
@@ -96,9 +102,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         )}
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex items-center justify-between px-4">
+        <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between"} px-2`}>
           <NavUser />
-          <LanguageSwitcher />
         </div>
       </SidebarFooter>
       <SidebarRail />

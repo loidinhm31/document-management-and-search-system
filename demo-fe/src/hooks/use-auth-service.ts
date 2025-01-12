@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
-import { authService } from '@/services/auth.service';
-import { LoginRequest, SignupRequest } from '@/types/auth';
+import { useCallback } from "react";
+import { authService } from "@/services/auth.service";
+import { LoginRequest, SignupRequest } from "@/types/auth";
 
 export const useAuthService = () => {
   const login = useCallback(async (data: LoginRequest) => {

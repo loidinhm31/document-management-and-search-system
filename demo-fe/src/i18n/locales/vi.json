@@ -6,6 +6,17 @@
     "info": "Thông tin",
     "and": "và"
   },
+  "navigation": {
+    "main": {
+      "title": "Ứng dụng",
+      "home": "Trang chủ"
+    },
+    "admin": {
+      "title": "Quản trị",
+      "userManagement": "Quản lý người dùng",
+      "roles": "Vai trò"
+    }
+  },
   "auth": {
     "login": {
       "title": "Welcome back",

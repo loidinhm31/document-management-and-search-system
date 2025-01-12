@@ -15,7 +15,7 @@ const LanguageSwitcher = () => {
 
   const languages = [
     { code: "en", label: "English" },
-    { code: "vi", label: "Tiếng Việt" }
+    { code: "vi", label: "Tiếng Việt" },
   ];
 
   return (
@@ -27,10 +27,7 @@ const LanguageSwitcher = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {languages.map((lang) => (
-          <DropdownMenuItem
-            key={lang.code}
-            onClick={() => i18n.changeLanguage(lang.code)}
-          >
+          <DropdownMenuItem key={lang.code} onClick={() => i18n.changeLanguage(lang.code)}>
             {lang.label}
           </DropdownMenuItem>
         ))}

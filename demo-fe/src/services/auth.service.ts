@@ -2,25 +2,20 @@ import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { LoginRequest, SignupRequest } from "@/types/auth";
 
-
 class AuthService extends BaseService {
   login(data: LoginRequest) {
-    return this.handleApiResponse(
-      axiosInstance.post("/v1/auth/login", data)
-    );
+    return this.handleApiResponse(axiosInstance.post("/v1/auth/login", data));
   }
 
   register(data: SignupRequest) {
-    return this.handleApiResponse(
-      axiosInstance.post("/v1/auth/register", data)
-    );
+    return this.handleApiResponse(axiosInstance.post("/v1/auth/register", data));
   }
 
   forgotPassword(email: string) {
     return this.handleApiResponse(
       axiosInstance.post("/v1/auth/password/forgot", null, {
-        params: { email }
-      })
+        params: { email },
+      }),
     );
   }
 
@@ -28,8 +23,8 @@ class AuthService extends BaseService {
     return this.handleApiResponse(
       axiosInstance.post("/v1/auth/password/reset", {
         token,
-        newPassword
-      })
+        newPassword,
+      }),
     );
   }
 
@@ -37,33 +32,25 @@ class AuthService extends BaseService {
     return this.handleApiResponse(
       axiosInstance.post("/v1/auth/2fa/verify", {
         code,
-        jwtToken
-      })
+        jwtToken,
+      }),
     );
   }
 
   enable2FA() {
-    return this.handleApiResponse(
-      axiosInstance.post("/v1/auth/2fa/enable")
-    );
+    return this.handleApiResponse(axiosInstance.post("/v1/auth/2fa/enable"));
   }
 
   disable2FA() {
-    return this.handleApiResponse(
-      axiosInstance.post("/v1/auth/2fa/disable")
-    );
+    return this.handleApiResponse(axiosInstance.post("/v1/auth/2fa/disable"));
   }
 
   get2FAStatus() {
-    return this.handleApiResponse(
-      axiosInstance.get("/v1/auth/2fa/status")
-    );
+    return this.handleApiResponse(axiosInstance.get("/v1/auth/2fa/status"));
   }
 
   getCurrentUser() {
-    return this.handleApiResponse(
-      axiosInstance.get("/v1/auth/user")
-    );
+    return this.handleApiResponse(axiosInstance.get("/v1/auth/user"));
   }
 }
 

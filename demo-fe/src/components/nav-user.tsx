@@ -9,38 +9,32 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
 export function NavUser() {
-  const { isMobile } = useSidebar();
+  const { isMobile, state } = useSidebar();
   const { currentUser, setToken, setCurrentUser, setIsAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isCollapsed = state === "collapsed";
 
   // Handle user logout
   const handleLogout = () => {
-    // Clear all auth-related local storage
     localStorage.removeItem("JWT_TOKEN");
     localStorage.removeItem("USER");
     localStorage.removeItem("IS_ADMIN");
-
-    // Clear auth context
     setToken(null);
     setCurrentUser(null);
     setIsAdmin(false);
-
-    // Show success message
     toast({
       title: "Success",
       description: "You have been logged out successfully.",
       variant: "success",
     });
-
-    // Redirect to login
     navigate("/login");
   };
 
@@ -49,7 +43,7 @@ export function NavUser() {
     if (!name) return "U";
     return name
       .split(" ")
-      .map(part => part[0])
+      .map((part) => part[0])
       .join("")
       .toUpperCase()
       .slice(0, 2);
@@ -68,26 +62,26 @@ export function NavUser() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8">
+              <Avatar className={isCollapsed ? "h-6 w-6" : "h-8 w-8"}>
                 {currentUser.imageUrl ? (
-                  <img
-                    src={currentUser.imageUrl}
-                    alt={currentUser.username}
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={currentUser.imageUrl} alt={currentUser.username} className="h-full w-full object-cover" />
                 ) : (
                   <AvatarFallback>{getInitials(currentUser.username)}</AvatarFallback>
                 )}
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{currentUser.username}</span>
-                <span className="truncate text-xs text-muted-foreground">{currentUser.email}</span>
-              </div>
-              <ChevronsUpDown className="ml-auto h-4 w-4" />
+              {!isCollapsed && (
+                <>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">{currentUser.username}</span>
+                    <span className="truncate text-xs text-muted-foreground">{currentUser.email}</span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto h-4 w-4" />
+                </>
+              )}
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-[--radix-dropdown-menu-trigger-width] min-w-[200px]"
+            className={`w-[--radix-dropdown-menu-trigger-width] min-w-[200px] ${isCollapsed ? "ml-2" : ""}`}
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}

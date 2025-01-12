@@ -6,9 +6,9 @@ const config: CreateAxiosDefaults = {
   baseURL: `${APP_API_URL}/api`,
   headers: new AxiosHeaders({
     "Content-Type": "application/json",
-    Accept: "application/json"
+    Accept: "application/json",
   }),
-  withCredentials: true
+  withCredentials: true,
 };
 
 const axiosInstance = axios.create(config);
@@ -24,7 +24,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Add a response interceptor
@@ -37,7 +37,7 @@ axiosInstance.interceptors.response.use(
 
     // Re-throw the error to be caught by the service
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

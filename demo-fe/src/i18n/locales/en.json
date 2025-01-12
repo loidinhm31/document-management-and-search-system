@@ -6,6 +6,17 @@
     "info": "Information",
     "and": "and"
   },
+  "navigation": {
+    "main": {
+      "title": "Application",
+      "home": "Home"
+    },
+    "admin": {
+      "title": "Administration",
+      "userManagement": "User Management",
+      "roles": "Roles"
+    }
+  },
   "auth": {
     "login": {
       "title": "Welcome back",
@@ -218,4 +229,3 @@
     }
   }
 }
-
