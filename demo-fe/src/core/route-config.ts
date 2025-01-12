@@ -1,6 +1,7 @@
 import React, { lazy } from "react";
 
 const Login = lazy(() => import("@/pages/login-page"));
+const Register = lazy(() => import("@/pages/register-page"));
 const Home = lazy(() => import("@/pages/home-page"));
 const Profile = lazy(() => import("@/pages/profile-page"));
 const UserList = lazy(() => import("@/pages/admin/user-list-page"));
@@ -20,6 +21,7 @@ export const RoutePaths = {
   UNAUTHORIZED: "/unauthorized",
   HOME: "/home",
   LOGIN: "/login",
+  REGISTER: "/register",
   EMPTY: "/empty",
   PROFILE: "/profile",
   ADMIN: {
@@ -41,6 +43,14 @@ export const routes: Route[] = [
     path: RoutePaths.LOGIN,
     pageTitle: "Login",
     component: Login,
+    isSecure: false,
+    permission: [],
+    subPages: [],
+  },
+  {
+    path: RoutePaths.REGISTER,
+    pageTitle: "Sign Up",
+    component: Register,
     isSecure: false,
     permission: [],
     subPages: [],
