@@ -14,9 +14,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { APP_API_URL } from "@/env";
-import { useAuthService } from "@/hooks/use-auth-service";
 import { useToast } from "@/hooks/use-toast";
 import { LoginRequest, LoginResponse } from "@/types/auth";
+import LanguageSwitcher from "@/components/language-switcher";
+import { authService } from "@/services/auth.service";
+import { userService } from "@/services/user.service";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -39,7 +41,6 @@ type TwoFactorFormValues = z.infer<typeof twoFactorSchema>;
 
 const LoginPage = () => {
   const { t } = useTranslation();
-  const { login, verify2FA } = useAuthService();
 
   const navigate = useNavigate();
   const { setToken } = useAuth();
@@ -92,7 +93,7 @@ const LoginPage = () => {
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const response = await login(data as LoginRequest);
+      const response = await authService.login(data as LoginRequest);
       const responseData = response.data.data as LoginResponse;
 
       if (responseData.jwtToken) {
@@ -118,7 +119,7 @@ const LoginPage = () => {
   const onTwoFactorSubmit = async (data: TwoFactorFormValues) => {
     setIsLoading(true);
     try {
-      await verify2FA(data.code, jwtToken);
+      await userService.verify2FA(data.code);
       const decodedToken = jwtDecode<any>(jwtToken);
       handleSuccessfulLogin(jwtToken, decodedToken);
     } catch (_error) {
@@ -134,6 +135,9 @@ const LoginPage = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 sm:p-8">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="w-full max-w-md space-y-6">
         <Card>
           <CardHeader className="text-center">

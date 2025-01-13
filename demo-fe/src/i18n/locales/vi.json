@@ -58,8 +58,49 @@
       "success": "Đăng xuất thành công"
     },
     "register": {
+      "title": "Create an Account",
+      "description": "Enter your details to create a new account",
+      "form": {
+        "username": {
+          "label": "Username",
+          "placeholder": "Enter your username"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "Enter your email"
+        },
+        "password": {
+          "label": "Password",
+          "placeholder": "Create a password"
+        }
+      },
+      "buttons": {
+        "submit": "Create account"
+      },
+      "login": {
+        "prompt": "Already have an account?",
+        "link": "Login"
+      },
       "success": "Đăng ký thành công",
       "error": "Đăng ký thất bại"
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "description": "Enter your email address and we'll send you a password reset link",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "Enter your email address"
+        }
+      },
+      "buttons": {
+        "submit": "Send Reset Link"
+      },
+      "actions": {
+        "backToLogin": "Back to Login"
+      },
+      "success": "Password reset email has been sent. Please check your inbox.",
+      "error": "Failed to send password reset email. Please try again."
     }
   },
   "legal": {

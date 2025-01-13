@@ -14,6 +14,7 @@ import { useAuth } from "@/context/auth-context";
 import { useAuthService } from "@/hooks/use-auth-service";
 import { useToast } from "@/hooks/use-toast";
 import { SignupRequest } from "@/types/auth";
+import LanguageSwitcher from "@/components/language-switcher";
 
 const signupSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -94,6 +95,10 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
+
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle>{t("auth.register.title")}</CardTitle>

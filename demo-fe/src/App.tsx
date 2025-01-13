@@ -4,7 +4,7 @@ import React, { Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppSidebar } from "@/components/app-sidebar";
-import ProtectedRoute from "@/components/protected-route";
+import ProtectedRoute from "@/components/auth/protected-route";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -20,7 +20,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "./components/ui/breadcrumb";
-import OAuth2RedirectHandler from "@/components/oauth2-redirect-handler";
+import OAuth2RedirectHandler from "@/components/auth/oauth2-redirect-handler";
 
 const LoadingFallback = () => (
   <div className="flex h-screen w-full items-center justify-center">

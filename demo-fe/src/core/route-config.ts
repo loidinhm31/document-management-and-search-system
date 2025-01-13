@@ -2,6 +2,7 @@ import React, { lazy } from "react";
 
 const Login = lazy(() => import("@/pages/login-page"));
 const Register = lazy(() => import("@/pages/register-page"));
+const ForgotPassword = lazy(() => import("@/pages/forgot-password-page"));
 const Home = lazy(() => import("@/pages/home-page"));
 const Profile = lazy(() => import("@/pages/profile-page"));
 const UserList = lazy(() => import("@/pages/admin/user-list-page"));
@@ -22,6 +23,7 @@ export const RoutePaths = {
   HOME: "/home",
   LOGIN: "/login",
   REGISTER: "/register",
+  FORGOT_PASSWORD: "/forgot-password",
   EMPTY: "/empty",
   PROFILE: "/profile",
   ADMIN: {
@@ -51,6 +53,14 @@ export const routes: Route[] = [
     path: RoutePaths.REGISTER,
     pageTitle: "Sign Up",
     component: Register,
+    isSecure: false,
+    permission: [],
+    subPages: [],
+  },
+  {
+    path: RoutePaths.FORGOT_PASSWORD,
+    pageTitle: "Forgot Password",
+    component: ForgotPassword,
     isSecure: false,
     permission: [],
     subPages: [],

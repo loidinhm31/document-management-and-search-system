@@ -83,6 +83,24 @@
       },
       "success": "Registration successful! Please log in to continue.",
       "error": "Registration failed. Please try again."
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "description": "Enter your email address and we'll send you a password reset link",
+      "form": {
+        "email": {
+          "label": "Email",
+          "placeholder": "Enter your email address"
+        }
+      },
+      "buttons": {
+        "submit": "Send Reset Link"
+      },
+      "actions": {
+        "backToLogin": "Back to Login"
+      },
+      "success": "Password reset email has been sent. Please check your inbox.",
+      "error": "Failed to send password reset email. Please try again."
     }
   },
   "legal": {
