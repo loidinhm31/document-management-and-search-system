@@ -19,6 +19,7 @@ import { LoginRequest, LoginResponse } from "@/types/auth";
 import LanguageSwitcher from "@/components/language-switcher";
 import { authService } from "@/services/auth.service";
 import { userService } from "@/services/user.service";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -135,8 +136,9 @@ const LoginPage = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 sm:p-8">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-2">
         <LanguageSwitcher />
+        <ThemeToggle />
       </div>
       <div className="w-full max-w-md space-y-6">
         <Card>

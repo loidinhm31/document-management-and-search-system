@@ -20,6 +20,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isAdmin } = useAuth();
@@ -60,8 +61,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <div className={`${isCollapsed ? "w-full flex justify-center" : ""}`}>
             <LogoHeader />
           </div>
-          {/* Hide language switcher when collapsed */}
-          {!isCollapsed && <LanguageSwitcher />}
+          {/* Hide language switcher and theme toggle when collapsed */}
+          {!isCollapsed && (
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <ThemeToggle />
+            </div>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent>
