@@ -17,18 +17,22 @@ import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/user.service";
 
 const formSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters").optional(),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .regex(
+      /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
+      "Password must contain at least one digit, lowercase, uppercase, and special character",
+    ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-const UserProfile = () => {
+export default function UserProfile() {
   const { t } = useTranslation();
   const { currentUser, token } = useAuth();
   const { toast } = useToast();
   const [loginSession, setLoginSession] = useState<string | null>(null);
-  const [credentialExpireDate, setCredentialExpireDate] = useState<string | null>(null);
 
   // 2FA states
   const [is2faEnabled, setIs2faEnabled] = useState(false);
@@ -46,7 +50,6 @@ const UserProfile = () => {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: currentUser?.username || "",
       password: "",
     },
   });
@@ -55,11 +58,12 @@ const UserProfile = () => {
   useEffect(() => {
     const fetch2FAStatus = async () => {
       try {
-        const response = await userService.get2FAStatus();
+        console.log("currej", currentUser);
+        const response = await userService.get2FAStatus(currentUser?.userId);
         if (response.data && typeof response.data.data === "boolean") {
           setIs2faEnabled(response.data.data);
         }
-      } catch (error) {
+      } catch (_error) {
         toast({
           title: t("common.error"),
           description: t("profile.twoFactor.messages.statusError"),
@@ -70,8 +74,10 @@ const UserProfile = () => {
       }
     };
 
-    fetch2FAStatus();
-  }, [t]);
+    if (currentUser) {
+      fetch2FAStatus();
+    }
+  }, [t, currentUser]);
 
   // Set login session from token
   useEffect(() => {
@@ -83,19 +89,6 @@ const UserProfile = () => {
       }
     }
   }, [token]);
-
-  // Set initial form values when user data is available
-  useEffect(() => {
-    if (currentUser) {
-      form.reset({
-        username: currentUser.username,
-      });
-
-      if (currentUser.credentialsExpiryDate) {
-        setCredentialExpireDate(new Date(currentUser.credentialsExpiryDate).toLocaleDateString());
-      }
-    }
-  }, [currentUser, form]);
 
   // Enable 2FA
   const enable2FA = async () => {
@@ -175,7 +168,7 @@ const UserProfile = () => {
   const onSubmit = async (data: FormValues) => {
     setLoading((prev) => ({ ...prev, form: true }));
     try {
-      const updateData: any = { username: data.username };
+      const updateData: any = { username: currentUser?.username };
       if (data.password) {
         updateData.password = data.password;
       }
@@ -226,16 +219,15 @@ const UserProfile = () => {
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="username">{t("profile.updateProfile.fields.username")}</Label>
-                      <Input id="username" {...form.register("username")} />
+                      <Input value={currentUser?.email} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">{t("profile.updateProfile.fields.email")}</Label>
-                      <Input id="email" value={currentUser?.email} disabled />
+                      <Input  disabled />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password">{t("profile.updateProfile.fields.newPassword")}</Label>
                       <Input
-                        id="password"
                         type="password"
                         {...form.register("password")}
                         placeholder={t("profile.updateProfile.fields.passwordPlaceholder")}
@@ -309,6 +301,4 @@ const UserProfile = () => {
       </div>
     </div>
   );
-};
-
-export default UserProfile;
+}

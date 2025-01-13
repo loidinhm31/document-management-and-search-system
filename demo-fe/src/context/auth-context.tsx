@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/services/auth.service";
 import { User } from "@/types/auth";
+import { userService } from "@/services/user.service";
 
 interface AuthContextType {
   token: string | null;
@@ -29,8 +30,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUser = async () => {
     try {
-      const response = await authService.getCurrentUser();
-      const userData = response.data.data;
+      const response = await userService.getCurrentUser();
+      const userData = response.data.data as User;
 
       // Check if user has admin role
       const isUserAdmin = userData.roles.includes("ROLE_ADMIN");

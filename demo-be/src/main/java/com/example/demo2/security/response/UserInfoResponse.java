@@ -9,7 +9,7 @@ import java.util.List;
 @Setter
 @Getter
 public class UserInfoResponse {
-    private Long id;
+    private Long userId;
     private String username;
     private String email;
     private boolean accountNonLocked;
@@ -21,10 +21,10 @@ public class UserInfoResponse {
     private boolean isTwoFactorEnabled;
     private List<String> roles;
 
-    public UserInfoResponse(Long id, String username, String email, boolean accountNonLocked, boolean accountNonExpired,
+    public UserInfoResponse(Long userId, String username, String email, boolean accountNonLocked, boolean accountNonExpired,
                             boolean credentialsNonExpired, boolean enabled, LocalDate credentialsExpiryDate,
                             LocalDate accountExpiryDate, boolean isTwoFactorEnabled, List<String> roles) {
-        this.id = id;
+        this.userId = userId;
         this.username = username;
         this.email = email;
         this.accountNonLocked = accountNonLocked;

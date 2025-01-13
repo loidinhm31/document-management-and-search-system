@@ -11,47 +11,74 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 import { adminService } from "@/services/admin.service";
-import { User } from "@/types/auth";
 
 export default function UserList() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await adminService.getAllUsers();
-        setUsers(response.data.data as User[]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
-  }, []);
+  }, [searchQuery, statusFilter, roleFilter, currentPage]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await adminService.getAllUsers({
+        search: searchQuery,
+        enabled: statusFilter === "active" ? true : statusFilter === "inactive" ? false : undefined,
+        role: roleFilter,
+        page: currentPage,
+        size: 10,
+      });
+
+      const { content, totalPages: total } = response.data.data;
+      setUsers(content);
+      setTotalPages(total);
+    } catch (error) {
+      console.log("Error:", error);
+      toast({
+        title: t("common.error"),
+        description: t("admin.users.messages.fetchError"),
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUpdateStatus = async (userId: number, enabled: boolean) => {
     try {
-      await adminService.updateAccountEnabledStatus(userId, enabled);
-      setUsers(users.map((user) => (user.userId === userId ? { ...user, enabled } : user)));
+      const updateData = {
+        enabled: enabled,
+      };
+      await adminService.updateStatus(userId, updateData);
+
+      fetchUsers(); // Refresh the list
     } catch (error) {
-      console.error("Error updating user status:", error);
+      console.log("Error:", error);
+      toast({
+        title: t("common.error"),
+        description: t("admin.users.actions.updateStatus.error"),
+        variant: "destructive",
+      });
     }
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
+    return new Date(dateString).toLocaleString();
   };
 
   if (loading) {
@@ -64,13 +91,54 @@ export default function UserList() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-        <div className="space-y-1.5">
-          <CardTitle>{t("admin.users.title")}</CardTitle>
-          <CardDescription>{t("admin.users.description")}</CardDescription>
-        </div>
+      <CardHeader className="space-y-1">
+        <CardTitle>{t("admin.users.title")}</CardTitle>
+        <CardDescription>{t("admin.users.description")}</CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 flex gap-4">
+          <Input
+            placeholder={t("admin.users.search")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-xs"
+          />
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value === "all" ? "" : value);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder={t("admin.users.filters.status")}>
+                {statusFilter === "" ? "All" : statusFilter === "active" ? "Active" : "Inactive"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={roleFilter}
+            onValueChange={(value) => {
+              setRoleFilter(value === "all" ? "" : value);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder={t("admin.users.filters.role")}>
+                {roleFilter === "" ? "All" : roleFilter === "ROLE_USER" ? "User" : "Admin"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="ROLE_USER">User</SelectItem>
+              <SelectItem value="ROLE_ADMIN">Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -79,7 +147,7 @@ export default function UserList() {
                 <TableHead className="w-[250px]">{t("admin.users.headers.email")}</TableHead>
                 <TableHead className="w-[200px]">{t("admin.users.headers.createdDate")}</TableHead>
                 <TableHead>{t("admin.users.headers.status")}</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+                <TableHead className="w-[100px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -95,11 +163,12 @@ export default function UserList() {
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                        user.enabled
-                          ? "bg-green-50 text-green-700 ring-green-600/20"
-                          : "bg-red-50 text-red-700 ring-red-600/20"
-                      }`}
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset 
+                        ${
+                          user.enabled
+                            ? "bg-green-50 text-green-700 ring-green-600/20"
+                            : "bg-red-50 text-red-700 ring-red-600/20"
+                        }`}
                     >
                       {user.enabled ? t("admin.users.status.active") : t("admin.users.status.inactive")}
                     </span>
@@ -129,6 +198,25 @@ export default function UserList() {
             </TableBody>
           </Table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="mt-4 flex justify-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
+              disabled={currentPage === 0}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
+              disabled={currentPage === totalPages - 1}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

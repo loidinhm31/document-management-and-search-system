@@ -204,6 +204,11 @@
       "navigation": {
         "backToUsers": "Back to Users"
       },
+      "search": "Search",
+      "filters": {
+        "status": "Status",
+        "role": "Roles"
+      },
       "details": {
         "title": "User Information",
         "description": "View and manage user details",

@@ -1,10 +1,10 @@
 package com.example.demo2.services.impl;
 
 import com.example.demo2.dtos.UserDTO;
-import com.example.demo2.dtos.request.LoginRequest;
-import com.example.demo2.dtos.request.SignupRequest;
+import com.example.demo2.dtos.request.*;
 import com.example.demo2.enums.AppRole;
 import com.example.demo2.exceptions.ResourceNotFoundException;
+import com.example.demo2.mappers.UserMapper;
 import com.example.demo2.models.PasswordResetToken;
 import com.example.demo2.models.Role;
 import com.example.demo2.models.User;
@@ -19,7 +19,9 @@ import com.example.demo2.services.TotpService;
 import com.example.demo2.services.UserService;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -48,6 +50,7 @@ public class UserServiceImpl implements UserService {
     private final JwtUtils jwtUtils;
     private final EmailService emailService;
     private final TotpService totpService;
+    private final UserMapper userMapper;
 
     @Override
     public LoginResponse authenticateUser(LoginRequest loginRequest) {
@@ -98,7 +101,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserInfoResponse getUserInfo(UserDetails userDetails) {
-        User user = getUserByUsername(userDetails.getUsername());
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -161,13 +165,14 @@ public class UserServiceImpl implements UserService {
     public UserDTO getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
-        return convertToDto(user);
+        return userMapper.convertToDto(user);
     }
 
     @Override
-    public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username)
+    public UserDTO getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
+        return userMapper.convertToDto(user);
     }
 
     @Override
@@ -192,42 +197,11 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    @Override
-    public void updateAccountLockStatus(Long userId, boolean locked) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        user.setAccountNonLocked(!locked);
-        userRepository.save(user);
-    }
-
-    @Override
-    public void updateAccountExpiryStatus(Long userId, boolean expired) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        user.setAccountNonExpired(!expired);
-        userRepository.save(user);
-    }
-
-    @Override
-    public void updateAccountEnabledStatus(Long userId, boolean enabled) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        user.setEnabled(enabled);
-        userRepository.save(user);
-    }
-
-    @Override
-    public void updateCredentialsExpiryStatus(Long userId, boolean expired) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        user.setCredentialsNonExpired(!expired);
-        userRepository.save(user);
-    }
-
     // 2FA operations
     @Override
-    public GoogleAuthenticatorKey generate2FASecret(String username) {
-        User user = getUserByUsername(username);
+    public GoogleAuthenticatorKey generate2FASecret(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         GoogleAuthenticatorKey key = totpService.generateSecret();
         user.setTwoFactorSecret(key.getKey());
         userRepository.save(user);
@@ -235,8 +209,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void verify2FACode(String username, String code) {
-        User user = getUserByUsername(username);
+    public void verify2FACode(Long userId, String code) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         boolean isValid = totpService.verifyCode(user.getTwoFactorSecret(), Integer.parseInt(code));
         if (!isValid) {
             throw new IllegalArgumentException("Invalid 2FA code");
@@ -261,8 +236,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void disable2FA(String username) {
-        User user = getUserByUsername(username);
+    public void disable2FA(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         user.setTwoFactorEnabled(false);
         user.setTwoFactorSecret(null);
         userRepository.save(user);
@@ -270,7 +246,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean get2FAStatus(String username) {
-        User user = getUserByUsername(username);
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
         return user.isTwoFactorEnabled();
     }
 
@@ -279,28 +256,87 @@ public class UserServiceImpl implements UserService {
         return totpService.getQrCodeUrl(key, username);
     }
 
+
     @Override
-    public List<Role> getAllRoles() {
-        return roleRepository.findAll();
+    public void updateProfile(Long userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));;
+
+        // Validate username uniqueness if changed
+        if (!user.getUsername().equals(request.getUsername()) &&
+                userRepository.existsByUsername(request.getUsername())) {
+            throw new IllegalArgumentException("Username is already taken");
+        }
+
+        // Validate email uniqueness if changed
+        if (!user.getEmail().equals(request.getEmail()) &&
+                userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("Email is already in use");
+        }
+
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        userRepository.save(user);
     }
 
-    private UserDTO convertToDto(User user) {
-        return new UserDTO(
-                user.getUserId(),
-                user.getUsername(),
-                user.getEmail(),
-                user.isAccountNonLocked(),
-                user.isAccountNonExpired(),
-                user.isCredentialsNonExpired(),
-                user.isEnabled(),
-                user.getCredentialsExpiryDate(),
-                user.getAccountExpiryDate(),
-                user.getTwoFactorSecret(),
-                user.isTwoFactorEnabled(),
-                user.getSignUpMethod(),
-                user.getRole(),
-                user.getCreatedDate(),
-                user.getUpdatedDate()
-        );
+    @Override
+    public void updateSecurity(Long userId, UpdateSecurityRequest request, UserDetails currentUser) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));;
+        boolean isAdmin = currentUser.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        // If not admin, verify current password
+        if (!isAdmin && request.getCurrentPassword() != null) {
+            if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                throw new BadCredentialsException("Current password is incorrect");
+            }
+        }
+
+        if (request.getNewPassword() != null) {
+            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        }
+
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updateStatus(Long userId, UpdateStatusRequest request, boolean isAdmin) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));;
+
+        if (!isAdmin) {
+            // Regular users can only update specific fields
+            if (request.getAccountLocked() != null ||
+                    request.getAccountExpired() != null ||
+                    request.getCredentialsExpired() != null ||
+                    request.getEnabled() != null) {
+                throw new AccessDeniedException("Operation not allowed for regular users");
+            }
+        }
+
+        // Update allowed fields based on role
+        if (isAdmin) {
+            if (request.getAccountLocked() != null) {
+                user.setAccountNonLocked(!request.getAccountLocked());
+            }
+            if (request.getAccountExpired() != null) {
+                user.setAccountNonExpired(!request.getAccountExpired());
+            }
+            if (request.getCredentialsExpired() != null) {
+                user.setCredentialsNonExpired(!request.getCredentialsExpired());
+            }
+            if (request.getEnabled() != null) {
+                user.setEnabled(request.getEnabled());
+            }
+            if (request.getCredentialsExpiryDate() != null) {
+                user.setCredentialsExpiryDate(request.getCredentialsExpiryDate());
+            }
+            if (request.getAccountExpiryDate() != null) {
+                user.setAccountExpiryDate(request.getAccountExpiryDate());
+            }
+        }
+
+        userRepository.save(user);
     }
 }

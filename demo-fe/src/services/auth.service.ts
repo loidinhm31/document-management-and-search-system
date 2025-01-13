@@ -27,31 +27,6 @@ class AuthService extends BaseService {
       }),
     );
   }
-
-  verify2FA(code: string, jwtToken?: string) {
-    return this.handleApiResponse(
-      axiosInstance.post("/v1/auth/2fa/verify", {
-        code,
-        jwtToken,
-      }),
-    );
-  }
-
-  enable2FA() {
-    return this.handleApiResponse(axiosInstance.post("/v1/auth/2fa/enable"));
-  }
-
-  disable2FA() {
-    return this.handleApiResponse(axiosInstance.post("/v1/auth/2fa/disable"));
-  }
-
-  get2FAStatus() {
-    return this.handleApiResponse(axiosInstance.get("/v1/auth/2fa/status"));
-  }
-
-  getCurrentUser() {
-    return this.handleApiResponse(axiosInstance.get("/v1/auth/user"));
-  }
 }
 
 export const authService = new AuthService();

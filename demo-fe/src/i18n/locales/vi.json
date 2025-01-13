@@ -181,6 +181,11 @@
       "navigation": {
         "backToUsers": "Quay lại danh sách người dùng"
       },
+      "search": "Search",
+      "filters": {
+        "status": "Status",
+        "role": "Roles"
+      },
       "details": {
         "title": "Thông tin người dùng",
         "description": "Xem và quản lý chi tiết người dùng",

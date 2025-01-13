@@ -24,28 +24,9 @@ export interface JwtPayload {
   iat: number;
 }
 
-export interface UserProfileResponse {
-  id: number;
-  username: string;
-  email: string;
-  accountNonLocked: boolean;
-  accountNonExpired: boolean;
-  credentialsNonExpired: boolean;
-  enabled: boolean;
-  credentialsExpiryDate: string | null;
-  accountExpiryDate: string | null;
-  isTwoFactorEnabled: boolean;
-  roles: string[];
-}
-
 export interface UpdateCredentialsRequest {
   username?: string;
   password?: string;
-}
-
-export interface AccountStatusRequest {
-  userId: number;
-  status: boolean;
 }
 
 export interface LoginRequest {

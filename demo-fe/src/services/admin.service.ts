@@ -1,88 +1,74 @@
 import i18next from "i18next";
 
 import axiosInstance from "@/services/axios.config";
+import { BaseService } from "@/services/base.service";
+import { User } from "@/types/auth";
+import { GetUsersParams, PageResponse, Role, UpdateStatusRequest, UserData } from "@/types/user";
 
-import { BaseService } from "./base.service";
 
 class AdminService extends BaseService {
-  getAllUsers() {
-    return this.handleApiResponse(axiosInstance.get("/v1/admin/users"));
+  getAllUsers(params: GetUsersParams = {}) {
+    return this.handleApiResponse<PageResponse<User>>(
+      axiosInstance.get("/v1/admin/users", {
+        params: {
+          search: params.search,
+          enabled: params.enabled,
+          role: params.role,
+          page: params.page || 0,
+          size: params.size || 10,
+        },
+      })
+    );
   }
 
   getUser(id: number) {
-    return this.handleApiResponse(axiosInstance.get(`/v1/admin/users/${id}`));
+    return this.handleApiResponse<UserData>(
+      axiosInstance.get(`/v1/users/${id}`)
+    );
   }
 
   getAllRoles() {
-    return this.handleApiResponse(axiosInstance.get("/v1/admin/roles"));
+    return this.handleApiResponse<Role[]>(
+      axiosInstance.get("/v1/admin/roles")
+    );
   }
 
   updateUserRole(userId: number, request: { userId: number; roleName: string }) {
-    return this.handleApiResponse(axiosInstance.put(`/v1/admin/users/${userId}/role`, request), {
-      successMessage: i18next.t("admin.users.actions.updateRole.success"),
-      errorMessage: i18next.t("admin.users.actions.updateRole.error"),
-    });
+    return this.handleApiResponse(
+      axiosInstance.put(`/v1/users/${userId}/role`, request),
+      {
+        successMessage: i18next.t("admin.users.actions.updateRole.success"),
+        errorMessage: i18next.t("admin.users.actions.updateRole.error"),
+      }
+    );
   }
 
-  updateAccountLockStatus(userId: number, locked: boolean) {
+  updateStatus(userId: number, request: UpdateStatusRequest) {
     return this.handleApiResponse(
-      axiosInstance.put(`/v1/admin/users/${userId}/status/lock`, null, {
-        params: { locked },
-      }),
+      axiosInstance.put(`/v1/users/${userId}/status`, request),
       {
-        successMessage: i18next.t("admin.users.actions.updateAccount.lockSuccess"),
+        successMessage: i18next.t("admin.users.actions.updateAccount.success"),
         errorMessage: i18next.t("admin.users.actions.updateAccount.error"),
-      },
+      }
     );
   }
 
-  updateAccountEnabledStatus(userId: number, enabled: boolean) {
+  getStats() {
     return this.handleApiResponse(
-      axiosInstance.put(`/v1/admin/users/${userId}/status/enable`, null, {
-        params: { enabled },
-      }),
-      {
-        successMessage: enabled
-          ? i18next.t("admin.users.actions.updateStatus.enable")
-          : i18next.t("admin.users.actions.updateStatus.disable"),
-        errorMessage: i18next.t("admin.users.actions.updateStatus.error"),
-      },
+      axiosInstance.get("/v1/admin/stats")
     );
   }
 
-  updateAccountExpiryStatus(userId: number, expired: boolean) {
+  getAuditLogs(params: {
+    username?: string;
+    action?: string;
+    fromDate?: string;
+    toDate?: string;
+    page?: number;
+    size?: number;
+  } = {}) {
     return this.handleApiResponse(
-      axiosInstance.put(`/v1/admin/users/${userId}/status/expiry`, null, {
-        params: { expired },
-      }),
-      {
-        successMessage: i18next.t("admin.users.actions.updateAccount.expirySuccess"),
-        errorMessage: i18next.t("admin.users.actions.updateAccount.error"),
-      },
-    );
-  }
-
-  updateCredentialsExpiryStatus(userId: number, expired: boolean) {
-    return this.handleApiResponse(
-      axiosInstance.put(`/v1/admin/users/${userId}/credentials/expiry`, null, {
-        params: { expired },
-      }),
-      {
-        successMessage: i18next.t("admin.users.actions.updateAccount.credentialsSuccess"),
-        errorMessage: i18next.t("admin.users.actions.updateAccount.error"),
-      },
-    );
-  }
-
-  updatePassword(userId: number, newPassword: string) {
-    return this.handleApiResponse(
-      axiosInstance.put(`/v1/admin/users/${userId}/password`, {
-        newPassword,
-      }),
-      {
-        successMessage: i18next.t("admin.users.actions.updatePassword.success"),
-        errorMessage: i18next.t("admin.users.actions.updatePassword.error"),
-      },
+      axiosInstance.get("/v1/admin/audit-logs", { params })
     );
   }
 }

@@ -34,13 +34,13 @@ export default function UserDetail() {
       if (!userId) return;
 
       try {
-        const [userResponse, rolesResponse] = await Promise.all([
-          adminService.getUser(parseInt(userId)),
-          adminService.getAllRoles(),
-        ]);
+        // Get user details - Updated endpoint
+        const userResponse = await adminService.getUser(parseInt(userId));
+        // Get roles - This endpoint remains the same
+        const rolesResponse = await adminService.getAllRoles();
 
-        const userData = userResponse.data.data as UserData;
-        const roles = rolesResponse.data.data as Role[];
+        const userData = userResponse.data.data;
+        const roles = rolesResponse.data.data;
 
         setUserData(userData);
         setSelectedRole(userData.role?.roleName || "");
@@ -52,6 +52,7 @@ export default function UserDetail() {
         });
         setRoles(roles);
       } catch (error) {
+        console.log("Error:", error);
         toast({
           title: t("common.error"),
           description: t("admin.users.messages.fetchError"),
@@ -69,13 +70,19 @@ export default function UserDetail() {
     if (!userId) return;
 
     try {
+      // Updated to use new endpoint
       await adminService.updateUserRole(parseInt(userId), {
         userId: parseInt(userId),
         roleName: value,
       });
       setSelectedRole(value);
     } catch (error) {
-      console.error("Error updating role:", error);
+      console.log("Error:", error);
+      toast({
+        title: t("common.error"),
+        description: t("admin.users.actions.updateRole.error"),
+        variant: "destructive",
+      });
     }
   };
 
@@ -84,26 +91,19 @@ export default function UserDetail() {
 
     try {
       const userIdNum = parseInt(userId);
-      switch (key) {
-        case "accountNonLocked":
-          await adminService.updateAccountLockStatus(userIdNum, !value);
-          break;
-        case "accountNonExpired":
-          await adminService.updateAccountExpiryStatus(userIdNum, !value);
-          break;
-        case "enabled":
-          await adminService.updateAccountEnabledStatus(userIdNum, value);
-          break;
-        case "credentialsNonExpired":
-          await adminService.updateCredentialsExpiryStatus(userIdNum, !value);
-          break;
-      }
+      const updateData = {
+        accountLocked: key === "accountNonLocked" ? !value : !accountStates.accountNonLocked,
+        accountExpired: key === "accountNonExpired" ? !value : !accountStates.accountNonExpired,
+        credentialsExpired: key === "credentialsNonExpired" ? !value : !accountStates.credentialsNonExpired,
+        enabled: key === "enabled" ? value : accountStates.enabled,
+      };
 
+      await adminService.updateStatus(userIdNum, updateData);
       setAccountStates((prev) => ({ ...prev, [key]: value }));
     } catch (error) {
       toast({
         title: t("common.error"),
-        description: t("admin.users.messages.updateError"),
+        description: t("admin.users.actions.updateAccount.error"),
         variant: "destructive",
       });
     }
@@ -112,7 +112,7 @@ export default function UserDetail() {
   if (loading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-4 animate-spin" />
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -134,7 +134,7 @@ export default function UserDetail() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t("admin.users.details.username")}</Label>
-                <Input value={userData?.userName || ""} disabled />
+                <Input value={userData?.username || ""} disabled />
               </div>
 
               <div className="space-y-2">
