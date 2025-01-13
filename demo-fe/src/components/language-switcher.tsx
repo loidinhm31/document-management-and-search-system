@@ -18,11 +18,17 @@ const LanguageSwitcher = () => {
     { code: "vi", label: "Tiếng Việt" },
   ];
 
+  // Get current language label
+  const getCurrentLanguageLabel = () => {
+    return languages.find(lang => lang.code === i18n.language)?.label || "English";
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" className="flex items-center gap-2">
           <Globe className="h-4 w-4" />
+          <span>{getCurrentLanguageLabel()}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

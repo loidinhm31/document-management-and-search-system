@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/services/auth.service";
+import LanguageSwitcher from "@/components/language-switcher";
 
 // Schema for form validation
 const forgotPasswordSchema = z.object({
@@ -67,6 +68,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
+
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle>{t("auth.forgotPassword.title")}</CardTitle>
