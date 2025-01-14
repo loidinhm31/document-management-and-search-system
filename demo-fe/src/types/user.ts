@@ -1,5 +1,3 @@
-import { ApiResponse } from "@/types/auth";
-
 export interface GetUsersParams {
   search?: string;
   enabled?: boolean;
@@ -37,15 +35,6 @@ export interface UserData {
   createdDate: string;
   updatedDate: string;
 }
-
-export interface TwoFactorResponse extends ApiResponse<string> {
-  data: string;
-}
-
-export interface TwoFactorStatusResponse extends ApiResponse<boolean> {
-  data: boolean;
-}
-
 
 export interface UpdateStatusRequest {
   accountLocked?: boolean;

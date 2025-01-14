@@ -30,9 +30,6 @@ class ToastService extends BaseService {
       case 404:
         description = i18next.t("api.error.notFound");
         break;
-      case 500:
-        description = i18next.t("api.error.serverError");
-        break;
       default:
         if (error.message === "Network Error") {
           description = i18next.t("api.error.networkError");

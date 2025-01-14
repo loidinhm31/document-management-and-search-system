@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/user.service";
+import { Separator } from "@radix-ui/react-dropdown-menu";
+import PasswordUpdateForm from "@/components/auth/password-update-form";
 
 const formSchema = z.object({
   password: z
@@ -45,13 +47,6 @@ export default function UserProfile() {
     page: true,
     form: false,
     twoFactor: false,
-  });
-
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      password: "",
-    },
   });
 
   // Fetch 2FA status on mount
@@ -163,32 +158,6 @@ export default function UserProfile() {
     }
   };
 
-  // Update user credentials
-  const onSubmit = async (data: FormValues) => {
-    setLoading((prev) => ({ ...prev, form: true }));
-    try {
-      const updateData: any = { username: currentUser?.username };
-      if (data.password) {
-        updateData.password = data.password;
-      }
-
-      await userService.updateCredentials(updateData);
-      form.reset({ ...data, password: "" });
-      toast({
-        title: t("common.success"),
-        description: t("profile.updateProfile.messages.success"),
-      });
-    } catch (error) {
-      toast({
-        title: t("common.error"),
-        description: t("profile.updateProfile.messages.error"),
-        variant: "destructive",
-      });
-    } finally {
-      setLoading((prev) => ({ ...prev, form: false }));
-    }
-  };
-
   if (loading.page) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -215,7 +184,8 @@ export default function UserProfile() {
               <AccordionItem value="credentials">
                 <AccordionTrigger>{t("profile.updateProfile.title")}</AccordionTrigger>
                 <AccordionContent>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="space-y-6">
+                    {/* Basic Profile Form */}
                     <div className="space-y-2">
                       <Label htmlFor="username">{t("profile.updateProfile.fields.username")}</Label>
                       <Input disabled value={currentUser?.username} />
@@ -224,19 +194,18 @@ export default function UserProfile() {
                       <Label htmlFor="email">{t("profile.updateProfile.fields.email")}</Label>
                       <Input disabled value={currentUser?.email} />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">{t("profile.updateProfile.fields.newPassword")}</Label>
-                      <Input
-                        type="password"
-                        {...form.register("password")}
-                        placeholder={t("profile.updateProfile.fields.passwordPlaceholder")}
-                      />
+
+                    {/* Separator */}
+                    <Separator />
+
+                    {/* Password Update Section */}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-lg font-medium">{t("profile.password.title")}</h3>
+                      </div>
+                      <PasswordUpdateForm />
                     </div>
-                    <Button type="submit" disabled={loading.form}>
-                      {loading.form && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {t("profile.updateProfile.actions.update")}
-                    </Button>
-                  </form>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

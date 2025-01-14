@@ -1,10 +1,12 @@
 package com.example.demo2.controllers;
 
-import com.example.demo2.dtos.UserDTO;
+import com.example.demo2.dtos.UserDto;
+import com.example.demo2.dtos.request.UpdatePasswordRequest;
 import com.example.demo2.dtos.request.UpdateProfileRequest;
 import com.example.demo2.dtos.request.UpdateStatusRequest;
 import com.example.demo2.dtos.request.UpdateUserRequest;
 import com.example.demo2.dtos.response.ApiResponse;
+import com.example.demo2.exceptions.InvalidRequestException;
 import com.example.demo2.security.response.UserInfoResponse;
 import com.example.demo2.services.UserService;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
@@ -26,7 +28,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<UserDTO>> getUser(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<UserDto>> getUser(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getUserById(id)));
     }
 
@@ -56,6 +58,16 @@ public class UserController {
         boolean isAdmin = currentUser.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         userService.updateStatus(id, request, isAdmin);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @PutMapping("/{id}/password")
+    @PreAuthorize("@userSecurity.isCurrentUser(#id)")
+    public ResponseEntity<ApiResponse<Void>> updatePassword(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdatePasswordRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) throws InvalidRequestException {
+        userService.updatePassword(id, request, userDetails);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 

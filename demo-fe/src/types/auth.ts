@@ -47,6 +47,11 @@ export interface LoginResponse {
   roles: string[];
 }
 
+export interface UpdatePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;

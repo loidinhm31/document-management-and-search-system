@@ -1,8 +1,9 @@
 package com.example.demo2.services;
 
-import com.example.demo2.dtos.UserDTO;
+import com.example.demo2.dtos.UserDto;
 import com.example.demo2.dtos.request.*;
 import com.example.demo2.entities.User;
+import com.example.demo2.exceptions.InvalidRequestException;
 import com.example.demo2.security.response.LoginResponse;
 import com.example.demo2.security.response.UserInfoResponse;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
@@ -20,12 +21,12 @@ public interface UserService {
     // Password operations
     void generatePasswordResetToken(String email);
     void resetPassword(String token, String newPassword);
-    void updatePassword(UUID userId, String newPassword);
+    void updatePassword(UUID userId, UpdatePasswordRequest request, UserDetails currentUser) throws InvalidRequestException;
 
     // User management operations
     List<User> getAllUsers();
-    UserDTO getUserById(UUID id);
-    UserDTO getUserByUsername(String username);
+    UserDto getUserById(UUID id);
+    UserDto getUserByUsername(String username);
     void updateUserRole(UUID userId, String roleName);
 
     // 2FA operations

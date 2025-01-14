@@ -115,8 +115,27 @@
       "label": "Last login"
     },
     "password": {
-      "resetSuccess": "Password has been reset successfully",
-      "resetError": "Failed to reset password"
+      "title": "Update Password",
+      "fields": {
+        "current": "Current Password",
+        "new": "New Password",
+        "confirm": "Confirm New Password"
+      },
+      "placeholders": {
+        "current": "Enter your current password",
+        "new": "Enter your new password",
+        "confirm": "Confirm your new password"
+      },
+      "actions": {
+        "update": "Update Password"
+      },
+      "errors": {
+        "incorrectCurrent": "Current password is incorrect",
+        "passwordMismatch": "Passwords do not match",
+        "invalidPassword": "Password must be at least 6 characters and contain uppercase, lowercase, number, and special character"
+      },
+      "updateSuccess": "Password updated successfully",
+      "updateError": "Failed to update password"
     },
     "twoFactor": {
       "title": "Two-Factor Authentication",
@@ -142,19 +161,12 @@
       }
     },
     "updateProfile": {
-      "title": "Update Profile",
+      "title": "Your information",
       "fields": {
         "username": "Username",
         "email": "Email",
         "newPassword": "New Password",
         "passwordPlaceholder": "Enter new password"
-      },
-      "actions": {
-        "update": "Update Profile"
-      },
-      "messages": {
-        "success": "Profile updated successfully",
-        "error": "Failed to update profile"
       }
     }
   },

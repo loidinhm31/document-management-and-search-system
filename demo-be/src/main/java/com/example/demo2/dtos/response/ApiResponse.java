@@ -35,10 +35,10 @@ public class ApiResponse<T> {
                 .build();
     }
 
-    public static <T> ApiResponse<T> error(HttpStatus status, String message, String details) {
+    public static <T> ApiResponse<T> error(HttpStatus status, String message, String messageType) {
         return ApiResponse.<T>builder()
                 .success(false)
-                .error(new ErrorResponse(status.value(), message, details))
+                .error(new ErrorResponse(status.value(), message, messageType))
                 .build();
     }
 }

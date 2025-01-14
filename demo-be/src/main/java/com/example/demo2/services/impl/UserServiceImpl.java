@@ -1,8 +1,11 @@
 package com.example.demo2.services.impl;
 
-import com.example.demo2.dtos.UserDTO;
+import com.example.demo2.constants.AuditActions;
+import com.example.demo2.constants.AuditStatus;
+import com.example.demo2.dtos.UserDto;
 import com.example.demo2.dtos.request.*;
 import com.example.demo2.enums.AppRole;
+import com.example.demo2.exceptions.InvalidRequestException;
 import com.example.demo2.exceptions.ResourceNotFoundException;
 import com.example.demo2.mappers.UserMapper;
 import com.example.demo2.entities.PasswordResetToken;
@@ -15,10 +18,10 @@ import com.example.demo2.security.jwt.JwtUtils;
 import com.example.demo2.security.response.LoginResponse;
 import com.example.demo2.security.response.UserInfoResponse;
 import com.example.demo2.security.services.CustomUserDetails;
+import com.example.demo2.services.AdminService;
 import com.example.demo2.services.TotpService;
 import com.example.demo2.services.UserService;
 import com.example.demo2.utils.SecurityUtils;
-import com.example.demo2.utils.UserSecurity;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,6 +59,7 @@ public class UserServiceImpl implements UserService {
     private final JwtUtils jwtUtils;
     private final EmailService emailService;
     private final TotpService totpService;
+    private final AdminService adminService;
     private final UserMapper userMapper;
 
     @Override
@@ -171,14 +175,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDTO getUserById(UUID id) {
+    public UserDto getUserById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
         return userMapper.convertToDto(user);
     }
 
     @Override
-    public UserDTO getUserByUsername(String username) {
+    public UserDto getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
         return userMapper.convertToDto(user);
@@ -199,13 +203,37 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updatePassword(UUID userId, String newPassword) {
+    public void updatePassword(UUID userId, UpdatePasswordRequest request, UserDetails currentUser) throws InvalidRequestException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        user.setPassword(passwordEncoder.encode(newPassword));
+        // Verify current password
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new InvalidRequestException("INCORRECT_PASSWORD");
+        }
+
+        // Check if new password is same as old password
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new InvalidRequestException("DIFFERENT_PASSWORD");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setUpdatedBy(SecurityUtils.getUserIdentifier());
+        user.setCredentialsExpiryDate(LocalDate.now().plusMonths(6)); // Reset credentials expiry
+
+        // Optionally invalidate any existing password reset tokens
+        passwordResetTokenRepository.findAll().stream()
+                .filter(token -> token.getUser().equals(user) && !token.isUsed())
+                .forEach(token -> {
+                    token.setUsed(true);
+                    passwordResetTokenRepository.save(token);
+                });
+
         userRepository.save(user);
+
+        // Create audit log
+        adminService.createAuditLog(user.getUsername(), AuditActions.PASSWORD_CHANGE, "Password changed successfully", null, AuditStatus.SUCCESS);
     }
 
     // 2FA operations

@@ -1,7 +1,7 @@
 import i18next from "i18next";
 
 import axiosInstance from "@/services/axios.config";
-import { UpdateCredentialsRequest } from "@/types/auth";
+import { UpdateCredentialsRequest, UpdatePasswordRequest } from "@/types/auth";
 
 import { BaseService } from "./base.service";
 
@@ -23,6 +23,12 @@ class UserService extends BaseService {
         successMessage: i18next.t("profile.password.resetSuccess"),
         errorMessage: i18next.t("profile.password.resetError"),
       },
+    );
+  }
+
+  updatePassword(userId: string, data: UpdatePasswordRequest) {
+    return this.handleApiResponse(
+      axiosInstance.put(`/v1/users/${userId}/password`, data)
     );
   }
 

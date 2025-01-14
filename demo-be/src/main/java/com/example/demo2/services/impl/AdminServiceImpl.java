@@ -1,6 +1,6 @@
 package com.example.demo2.services.impl;
 
-import com.example.demo2.dtos.UserDTO;
+import com.example.demo2.dtos.UserDto;
 import com.example.demo2.dtos.response.*;
 import com.example.demo2.enums.AppRole;
 import com.example.demo2.mappers.AuditLogMapper;
@@ -36,7 +36,7 @@ public class AdminServiceImpl implements AdminService {
     private final AuditLogRepository auditLogRepository;
 
     @Override
-    public Page<UserDTO> getAllUsers(String search, Boolean enabled, String role, Pageable pageable) {
+    public Page<UserDto> getAllUsers(String search, Boolean enabled, String role, Pageable pageable) {
         Specification<User> spec = Specification.where(null);
 
         if (search != null && !search.trim().isEmpty()) {
@@ -127,6 +127,7 @@ public class AdminServiceImpl implements AdminService {
         return auditLogRepository.findAll(spec, pageable).map(auditLogMapper::convertToAuditLogEntry);
     }
 
+    @Override
     public void createAuditLog(String username, String action, String details, String ipAddress, String status) {
         AuditLog auditLog = new AuditLog();
         auditLog.setUsername(username);

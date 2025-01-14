@@ -1,6 +1,6 @@
 package com.example.demo2.controllers;
 
-import com.example.demo2.dtos.UserDTO;
+import com.example.demo2.dtos.UserDto;
 import com.example.demo2.dtos.response.AdminStats;
 import com.example.demo2.dtos.response.ApiResponse;
 import com.example.demo2.dtos.response.AuditLogEntry;
@@ -26,7 +26,7 @@ public class AdminController {
     private final UserService userService;
 
     @GetMapping("/users")
-    public ResponseEntity<ApiResponse<Page<UserDTO>>> getAllUsers(
+    public ResponseEntity<ApiResponse<Page<UserDto>>> getAllUsers(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean enabled,
             @RequestParam(required = false) String role,

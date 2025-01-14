@@ -1,13 +1,13 @@
 package com.example.demo2.mappers;
 
-import com.example.demo2.dtos.UserDTO;
+import com.example.demo2.dtos.UserDto;
 import com.example.demo2.entities.User;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UserMapper {
-    public UserDTO convertToDto(User user) {
-        return new UserDTO(
+    public UserDto convertToDto(User user) {
+        return new UserDto(
                 user.getUserId(),
                 user.getUsername(),
                 user.getEmail(),
