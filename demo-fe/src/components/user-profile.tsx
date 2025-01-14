@@ -58,7 +58,6 @@ export default function UserProfile() {
   useEffect(() => {
     const fetch2FAStatus = async () => {
       try {
-        console.log("currej", currentUser);
         const response = await userService.get2FAStatus(currentUser?.userId);
         if (response.data && typeof response.data.data === "boolean") {
           setIs2faEnabled(response.data.data);
@@ -219,11 +218,11 @@ export default function UserProfile() {
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="username">{t("profile.updateProfile.fields.username")}</Label>
-                      <Input value={currentUser?.email} />
+                      <Input disabled value={currentUser?.username} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="email">{t("profile.updateProfile.fields.email")}</Label>
-                      <Input  disabled />
+                      <Input disabled value={currentUser?.email} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="password">{t("profile.updateProfile.fields.newPassword")}</Label>

@@ -2,6 +2,7 @@ package com.example.demo2.services.impl;
 
 import com.example.demo2.dtos.UserDTO;
 import com.example.demo2.dtos.response.*;
+import com.example.demo2.enums.AppRole;
 import com.example.demo2.mappers.AuditLogMapper;
 import com.example.demo2.mappers.UserMapper;
 import com.example.demo2.entities.AuditLog;
@@ -51,7 +52,7 @@ public class AdminServiceImpl implements AdminService {
 
         if (role != null && !role.trim().isEmpty()) {
             spec = spec.and((root, query, cb) ->
-                    cb.equal(root.join("role").get("roleName"), role)
+                    cb.equal(root.join("role").get("roleName"), AppRole.valueOf(role))
             );
         }
 

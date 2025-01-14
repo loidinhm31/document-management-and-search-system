@@ -30,7 +30,7 @@ public class AdminController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean enabled,
             @RequestParam(required = false) String role,
-            @PageableDefault(size = 10) Pageable pageable) {
+            @PageableDefault Pageable pageable) {
         return ResponseEntity.ok(
                 ApiResponse.success(adminService.getAllUsers(search, enabled, role, pageable))
         );
