@@ -1,14 +1,22 @@
 import { jwtDecode } from "jwt-decode";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { TwoFactorForm } from "@/components/auth/two-factor-form";
 import { useAuth } from "@/context/auth-context";
+import { useToast } from "@/hooks/use-toast";
 import { JwtPayload } from "@/types/auth";
 
-const OAuth2RedirectHandler = () => {
+export default function OAuth2RedirectHandler() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { setToken, setIsAdmin } = useAuth();
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
+  const [tempToken, setTempToken] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -17,36 +25,57 @@ const OAuth2RedirectHandler = () => {
     if (token) {
       try {
         const decodedToken = jwtDecode<JwtPayload>(token);
-        console.log("Decoded Token:", decodedToken);
-
-        localStorage.setItem("JWT_TOKEN", token);
-
-        const user = {
-          username: decodedToken.sub,
-          roles: decodedToken.roles.split(","),
-        };
-        localStorage.setItem("USER", JSON.stringify(user));
-
-        // Update context state
-        setToken(token);
-        setIsAdmin(user.roles.includes("ADMIN"));
-
-        // Delay navigation to ensure local storage operations complete
-        setTimeout(() => {
-          console.log("Navigating to /");
-          navigate("/");
-        }, 100); // 100ms delay
+        if (decodedToken.is2faEnabled) {
+          setRequires2FA(true);
+          setUsername(decodedToken.sub);
+          setTempToken(token);
+        } else {
+          handleSuccessfulLogin(token, decodedToken);
+        }
       } catch (error) {
         console.error("Token decoding failed:", error);
         navigate("/login");
       }
     } else {
-      console.log("Token not found in URL, redirecting to login");
       navigate("/login");
     }
-  }, [location, navigate, setToken, setIsAdmin]);
+  }, [location, navigate]);
 
-  return <div>Redirecting...</div>;
-};
+  const handleSuccessfulLogin = (token: string, decodedToken: JwtPayload) => {
+    const user = {
+      username: decodedToken.sub,
+      roles: decodedToken.roles.split(","),
+    };
 
-export default OAuth2RedirectHandler;
+    localStorage.setItem("JWT_TOKEN", token);
+    localStorage.setItem("USER", JSON.stringify(user));
+
+    setToken(token);
+    setIsAdmin(user.roles.includes("ROLE_ADMIN"));
+
+    toast({
+      title: t("common.success"),
+      description: t("auth.login.success"),
+      variant: "success",
+    });
+
+    navigate("/");
+  };
+
+  const handle2FASuccess = () => {
+    if (tempToken) {
+      const decodedToken = jwtDecode<JwtPayload>(tempToken);
+      handleSuccessfulLogin(tempToken, decodedToken);
+    }
+  };
+
+  if (!requires2FA || !username) {
+    return <div>Redirecting...</div>;
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <TwoFactorForm username={username} onSuccess={handle2FASuccess} />
+    </div>
+  );
+}

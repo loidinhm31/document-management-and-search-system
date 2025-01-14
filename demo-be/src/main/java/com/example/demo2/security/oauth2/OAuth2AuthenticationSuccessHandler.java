@@ -170,7 +170,7 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
                 user.getUsername(),
                 email,
                 null,
-                false,
+                user.isTwoFactorEnabled(),
                 authorities
         );
         return jwtUtils.generateTokenFromUsername(userDetails);
