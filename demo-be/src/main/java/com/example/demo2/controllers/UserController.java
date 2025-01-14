@@ -7,6 +7,7 @@ import com.example.demo2.dtos.request.UpdateStatusRequest;
 import com.example.demo2.dtos.request.UpdateUserRequest;
 import com.example.demo2.dtos.response.ApiResponse;
 import com.example.demo2.exceptions.InvalidRequestException;
+import com.example.demo2.security.request.Verify2FARequest;
 import com.example.demo2.security.response.UserInfoResponse;
 import com.example.demo2.services.UserService;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
@@ -91,8 +92,8 @@ public class UserController {
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
     public ResponseEntity<ApiResponse<Void>> verify2FA(
             @PathVariable UUID id,
-            @RequestParam String code) {
-        userService.verify2FACode(id, code);
+            @RequestBody Verify2FARequest verify2FARequest) {
+        userService.verify2FACode(id, verify2FARequest);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 

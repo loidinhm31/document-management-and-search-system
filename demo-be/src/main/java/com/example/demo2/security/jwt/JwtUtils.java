@@ -1,5 +1,6 @@
 package com.example.demo2.security.jwt;
 
+import com.example.demo2.security.services.CustomUserDetails;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
@@ -38,7 +39,7 @@ public class JwtUtils {
         return null;
     }
 
-    public String generateTokenFromUsername(UserDetails userDetails) {
+    public String generateTokenFromUsername(CustomUserDetails userDetails) {
         String username = userDetails.getUsername();
         String roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -46,6 +47,7 @@ public class JwtUtils {
         return Jwts.builder()
                 .subject(username)
                 .claim("roles", roles)
+                .claim("is2faEnabled", userDetails.is2faEnabled())
                 .issuedAt(new Date())
                 .expiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(key())

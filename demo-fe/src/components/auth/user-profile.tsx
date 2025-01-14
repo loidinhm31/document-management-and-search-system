@@ -88,7 +88,7 @@ export default function UserProfile() {
   const enable2FA = async () => {
     setLoading((prev) => ({ ...prev, twoFactor: true }));
     try {
-      const response = await userService.enable2FA();
+      const response = await userService.enable2FA(currentUser?.userId);
       const qrCode = response.data.data;
       if (typeof qrCode === "string") {
         setQrCodeUrl(qrCode);
@@ -109,7 +109,7 @@ export default function UserProfile() {
   const disable2FA = async () => {
     setLoading((prev) => ({ ...prev, twoFactor: true }));
     try {
-      await userService.disable2FA();
+      await userService.disable2FA(currentUser?.userId);
       setIs2faEnabled(false);
       setQrCodeUrl("");
       toast({
@@ -140,12 +140,13 @@ export default function UserProfile() {
 
     setLoading((prev) => ({ ...prev, twoFactor: true }));
     try {
-      await userService.verify2FA(verificationCode);
+      await userService.verify2FA(currentUser?.userId, verificationCode);
       setIs2faEnabled(true);
       setStep(1);
       toast({
         title: t("common.success"),
         description: t("profile.twoFactor.messages.enableSuccess"),
+        variant: "success",
       });
     } catch (error) {
       toast({

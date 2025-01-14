@@ -36,21 +36,21 @@ class UserService extends BaseService {
     return this.handleApiResponse(axiosInstance.get("/v1/users/me"));
   }
 
-  enable2FA() {
-    return this.handleApiResponse(axiosInstance.post("/v1/users/2fa/enable"), {
+  enable2FA(userId: string) {
+    return this.handleApiResponse(axiosInstance.post(`/v1/users/${userId}/2fa/enable`), {
       errorMessage: i18next.t("profile.twoFactor.messages.enableError"),
     });
   }
 
-  verify2FA(code: string) {
-    return this.handleApiResponse(axiosInstance.post("/v1/users/2fa/verify", { code }), {
+  verify2FA(userId: string, code: string) {
+    return this.handleApiResponse(axiosInstance.post(`/v1/users/${userId}/2fa/verify`, { code }), {
       successMessage: i18next.t("profile.twoFactor.messages.enableSuccess"),
       errorMessage: i18next.t("profile.twoFactor.messages.verifyError"),
     });
   }
 
-  disable2FA() {
-    return this.handleApiResponse(axiosInstance.post("/v1/users/2fa/disable"), {
+  disable2FA(userId: string) {
+    return this.handleApiResponse(axiosInstance.post(`/v1/users/${userId}/2fa/disable`), {
       successMessage: i18next.t("profile.twoFactor.messages.disableSuccess"),
       errorMessage: i18next.t("profile.twoFactor.messages.disableError"),
     });

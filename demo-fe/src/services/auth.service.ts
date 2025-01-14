@@ -27,6 +27,15 @@ class AuthService extends BaseService {
       }),
     );
   }
+
+  verify2FA(username: string, code: string) {
+    return this.handleApiResponse(
+      axiosInstance.post("/v1/auth/2fa/verify", {
+        username,
+        code,
+      }),
+    );
+  }
 }
 
 export const authService = new AuthService();

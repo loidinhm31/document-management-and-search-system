@@ -15,6 +15,7 @@ import com.example.demo2.repositories.PasswordResetTokenRepository;
 import com.example.demo2.repositories.RoleRepository;
 import com.example.demo2.repositories.UserRepository;
 import com.example.demo2.security.jwt.JwtUtils;
+import com.example.demo2.security.request.Verify2FARequest;
 import com.example.demo2.security.response.LoginResponse;
 import com.example.demo2.security.response.UserInfoResponse;
 import com.example.demo2.security.services.CustomUserDetails;
@@ -27,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -41,6 +41,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -168,23 +169,10 @@ public class UserServiceImpl implements UserService {
         passwordResetTokenRepository.save(resetToken);
     }
 
-    // User management operations
-    @Override
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
-
     @Override
     public UserDto getUserById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
-        return userMapper.convertToDto(user);
-    }
-
-    @Override
-    public UserDto getUserByUsername(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", username));
         return userMapper.convertToDto(user);
     }
 
@@ -249,10 +237,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void verify2FACode(UUID userId, String code) {
+    public void verify2FACode(UUID userId, Verify2FARequest verify2FARequest) {
+        if (Objects.isNull(verify2FARequest.getCode())) {
+            throw new IllegalArgumentException("Invalid code");
+        }
+
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        boolean isValid = totpService.verifyCode(user.getTwoFactorSecret(), Integer.parseInt(code));
+        boolean isValid = totpService.verifyCode(user.getTwoFactorSecret(), Integer.parseInt(verify2FARequest.getCode()));
         if (!isValid) {
             throw new IllegalArgumentException("Invalid 2FA code");
         }
@@ -262,18 +254,26 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean validate2FACode(UUID userId, int code) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        return totpService.verifyCode(user.getTwoFactorSecret(), code);
+    public boolean validate2FACode(Verify2FARequest verify2FARequest) {
+        if (Objects.isNull(verify2FARequest.getCode())) {
+            throw new IllegalArgumentException("Invalid code");
+        }
+
+        if (Objects.isNull(verify2FARequest.getUsername())) {
+            throw new IllegalArgumentException("Invalid username");
+        }
+
+        User user = userRepository.findByUsername(verify2FARequest.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", verify2FARequest.getUsername()));
+        return totpService.verifyCode(user.getTwoFactorSecret(), Integer.parseInt(verify2FARequest.getCode()));
     }
 
     @Override
-    public void enable2FA(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+    public void enable2FA(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "name", username));
         user.setTwoFactorEnabled(true);
-        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
+        user.setUpdatedBy(username);
         userRepository.save(user);
     }
 
@@ -320,30 +320,6 @@ public class UserServiceImpl implements UserService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setUpdatedBy(SecurityUtils.getUserIdentifier());
-        userRepository.save(user);
-    }
-
-    @Override
-    public void updateSecurity(UUID userId, UpdateSecurityRequest request, UserDetails currentUser) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        ;
-        boolean isAdmin = currentUser.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-
-        // If not admin, verify current password
-        if (!isAdmin && request.getCurrentPassword() != null) {
-            if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-                throw new BadCredentialsException("Current password is incorrect");
-            }
-        }
-
-        if (request.getNewPassword() != null) {
-            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        }
-
-        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
-
         userRepository.save(user);
     }
 

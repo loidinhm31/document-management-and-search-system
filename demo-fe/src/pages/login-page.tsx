@@ -18,8 +18,7 @@ import { useAuth } from "@/context/auth-context";
 import { APP_API_URL } from "@/env";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/services/auth.service";
-import { userService } from "@/services/user.service";
-import { LoginRequest, LoginResponse } from "@/types/auth";
+import { JwtPayload, LoginRequest, LoginResponse } from "@/types/auth";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -49,6 +48,7 @@ const LoginPage = () => {
 
   const [step, setStep] = useState(1);
   const [jwtToken, setJwtToken] = useState("");
+  const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Initialize login form
@@ -98,7 +98,8 @@ const LoginPage = () => {
       const responseData = response.data.data as LoginResponse;
 
       if (responseData.jwtToken) {
-        const decodedToken = jwtDecode<any>(responseData.jwtToken);
+        setUsername(responseData.username);
+        const decodedToken = jwtDecode<JwtPayload>(responseData.jwtToken);
         if (decodedToken.is2faEnabled) {
           setJwtToken(responseData.jwtToken);
           setStep(2);
@@ -120,7 +121,7 @@ const LoginPage = () => {
   const onTwoFactorSubmit = async (data: TwoFactorFormValues) => {
     setIsLoading(true);
     try {
-      await userService.verify2FA(data.code);
+      await authService.verify2FA(username, data.code);
       const decodedToken = jwtDecode<any>(jwtToken);
       handleSuccessfulLogin(jwtToken, decodedToken);
     } catch (_error) {

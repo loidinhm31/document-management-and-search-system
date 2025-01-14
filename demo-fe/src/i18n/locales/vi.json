@@ -23,7 +23,8 @@
       "description": "Login with your email or Google account",
       "2fa": {
         "title": "Two-Factor Authentication",
-        "description": "Enter the verification code to continue"
+        "description": "Enter the verification code to continue",
+        "error": "Invalid 2FA code. Please try again"
       },
       "form": {
         "username": {
