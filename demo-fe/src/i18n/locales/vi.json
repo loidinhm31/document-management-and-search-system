@@ -17,6 +17,16 @@
       "roles": "Vai trò"
     }
   },
+  "pages": {
+    "home": "Home",
+    "profile": "Profile",
+    "admin": {
+      "title": "Admin",
+      "users": "Quản lý người dùng",
+      "userDetail": "User Details",
+      "roles": "Role Management"
+    }
+  },
   "auth": {
     "login": {
       "title": "Welcome back",

@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import OAuth2RedirectHandler from "@/components/auth/oauth2-redirect-handler";
 import ProtectedRoute from "@/components/auth/protected-route";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +21,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "./components/ui/breadcrumb";
-import OAuth2RedirectHandler from "@/components/auth/oauth2-redirect-handler";
+import { DynamicBreadcrumb } from "@/components/dynamic-breadcrumb";
 
 const LoadingFallback = () => (
   <div className="flex h-screen w-full items-center justify-center">
@@ -41,17 +42,7 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => (
         <div className="flex items-center gap-2 px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="#">Building Your Application</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+          <DynamicBreadcrumb />
         </div>
       </header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">

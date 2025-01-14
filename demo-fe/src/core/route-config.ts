@@ -13,7 +13,7 @@ export interface Route {
   pageTitle: string;
   component: React.LazyExoticComponent<React.FC>;
   isSecure: boolean;
-  permission: string[];
+  permission?: string[];
   subPages?: Route[];
   adminRequired?: boolean;
 }
@@ -34,63 +34,53 @@ export const RoutePaths = {
 
 export const routes: Route[] = [
   {
-    path: RoutePaths.HOME,
-    pageTitle: "Home",
-    component: Home,
-    isSecure: true,
-    permission: [],
-    subPages: [],
-  },
-  {
     path: RoutePaths.LOGIN,
     pageTitle: "Login",
     component: Login,
     isSecure: false,
-    permission: [],
-    subPages: [],
   },
   {
     path: RoutePaths.REGISTER,
     pageTitle: "Sign Up",
     component: Register,
     isSecure: false,
-    permission: [],
-    subPages: [],
   },
   {
     path: RoutePaths.FORGOT_PASSWORD,
     pageTitle: "Forgot Password",
     component: ForgotPassword,
     isSecure: false,
+  },
+  {
+    path: RoutePaths.HOME,
+    pageTitle: "pages.home",
+    component: Home,
+    isSecure: true,
     permission: [],
-    subPages: [],
   },
   {
     path: RoutePaths.PROFILE,
-    pageTitle: "Profile",
+    pageTitle: "pages.profile",
     component: Profile,
     isSecure: true,
     permission: [],
-    subPages: [],
   },
   // Admin Routes
   {
     path: RoutePaths.ADMIN.USERS,
-    pageTitle: "User Management",
+    pageTitle: "pages.admin.users",
     component: UserList,
     isSecure: true,
     adminRequired: true,
     permission: [],
-    subPages: [],
   },
   {
     path: RoutePaths.ADMIN.USER_DETAILS,
-    pageTitle: "User Details",
+    pageTitle: "pages.admin.userDetail",
     component: UserDetails,
     isSecure: true,
     adminRequired: true,
     permission: [],
-    subPages: [],
   },
 ];
 
