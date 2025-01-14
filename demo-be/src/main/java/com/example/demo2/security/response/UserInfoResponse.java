@@ -5,11 +5,12 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Setter
 @Getter
 public class UserInfoResponse {
-    private Long userId;
+    private UUID userId;
     private String username;
     private String email;
     private boolean accountNonLocked;
@@ -21,7 +22,7 @@ public class UserInfoResponse {
     private boolean isTwoFactorEnabled;
     private List<String> roles;
 
-    public UserInfoResponse(Long userId, String username, String email, boolean accountNonLocked, boolean accountNonExpired,
+    public UserInfoResponse(UUID userId, String username, String email, boolean accountNonLocked, boolean accountNonExpired,
                             boolean credentialsNonExpired, boolean enabled, LocalDate credentialsExpiryDate,
                             LocalDate accountExpiryDate, boolean isTwoFactorEnabled, List<String> roles) {
         this.userId = userId;

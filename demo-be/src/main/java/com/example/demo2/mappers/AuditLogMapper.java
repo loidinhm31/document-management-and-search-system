@@ -1,7 +1,7 @@
 package com.example.demo2.mappers;
 
 import com.example.demo2.dtos.response.AuditLogEntry;
-import com.example.demo2.models.AuditLog;
+import com.example.demo2.entities.AuditLog;
 import org.springframework.stereotype.Component;
 
 @Component

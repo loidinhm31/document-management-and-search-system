@@ -1,6 +1,6 @@
 package com.example.demo2.dtos.response;
 
-import com.example.demo2.models.interfaces.LoginAttemptStats;
+import com.example.demo2.entities.interfaces.LoginAttemptStats;
 import lombok.Data;
 
 import java.util.List;

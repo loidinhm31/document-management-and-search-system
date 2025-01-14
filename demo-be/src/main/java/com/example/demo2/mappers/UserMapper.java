@@ -1,7 +1,7 @@
 package com.example.demo2.mappers;
 
 import com.example.demo2.dtos.UserDTO;
-import com.example.demo2.models.User;
+import com.example.demo2.entities.User;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,8 +21,8 @@ public class UserMapper {
                 user.isTwoFactorEnabled(),
                 user.getSignUpMethod(),
                 user.getRole(),
-                user.getCreatedDate(),
-                user.getUpdatedDate()
+                user.getCreatedAt(),
+                user.getUpdatedAt()
         );
     }
 

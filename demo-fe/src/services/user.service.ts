@@ -50,7 +50,7 @@ class UserService extends BaseService {
     });
   }
 
-  get2FAStatus(userId: number) {
+  get2FAStatus(userId: string) {
     return this.handleApiResponse(axiosInstance.get(`/v1/users/${userId}/2fa/status`), {
       errorMessage: i18next.t("profile.twoFactor.messages.statusError"),
     });

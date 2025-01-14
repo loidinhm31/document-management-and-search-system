@@ -6,15 +6,16 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import * as z from "zod";
 
+import LanguageSwitcher from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
-import { useAuthService } from "@/hooks/use-auth-service";
 import { useToast } from "@/hooks/use-toast";
 import { SignupRequest } from "@/types/auth";
-import LanguageSwitcher from "@/components/language-switcher";
+import { adminService } from "@/services/admin.service";
+import { authService } from "@/services/auth.service";
 
 const signupSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -35,7 +36,6 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
   const { toast } = useToast();
-  const { register } = useAuthService();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<SignupFormValues>({
@@ -62,7 +62,7 @@ export default function RegisterPage() {
         password: data.password,
         role: ["ROLE_USER"],
       };
-      await register(signupData);
+      await authService.register(signupData);
 
       toast({
         title: t("common.success"),

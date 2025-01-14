@@ -3,7 +3,7 @@ package com.example.demo2.services;
 import com.example.demo2.dtos.UserDTO;
 import com.example.demo2.dtos.response.AdminStats;
 import com.example.demo2.dtos.response.AuditLogEntry;
-import com.example.demo2.models.Role;
+import com.example.demo2.entities.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

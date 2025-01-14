@@ -1,19 +1,20 @@
 package com.example.demo2.dtos;
 
-import com.example.demo2.models.Role;
+import com.example.demo2.entities.Role;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.UUID;
 
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserDTO {
-    private Long userId;
+    private UUID userId;
     private String username;
     private String email;
     private boolean accountNonLocked;
@@ -26,6 +27,6 @@ public class UserDTO {
     private boolean isTwoFactorEnabled;
     private String signUpMethod;
     private Role role;
-    private LocalDateTime createdDate;
-    private LocalDateTime updatedDate;
+    private Date createdDate;
+    private Date updatedDate;
 }

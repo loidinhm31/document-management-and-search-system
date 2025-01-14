@@ -1,11 +1,13 @@
-package com.example.demo2.models;
+package com.example.demo2.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "audit_logs")
@@ -13,8 +15,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class AuditLog {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
     @Column(nullable = false)
     private String username;
@@ -36,7 +40,7 @@ public class AuditLog {
     private String userAgent;
 
     @Column(name = "status")
-    private String status; // SUCCESS, FAILURE
+    private String status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

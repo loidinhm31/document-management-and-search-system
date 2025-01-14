@@ -5,20 +5,23 @@ import com.example.demo2.dtos.request.*;
 import com.example.demo2.enums.AppRole;
 import com.example.demo2.exceptions.ResourceNotFoundException;
 import com.example.demo2.mappers.UserMapper;
-import com.example.demo2.models.PasswordResetToken;
-import com.example.demo2.models.Role;
-import com.example.demo2.models.User;
+import com.example.demo2.entities.PasswordResetToken;
+import com.example.demo2.entities.Role;
+import com.example.demo2.entities.User;
 import com.example.demo2.repositories.PasswordResetTokenRepository;
 import com.example.demo2.repositories.RoleRepository;
 import com.example.demo2.repositories.UserRepository;
 import com.example.demo2.security.jwt.JwtUtils;
 import com.example.demo2.security.response.LoginResponse;
 import com.example.demo2.security.response.UserInfoResponse;
-import com.example.demo2.security.services.UserDetailsImpl;
+import com.example.demo2.security.services.CustomUserDetails;
 import com.example.demo2.services.TotpService;
 import com.example.demo2.services.UserService;
+import com.example.demo2.utils.SecurityUtils;
+import com.example.demo2.utils.UserSecurity;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -42,6 +45,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class UserServiceImpl implements UserService {
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -59,7 +65,7 @@ public class UserServiceImpl implements UserService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         String jwtToken = jwtUtils.generateTokenFromUsername(userDetails);
 
         List<String> roles = userDetails.getAuthorities().stream()
@@ -95,6 +101,8 @@ public class UserServiceImpl implements UserService {
         user.setAccountExpiryDate(LocalDate.now().plusYears(1));
         user.setTwoFactorEnabled(false);
         user.setSignUpMethod("email");
+        user.setCreatedBy(request.getUsername());
+        user.setUpdatedBy(request.getUsername());
 
         userRepository.save(user);
     }
@@ -132,9 +140,10 @@ public class UserServiceImpl implements UserService {
         Instant expiryDate = Instant.now().plus(24, ChronoUnit.HOURS);
 
         PasswordResetToken resetToken = new PasswordResetToken(token, expiryDate, user);
+        resetToken.setUpdatedBy(SecurityUtils.getUserIdentifier());
         passwordResetTokenRepository.save(resetToken);
 
-        String resetUrl = "http://yourfrontend.com/reset-password?token=" + token;
+        String resetUrl = String.format("%s/reset-password?token=%s", frontendUrl, token);
         emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
     }
 
@@ -162,7 +171,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDTO getUserById(Long id) {
+    public UserDTO getUserById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", id));
         return userMapper.convertToDto(user);
@@ -176,7 +185,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updateUserRole(Long userId, String roleName) {
+    public void updateUserRole(UUID userId, String roleName) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
@@ -185,31 +194,34 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("Role", "name", roleName));
 
         user.setRole(role);
+        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
         userRepository.save(user);
     }
 
     @Override
-    public void updatePassword(Long userId, String newPassword) {
+    public void updatePassword(UUID userId, String newPassword) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
         userRepository.save(user);
     }
 
     // 2FA operations
     @Override
-    public GoogleAuthenticatorKey generate2FASecret(Long userId) {
+    public GoogleAuthenticatorKey generate2FASecret(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         GoogleAuthenticatorKey key = totpService.generateSecret();
         user.setTwoFactorSecret(key.getKey());
+        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
         userRepository.save(user);
         return key;
     }
 
     @Override
-    public void verify2FACode(Long userId, String code) {
+    public void verify2FACode(UUID userId, String code) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         boolean isValid = totpService.verifyCode(user.getTwoFactorSecret(), Integer.parseInt(code));
@@ -217,30 +229,33 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Invalid 2FA code");
         }
         user.setTwoFactorEnabled(true);
+        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
         userRepository.save(user);
     }
 
     @Override
-    public boolean validate2FACode(Long userId, int code) {
+    public boolean validate2FACode(UUID userId, int code) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         return totpService.verifyCode(user.getTwoFactorSecret(), code);
     }
 
     @Override
-    public void enable2FA(Long userId) {
+    public void enable2FA(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         user.setTwoFactorEnabled(true);
+        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
         userRepository.save(user);
     }
 
     @Override
-    public void disable2FA(Long userId) {
+    public void disable2FA(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
         user.setTwoFactorEnabled(false);
         user.setTwoFactorSecret(null);
+        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
         userRepository.save(user);
     }
 
@@ -256,11 +271,11 @@ public class UserServiceImpl implements UserService {
         return totpService.getQrCodeUrl(key, username);
     }
 
-
     @Override
-    public void updateProfile(Long userId, UpdateProfileRequest request) {
+    public void updateProfile(UUID userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));;
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        ;
 
         // Validate username uniqueness if changed
         if (!user.getUsername().equals(request.getUsername()) &&
@@ -276,13 +291,15 @@ public class UserServiceImpl implements UserService {
 
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
+        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
         userRepository.save(user);
     }
 
     @Override
-    public void updateSecurity(Long userId, UpdateSecurityRequest request, UserDetails currentUser) {
+    public void updateSecurity(UUID userId, UpdateSecurityRequest request, UserDetails currentUser) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));;
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        ;
         boolean isAdmin = currentUser.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
 
@@ -297,13 +314,16 @@ public class UserServiceImpl implements UserService {
             user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         }
 
+        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
+
         userRepository.save(user);
     }
 
     @Override
-    public void updateStatus(Long userId, UpdateStatusRequest request, boolean isAdmin) {
+    public void updateStatus(UUID userId, UpdateStatusRequest request, boolean isAdmin) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));;
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+        ;
 
         if (!isAdmin) {
             // Regular users can only update specific fields
@@ -336,6 +356,8 @@ public class UserServiceImpl implements UserService {
                 user.setAccountExpiryDate(request.getAccountExpiryDate());
             }
         }
+
+        user.setUpdatedBy(SecurityUtils.getUserIdentifier());
 
         userRepository.save(user);
     }

@@ -1,27 +1,30 @@
-package com.example.demo2.models;
+package com.example.demo2.entities;
 
 import com.example.demo2.enums.AppRole;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
-@Entity
-@NoArgsConstructor
+@SuperBuilder
 @AllArgsConstructor
-@Data
+@NoArgsConstructor
+@Setter
+@Getter
+@Entity
 @Table(name = "roles")
-public class Role{
+public class Role extends BaseEntity<String> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "role_id")
-    private Integer roleId;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "role_id", updatable = false, nullable = false)
+    private UUID roleId;
 
     @ToString.Exclude
     @Enumerated(EnumType.STRING)

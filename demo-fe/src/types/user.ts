@@ -17,12 +17,12 @@ export interface PageResponse<T> {
 }
 
 export interface Role {
-  roleId: number;
+  roleId: string;
   roleName: string;
 }
 
 export interface UserData {
-  userId: number;
+  userId: string;
   username: string;
   email: string;
   role: Role;

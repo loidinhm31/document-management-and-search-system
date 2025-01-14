@@ -1,30 +1,34 @@
-package com.example.demo2.models;
+package com.example.demo2.entities;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
-@Entity
-@Data
+
+
+
+@SuperBuilder
+@AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "users",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = "username"),
-                @UniqueConstraint(columnNames = "email")
-        })
-public class User {
+@Setter
+@Getter
+@Entity
+@Table(name = "users")
+public class User extends BaseEntity<String> {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
-    private Long userId;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "user_id", updatable = false, nullable = false)
+    private UUID userId;
 
     @Column(name = "username")
     private String username;
@@ -54,13 +58,6 @@ public class User {
     @ToString.Exclude
     private Role role;
 
-    @CreationTimestamp
-    @Column(updatable = false)
-    private LocalDateTime createdDate;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedDate;
-
     public User(String username, String email, String password) {
         this.username = username;
         this.email = email;
@@ -84,5 +81,3 @@ public class User {
         return getClass().hashCode();
     }
 }
-
-

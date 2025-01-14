@@ -8,6 +8,8 @@ import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
 import * as z from "zod";
 
+import LanguageSwitcher from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -15,11 +17,9 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { APP_API_URL } from "@/env";
 import { useToast } from "@/hooks/use-toast";
-import { LoginRequest, LoginResponse } from "@/types/auth";
-import LanguageSwitcher from "@/components/language-switcher";
 import { authService } from "@/services/auth.service";
 import { userService } from "@/services/user.service";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { LoginRequest, LoginResponse } from "@/types/auth";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),

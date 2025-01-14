@@ -2,14 +2,14 @@ package com.example.demo2.services;
 
 import com.example.demo2.dtos.UserDTO;
 import com.example.demo2.dtos.request.*;
-import com.example.demo2.models.Role;
-import com.example.demo2.models.User;
+import com.example.demo2.entities.User;
 import com.example.demo2.security.response.LoginResponse;
 import com.example.demo2.security.response.UserInfoResponse;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface UserService {
     // Authentication operations
@@ -20,25 +20,25 @@ public interface UserService {
     // Password operations
     void generatePasswordResetToken(String email);
     void resetPassword(String token, String newPassword);
-    void updatePassword(Long userId, String newPassword);
+    void updatePassword(UUID userId, String newPassword);
 
     // User management operations
     List<User> getAllUsers();
-    UserDTO getUserById(Long id);
+    UserDTO getUserById(UUID id);
     UserDTO getUserByUsername(String username);
-    void updateUserRole(Long userId, String roleName);
+    void updateUserRole(UUID userId, String roleName);
 
     // 2FA operations
-    GoogleAuthenticatorKey generate2FASecret(Long userId);
-    void verify2FACode(Long userId, String code);
-    boolean validate2FACode(Long userId, int code);
-    void enable2FA(Long userId);
-    void disable2FA(Long userId);
+    GoogleAuthenticatorKey generate2FASecret(UUID userId);
+    void verify2FACode(UUID userId, String code);
+    boolean validate2FACode(UUID userId, int code);
+    void enable2FA(UUID userId);
+    void disable2FA(UUID userId);
     boolean get2FAStatus(String username);
     String getQrCodeUrl(GoogleAuthenticatorKey key, String username);
 
-    void updateProfile(Long userId, UpdateProfileRequest request);
-    void updateSecurity(Long userId, UpdateSecurityRequest request, UserDetails currentUser);
-    void updateStatus(Long userId, UpdateStatusRequest request, boolean isAdmin);
+    void updateProfile(UUID userId, UpdateProfileRequest request);
+    void updateSecurity(UUID userId, UpdateSecurityRequest request, UserDetails currentUser);
+    void updateStatus(UUID userId, UpdateStatusRequest request, boolean isAdmin);
 
 }

@@ -21,7 +21,7 @@ class AdminService extends BaseService {
     );
   }
 
-  getUser(id: number) {
+  getUser(id: string) {
     return this.handleApiResponse<UserData>(
       axiosInstance.get(`/v1/users/${id}`)
     );
@@ -33,7 +33,7 @@ class AdminService extends BaseService {
     );
   }
 
-  updateUserRole(userId: number, request: { userId: number; roleName: string }) {
+  updateUserRole(userId: string, request: { userId: string; roleName: string }) {
     return this.handleApiResponse(
       axiosInstance.put(`/v1/users/${userId}/role`, request),
       {
@@ -43,7 +43,7 @@ class AdminService extends BaseService {
     );
   }
 
-  updateStatus(userId: number, request: UpdateStatusRequest) {
+  updateStatus(userId: string, request: UpdateStatusRequest) {
     return this.handleApiResponse(
       axiosInstance.put(`/v1/users/${userId}/status`, request),
       {

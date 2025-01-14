@@ -35,7 +35,7 @@ export default function UserDetail() {
 
       try {
         // Get user details - Updated endpoint
-        const userResponse = await adminService.getUser(parseInt(userId));
+        const userResponse = await adminService.getUser(userId);
         // Get roles - This endpoint remains the same
         const rolesResponse = await adminService.getAllRoles();
 
@@ -71,8 +71,8 @@ export default function UserDetail() {
 
     try {
       // Updated to use new endpoint
-      await adminService.updateUserRole(parseInt(userId), {
-        userId: parseInt(userId),
+      await adminService.updateUserRole(userId, {
+        userId: userId,
         roleName: value,
       });
       setSelectedRole(value);
@@ -90,7 +90,6 @@ export default function UserDetail() {
     if (!userId) return;
 
     try {
-      const userIdNum = parseInt(userId);
       const updateData = {
         accountLocked: key === "accountNonLocked" ? !value : !accountStates.accountNonLocked,
         accountExpired: key === "accountNonExpired" ? !value : !accountStates.accountNonExpired,
@@ -98,7 +97,7 @@ export default function UserDetail() {
         enabled: key === "enabled" ? value : accountStates.enabled,
       };
 
-      await adminService.updateStatus(userIdNum, updateData);
+      await adminService.updateStatus(userId, updateData);
       setAccountStates((prev) => ({ ...prev, [key]: value }));
     } catch (error) {
       toast({

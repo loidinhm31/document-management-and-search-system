@@ -16,6 +16,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -24,14 +26,14 @@ public class UserController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<UserDTO>> getUser(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<UserDTO>> getUser(@PathVariable UUID id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getUserById(id)));
     }
 
     @PutMapping("/{id}/profile")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isCurrentUser(#id)")
     public ResponseEntity<ApiResponse<Void>> updateProfile(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @Valid @RequestBody UpdateProfileRequest request) {
         userService.updateProfile(id, request);
         return ResponseEntity.ok(ApiResponse.success(null));
@@ -40,7 +42,7 @@ public class UserController {
     @PutMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> updateUserRole(
-            @PathVariable Long id, @Valid @RequestBody UpdateUserRequest request) {
+            @PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request) {
         userService.updateUserRole(id, request.getRoleName());
         return ResponseEntity.ok(ApiResponse.success(null));
     }
@@ -48,7 +50,7 @@ public class UserController {
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isCurrentUser(#id)")
     public ResponseEntity<ApiResponse<Void>> updateStatus(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @Valid @RequestBody UpdateStatusRequest request,
             @AuthenticationPrincipal UserDetails currentUser) {
         boolean isAdmin = currentUser.getAuthorities().stream()
@@ -67,7 +69,7 @@ public class UserController {
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
     public ResponseEntity<ApiResponse<String>> enable2FA(
             @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long id) {
+            @PathVariable UUID id) {
         GoogleAuthenticatorKey key = userService.generate2FASecret(id);
         String qrCodeUrl = userService.getQrCodeUrl(key, userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success(qrCodeUrl));
@@ -76,7 +78,7 @@ public class UserController {
     @PostMapping("/{id}/2fa/verify")
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
     public ResponseEntity<ApiResponse<Void>> verify2FA(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @RequestParam String code) {
         userService.verify2FACode(id, code);
         return ResponseEntity.ok(ApiResponse.success(null));
@@ -85,14 +87,14 @@ public class UserController {
     @PostMapping("/{id}/2fa/disable")
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
     public ResponseEntity<ApiResponse<Void>> disable2FA(
-            @PathVariable Long id) {
+            @PathVariable UUID id) {
         userService.disable2FA(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @GetMapping("/{id}/2fa/status")
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<Boolean>> get2FAStatus(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Boolean>> get2FAStatus(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID id) {
         boolean status = userService.get2FAStatus(userDetails.getUsername());
         return ResponseEntity.ok(ApiResponse.success(status));
     }

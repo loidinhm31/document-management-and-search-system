@@ -1,8 +1,9 @@
 package com.example.demo2.security.services;
 
-import com.example.demo2.models.User;
+import com.example.demo2.entities.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,14 +12,19 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @NoArgsConstructor
 @Data
-public class UserDetailsImpl implements UserDetails {
+public class CustomUserDetails implements UserDetails {
     private static final long serialVersionUID = 1L;
 
-    private Long id;
+    @Getter
+    private UUID id;
+
     private String username;
+
+    @Getter
     private String email;
 
     @JsonIgnore
@@ -28,8 +34,8 @@ public class UserDetailsImpl implements UserDetails {
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsImpl(Long id, String username, String email, String password,
-                           boolean is2faEnabled, Collection<? extends GrantedAuthority> authorities) {
+    public CustomUserDetails(UUID id, String username, String email, String password,
+                             boolean is2faEnabled, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -38,10 +44,10 @@ public class UserDetailsImpl implements UserDetails {
         this.authorities = authorities;
     }
 
-    public static UserDetailsImpl build(User user) {
+    public static CustomUserDetails build(User user) {
         GrantedAuthority authority = new SimpleGrantedAuthority(user.getRole().getRoleName().name());
 
-        return new UserDetailsImpl(
+        return new CustomUserDetails(
                 user.getUserId(),
                 user.getUsername(),
                 user.getEmail(),
@@ -55,14 +61,6 @@ public class UserDetailsImpl implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getEmail() {
-        return email;
     }
 
     @Override
@@ -105,7 +103,7 @@ public class UserDetailsImpl implements UserDetails {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        UserDetailsImpl user = (UserDetailsImpl) o;
+        CustomUserDetails user = (CustomUserDetails) o;
         return Objects.equals(id, user.id);
     }
 }

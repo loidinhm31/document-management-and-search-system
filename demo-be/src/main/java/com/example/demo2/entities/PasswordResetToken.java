@@ -1,18 +1,25 @@
-package com.example.demo2.models;
+package com.example.demo2.entities;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
+import java.util.UUID;
 
-@Entity
-@Data
+@SuperBuilder
+@AllArgsConstructor
 @NoArgsConstructor
-public class PasswordResetToken {
+@Setter
+@Getter
+@Entity
+public class PasswordResetToken extends BaseEntity<String> {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue
+    @UuidGenerator
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
     @Column(nullable = false, unique = true)
     private String token;

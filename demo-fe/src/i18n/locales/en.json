@@ -208,9 +208,7 @@
           "error": "Failed to update user password"
         },
         "updateAccount": {
-          "lockSuccess": "Account lock status updated successfully",
-          "expirySuccess": "Account expiry status updated successfully",
-          "credentialsSuccess": "Credentials expiry status updated successfully",
+          "success": "Account status updated successfully",
           "error": "Failed to update account status"
         }
       },

@@ -3,10 +3,11 @@ package com.example.demo2.dtos.response;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 public class AuditLogEntry {
-    private Long id;
+    private UUID id;
     private String username;
     private String action;
     private String details;

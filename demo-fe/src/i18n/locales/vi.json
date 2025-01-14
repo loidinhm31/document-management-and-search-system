@@ -208,9 +208,7 @@
           "error": "Không thể cập nhật mật khẩu người dùng"
         },
         "updateAccount": {
-          "lockSuccess": "Cập nhật trạng thái khóa tài khoản thành công",
-          "expirySuccess": "Cập nhật trạng thái hết hạn tài khoản thành công",
-          "credentialsSuccess": "Cập nhật trạng thái hết hạn thông tin đăng nhập thành công",
+          "success": "Cập nhật trạng thái tài khoản thành công",
           "error": "Không thể cập nhật trạng thái tài khoản"
         }
       },
