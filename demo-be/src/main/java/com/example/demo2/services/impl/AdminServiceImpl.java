@@ -15,7 +15,9 @@ import com.example.demo2.repositories.UserRepository;
 import com.example.demo2.services.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -53,6 +55,15 @@ public class AdminServiceImpl implements AdminService {
         if (role != null && !role.trim().isEmpty()) {
             spec = spec.and((root, query, cb) ->
                     cb.equal(root.join("role").get("roleName"), AppRole.valueOf(role))
+            );
+        }
+
+        // Add default sort by username if no sort is specified
+        if (pageable.getSort().isEmpty()) {
+            pageable = PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    Sort.by(Sort.Direction.ASC, "username")
             );
         }
 
