@@ -6,7 +6,6 @@ import com.example.demo2.repositories.RefreshTokenRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,6 +70,7 @@ public class RefreshTokenService {
     public List<RefreshToken> findActiveTokensByUser(User user) {
         return refreshTokenRepository.findActiveTokensByUser(user);
     }
+
 
     @Transactional
     public void removeExpiredTokens() {
