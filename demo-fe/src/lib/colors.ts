@@ -78,5 +78,5 @@ export const themeColors = {
     "--sidebar-accent-foreground": "210 40% 98%",
     "--sidebar-border": "217 33% 17%",
     "--sidebar-ring": "37 90% 50%",
-  }
+  },
 };

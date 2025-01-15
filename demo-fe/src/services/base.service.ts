@@ -2,7 +2,7 @@ import { AxiosError, AxiosResponse } from "axios";
 import i18next from "i18next";
 
 import { toast } from "@/hooks/use-toast";
-import { ApiResponse } from "@/types/auth";
+import { ApiResponse } from "@/types/api";
 
 interface ResponseMessages {
   successMessage?: string;

@@ -34,6 +34,18 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface TokenResponse {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  username: string;
+  roles: string[];
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
 export interface SignupRequest {
   username: string;
   email: string;
@@ -50,15 +62,4 @@ export interface LoginResponse {
 export interface UpdatePasswordRequest {
   currentPassword: string;
   newPassword: string;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  error?: {
-    status: number;
-    message: string;
-    details?: string;
-  };
-  timestamp: string;
 }

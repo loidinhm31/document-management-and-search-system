@@ -1,9 +1,10 @@
 import i18next from "i18next";
 
 import axiosInstance from "@/services/axios.config";
-import { UpdateCredentialsRequest, UpdatePasswordRequest } from "@/types/auth";
+import { UpdateCredentialsRequest, UpdatePasswordRequest, User } from "@/types/auth";
 
 import { BaseService } from "./base.service";
+import { ApiResponse } from "@/types/api";
 
 class UserService extends BaseService {
   updateCredentials(data: UpdateCredentialsRequest) {
@@ -27,13 +28,11 @@ class UserService extends BaseService {
   }
 
   updatePassword(userId: string, data: UpdatePasswordRequest) {
-    return this.handleApiResponse(
-      axiosInstance.put(`/v1/users/${userId}/password`, data)
-    );
+    return this.handleApiResponse(axiosInstance.put(`/v1/users/${userId}/password`, data));
   }
 
   getCurrentUser() {
-    return this.handleApiResponse(axiosInstance.get("/v1/users/me"));
+    return this.handleApiResponse(axiosInstance.get<ApiResponse<User>>("/v1/users/me"));
   }
 
   enable2FA(userId: string) {

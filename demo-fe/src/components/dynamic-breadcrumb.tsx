@@ -1,6 +1,6 @@
-import React from 'react';
-import { useLocation } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import React from "react";
+import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,27 +8,27 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { routes } from '@/core/route-config';
+} from "@/components/ui/breadcrumb";
+import { routes } from "@/core/route-config";
 
 export function DynamicBreadcrumb() {
   const location = useLocation();
   const { t } = useTranslation();
-  const pathSegments = location.pathname.split('/').filter(Boolean);
+  const pathSegments = location.pathname.split("/").filter(Boolean);
 
   const getBreadcrumbs = () => {
     const breadcrumbs = [];
-    let currentPath = '';
+    let currentPath = "";
 
     for (const segment of pathSegments) {
       currentPath += `/${segment}`;
-      const route = routes.find(r => r.path === currentPath);
+      const route = routes.find((r) => r.path === currentPath);
 
       if (route) {
         breadcrumbs.push({
           path: currentPath,
           label: t(route.pageTitle),
-          isLast: currentPath === location.pathname
+          isLast: currentPath === location.pathname,
         });
       }
     }

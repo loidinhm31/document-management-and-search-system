@@ -1,5 +1,5 @@
 import { jwtDecode } from "jwt-decode";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -11,47 +11,44 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { JwtPayload, LoginResponse } from "@/types/auth";
+import { JwtPayload, TokenResponse } from "@/types/auth";
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { token, setToken, setIsAdmin } = useAuth();
+  const { token, setAuthData, setIsAdmin } = useAuth();
   const { toast } = useToast();
 
   const [step, setStep] = useState(1);
-  const [jwtToken, setJwtToken] = useState("");
+  const [accessToken, setAccessToken] = useState("");
   const [username, setUsername] = useState("");
+  const [tokenResponse, setTokenResponse] = useState<TokenResponse>();
 
   // Redirect to home if already logged in
-  if (token) {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    if (token) navigate("/");
+  }, [navigate, token]);
 
-  const handleLoginSuccess = (responseData: LoginResponse) => {
+  const handleLoginSuccess = (responseData: TokenResponse) => {
     setUsername(responseData.username);
-    const decodedToken = jwtDecode<JwtPayload>(responseData.jwtToken);
+    setTokenResponse(responseData);
+    const decodedToken = jwtDecode<JwtPayload>(responseData.accessToken);
     if (decodedToken.is2faEnabled) {
-      setJwtToken(responseData.jwtToken);
+      setAccessToken(responseData.accessToken);
       setStep(2);
     } else {
-      handleSuccessfulLogin(responseData.jwtToken, decodedToken);
+      handleSuccessfulLogin(responseData, decodedToken);
     }
   };
 
-  const handleSuccessfulLogin = (token: string, decodedToken: JwtPayload) => {
+  const handleSuccessfulLogin = (token: TokenResponse, decodedToken: JwtPayload) => {
     const user = {
       username: decodedToken.sub,
       roles: decodedToken.roles.split(","),
     };
 
-    // Store tokens and user info
-    localStorage.setItem("JWT_TOKEN", token);
-    localStorage.setItem("USER", JSON.stringify(user));
-
     // Update auth context
-    setToken(token);
+    setAuthData(token);
     setIsAdmin(user.roles.includes("ROLE_ADMIN"));
 
     toast({
@@ -59,13 +56,12 @@ export default function LoginPage() {
       description: t("auth.login.success"),
       variant: "success",
     });
-
-    navigate("/");
   };
 
   const handle2FASuccess = () => {
-    const decodedToken = jwtDecode<JwtPayload>(jwtToken);
-    handleSuccessfulLogin(jwtToken, decodedToken);
+    const decodedToken = jwtDecode<JwtPayload>(accessToken);
+    handleSuccessfulLogin(tokenResponse, decodedToken);
+    navigate("/");
   };
 
   return (
@@ -80,9 +76,7 @@ export default function LoginPage() {
           <Card>
             <CardHeader className="text-center">
               <CardTitle>{t("auth.login.title")}</CardTitle>
-              <CardDescription>
-                {t("auth.login.description")}
-              </CardDescription>
+              <CardDescription>{t("auth.login.description")}</CardDescription>
             </CardHeader>
 
             <CardContent>

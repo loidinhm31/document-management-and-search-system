@@ -1,9 +1,7 @@
 import UserProfile from "@/components/auth/user-profile";
 
 export function ProfilePage() {
-  return (
-    <UserProfile />
-  );
+  return <UserProfile />;
 }
 
 export default ProfilePage;

@@ -1,14 +1,25 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
-import { LoginRequest, SignupRequest } from "@/types/auth";
+import { LoginRequest, SignupRequest, TokenResponse } from "@/types/auth";
+import { ApiResponse } from "@/types/api";
 
 class AuthService extends BaseService {
   login(data: LoginRequest) {
-    return this.handleApiResponse(axiosInstance.post("/v1/auth/login", data));
+    return this.handleApiResponse(axiosInstance.post<ApiResponse<TokenResponse>>("/v1/auth/login", data));
+  }
+
+  refreshToken(refreshToken: string) {
+    return this.handleApiResponse(
+      axiosInstance.post<ApiResponse<TokenResponse>>("/v1/auth/refresh-token", { refreshToken }),
+    );
   }
 
   register(data: SignupRequest) {
     return this.handleApiResponse(axiosInstance.post("/v1/auth/register", data));
+  }
+
+  logout(refreshToken: string) {
+    return this.handleApiResponse(axiosInstance.post("/v1/auth/logout", { refreshToken }));
   }
 
   forgotPassword(email: string) {

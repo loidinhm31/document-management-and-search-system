@@ -9,7 +9,7 @@ import unusedImports from "eslint-plugin-unused-imports";
 
 export default [
   {
-    ignores: [".eslint.config.js"]
+    ignores: [".eslint.config.js"],
   },
   eslint.configs.recommended,
   {
@@ -20,7 +20,7 @@ export default [
       "unused-imports": unusedImports,
       import: importPlugin,
       react: reactPlugin,
-      prettier: prettierPlugin
+      prettier: prettierPlugin,
     },
     languageOptions: {
       globals: {
@@ -40,41 +40,42 @@ export default [
         Image: true,
         setTimeout: true,
         localStorage: true,
+        clearTimeout: true,
       },
       ecmaVersion: "latest",
       sourceType: "module",
       parser: tsParser,
       parserOptions: {
         ecmaFeatures: {
-          jsx: true
+          jsx: true,
         },
         ecmaVersion: "latest",
         sourceType: "module",
         project: ["./tsconfig.json"],
-        tsconfigRootDir: "."
-      }
+        tsconfigRootDir: ".",
+      },
     },
     settings: {
       react: {
-        version: "detect"
-      }
+        version: "detect",
+      },
     },
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "unused-imports/no-unused-imports": "warn",
       "simple-import-sort/imports": "warn",
       "simple-import-sort/exports": "warn",
-      "eqeqeq": "warn",
+      eqeqeq: "warn",
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [
         "warn",
         {
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_"
-        }
+          caughtErrorsIgnorePattern: "^_",
+        },
       ],
-      "@typescript-eslint/no-non-null-assertion": "off"
-    }
-  }
+      "@typescript-eslint/no-non-null-assertion": "off",
+    },
+  },
 ];

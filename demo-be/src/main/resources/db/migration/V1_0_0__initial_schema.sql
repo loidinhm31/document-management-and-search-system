@@ -75,3 +75,26 @@ CREATE INDEX idx_users_email ON users (email);
 CREATE INDEX idx_audit_logs_username ON audit_logs (username);
 CREATE INDEX idx_audit_logs_timestamp ON audit_logs (timestamp);
 CREATE INDEX idx_password_reset_token ON password_reset_token (token);
+
+-- Create refresh_tokens table
+CREATE TABLE refresh_tokens
+(
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    token       VARCHAR(255) NOT NULL UNIQUE,
+    user_id     UUID         NOT NULL,
+    expiry_date TIMESTAMP    NOT NULL,
+    revoked     BOOLEAN      NOT NULL DEFAULT FALSE,
+    user_agent  VARCHAR(255),
+    ip_address  VARCHAR(45),
+    created_by  VARCHAR(50)  NOT NULL,
+    created_at  TIMESTAMP    NOT NULL,
+    updated_by  VARCHAR(50)  NOT NULL,
+    updated_at  TIMESTAMP    NOT NULL,
+    CONSTRAINT refresh_tokens_user_fk FOREIGN KEY (user_id) REFERENCES users (user_id)
+);
+
+-- Create index for token lookup
+CREATE INDEX idx_refresh_tokens_token ON refresh_tokens (token);
+
+-- Create index for user lookup
+CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id);

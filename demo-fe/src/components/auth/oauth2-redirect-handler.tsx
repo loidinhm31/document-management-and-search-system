@@ -6,13 +6,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { TwoFactorForm } from "@/components/auth/two-factor-form";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { JwtPayload } from "@/types/auth";
+import { JwtPayload, TokenResponse } from "@/types/auth";
 
 export default function OAuth2RedirectHandler() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { setToken, setIsAdmin } = useAuth();
+  const { setAuthData, setIsAdmin } = useAuth();
+  const [tokenResponse, setTokenResponse] = useState<TokenResponse | null>();
   const [requires2FA, setRequires2FA] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [tempToken, setTempToken] = useState<string | null>(null);
@@ -21,6 +22,7 @@ export default function OAuth2RedirectHandler() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get("token");
+    const refreshToken = params.get("refreshToken");
 
     if (token) {
       try {
@@ -30,7 +32,7 @@ export default function OAuth2RedirectHandler() {
           setUsername(decodedToken.sub);
           setTempToken(token);
         } else {
-          handleSuccessfulLogin(token, decodedToken);
+          handleSuccessfulLogin(token, refreshToken, decodedToken);
         }
       } catch (error) {
         console.error("Token decoding failed:", error);
@@ -41,17 +43,17 @@ export default function OAuth2RedirectHandler() {
     }
   }, [location, navigate]);
 
-  const handleSuccessfulLogin = (token: string, decodedToken: JwtPayload) => {
-    const user = {
+  const handleSuccessfulLogin = (token: string, refreshToken: string, decodedToken: JwtPayload) => {
+    const tokenAuth = {
+      accessToken: token,
+      refreshToken: refreshToken,
+      tokenType: "Bearer",
       username: decodedToken.sub,
       roles: decodedToken.roles.split(","),
     };
 
-    localStorage.setItem("JWT_TOKEN", token);
-    localStorage.setItem("USER", JSON.stringify(user));
-
-    setToken(token);
-    setIsAdmin(user.roles.includes("ROLE_ADMIN"));
+    setAuthData(tokenAuth);
+    setIsAdmin(decodedToken.roles.includes("ROLE_ADMIN"));
 
     toast({
       title: t("common.success"),
@@ -63,9 +65,9 @@ export default function OAuth2RedirectHandler() {
   };
 
   const handle2FASuccess = () => {
-    if (tempToken) {
+    if (tokenResponse) {
       const decodedToken = jwtDecode<JwtPayload>(tempToken);
-      handleSuccessfulLogin(tempToken, decodedToken);
+      handleSuccessfulLogin(tokenResponse.accessToken, tokenResponse.refreshToken, decodedToken);
     }
   };
 

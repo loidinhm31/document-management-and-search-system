@@ -1,5 +1,6 @@
 package com.example.demo2.security.oauth2;
 
+import com.example.demo2.entities.RefreshToken;
 import com.example.demo2.entities.Role;
 import com.example.demo2.entities.User;
 import com.example.demo2.enums.AppRole;
@@ -7,6 +8,7 @@ import com.example.demo2.repositories.RoleRepository;
 import com.example.demo2.repositories.UserRepository;
 import com.example.demo2.security.jwt.JwtUtils;
 import com.example.demo2.security.services.CustomUserDetails;
+import com.example.demo2.services.impl.RefreshTokenService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,7 +25,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,6 +37,7 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final RefreshTokenService refreshTokenService;
     private final JwtUtils jwtUtils;
 
     @Value("${frontend.url}")
@@ -150,7 +155,11 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
 
         Set<SimpleGrantedAuthority> authorities = getUpdatedAuthorities(oauth2User, user);
         String jwtToken = generateJwtToken(user, email, authorities);
-        String targetUrl = buildRedirectUrl(jwtToken);
+
+        // Generate refresh token
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user, request);
+
+        String targetUrl = buildRedirectUrl(jwtToken, refreshToken.getToken());
 
         this.setDefaultTargetUrl(targetUrl);
         super.onAuthenticationSuccess(request, response, authentication);
@@ -176,9 +185,10 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
         return jwtUtils.generateTokenFromUsername(userDetails);
     }
 
-    private String buildRedirectUrl(String jwtToken) {
+    private String buildRedirectUrl(String accessToken, String refreshToken) {
         return UriComponentsBuilder.fromUriString(frontendUrl + "/oauth2/redirect")
-                .queryParam("token", jwtToken)
+                .queryParam("token", accessToken)
+                .queryParam("refreshToken", refreshToken)
                 .build().toUriString();
     }
 }

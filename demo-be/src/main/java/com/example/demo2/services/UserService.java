@@ -4,16 +4,19 @@ import com.example.demo2.dtos.UserDto;
 import com.example.demo2.dtos.request.*;
 import com.example.demo2.exceptions.InvalidRequestException;
 import com.example.demo2.security.request.Verify2FARequest;
-import com.example.demo2.security.response.LoginResponse;
+import com.example.demo2.security.response.TokenResponse;
 import com.example.demo2.security.response.UserInfoResponse;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.UUID;
 
 public interface UserService {
     // Authentication operations
-    LoginResponse authenticateUser(LoginRequest loginRequest);
+    TokenResponse authenticateUser(LoginRequest loginRequest, HttpServletRequest request);
+    TokenResponse refreshToken(String refreshToken);
+    void logout(String refreshToken);
     void registerUser(SignupRequest signupRequest);
     UserInfoResponse getUserInfo(UserDetails userDetails);
 
@@ -37,5 +40,4 @@ public interface UserService {
 
     void updateProfile(UUID userId, UpdateProfileRequest request);
     void updateStatus(UUID userId, UpdateStatusRequest request, boolean isAdmin);
-
 }

@@ -20,7 +20,7 @@ const LanguageSwitcher = () => {
 
   // Get current language label
   const getCurrentLanguageLabel = () => {
-    return languages.find(lang => lang.code === i18n.language)?.label || "English";
+    return languages.find((lang) => lang.code === i18n.language)?.label || "English";
   };
 
   return (

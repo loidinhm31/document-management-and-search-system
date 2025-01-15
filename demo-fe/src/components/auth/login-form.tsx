@@ -13,17 +13,23 @@ import { Input } from "@/components/ui/input";
 import { APP_API_URL } from "@/env";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/services/auth.service";
-import { LoginRequest, LoginResponse } from "@/types/auth";
+import { LoginRequest, TokenResponse } from "@/types/auth";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .regex(
+      /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
+      "Password must contain at least one digit, lowercase, uppercase, and special character",
+    ),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 interface LoginFormProps {
-  onSuccess: (responseData: LoginResponse) => void;
+  onSuccess: (responseData: TokenResponse) => void;
 }
 
 export const LoginForm = ({ onSuccess }: LoginFormProps) => {
@@ -43,8 +49,10 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     setIsLoading(true);
     try {
       const response = await authService.login(data as LoginRequest);
-      onSuccess(response.data.data as LoginResponse);
+      console.log("onSuccess", response.data.data);
+      onSuccess(response.data.data);
     } catch (error) {
+      console.log("toast", error);
       toast({
         title: t("common.error"),
         description: t("auth.login.error"),

@@ -17,19 +17,14 @@ import { useToast } from "@/hooks/use-toast";
 
 export function NavUser() {
   const { isMobile, state } = useSidebar();
-  const { currentUser, setToken, setCurrentUser, setIsAdmin } = useAuth();
+  const { currentUser, clearAuthData } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const isCollapsed = state === "collapsed";
 
   // Handle user logout
   const handleLogout = () => {
-    localStorage.removeItem("JWT_TOKEN");
-    localStorage.removeItem("USER");
-    localStorage.removeItem("IS_ADMIN");
-    setToken(null);
-    setCurrentUser(null);
-    setIsAdmin(false);
+    clearAuthData();
     toast({
       title: "Success",
       description: "You have been logged out successfully.",

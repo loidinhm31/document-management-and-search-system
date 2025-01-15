@@ -4,6 +4,7 @@ import com.example.demo2.constants.AuditActions;
 import com.example.demo2.constants.AuditStatus;
 import com.example.demo2.dtos.UserDto;
 import com.example.demo2.dtos.request.*;
+import com.example.demo2.entities.RefreshToken;
 import com.example.demo2.enums.AppRole;
 import com.example.demo2.exceptions.InvalidRequestException;
 import com.example.demo2.exceptions.ResourceNotFoundException;
@@ -17,6 +18,7 @@ import com.example.demo2.repositories.UserRepository;
 import com.example.demo2.security.jwt.JwtUtils;
 import com.example.demo2.security.request.Verify2FARequest;
 import com.example.demo2.security.response.LoginResponse;
+import com.example.demo2.security.response.TokenResponse;
 import com.example.demo2.security.response.UserInfoResponse;
 import com.example.demo2.security.services.CustomUserDetails;
 import com.example.demo2.services.AdminService;
@@ -24,6 +26,7 @@ import com.example.demo2.services.TotpService;
 import com.example.demo2.services.UserService;
 import com.example.demo2.utils.SecurityUtils;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -56,6 +59,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final RefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final EmailService emailService;
@@ -64,20 +68,96 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
 
     @Override
-    public LoginResponse authenticateUser(LoginRequest loginRequest) {
+    public TokenResponse authenticateUser(LoginRequest loginRequest, HttpServletRequest request) {
+        // Authenticate user
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        String jwtToken = jwtUtils.generateTokenFromUsername(userDetails);
 
+        // Generate JWT token
+        String jwt = jwtUtils.generateTokenFromUsername(userDetails);
+
+        // Get user from database
+        User user = userRepository.findByUsername(loginRequest.getUsername())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", loginRequest.getUsername()));
+
+        // Create refresh token
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user, request);
+
+        // Create audit log for successful login
+        adminService.createAuditLog(
+                user.getUsername(),
+                AuditActions.LOGIN,
+                "User logged in successfully",
+                request.getRemoteAddr(),
+                AuditStatus.SUCCESS
+        );
+
+        // Get user roles
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        return new LoginResponse(userDetails.getUsername(), roles, jwtToken);
+        // Return token response
+        return new TokenResponse(
+                jwt,
+                refreshToken.getToken(),
+                "Bearer",
+                userDetails.getUsername(),
+                roles
+        );
+    }
+
+    @Override
+    public TokenResponse refreshToken(String refreshToken) {
+        return refreshTokenService.findByToken(refreshToken)
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
+                .map(user -> {
+                    CustomUserDetails userDetails = CustomUserDetails.build(user);
+                    String jwt = jwtUtils.generateTokenFromUsername(userDetails);
+
+                    List<String> roles = userDetails.getAuthorities().stream()
+                            .map(GrantedAuthority::getAuthority)
+                            .collect(Collectors.toList());
+
+                    return new TokenResponse(
+                            jwt,
+                            refreshToken,
+                            "Bearer",
+                            userDetails.getUsername(),
+                            roles
+                    );
+                })
+                .orElseThrow(() -> new RuntimeException("Refresh token not found in database"));
+    }
+
+    @Override
+    public void logout(String refreshToken) {
+        // Find and validate refresh token
+        RefreshToken token = refreshTokenService.findByToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
+
+        // Get user before revoking token
+        User user = token.getUser();
+
+        // Revoke refresh token
+        refreshTokenService.revokeToken(refreshToken);
+
+        // Create audit log for logout
+        adminService.createAuditLog(
+                user.getUsername(),
+                AuditActions.LOGOUT,
+                "User logged out successfully",
+                null,
+                AuditStatus.SUCCESS
+        );
+
+        // Clear security context
+        SecurityContextHolder.clearContext();
     }
 
     @Override
