@@ -68,10 +68,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public TokenResponse authenticateUser(LoginRequest loginRequest, HttpServletRequest request) {
-        // Authenticate user
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
-        );
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
@@ -79,7 +77,6 @@ public class UserServiceImpl implements UserService {
         // Generate JWT token
         String jwt = jwtUtils.generateTokenFromUsername(userDetails);
 
-        // Get user from database
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", loginRequest.getUsername()));
 
@@ -100,7 +97,6 @@ public class UserServiceImpl implements UserService {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        // Return token response
         return new TokenResponse(
                 jwt,
                 refreshToken.getToken(),
