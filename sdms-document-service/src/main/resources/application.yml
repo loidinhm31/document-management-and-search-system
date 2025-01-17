@@ -8,8 +8,49 @@ spring:
         jwt:
           issuer-uri: http://localhost:9090
           jwk-set-uri: http://localhost:9090/.well-known/jwks.json
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=sdms
+    username: postgres
+    password: postgrespw
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+
+
+elasticsearch:
+  host: localhost
+  port: 9200
+  username: elastic  # Default username for Elasticsearch 8.x
+  password: "NX9DYn+_4WSXRmHwymTo"
+  # Updated index settings for 8.x
+  index:
+    settings:
+      number_of_shards: 1
+      number_of_replicas: 0
+      analysis:
+        analyzer:
+          custom_analyzer:
+            type: custom
+            tokenizer: standard
+            filter:
+              - lowercase
+              - asciifolding
+              - word_delimiter_graph
+    mapping:
+      total_fields:
+        limit: 2000
+
+app:
+  document:
+    storage:
+      path: ./document/storage
+
 logging:
   level:
     org.springframework.security: DEBUG
     org.springframework.web: DEBUG
     org.springframework.security.oauth2: TRACE
+    org.springframework.data.elasticsearch: DEBUG
+    org.elasticsearch: DEBUG
