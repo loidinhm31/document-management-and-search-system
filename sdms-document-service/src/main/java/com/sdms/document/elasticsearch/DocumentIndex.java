@@ -1,5 +1,6 @@
 package com.sdms.document.elasticsearch;
 
+import com.sdms.document.enums.DocumentType;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -26,11 +27,14 @@ public class DocumentIndex {
     @Field(type = FieldType.Keyword)
     private String userId;
 
-    @Field(type = FieldType.Keyword)
-    private String contentType;
-
     @Field(type = FieldType.Long)
     private Long fileSize;
+
+    @Field(type = FieldType.Keyword)
+    private String mimeType;
+
+    @Field(type = FieldType.Keyword)
+    private DocumentType documentType;
 
     @Field(type = FieldType.Date)
     private Date createdAt;

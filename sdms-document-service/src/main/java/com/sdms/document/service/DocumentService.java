@@ -5,9 +5,11 @@ import com.sdms.document.elasticsearch.repository.DocumentIndexRepository;
 import com.sdms.document.entity.Document;
 import com.sdms.document.entity.DocumentMetadata;
 import com.sdms.document.entity.User;
+import com.sdms.document.enums.DocumentType;
 import com.sdms.document.model.DocumentContent;
 import com.sdms.document.repository.DocumentRepository;
 import com.sdms.document.repository.UserRepository;
+import com.sdms.document.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
@@ -25,6 +27,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import static com.sdms.document.utils.DocumentUtils.determineDocumentType;
 
 @Service
 @RequiredArgsConstructor
@@ -66,7 +70,7 @@ public class DocumentService {
         document.setFilePath(relativePath);
         document.setFileSize(file.getSize());
         document.setMimeType(file.getContentType());
-        document.setContentType(determineContentType(file.getContentType()));
+        document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
         document.setUser(user);
         document.setCreatedBy(username);
         document.setUpdatedBy(username);
@@ -112,18 +116,6 @@ public class DocumentService {
                 .orElse("");
     }
 
-    private String determineContentType(String mimeType) {
-        if (mimeType == null) return "UNKNOWN";
-
-        return switch (mimeType.toLowerCase()) {
-            case "application/pdf" -> "PDF";
-            case "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ->
-                    "WORD";
-            case "text/plain" -> "TEXT";
-            default -> "OTHER";
-        };
-    }
-
     private void addExtractedMetadata(Document document, Map<String, String> metadata) {
         metadata.forEach((key, value) -> {
             DocumentMetadata metadataEntity = new DocumentMetadata();
@@ -140,9 +132,10 @@ public class DocumentService {
                 .filename(document.getOriginalFilename())
                 .content(document.getIndexedContent())
                 .userId(document.getUser().getUserId().toString())
-                .contentType(document.getContentType())
+                .mimeType(document.getMimeType())
+                .documentType(determineDocumentType(document.getMimeType()))
                 .fileSize(document.getFileSize())
-                .createdAt(document.getCreatedAt())  // Add creation date
+                .createdAt(document.getCreatedAt())
                 .metadata(convertMetadataToMap(document.getMetadata()))
                 .build();
 

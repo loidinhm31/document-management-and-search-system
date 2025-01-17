@@ -1,6 +1,7 @@
 package com.sdms.document.entity;
 
 
+import com.sdms.document.enums.DocumentType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -40,8 +41,8 @@ public class Document extends BaseEntity<String> {
     @Column(name = "mime_type", nullable = false)
     private String mimeType;
 
-    @Column(name = "content_type", nullable = false)
-    private String contentType;
+    @Column(name = "document_type", nullable = false)
+    private DocumentType documentType;
 
     @Column(name = "indexed_content")
     private String indexedContent;

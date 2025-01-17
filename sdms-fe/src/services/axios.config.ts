@@ -1,7 +1,8 @@
 import axios, { AxiosError, AxiosHeaders, AxiosResponse, CreateAxiosDefaults } from "axios";
+
 import { APP_API_URL_AUTHENTICATION } from "@/env";
-import { TokenResponse } from "@/types/auth";
 import { ApiResponse } from "@/types/api";
+import { TokenResponse } from "@/types/auth";
 
 const config: CreateAxiosDefaults = {
   baseURL: `${APP_API_URL_AUTHENTICATION}/api`,

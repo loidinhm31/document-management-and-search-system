@@ -9,7 +9,8 @@
   "navigation": {
     "main": {
       "title": "Application",
-      "home": "Home"
+      "home": "Home",
+      "document": "Document"
     },
     "admin": {
       "title": "Administration",
@@ -20,6 +21,7 @@
   "pages": {
     "home": "Home",
     "profile": "Profile",
+    "document": "Document",
     "admin": {
       "title": "Admin",
       "users": "User Management",

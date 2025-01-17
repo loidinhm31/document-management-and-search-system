@@ -9,7 +9,8 @@
   "navigation": {
     "main": {
       "title": "Ứng dụng",
-      "home": "Trang chủ"
+      "home": "Trang chủ",
+      "document": "Tài liệu"
     },
     "admin": {
       "title": "Quản trị",
@@ -20,6 +21,7 @@
   "pages": {
     "home": "Home",
     "profile": "Profile",
+    "document": "Tài liệu",
     "admin": {
       "title": "Admin",
       "users": "Quản lý người dùng",

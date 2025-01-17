@@ -36,6 +36,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       href: "/home",
       isActive: location.pathname === "/home",
     },
+    {
+      title: t("navigation.main.document"),
+      icon: Home,
+      href: "/document",
+      isActive: location.pathname === "/document",
+    },
   ];
 
   const adminNavItems = [
