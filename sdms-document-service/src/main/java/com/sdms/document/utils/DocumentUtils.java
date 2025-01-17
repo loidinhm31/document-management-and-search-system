@@ -1,40 +1,14 @@
 package com.sdms.document.utils;
 
 import com.sdms.document.enums.DocumentType;
+import com.sdms.document.exception.UnsupportedDocumentTypeException;
 
 public class DocumentUtils {
     public static DocumentType determineDocumentType(String mimeType) {
-        if (mimeType == null) return DocumentType.OTHER;
-
-        String type = mimeType.toLowerCase();
-
-        if (type.equals("application/pdf")) {
-            return DocumentType.PDF;
+        try {
+            return DocumentType.fromMimeType(mimeType);
+        } catch (UnsupportedDocumentTypeException e) {
+            throw new UnsupportedDocumentTypeException("Unsupported document type: " + mimeType);
         }
-
-        if (type.equals("application/msword") ||
-                type.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
-            return DocumentType.WORD;
-        }
-
-        if (type.equals("application/vnd.ms-excel") ||
-                type.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) {
-            return DocumentType.EXCEL;
-        }
-
-        if (type.equals("application/vnd.ms-powerpoint") ||
-                type.equals("application/vnd.openxmlformats-officedocument.presentationml.presentation")) {
-            return DocumentType.POWERPOINT;
-        }
-
-        if (type.startsWith("text/")) {
-            return DocumentType.TEXT;
-        }
-
-        if (type.startsWith("image/")) {
-            return DocumentType.IMAGE;
-        }
-
-        return DocumentType.OTHER;
     }
 }

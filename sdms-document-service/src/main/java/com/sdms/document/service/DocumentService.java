@@ -6,6 +6,8 @@ import com.sdms.document.entity.Document;
 import com.sdms.document.entity.DocumentMetadata;
 import com.sdms.document.entity.User;
 import com.sdms.document.enums.DocumentType;
+import com.sdms.document.exception.InvalidDocumentException;
+import com.sdms.document.exception.UnsupportedDocumentTypeException;
 import com.sdms.document.model.DocumentContent;
 import com.sdms.document.repository.DocumentRepository;
 import com.sdms.document.repository.UserRepository;
@@ -28,25 +30,27 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.sdms.document.utils.DocumentUtils.determineDocumentType;
-
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
+    @Value("${app.document.storage.path}")
+    private String storageBasePath;
+
+    @Value("${app.document.max-file-size}")
+    private int maxFileSize;
+
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final ContentExtractor contentExtractor;
     private final DocumentIndexRepository documentIndexRepository;
-
-    @Value("${app.document.storage.path}")
-    private String storageBasePath;
-
 
     @Transactional(rollbackFor = Exception.class)
     public Document uploadDocument(MultipartFile file, String username) throws IOException {
         // Validate user
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("User not found"));
+
+        validateDocument(file);
 
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
@@ -102,6 +106,51 @@ public class DocumentService {
         return Files.readAllBytes(filePath);
     }
 
+    private void validateDocument(MultipartFile file) {
+        // Check if file is empty
+        if (file.isEmpty()) {
+            throw new InvalidDocumentException("File is empty");
+        }
+
+        // Check file size (configurable)
+        if (file.getSize() > maxFileSize) {
+            throw new InvalidDocumentException("File size exceeds maximum limit of " + maxFileSize + " bytes");
+        }
+
+        // Check MIME type
+        String mimeType = file.getContentType();
+        if (mimeType == null || !DocumentType.isSupportedMimeType(mimeType)) {
+            throw new UnsupportedDocumentTypeException("Unsupported document type: " + mimeType);
+        }
+
+        // Additional validation: check file extension matches MIME type
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename != null) {
+            String extension = getFileExtension(originalFilename).toLowerCase();
+            boolean isValidExtension = switch (mimeType) {
+                case "application/pdf" -> extension.equals(".pdf");
+                case "application/msword" -> extension.equals(".doc");
+                case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ->
+                        extension.equals(".docx");
+                case "application/vnd.ms-excel" -> extension.equals(".xls");
+                case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> extension.equals(".xlsx");
+                case "application/vnd.ms-powerpoint" -> extension.equals(".ppt");
+                case "application/vnd.openxmlformats-officedocument.presentationml.presentation" ->
+                        extension.equals(".pptx");
+                case "text/plain" -> extension.equals(".txt");
+                case "application/rtf" -> extension.equals(".rtf");
+                case "text/csv" -> extension.equals(".csv");
+                case "application/xml" -> extension.equals(".xml");
+                case "application/json" -> extension.equals(".json");
+                default -> false;
+            };
+
+            if (!isValidExtension) {
+                throw new InvalidDocumentException("File extension does not match the content type");
+            }
+        }
+    }
+
     private String createStoragePath(String filename) {
         // Create path structure: yyyy/MM/dd/filename
         LocalDate now = LocalDate.now();
@@ -133,7 +182,7 @@ public class DocumentService {
                 .content(document.getIndexedContent())
                 .userId(document.getUser().getUserId().toString())
                 .mimeType(document.getMimeType())
-                .documentType(determineDocumentType(document.getMimeType()))
+                .documentType(DocumentUtils.determineDocumentType(document.getMimeType()))
                 .fileSize(document.getFileSize())
                 .createdAt(document.getCreatedAt())
                 .metadata(convertMetadataToMap(document.getMetadata()))

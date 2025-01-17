@@ -46,6 +46,7 @@ app:
   document:
     storage:
       path: ./document/storage
+    max-file-size: 50MB
 
 logging:
   level:
