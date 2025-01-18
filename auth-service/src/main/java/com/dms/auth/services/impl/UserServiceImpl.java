@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class UserServiceImpl implements UserService {
-    @Value("${frontend.url}")
+    @Value("${app.frontend.url}")
     private String frontendUrl;
 
     private final AuthenticationManager authenticationManager;

@@ -1,3 +1,11 @@
+app:
+  eureka:
+    url: http://localhost:8081
+  document:
+    storage:
+      path: ./document/storage
+      max-file-size: 50MB
+
 spring:
   security:
     oauth2:
@@ -25,42 +33,13 @@ spring:
   rabbitmq:
     addresses: localhost:5672
 
-elasticsearch:
-  host: localhost
-  port: 9200
-  username: elastic  # Default username for Elasticsearch 8.x
-  password: "NX9DYn+_4WSXRmHwymTo"
-  # Updated index settings for 8.x
-  index:
-    settings:
-      number_of_shards: 1
-      number_of_replicas: 0
-      analysis:
-        analyzer:
-          custom_analyzer:
-            type: custom
-            tokenizer: standard
-            filter:
-              - lowercase
-              - asciifolding
-              - word_delimiter_graph
-    mapping:
-      total_fields:
-        limit: 2000
-
-app:
-  document:
-    storage:
-      path: ./document/storage
-      max-file-size: 50MB
-
+# Eureka Client
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_URI:http://localhost:8081/eureka}
+      defaultZone: ${app.eureka.url}/eureka
     fetch-registry: true
     register-with-eureka: true
     enabled: true
   instance:
     preferIpAddress: true
-

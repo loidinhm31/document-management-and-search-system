@@ -1,3 +1,11 @@
+app:
+  frontend:
+    url: http://localhost:3000
+  gateway:
+    url: http://localhost:8080
+  eureka:
+    url: http://localhost:8081
+
 spring:
   # Database Configuration
   datasource:
@@ -28,7 +36,10 @@ spring:
           google:
             client-id:
             client-secret:
-
+            redirect-uri: ${app.gateway.url}/login/oauth2/code/google
+            scope:
+              - email
+              - profile
   mail:
     host: smtp.gmail.com
     port: 587
@@ -45,12 +56,9 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: ${EUREKA_URI:http://localhost:8081/eureka}
+      defaultZone: ${app.eureka.url}/eureka
     fetch-registry: true
     register-with-eureka: true
     enabled: true
   instance:
     preferIpAddress: true
-
-frontend:
-  url: http://localhost:3000

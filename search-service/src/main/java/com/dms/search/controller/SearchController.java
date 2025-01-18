@@ -19,7 +19,7 @@ import java.util.List;
 public class SearchController {
     private final DocumentSearchService documentSearchService;
 
-    @GetMapping("/search")
+    @GetMapping
     public ResponseEntity<Page<DocumentIndex>> searchDocuments(
             @RequestParam String query,
             @RequestParam(defaultValue = "0") int page,

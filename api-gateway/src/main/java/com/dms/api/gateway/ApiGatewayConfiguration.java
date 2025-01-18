@@ -5,12 +5,24 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class ApiGatewayConfiguration {
     @Bean
     public RouteLocator gatewayRouter(RouteLocatorBuilder builder) {
         return builder.routes()
+                // OAuth2 specific routes
+                .route(r -> r.path("/login/oauth2/code/google")
+                        .uri("lb://auth-service"))
+                .route(r -> r.path("/oauth2/authorization/google")
+                        .uri("lb://auth-service"))
+                // General auth routes
                 .route(r-> r.path("/auth/**")
                         .filters(f -> f.rewritePath(
                                 "/auth/(?<segment>.*)",
@@ -22,5 +34,19 @@ public class ApiGatewayConfiguration {
                                 "/${segment}"))
                         .uri("lb://document-service"))
                 .build();
+    }
+
+    @Bean
+    public CorsWebFilter corsWebFilter() {
+        CorsConfiguration corsConfig = new CorsConfiguration();
+        corsConfig.setAllowedOrigins(List.of("http://localhost:3000"));
+        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        corsConfig.setAllowedHeaders(List.of("*"));
+        corsConfig.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfig);
+
+        return new CorsWebFilter(source);
     }
 }

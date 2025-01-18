@@ -40,7 +40,7 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
     private final RefreshTokenService refreshTokenService;
     private final JwtUtils jwtUtils;
 
-    @Value("${frontend.url}")
+    @Value("${app.frontend.url}")
     private String frontendUrl;
 
     private static final String GOOGLE_PROVIDER = "google";
