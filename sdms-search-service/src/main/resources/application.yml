@@ -1,0 +1,20 @@
+server:
+  port: 8084
+  error:
+    include-message: always
+
+logging:
+  level:
+    org:
+      springframework:
+        web: DEBUG
+        security: DEBUG
+        data:
+          elasticsearch: DEBUG
+      elasticsearch: DEBUG
+
+spring:
+  application:
+    name: search-service
+  profiles:
+    active: local

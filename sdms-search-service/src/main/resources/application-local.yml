@@ -22,8 +22,7 @@ spring:
       database: sdms
       port: 27017
       host: localhost
-  rabbitmq:
-    addresses: localhost:5672
+
 
 elasticsearch:
   host: localhost
@@ -48,11 +47,14 @@ elasticsearch:
       total_fields:
         limit: 2000
 
-app:
-  document:
-    storage:
-      path: ./document/storage
-      max-file-size: 50MB
+# RabbitMQ
+rabbitmq:
+  exchanges:
+    internal: internal.exchange
+  queues:
+    document-sync: document-sync.queue
+  routing-keys:
+    internal-document-sync: internal.document-sync.routing-key
 
 eureka:
   client:

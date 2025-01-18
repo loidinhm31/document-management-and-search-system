@@ -1,7 +1,7 @@
-package com.sdms.document.repository;
+package com.sdms.search.repository;
 
 
-import com.sdms.document.entity.User;
+import com.sdms.search.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;

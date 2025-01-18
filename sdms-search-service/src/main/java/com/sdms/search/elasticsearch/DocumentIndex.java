@@ -1,8 +1,8 @@
-package com.sdms.document.elasticsearch;
+package com.sdms.search.elasticsearch;
 
-import com.sdms.document.enums.CourseLevel;
-import com.sdms.document.enums.DocumentCategory;
-import com.sdms.document.enums.DocumentType;
+import com.sdms.search.enums.CourseLevel;
+import com.sdms.search.enums.DocumentCategory;
+import com.sdms.search.enums.DocumentType;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;

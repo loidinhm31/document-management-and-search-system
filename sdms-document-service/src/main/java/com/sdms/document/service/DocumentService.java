@@ -1,15 +1,12 @@
 package com.sdms.document.service;
 
-import com.sdms.document.elasticsearch.DocumentIndex;
-import com.sdms.document.elasticsearch.repository.DocumentIndexRepository;
-import com.sdms.document.enums.CourseLevel;
-import com.sdms.document.enums.DocumentCategory;
-import com.sdms.document.enums.DocumentType;
-import com.sdms.document.enums.Major;
+import com.sdms.document.dto.DocumentContent;
+import com.sdms.document.entity.User;
+import com.sdms.document.enums.*;
 import com.sdms.document.exception.InvalidDocumentException;
 import com.sdms.document.exception.UnsupportedDocumentTypeException;
-import com.sdms.document.dto.DocumentContent;
 import com.sdms.document.model.DocumentInformation;
+import com.sdms.document.model.SyncEventRequest;
 import com.sdms.document.repository.DocumentRepository;
 import com.sdms.document.repository.UserRepository;
 import com.sdms.document.utils.DocumentUtils;
@@ -26,12 +23,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
+    private final PublishEventService publishEventService;
     @Value("${app.document.storage.path}")
     private String storageBasePath;
 
@@ -40,8 +40,7 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
-    private final ContentExtractor contentExtractor;
-    private final DocumentIndexRepository documentIndexRepository;
+    private final ContentExtractorService contentExtractorService;
 
     public DocumentInformation uploadDocument(MultipartFile file,
                                               String courseCode,
@@ -50,6 +49,9 @@ public class DocumentService {
                                               DocumentCategory category,
                                               Set<String> tags,
                                               String username) throws IOException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new InvalidDataAccessResourceUsageException("User not found"));
+
         validateDocument(file);
 
         // Generate unique filename
@@ -68,7 +70,7 @@ public class DocumentService {
         Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
         // Extract content and metadata
-        DocumentContent extractedContent = contentExtractor.extractContent(fullPath);
+        DocumentContent extractedContent = contentExtractorService.extractContent(fullPath);
 
         // Create document
         DocumentInformation document = DocumentInformation.builder()
@@ -78,14 +80,14 @@ public class DocumentService {
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .documentType(DocumentUtils.determineDocumentType(file.getContentType()))
-                .content(extractedContent.getContent())
+                .content(extractedContent.content())
                 .major(major)
                 .courseCode(courseCode)
                 .courseLevel(level)
                 .category(category)
                 .tags(tags != null ? tags : new HashSet<>())
-                .extractedMetadata(extractedContent.getMetadata())
-                .userId(username)
+                .extractedMetadata(extractedContent.metadata())
+                .userId(user.getUserId().toString())
                 .createdAt(new Date())
                 .createdBy(username)
                 .updatedAt(new Date())
@@ -94,6 +96,19 @@ public class DocumentService {
 
         // Save to MongoDB
         DocumentInformation savedDocument = documentRepository.save(document);
+
+        // Send sync event
+        CompletableFuture.runAsync(() -> {
+           publishEventService.sendSyncEvent(
+                   SyncEventRequest.builder()
+                           .eventId(UUID.randomUUID().toString())
+                           .userId(user.getUserId().toString())
+                           .documentId(savedDocument.getId())
+                           .subject(EventType.SYNC_EVENT.name())
+                           .triggerAt(LocalDateTime.now())
+                           .build()
+           );
+        });
 
         return savedDocument;
     }
@@ -116,7 +131,6 @@ public class DocumentService {
         document.setUpdatedBy(username);
 
         DocumentInformation updatedDocument = documentRepository.save(document);
-        indexDocument(updatedDocument);
 
         return updatedDocument;
     }
@@ -191,25 +205,4 @@ public class DocumentService {
                 .orElse("");
     }
 
-
-
-    private void indexDocument(DocumentInformation document) {
-        DocumentIndex documentIndex = DocumentIndex.builder()
-                .id(document.getId())
-                .filename(document.getOriginalFilename())
-                .content(document.getContent())
-                .userId(document.getUserId())
-                .mimeType(document.getMimeType())
-                .documentType(document.getDocumentType())
-                .major(document.getMajor().getCode())
-                .courseCode(document.getCourseCode())
-                .courseLevel(document.getCourseLevel())
-                .category(document.getCategory())
-                .tags(document.getTags())
-                .fileSize(document.getFileSize())
-                .createdAt(document.getCreatedAt())
-                .build();
-
-        documentIndexRepository.save(documentIndex);
-    }
 }

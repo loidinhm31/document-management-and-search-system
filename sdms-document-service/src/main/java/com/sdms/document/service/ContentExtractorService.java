@@ -7,7 +7,7 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.ToTextContentHandler;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -27,15 +27,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 @Slf4j
-public class ContentExtractor {
+public class ContentExtractorService {
     private final AutoDetectParser parser;
     private final ExecutorService executorService;
 
     private final AtomicInteger threadCounter = new AtomicInteger(1);
 
-    public ContentExtractor() {
+    public ContentExtractorService() {
         this.parser = new AutoDetectParser();
         this.executorService = Executors.newFixedThreadPool(
                 Runtime.getRuntime().availableProcessors(),
@@ -58,17 +58,11 @@ public class ContentExtractor {
 
             CompletableFuture.allOf(contentFuture, metadataFuture).join();
 
-            return DocumentContent.builder()
-                    .content(contentFuture.get())
-                    .metadata(metadataFuture.get())
-                    .build();
+            return new DocumentContent(contentFuture.get(), metadataFuture.get());
 
         } catch (Exception e) {
             log.error("Error extracting content from file: {}", filePath, e);
-            return DocumentContent.builder()
-                    .content("")
-                    .metadata(new HashMap<>())
-                    .build();
+            return new DocumentContent("", new HashMap<>());
         }
     }
 

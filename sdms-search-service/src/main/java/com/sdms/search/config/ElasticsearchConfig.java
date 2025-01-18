@@ -1,4 +1,4 @@
-package com.sdms.document.config;
+package com.sdms.search.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
@@ -6,7 +6,7 @@ import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfigurat
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 @Configuration
-@EnableElasticsearchRepositories(basePackages = "com.sdms.document.elasticsearch.repository")
+@EnableElasticsearchRepositories(basePackages = "com.sdms.search.elasticsearch.repository")
 class ElasticsearchConfig extends ElasticsearchConfiguration {
 
     @Override
