@@ -1,0 +1,11 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: eureka-discovery-server
+  profiles:
+    active: local
+  cloud:
+    config:
+      enabled: false
