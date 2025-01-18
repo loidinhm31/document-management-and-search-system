@@ -33,6 +33,11 @@ public class ApiGatewayConfiguration {
                                 "/document/(?<segment>.*)",
                                 "/${segment}"))
                         .uri("lb://document-service"))
+                .route(r-> r.path("/search/**")
+                        .filters(f -> f.rewritePath(
+                                "/search/(?<segment>.*)",
+                                "/${segment}"))
+                        .uri("lb://search-service"))
                 .build();
     }
 

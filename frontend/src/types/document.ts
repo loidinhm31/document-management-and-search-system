@@ -1,20 +1,39 @@
 export enum DocumentType {
   PDF = "PDF",
   WORD = "WORD",
-  TEXT = "TEXT",
-  OTHER = "OTHER"
+  WORD_DOCX = "WORD_DOCX",
+  EXCEL = "EXCEL",
+  EXCEL_XLSX = "EXCEL_XLSX",
+  POWERPOINT = "POWERPOINT",
+  POWERPOINT_PPTX = "POWERPOINT_PPTX",
+  TEXT_PLAIN = "TEXT_PLAIN",
+  RTF = "RTF",
+  CSV = "CSV",
+  XML = "XML",
+  JSON = "JSON"
 }
 
 export interface Document {
   id: string;
   filename: string;
+  originalFilename: string;
+  filePath: string;
   fileSize: number;
-  documentType: DocumentType;
   mimeType: string;
+  documentType: DocumentType;
+  content?: string;
+  major: string;
+  courseCode: string;
+  courseLevel: string;
+  category: string;
+  tags?: string[];
+  extractedMetadata?: Record<string, string>;
   userId: string;
-  metadata: Record<string, string>;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
+  createdBy: string;
+  updatedBy: string;
+  deleted: boolean;
 }
 
 export interface DocumentUploadResponse {

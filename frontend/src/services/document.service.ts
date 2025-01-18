@@ -1,34 +1,38 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
-import { Document, DocumentUploadResponse } from "@/types/document";
+import { DocumentUploadResponse } from "@/types/document";
 
 class DocumentService extends BaseService {
-
-  uploadDocument(file: File, metadata?: Record<string, string>) {
+  uploadDocument(
+    file: File,
+    courseCode: string,
+    major: string,
+    level: string,
+    category: string,
+    tags?: string[]
+  ) {
     const formData = new FormData();
     formData.append("file", file);
-    if (metadata) {
-      formData.append("metadata", JSON.stringify(metadata));
+    formData.append("courseCode", courseCode);
+    formData.append("major", major);
+    formData.append("level", level);
+    formData.append("category", category);
+    if (tags && tags.length > 0) {
+      formData.append("tags", JSON.stringify(tags));
     }
 
     return this.handleApiResponse<DocumentUploadResponse>(
       axiosInstance.post("/document/api/v1/documents", formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
-        },
+          "Content-Type": "multipart/form-data"
+        }
       })
-    );
-  }
-
-  getDocument(id: string) {
-    return this.handleApiResponse<Document>(
-      axiosInstance.get(`/document/api/v1/documents/${id}`)
     );
   }
 
   downloadDocument(id: string) {
     return axiosInstance.get(`/document/api/v1/documents/${id}`, {
-      responseType: "blob",
+      responseType: "blob"
     });
   }
 
@@ -44,6 +48,19 @@ class DocumentService extends BaseService {
     );
   }
 
+  updateTags(id: string, tags: string[]) {
+    return this.handleApiResponse<Document>(
+      axiosInstance.put(`/document/api/v1/documents/${id}/tags`, tags)
+    );
+  }
+
+  getTagSuggestions(prefix?: string) {
+    return this.handleApiResponse<string[]>(
+      axiosInstance.get(`/document/api/v1/documents/tags/suggestions`, {
+        params: { prefix }
+      })
+    );
+  }
 }
 
 export const documentService = new DocumentService();

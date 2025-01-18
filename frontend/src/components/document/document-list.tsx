@@ -1,14 +1,17 @@
-import React, { useState } from "react";
-import { Document } from "@/types/document";
+import { Download, Eye, Loader2, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
+
+import { DocumentViewer } from "@/components/document/document-viewer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Eye, Loader2, Trash2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DocumentViewer } from "@/components/document/document-viewer";
+import { searchService } from "@/services/search.service";
+import { Document } from "@/types/document";
+import DocumentSearch from "@/components/document/document-search";
+
 
 export const DocumentList = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -16,10 +19,15 @@ export const DocumentList = () => {
   const [selectedDoc, setSelectedDoc] = useState<Document>(null);
   const { toast } = useToast();
 
+  // Initial data load
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
   const fetchDocuments = async (query = "") => {
     setLoading(true);
     try {
-      const response = await documentService.searchDocuments(encodeURIComponent(query));
+      const response = await searchService.searchDocuments(encodeURIComponent(query));
       setDocuments(response.data.content);
     } catch (error) {
       toast({
@@ -71,19 +79,18 @@ export const DocumentList = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <Input
-          placeholder="Search documents..."
-          className="max-w-xs"
-          onChange={(e) => fetchDocuments(e.target.value)}
-        />
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Documents</CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4">
+            <DocumentSearch
+              onSearch={fetchDocuments}
+              className="max-w-xs"
+            />
+          </div>
+
           {loading ? (
             <div className="flex justify-center p-4">
               <Loader2 className="w-6 h-6 animate-spin" />
@@ -139,24 +146,26 @@ export const DocumentList = () => {
         </CardContent>
       </Card>
 
-      {selectedDoc && (<Dialog open={!!selectedDoc} onOpenChange={() => setSelectedDoc(null)}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>{selectedDoc?.filename}</DialogTitle>
-            <DialogDescription>
-              {selectedDoc?.mimeType} - {(selectedDoc?.fileSize / 1024).toFixed(2)} KB
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-auto">
-            <DocumentViewer
-              documentId={selectedDoc?.id}
-              documentType={selectedDoc?.documentType}
-              mimeType={selectedDoc?.mimeType}
-              fileName={selectedDoc?.filename}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>)}
+      {selectedDoc && (
+        <Dialog open={!!selectedDoc} onOpenChange={() => setSelectedDoc(null)}>
+          <DialogContent className="max-w-4xl h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>{selectedDoc?.filename}</DialogTitle>
+              <DialogDescription>
+                {selectedDoc?.mimeType} - {(selectedDoc?.fileSize / 1024).toFixed(2)} KB
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-auto">
+              <DocumentViewer
+                documentId={selectedDoc?.id}
+                documentType={selectedDoc?.documentType}
+                mimeType={selectedDoc?.mimeType}
+                fileName={selectedDoc?.filename}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

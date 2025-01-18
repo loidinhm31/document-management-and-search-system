@@ -9,7 +9,7 @@ public enum Major {
     SOFTWARE_ENGINEERING("SE", "Software Engineering"),
     ARTIFICIAL_INTELLIGENCE("AI", "Artificial Intelligence"),
     INFORMATION_SECURITY("IS", "Information Security"),
-    DIGITAL_MARKETING("DM", "Digital Marketing");
+    IOT("IOT", "Internet Of Things");
 
     private final String code;
     private final String name;

@@ -1,5 +1,5 @@
-import { BaseService } from "@/services/base.service";
 import axiosInstance from "@/services/axios.config";
+import { BaseService } from "@/services/base.service";
 
 class SearchService extends BaseService {
 
