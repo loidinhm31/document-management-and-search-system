@@ -1,20 +1,17 @@
 package com.sdms.document.controller;
 
 import com.sdms.document.elasticsearch.DocumentIndex;
-import com.sdms.document.entity.Document;
-import com.sdms.document.entity.DocumentMetadata;
+import com.sdms.document.enums.CourseLevel;
+import com.sdms.document.enums.DocumentCategory;
+import com.sdms.document.enums.Major;
+import com.sdms.document.model.DocumentInformation;
 import com.sdms.document.service.DocumentSearchService;
 import com.sdms.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.elasticsearch.core.SearchPage;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -22,7 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.UUID;
+import java.util.List;
+import java.util.Set;
 
 @RequiredArgsConstructor
 @RestController
@@ -32,22 +30,42 @@ public class DocumentController {
     private final DocumentSearchService documentSearchService;
 
     @PostMapping
-    public ResponseEntity<Document> uploadDocument(
+    public ResponseEntity<DocumentInformation> uploadDocument(
             @RequestParam("file") MultipartFile file,
+            @RequestParam String courseCode,
+            @RequestParam Major major,
+            @RequestParam CourseLevel level,
+            @RequestParam DocumentCategory category,
+            @RequestParam(required = false) Set<String> tags,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
-        String username = jwt.getSubject();
-        return ResponseEntity.ok(documentService.uploadDocument(file, username));
+
+        return ResponseEntity.ok(documentService.uploadDocument(
+                file, courseCode, major, level, category, tags, jwt.getSubject()));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<byte[]> getDocument(
-            @PathVariable UUID id,
+            @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         String username = jwt.getSubject();
         byte[] content = documentService.getDocumentContent(id, username);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"document\"")
                 .body(content);
+    }
+
+    @PutMapping("/{id}/tags")
+    public ResponseEntity<DocumentInformation> updateDocumentTags(
+            @PathVariable String id,
+            @RequestBody Set<String> tags,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(documentService.updateTags(id, tags, jwt.getSubject()));
+    }
+
+    @GetMapping("/tags/suggestions")
+    public ResponseEntity<Set<String>> getTagSuggestions(
+            @RequestParam(required = false) String prefix) {
+        return ResponseEntity.ok(documentService.getPopularTags(prefix));
     }
 
     @GetMapping("/search")
@@ -66,6 +84,16 @@ public class DocumentController {
         );
 
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/suggestions")
+    public ResponseEntity<List<String>> getSuggestions(
+            @RequestParam String query,
+            @AuthenticationPrincipal Jwt jwt) {
+        String username = jwt.getSubject();
+
+        List<String> suggestions = documentSearchService.getSuggestions(query, username);
+        return ResponseEntity.ok(suggestions);
     }
 
 }

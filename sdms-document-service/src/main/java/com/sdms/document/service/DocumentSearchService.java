@@ -1,20 +1,28 @@
 package com.sdms.document.service;
 
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.sdms.document.elasticsearch.DocumentIndex;
 import com.sdms.document.entity.User;
 import com.sdms.document.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.client.RequestOptions;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.Criteria;
+import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
+import org.springframework.data.elasticsearch.core.query.Query;
+import org.springframework.data.elasticsearch.core.suggest.response.CompletionSuggestion;
+import org.springframework.data.elasticsearch.core.suggest.response.Suggest;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,59 +36,32 @@ public class DocumentSearchService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("User not found"));
 
-        String userId = user.getUserId().toString();
-        log.info("Searching documents for userId: {} with query: {}", userId, searchQuery);
-
         try {
-            // Build the query using Query DSL
-            NativeQuery nativeQuery = NativeQuery.builder()
-                    .withQuery(q -> q
-                            .bool(b -> b
-                                    .must(m -> m
-                                            .match(match -> match
-                                                    .field("userId.keyword")
-                                                    .query(userId)
-                                            )
-                                    )
-                                    .must(m -> m
-                                            .bool(innerBool -> innerBool
-                                                    .should(s -> s
-                                                            .match(match -> match
-                                                                    .field("content")
-                                                                    .query(searchQuery)
-                                                            )
-                                                    )
-                                                    .should(s -> s
-                                                            .match(match -> match
-                                                                    .field("filename")
-                                                                    .query(searchQuery)
-                                                            )
-                                                    )
-                                                    .minimumShouldMatch("1")
-                                            )
-                                    )
-                            )
-                    )
-                    .withPageable(pageable)
-                    .build();
+            // Create criteria for basic filtering
+            Criteria userCriteria = new Criteria("userId").is(user.getUserId());
+
+            // Create search criteria with boosting and fuzzy matching
+            Criteria searchCriteria = new Criteria()
+                    .or(new Criteria("filename").boost(3.0f).fuzzy(searchQuery))
+                    .or(new Criteria("content").boost(1.0f).fuzzy(searchQuery));
+
+            // Combine criteria
+            Criteria finalCriteria = new Criteria().and(userCriteria).and(searchCriteria);
+
+            // Build query with criteria and sorting
+            Query query = new CriteriaQuery(finalCriteria)
+                    .addSort(Sort.by(Sort.Direction.DESC, "_score"))
+                    .setPageable(pageable);
 
             // Execute search
             SearchHits<DocumentIndex> searchHits = elasticsearchOperations.search(
-                    nativeQuery,
+                    query,
                     DocumentIndex.class
             );
 
-            log.info("Found {} documents", searchHits.getTotalHits());
-
-            // Convert SearchHits to List<DocumentIndex>
+            // Process results
             List<DocumentIndex> documents = searchHits.getSearchHits().stream()
-                    .map(hit -> {
-                        DocumentIndex doc = hit.getContent();
-                        if (doc.getContent() != null && doc.getContent().length() > 200) {
-                            doc.setContent(doc.getContent().substring(0, 200) + "...");
-                        }
-                        return doc;
-                    })
+                    .map(SearchHit::getContent)
                     .collect(Collectors.toList());
 
             return new PageImpl<>(
@@ -92,6 +73,34 @@ public class DocumentSearchService {
         } catch (Exception e) {
             log.error("Error performing document search", e);
             throw new RuntimeException("Failed to perform document search", e);
+        }
+    }
+
+    public List<String> getSuggestions(String prefix, String userId) {
+        try {
+            // Create criteria for prefix matching
+            Criteria criteria = new Criteria("userId").is(userId)
+                    .and(new Criteria("filename").startsWith(prefix.toLowerCase()));
+
+            // Create query with pagination
+            Query query = new CriteriaQuery(criteria)
+                    .setPageable(PageRequest.of(0, 5, Sort.by("filename").ascending()));
+
+            // Execute search
+            SearchHits<DocumentIndex> searchHits = elasticsearchOperations.search(
+                    query,
+                    DocumentIndex.class
+            );
+
+            // Return unique suggestions
+            return searchHits.getSearchHits().stream()
+                    .map(hit -> hit.getContent().getFilename())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            log.error("Error getting suggestions", e);
+            return Collections.emptyList();
         }
     }
 }

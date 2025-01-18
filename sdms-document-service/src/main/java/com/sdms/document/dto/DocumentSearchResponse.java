@@ -1,4 +1,4 @@
-package com.sdms.document.model;
+package com.sdms.document.dto;
 
 import lombok.Builder;
 import lombok.Data;

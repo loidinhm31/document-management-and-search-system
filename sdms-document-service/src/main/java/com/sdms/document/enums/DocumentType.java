@@ -1,7 +1,11 @@
 package com.sdms.document.enums;
 
 import com.sdms.document.exception.UnsupportedDocumentTypeException;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
+@AllArgsConstructor
+@Getter
 public enum DocumentType {
     PDF("application/pdf", "PDF Document"),
     WORD("application/msword", "Word Document (DOC)"),
@@ -18,19 +22,6 @@ public enum DocumentType {
 
     private final String mimeType;
     private final String displayName;
-
-    DocumentType(String mimeType, String displayName) {
-        this.mimeType = mimeType;
-        this.displayName = displayName;
-    }
-
-    public String getMimeType() {
-        return mimeType;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
 
     public static DocumentType fromMimeType(String mimeType) {
         for (DocumentType type : values()) {

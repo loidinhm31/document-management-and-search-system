@@ -1,0 +1,65 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8082
+          jwk-set-uri: http://localhost:8082/.well-known/jwks.json
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=sdms
+    username: postgres
+    password: postgrespw
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  data:
+    mongodb:
+      authentication-database: admin
+      username: mongodb
+      password: mongodbpw
+      database: webservice
+      port: 27017
+      host: localhost
+
+
+elasticsearch:
+  host: localhost
+  port: 9200
+  username: elastic  # Default username for Elasticsearch 8.x
+  password: "NX9DYn+_4WSXRmHwymTo"
+  # Updated index settings for 8.x
+  index:
+    settings:
+      number_of_shards: 1
+      number_of_replicas: 0
+      analysis:
+        analyzer:
+          custom_analyzer:
+            type: custom
+            tokenizer: standard
+            filter:
+              - lowercase
+              - asciifolding
+              - word_delimiter_graph
+    mapping:
+      total_fields:
+        limit: 2000
+
+app:
+  document:
+    storage:
+      path: ./document/storage
+      max-file-size: 50MB
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URI:http://localhost:8081/eureka}
+    fetch-registry: true
+    register-with-eureka: true
+    enabled: true
+  instance:
+    preferIpAddress: true
+

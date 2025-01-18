@@ -2,21 +2,23 @@ package com.sdms.document.service;
 
 import com.sdms.document.elasticsearch.DocumentIndex;
 import com.sdms.document.elasticsearch.repository.DocumentIndexRepository;
-import com.sdms.document.entity.Document;
-import com.sdms.document.entity.DocumentMetadata;
-import com.sdms.document.entity.User;
+import com.sdms.document.enums.CourseLevel;
+import com.sdms.document.enums.DocumentCategory;
 import com.sdms.document.enums.DocumentType;
+import com.sdms.document.enums.Major;
 import com.sdms.document.exception.InvalidDocumentException;
 import com.sdms.document.exception.UnsupportedDocumentTypeException;
-import com.sdms.document.model.DocumentContent;
+import com.sdms.document.dto.DocumentContent;
+import com.sdms.document.model.DocumentInformation;
 import com.sdms.document.repository.DocumentRepository;
 import com.sdms.document.repository.UserRepository;
 import com.sdms.document.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.data.elasticsearch.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -24,10 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,20 +35,21 @@ public class DocumentService {
     @Value("${app.document.storage.path}")
     private String storageBasePath;
 
-    @Value("${app.document.max-file-size}")
-    private int maxFileSize;
+    @Value("${app.document.storage.max-file-size}")
+    private DataSize maxFileSize;
 
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final ContentExtractor contentExtractor;
     private final DocumentIndexRepository documentIndexRepository;
 
-    @Transactional(rollbackFor = Exception.class)
-    public Document uploadDocument(MultipartFile file, String username) throws IOException {
-        // Validate user
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new InvalidDataAccessResourceUsageException("User not found"));
-
+    public DocumentInformation uploadDocument(MultipartFile file,
+                                              String courseCode,
+                                              Major major,
+                                              CourseLevel level,
+                                              DocumentCategory category,
+                                              Set<String> tags,
+                                              String username) throws IOException {
         validateDocument(file);
 
         // Generate unique filename
@@ -67,43 +67,69 @@ public class DocumentService {
         // Save file to disk
         Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Create document entity
-        Document document = new Document();
-        document.setFilename(uniqueFilename);
-        document.setOriginalFilename(originalFilename);
-        document.setFilePath(relativePath);
-        document.setFileSize(file.getSize());
-        document.setMimeType(file.getContentType());
-        document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
-        document.setUser(user);
-        document.setCreatedBy(username);
-        document.setUpdatedBy(username);
-
         // Extract content and metadata
         DocumentContent extractedContent = contentExtractor.extractContent(fullPath);
 
-        // Set extracted content for indexing
-        document.setIndexedContent(extractedContent.getContent());
+        // Create document
+        DocumentInformation document = DocumentInformation.builder()
+                .filename(uniqueFilename)
+                .originalFilename(originalFilename)
+                .filePath(relativePath)
+                .fileSize(file.getSize())
+                .mimeType(file.getContentType())
+                .documentType(DocumentUtils.determineDocumentType(file.getContentType()))
+                .content(extractedContent.getContent())
+                .major(major)
+                .courseCode(courseCode)
+                .courseLevel(level)
+                .category(category)
+                .tags(tags != null ? tags : new HashSet<>())
+                .extractedMetadata(extractedContent.getMetadata())
+                .userId(username)
+                .createdAt(new Date())
+                .createdBy(username)
+                .updatedAt(new Date())
+                .updatedBy(username)
+                .build();
 
-        // Add extracted metadata
-        addExtractedMetadata(document, extractedContent.getMetadata());
-
-        // Save document to database
-        Document savedDocument = documentRepository.save(document);
-
-        // Index document in Elasticsearch
-        indexDocument(savedDocument);
+        // Save to MongoDB
+        DocumentInformation savedDocument = documentRepository.save(document);
 
         return savedDocument;
     }
 
 
-    public byte[] getDocumentContent(UUID documentId, String username) throws IOException {
-        Document document = documentRepository.findByIdAndUser_Username(documentId, username)
+    public byte[] getDocumentContent(String documentId, String username) throws IOException {
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, username)
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
         Path filePath = Path.of(storageBasePath, document.getFilePath());
         return Files.readAllBytes(filePath);
+    }
+
+    public DocumentInformation updateTags(String documentId, Set<String> tags, String username) {
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, username)
+                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
+
+        document.setTags(tags);
+        document.setUpdatedAt(new Date());
+        document.setUpdatedBy(username);
+
+        DocumentInformation updatedDocument = documentRepository.save(document);
+        indexDocument(updatedDocument);
+
+        return updatedDocument;
+    }
+
+    public Set<String> getPopularTags(String prefix) {
+        if (prefix != null && !prefix.isEmpty()) {
+            return new HashSet<>(documentRepository.findDistinctTagsByPattern(prefix));
+        }
+
+        // If no prefix, get all unique tags
+        return documentRepository.findAllTags().stream()
+                .flatMap(doc -> doc.getTags().stream())
+                .collect(Collectors.toSet());
     }
 
     private void validateDocument(MultipartFile file) {
@@ -113,7 +139,7 @@ public class DocumentService {
         }
 
         // Check file size (configurable)
-        if (file.getSize() > maxFileSize) {
+        if (file.getSize() > maxFileSize.toBytes()) {
             throw new InvalidDocumentException("File size exceeds maximum limit of " + maxFileSize + " bytes");
         }
 
@@ -165,39 +191,25 @@ public class DocumentService {
                 .orElse("");
     }
 
-    private void addExtractedMetadata(Document document, Map<String, String> metadata) {
-        metadata.forEach((key, value) -> {
-            DocumentMetadata metadataEntity = new DocumentMetadata();
-            metadataEntity.setDocument(document);
-            metadataEntity.setKey(key);
-            metadataEntity.setValue(value);
-            document.getMetadata().add(metadataEntity);
-        });
-    }
 
-    private void indexDocument(Document document) {
+
+    private void indexDocument(DocumentInformation document) {
         DocumentIndex documentIndex = DocumentIndex.builder()
-                .id(document.getId().toString())
+                .id(document.getId())
                 .filename(document.getOriginalFilename())
-                .content(document.getIndexedContent())
-                .userId(document.getUser().getUserId().toString())
+                .content(document.getContent())
+                .userId(document.getUserId())
                 .mimeType(document.getMimeType())
-                .documentType(DocumentUtils.determineDocumentType(document.getMimeType()))
+                .documentType(document.getDocumentType())
+                .major(document.getMajor().getCode())
+                .courseCode(document.getCourseCode())
+                .courseLevel(document.getCourseLevel())
+                .category(document.getCategory())
+                .tags(document.getTags())
                 .fileSize(document.getFileSize())
                 .createdAt(document.getCreatedAt())
-                .metadata(convertMetadataToMap(document.getMetadata()))
                 .build();
 
         documentIndexRepository.save(documentIndex);
-    }
-
-
-    private Map<String, String> convertMetadataToMap(Set<DocumentMetadata> metadata) {
-        return metadata.stream()
-                .collect(Collectors.toMap(
-                        DocumentMetadata::getKey,
-                        DocumentMetadata::getValue,
-                        (existing, replacement) -> existing // Keep existing in case of duplicates
-                ));
     }
 }
