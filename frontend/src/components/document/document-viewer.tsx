@@ -2,6 +2,7 @@ import mammoth from "mammoth";
 import Papa from "papaparse";
 import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
+import JSZip from 'jszip';
 import { Loader2 } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +13,7 @@ import { WordViewer } from "./viewers/word-viewer";
 import { SpreadsheetViewer } from "./viewers/spreadsheet-viewer";
 import { TextViewer } from "./viewers/text-viewer";
 import { UnsupportedViewer } from "./viewers/unsupported-viewer";
+import { PowerPointViewer } from "./viewers/powerpoint-viewer";
 import { Button } from "@/components/ui/button";
 
 interface DocumentViewerProps {
@@ -32,13 +34,16 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
   const [wordContent, setWordContent] = useState<string | null>(null);
   const [textContent, setTextContent] = useState<string | null>(null);
   const [excelContent, setExcelContent] = useState<ExcelSheet[]>([]);
-  const [csvContent, setCsvContent] = useState<Array<Array<string | number | boolean | Date | null>>>([]);  const [activeSheet, setActiveSheet] = useState(0);
+  const [csvContent, setCsvContent] = useState<Array<Array<string | number | boolean | Date | null>>>([]);
+  const [powerPointContent, setPowerPointContent] = useState<string[]>([]);
+  const [activeSheet, setActiveSheet] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     loadDocument();
     return () => {
+      // Cleanup URL object on unmount
       if (fileUrl) {
         URL.revokeObjectURL(fileUrl);
       }
@@ -59,6 +64,7 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
           setFileUrl(url);
           break;
         }
+
         case DocumentType.WORD:
         case DocumentType.WORD_DOCX: {
           const arrayBuffer = await blob.arrayBuffer();
@@ -66,6 +72,7 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
           setWordContent(result.value);
           break;
         }
+
         case DocumentType.EXCEL:
         case DocumentType.EXCEL_XLSX: {
           const arrayBuffer = await blob.arrayBuffer();
@@ -87,6 +94,7 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
           setExcelContent(sheets);
           break;
         }
+
         case DocumentType.CSV: {
           const text = await blob.text();
           Papa.parse(text, {
@@ -112,9 +120,46 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
           });
           break;
         }
+
+        case DocumentType.POWERPOINT:
+        case DocumentType.POWERPOINT_PPTX: {
+          const arrayBuffer = await blob.arrayBuffer();
+          const data = new Uint8Array(arrayBuffer);
+          const zip = await JSZip.loadAsync(data);
+
+          // Get the slides from pptx
+          const slideFiles = Object.keys(zip.files).filter(
+            fileName => fileName.match(/ppt\/slides\/slide[0-9]+\.xml/)
+          ).sort();
+
+          const slides: string[] = [];
+
+          for (const slideFile of slideFiles) {
+            const content = await zip.file(slideFile)?.async("string");
+            if (content) {
+              // Convert slide XML to HTML (simplified version)
+              const parser = new DOMParser();
+              const xmlDoc = parser.parseFromString(content, "text/xml");
+              const texts = Array.from(xmlDoc.getElementsByTagName("a:t")).map(t => t.textContent);
+              const slideHtml = `<div class="slide">
+                ${texts.map(text => `<p>${text}</p>`).join("")}
+              </div>`;
+              slides.push(slideHtml);
+            }
+          }
+
+          setPowerPointContent(slides);
+          break;
+        }
+
         case DocumentType.TEXT_PLAIN: {
           const text = await blob.text();
           setTextContent(text);
+          break;
+        }
+
+        default: {
+          setError(`Unsupported file type: ${documentType}`);
           break;
         }
       }
@@ -184,7 +229,12 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
 
     case DocumentType.WORD:
     case DocumentType.WORD_DOCX:
-      return wordContent && <WordViewer content={wordContent} onDownload={handleDownload} />;
+      return wordContent && (
+        <WordViewer
+          content={wordContent}
+          onDownload={handleDownload}
+        />
+      );
 
     case DocumentType.EXCEL:
     case DocumentType.EXCEL_XLSX:
@@ -207,11 +257,30 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
         />
       );
 
+    case DocumentType.POWERPOINT:
+    case DocumentType.POWERPOINT_PPTX:
+      return powerPointContent.length > 0 && (
+        <PowerPointViewer
+          content={powerPointContent}
+          onDownload={handleDownload}
+        />
+      );
+
     case DocumentType.TEXT_PLAIN:
-      return textContent && <TextViewer content={textContent} onDownload={handleDownload} />;
+      return textContent && (
+        <TextViewer
+          content={textContent}
+          onDownload={handleDownload}
+        />
+      );
 
     default:
-      return <UnsupportedViewer documentType={documentType} onDownload={handleDownload} />;
+      return (
+        <UnsupportedViewer
+          documentType={documentType}
+          onDownload={handleDownload}
+        />
+      );
   }
 };
 

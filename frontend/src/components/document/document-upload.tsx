@@ -90,7 +90,8 @@ export const DocumentUpload = () => {
       "text/plain": [".txt"],
       "text/csv": [".csv"],
       "application/json": [".json"],
-      "application/xml": [".xml"]
+      "application/xml": [".xml"],
+      "application/vnd.ms-powerpoint": [".pptx"],
     }
   });
 
@@ -161,7 +162,7 @@ export const DocumentUpload = () => {
           <div className="space-y-2">
             <p>Drag & drop a file here, or click to select file</p>
             <p className="text-sm text-muted-foreground">
-              Supported formats: PDF, DOC, DOCX, XLS, XLSX, CSV, TXT, JSON, XML
+              Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON, XML
             </p>
           </div>
         )}
