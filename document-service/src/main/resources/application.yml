@@ -9,9 +9,6 @@ logging:
       springframework:
         web: DEBUG
         security: DEBUG
-        data:
-          elasticsearch: DEBUG
-      elasticsearch: DEBUG
 
 spring:
   application:

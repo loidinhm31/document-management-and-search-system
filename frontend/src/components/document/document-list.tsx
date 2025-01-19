@@ -1,6 +1,7 @@
 import { Download, Eye, Loader2, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
+import DocumentSearch from "@/components/document/document-search";
 import { DocumentViewer } from "@/components/document/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { searchService } from "@/services/search.service";
 import { Document } from "@/types/document";
-import DocumentSearch from "@/components/document/document-search";
 
 
 export const DocumentList = () => {

@@ -55,11 +55,13 @@ spring:
 # Eureka Client
 eureka:
   client:
+    register-with-eureka: true
+    fetch-registry: true
     service-url:
       defaultZone: ${app.eureka.url}/eureka
-    fetch-registry: true
-    register-with-eureka: true
     enabled: true
   instance:
     preferIpAddress: true
     hostname: localhost
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 20

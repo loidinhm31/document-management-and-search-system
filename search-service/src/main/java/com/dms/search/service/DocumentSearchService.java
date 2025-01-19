@@ -4,9 +4,10 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
+import com.dms.search.client.UserClient;
+import com.dms.search.dto.ApiResponse;
+import com.dms.search.dto.UserDto;
 import com.dms.search.elasticsearch.DocumentIndex;
-import com.dms.search.entity.User;
-import com.dms.search.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,7 +32,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DocumentSearchService {
     private final ElasticsearchTemplate elasticsearchTemplate;
-    private final UserRepository userRepository;
+    private final UserClient userClient;
 
     private static final int MIN_SEARCH_LENGTH = 2;
 
@@ -40,7 +42,7 @@ public class DocumentSearchService {
             return 20.0f; // Lower threshold for definition queries
         }
         int length = query.trim().length();
-        if (length <= 3) return 3.0f;  // For very short queries like "AWS
+        if (length <= 3) return 3.0f;  // For very short queries
         if (length <= 10) return 10.0f;  // For short queries
         return 30.0f;  // For longer queries
     }
@@ -54,8 +56,12 @@ public class DocumentSearchService {
     }
 
     public Page<DocumentIndex> searchDocuments(String searchQuery, String username, Pageable pageable) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new InvalidDataAccessResourceUsageException("User not found"));
+        ApiResponse<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.isSuccess() || Objects.isNull(response.getData())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+
+        UserDto userDto = response.getData();
 
         try {
             // Clean and prepare the search query
@@ -75,7 +81,7 @@ public class DocumentSearchService {
                     .must(must -> must
                             .term(term -> term
                                     .field("userId")
-                                    .value(user.getUserId().toString())));
+                                    .value(userDto.getUserId().toString())));
 
             // Add should clauses for the full phrase and individual terms
             queryBuilder.must(must -> must

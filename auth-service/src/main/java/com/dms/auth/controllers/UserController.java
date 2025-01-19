@@ -27,6 +27,11 @@ import java.util.UUID;
 public class UserController {
     private final UserService userService;
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<UserDto>> getUserByUsername(@RequestParam String username) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getUserByUsername(username)));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isCurrentUser(#id)")
     public ResponseEntity<ApiResponse<UserDto>> getUser(@PathVariable UUID id) {

@@ -28,6 +28,7 @@ public interface UserService {
     // User management operations
     UserDto getUserById(UUID id);
     void updateUserRole(UUID userId, String roleName);
+    UserDto getUserByUsername(String username);
 
     // 2FA operations
     GoogleAuthenticatorKey generate2FASecret(UUID userId);

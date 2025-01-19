@@ -1,14 +1,15 @@
 package com.dms.document.service;
 
+import com.dms.document.client.UserClient;
+import com.dms.document.dto.ApiResponse;
 import com.dms.document.dto.DocumentContent;
-import com.dms.document.entity.User;
+import com.dms.document.dto.UserDto;
 import com.dms.document.enums.*;
 import com.dms.document.exception.InvalidDocumentException;
 import com.dms.document.exception.UnsupportedDocumentTypeException;
 import com.dms.document.model.DocumentInformation;
 import com.dms.document.model.SyncEventRequest;
 import com.dms.document.repository.DocumentRepository;
-import com.dms.document.repository.UserRepository;
 import com.dms.document.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,7 +40,7 @@ public class DocumentService {
     private DataSize maxFileSize;
 
     private final DocumentRepository documentRepository;
-    private final UserRepository userRepository;
+    private final UserClient userClient;
     private final ContentExtractorService contentExtractorService;
 
     public DocumentInformation uploadDocument(MultipartFile file,
@@ -49,8 +50,12 @@ public class DocumentService {
                                               DocumentCategory category,
                                               Set<String> tags,
                                               String username) throws IOException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new InvalidDataAccessResourceUsageException("User not found"));
+        ApiResponse<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.isSuccess() || Objects.isNull(response.getData())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+
+        UserDto userDto = response.getData();
 
         validateDocument(file);
 
@@ -87,7 +92,7 @@ public class DocumentService {
                 .category(category)
                 .tags(tags != null ? tags : new HashSet<>())
                 .extractedMetadata(extractedContent.metadata())
-                .userId(user.getUserId().toString())
+                .userId(userDto.getUserId().toString())
                 .createdAt(new Date())
                 .createdBy(username)
                 .updatedAt(new Date())
@@ -99,15 +104,15 @@ public class DocumentService {
 
         // Send sync event
         CompletableFuture.runAsync(() -> {
-           publishEventService.sendSyncEvent(
-                   SyncEventRequest.builder()
-                           .eventId(UUID.randomUUID().toString())
-                           .userId(user.getUserId().toString())
-                           .documentId(savedDocument.getId())
-                           .subject(EventType.SYNC_EVENT.name())
-                           .triggerAt(LocalDateTime.now())
-                           .build()
-           );
+            publishEventService.sendSyncEvent(
+                    SyncEventRequest.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .userId(userDto.getUserId().toString())
+                            .documentId(savedDocument.getId())
+                            .subject(EventType.SYNC_EVENT.name())
+                            .triggerAt(LocalDateTime.now())
+                            .build()
+            );
         });
 
         return savedDocument;
