@@ -18,3 +18,6 @@ spring:
     name: search-service
   profiles:
     active: local
+  cloud:
+    discovery:
+      enabled: true

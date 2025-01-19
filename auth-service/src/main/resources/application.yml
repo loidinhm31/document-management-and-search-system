@@ -16,3 +16,6 @@ spring:
     name: auth-service
   profiles:
     active: local
+  cloud:
+    discovery:
+      enabled: true

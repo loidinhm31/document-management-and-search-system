@@ -120,7 +120,13 @@ public class DocumentService {
 
 
     public byte[] getDocumentContent(String documentId, String username) throws IOException {
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, username)
+        ApiResponse<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.isSuccess() || Objects.isNull(response.getData())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getData();
+
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
         Path filePath = Path.of(storageBasePath, document.getFilePath());
