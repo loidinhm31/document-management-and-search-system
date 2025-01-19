@@ -6,9 +6,7 @@ import com.dms.search.enums.DocumentType;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.*;
 
 import java.util.Date;
 import java.util.Map;
@@ -21,7 +19,12 @@ public class DocumentIndex {
     @Id
     private String id;
 
-    @Field(type = FieldType.Text)
+    @MultiField(
+            mainField = @Field(type = FieldType.Text),
+            otherFields = {
+                    @InnerField(suffix = "raw", type = FieldType.Keyword)
+            }
+    )
     private String filename;
 
     @Field(type = FieldType.Text)

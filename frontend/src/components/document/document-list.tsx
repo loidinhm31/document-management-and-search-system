@@ -27,7 +27,7 @@ export const DocumentList = () => {
   const fetchDocuments = async (query = "") => {
     setLoading(true);
     try {
-      const response = await searchService.searchDocuments(encodeURIComponent(query));
+      const response = await searchService.searchDocuments(query);
       setDocuments(response.data.content);
     } catch (error) {
       toast({
