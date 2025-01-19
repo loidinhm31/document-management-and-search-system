@@ -1,9 +1,9 @@
 package com.dms.search.service;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import org.springframework.data.elasticsearch.core.query.highlight.Highlight;
-import org.springframework.data.elasticsearch.core.query.highlight.HighlightField;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import com.dms.search.elasticsearch.DocumentIndex;
 import com.dms.search.entity.User;
 import com.dms.search.repository.UserRepository;
@@ -16,14 +16,13 @@ import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.HighlightQuery;
+import org.springframework.data.elasticsearch.core.query.highlight.Highlight;
+import org.springframework.data.elasticsearch.core.query.highlight.HighlightField;
 import org.springframework.data.elasticsearch.core.query.highlight.HighlightFieldParameters;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.text.Normalizer;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,17 +32,25 @@ public class DocumentSearchService {
     private final ElasticsearchTemplate elasticsearchTemplate;
     private final UserRepository userRepository;
 
-    private static final float MIN_SCORE = 30f;
     private static final int MIN_SEARCH_LENGTH = 2;
 
-    private String normalizeText(String text) {
-        text = text.replaceAll("đ", "d").replaceAll("Đ", "D");
+    // Adjust score thresholds based on query length
+    private float getMinScore(String query, boolean isDefinitionTerm) {
+        if (isDefinitionTerm) {
+            return 20.0f; // Lower threshold for definition queries
+        }
+        int length = query.trim().length();
+        if (length <= 3) return 3.0f;  // For very short queries like "AWS
+        if (length <= 10) return 10.0f;  // For short queries
+        return 30.0f;  // For longer queries
+    }
 
-        text = text.replaceAll("æ", "ae").replaceAll("œ", "oe");
-
-        return Normalizer.normalize(text, Normalizer.Form.NFD)
-                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
-                .toLowerCase();
+    // Check if the query is likely a technical term
+    private boolean containsDefinitionTerm(String query) {
+        // Technical terms are often uppercase or contain numbers
+        String cleanQuery = query.trim();
+        return cleanQuery.matches(".*[A-Z0-9]+.*") ||
+                cleanQuery.equals(cleanQuery.toUpperCase());
     }
 
     public Page<DocumentIndex> searchDocuments(String searchQuery, String username, Pageable pageable) {
@@ -53,71 +60,72 @@ public class DocumentSearchService {
         try {
             // Clean and prepare the search query
             String cleanQuery = searchQuery.trim();
-            String normalizedQuery = normalizeText(cleanQuery);
+            boolean isDefinitionTerm = containsDefinitionTerm(cleanQuery);
+
+            float minScore = getMinScore(cleanQuery, isDefinitionTerm);
 
             if (!StringUtils.hasText(cleanQuery) || cleanQuery.length() < MIN_SEARCH_LENGTH) {
                 return Page.empty(pageable);
             }
 
-            // Build the bool query
-            Query boolQuery = new BoolQuery.Builder()
+            // Split query into terms for better matching
+            String[] terms = cleanQuery.split("\\s+");
+
+            BoolQuery.Builder queryBuilder = new BoolQuery.Builder()
                     .must(must -> must
                             .term(term -> term
                                     .field("userId")
-                                    .value(user.getUserId().toString())))
-                    .must(must -> must
-                            .bool(b -> b
-                                    // Original text search
-                                    .should(should -> should
-                                            .match(m -> m
-                                                    .field("filename")
-                                                    .query(cleanQuery)
-                                                    .boost(4.0f)))
-                                    .should(should -> should
-                                            .match(m -> m
-                                                    .field("content")
-                                                    .query(cleanQuery)
-                                                    .boost(2.0f)))
-                                    // Original phrase match
-                                    .should(should -> should
-                                            .matchPhrase(mp -> mp
-                                                    .field("filename")
-                                                    .query(cleanQuery)
-                                                    .boost(8.0f)))
-                                    .should(should -> should
-                                            .matchPhrase(mp -> mp
-                                                    .field("content")
-                                                    .query(cleanQuery)
-                                                    .boost(6.0f)))
-                                    // Normalized text search with fuzzy support
-                                    .should(should -> should
-                                            .match(m -> m
-                                                    .field("filename")
-                                                    .query(normalizedQuery)
-                                                    .fuzziness("1") // Allow up to 1 character difference
-                                                    .boost(3.0f)))
-                                    .should(should -> should
-                                            .match(m -> m
-                                                    .field("content")
-                                                    .query(normalizedQuery)
-                                                    .fuzziness("2") // Allow up to 2 character differences
-                                                    .boost(1.5f)))
-                                    // Multi-match for better cross-field relevance
-                                    .should(should -> should
-                                            .multiMatch(mm -> mm
-                                                    .query(cleanQuery)
-                                                    .fields("filename^4", "content^2")
-                                                    .type(co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType.CrossFields)
-                                                    .operator(co.elastic.clients.elasticsearch._types.query_dsl.Operator.And)
-                                                    .boost(5.0f)))
-                                    // Require at least one of the should clauses to match
-                                    .minimumShouldMatch("1")))
-                    .build()._toQuery();
+                                    .value(user.getUserId().toString())));
+
+            // Add should clauses for the full phrase and individual terms
+            queryBuilder.must(must -> must
+                    .bool(b -> {
+                        // Full phrase match with high boost
+                        b.should(should -> should
+                                .matchPhrase(mp -> mp
+                                        .field("content")
+                                        .query(cleanQuery)
+                                        .boost(10.0f)));
+
+                        // Individual term matches with varying boosts
+                        for (String term : terms) {
+                            boolean isTermTechnical = containsDefinitionTerm(term);
+
+                            // Exact term match
+                            b.should(should -> should
+                                    .term(t -> t
+                                            .field("content")
+                                            .value(term)
+                                            .boost(isTermTechnical ? 8.0f : 3.0f)));
+
+                            // Fuzzy match for non-technical terms
+                            if (!isTermTechnical) {
+                                b.should(should -> should
+                                        .fuzzy(f -> f
+                                                .field("content")
+                                                .value(term)
+                                                .boost(1.0f)
+                                                .fuzziness("1")));
+                            }
+                        }
+
+                        // Cross-field matching for better relevance
+                        b.should(should -> should
+                                .multiMatch(mm -> mm
+                                        .query(cleanQuery)
+                                        .fields("filename^4", "content^2")
+                                        .type(TextQueryType.CrossFields)
+                                        .operator(Operator.And)
+                                        .minimumShouldMatch("75%")
+                                        .boost(4.0f)));
+
+                        // Adapt minimumShouldMatch based on query
+                        String minMatch = (terms.length == 1 && terms[0].length() <= 5) ? "1" : "2";
+                        return b.minimumShouldMatch(minMatch);
+                    }));
 
 
-
-
-            // Optionally, set highlight parameters like pre and post tags, fragment size, etc.
+            // Optionally, set highlight parameters like pre- and post-tags, fragment size, etc.
             HighlightFieldParameters filenameParams = HighlightFieldParameters.builder()
                     .withPreTags("<em>")
                     .withPostTags("</em>")
@@ -143,7 +151,7 @@ public class DocumentSearchService {
 
             // Create native query
             NativeQuery nativeQuery = NativeQuery.builder()
-                    .withQuery(boolQuery)
+                    .withQuery(queryBuilder.build()._toQuery())
                     .withPageable(pageable)
                     .withTrackScores(true)
                     .withHighlightQuery(highlightQuery)
@@ -157,8 +165,9 @@ public class DocumentSearchService {
 
             // Filter and process results
             List<DocumentIndex> documents = searchHits.getSearchHits().stream()
-                    .filter(hit -> hit.getScore() >= MIN_SCORE)
+                    .filter(hit -> hit.getScore() >= minScore)
                     .map(SearchHit::getContent)
+                    .peek(a -> a.setContent(null))
                     .collect(Collectors.toList());
 
             return new PageImpl<>(
@@ -166,7 +175,6 @@ public class DocumentSearchService {
                     pageable,
                     searchHits.getTotalHits()
             );
-
         } catch (Exception e) {
             log.error("Error performing document search", e);
             throw new RuntimeException("Failed to perform document search", e);
@@ -175,7 +183,6 @@ public class DocumentSearchService {
 
     public List<String> getSuggestions(String prefix, String userId) {
         try {
-            String normalizedPrefix = normalizeText(prefix);
 
             Query boolQuery = new BoolQuery.Builder()
                     .must(must -> must
@@ -191,7 +198,7 @@ public class DocumentSearchService {
                                     .should(should -> should
                                             .prefix(p -> p
                                                     .field("filename")
-                                                    .value(normalizedPrefix)))
+                                                    .value(prefix)))
                                     .minimumShouldMatch("1")))
                     .build()._toQuery();
 

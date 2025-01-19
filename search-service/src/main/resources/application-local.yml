@@ -70,3 +70,4 @@ eureka:
     enabled: true
   instance:
     preferIpAddress: true
+    hostname: localhost
