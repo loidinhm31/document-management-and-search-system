@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Loader2, Upload } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -23,6 +23,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { documentService } from "@/services/document.service";
+import { useToast } from "@/hooks/use-toast";
 
 const COURSE_LEVELS = [
   { code: "FUNDAMENTAL", name: "Fundamental" },
@@ -86,7 +87,10 @@ export const DocumentUpload = () => {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
       "application/vnd.ms-excel": [".xls"],
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-      "text/plain": [".txt"]
+      "text/plain": [".txt"],
+      "text/csv": [".csv"],
+      "application/json": [".json"],
+      "application/xml": [".xml"]
     }
   });
 
@@ -109,7 +113,6 @@ export const DocumentUpload = () => {
       formData.append("level", data.level);
       formData.append("category", data.category);
 
-      // Convert comma-separated tags to array
       if (data.tags) {
         const tags = data.tags.split(",").map(tag => tag.trim());
         formData.append("tags", JSON.stringify(tags));
@@ -130,7 +133,6 @@ export const DocumentUpload = () => {
         variant: "success"
       });
 
-      // Reset form
       form.reset();
       setSelectedFile(null);
 
@@ -156,7 +158,12 @@ export const DocumentUpload = () => {
         {isDragActive ? (
           <p>Drop the file here ...</p>
         ) : (
-          <p>Drag & drop a file here, or click to select file</p>
+          <div className="space-y-2">
+            <p>Drag & drop a file here, or click to select file</p>
+            <p className="text-sm text-muted-foreground">
+              Supported formats: PDF, DOC, DOCX, XLS, XLSX, CSV, TXT, JSON, XML
+            </p>
+          </div>
         )}
         {selectedFile && (
           <p className="mt-2 text-sm text-muted-foreground">
