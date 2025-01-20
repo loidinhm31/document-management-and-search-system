@@ -8,6 +8,7 @@ import net.sourceforge.tess4j.TesseractException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.ocr.TesseractOCRConfig;
 import org.apache.tika.sax.ToTextContentHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,9 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -37,16 +36,17 @@ public class ContentExtractorService {
     private final AutoDetectParser parser;
     private final ExecutorService executorService;
     private final SmartPdfExtractor smartPdfExtractor;
-    private final LargeFileProcessor largeFileProcessor;
+    private final OcrLargeFileProcessor ocrLargeFileProcessor;
 
     private final AtomicInteger threadCounter = new AtomicInteger(1);
+    private final LargeFileProcessor largeFileProcessor;
 
     @Value("${app.document.max-size-threshold-mb}")
     private DataSize maxSizeThreshold;
 
-    public ContentExtractorService(SmartPdfExtractor smartPdfExtractor, LargeFileProcessor largeFileProcessor) {
+    public ContentExtractorService(SmartPdfExtractor smartPdfExtractor, OcrLargeFileProcessor ocrLargeFileProcessor, LargeFileProcessor largeFileProcessor) {
         this.smartPdfExtractor = smartPdfExtractor;
-        this.largeFileProcessor = largeFileProcessor;
+        this.ocrLargeFileProcessor = ocrLargeFileProcessor;
         this.parser = new AutoDetectParser();
         this.executorService = Executors.newFixedThreadPool(
                 Runtime.getRuntime().availableProcessors(),
@@ -57,6 +57,7 @@ public class ContentExtractorService {
                     return thread;
                 }
         );
+        this.largeFileProcessor = largeFileProcessor;
     }
 
     public DocumentContent extractContent(Path filePath) {
@@ -69,25 +70,38 @@ public class ContentExtractorService {
 
             // Initialize metadata map
             Map<String, String> metadata = new HashMap<>();
-            metadata.put("Content-Type", mimeType);
-            metadata.put("File-Size", String.valueOf(Files.size(filePath)));
 
             String extractedText;
             if ("application/pdf".equals(mimeType)) {
                 extractedText = handlePdfExtraction(filePath, metadata);
+                return new DocumentContent(extractedText, metadata);
             } else {
-                // Handle other file types with existing logic
-                extractedText = extractTextContent(filePath);
-                metadata.putAll(extractMetadata(filePath));
-            }
+                if (Files.size(filePath) > maxSizeThreshold.toBytes()) {
+                    // Use new large file handler for non-PDF large files
+                    CompletableFuture<String> future = largeFileProcessor.processLargeFile(filePath);
+                    String content = future.get(30, TimeUnit.MINUTES);
+                    return new DocumentContent(content, metadata);
+                } else {
+                    // Handle other file types with existing logic
+                    CompletableFuture<String> contentFuture = CompletableFuture.supplyAsync(() ->
+                            extractTextContent(filePath), executorService);
 
-            return new DocumentContent(extractedText, metadata);
+                    try {
+                        // Wait for the result with a timeout
+                        String result = contentFuture.get(5, TimeUnit.MINUTES); // Add appropriate timeout
+                        return new DocumentContent(result, metadata);
+                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                        log.error("Error extracting content from file: {}", filePath, e);
+                        return new DocumentContent("", metadata);
+                    }
+                }
+
+            }
         } catch (Exception e) {
             log.error("Error extracting content from file: {}", filePath, e);
             return new DocumentContent("", new HashMap<>());
         }
     }
-
 
     private String handlePdfExtraction(Path filePath, Map<String, String> metadata) throws IOException, TesseractException {
         long fileSizeInMb = Files.size(filePath) / (1024 * 1024);
@@ -96,7 +110,7 @@ public class ContentExtractorService {
         if (fileSizeInMb > maxSizeThreshold.toBytes()) {
             log.info("Large PDF detected ({}MB). Using chunked processing.", fileSizeInMb);
             metadata.put("Processing-Method", "chunked");
-            return largeFileProcessor.processLargePdf(filePath);
+            return ocrLargeFileProcessor.processLargePdf(filePath);
         }
 
         log.info("Processing regular PDF ({}MB)", fileSizeInMb);
@@ -107,7 +121,6 @@ public class ContentExtractorService {
         return result.text();
     }
 
-    // Existing methods for other file types
     private String extractTextContent(Path filePath) {
         try (InputStream input = new BufferedInputStream(Files.newInputStream(filePath))) {
             StringWriter writer = new StringWriter();
@@ -115,9 +128,13 @@ public class ContentExtractorService {
             Metadata metadata = new Metadata();
             ParseContext context = new ParseContext();
 
+            // Configure Tesseract to skip OCR for non-PDF files
+            TesseractOCRConfig config = new TesseractOCRConfig();
+            config.setSkipOcr(true);
+            context.set(TesseractOCRConfig.class, config);
+
             parser.parse(input, handler, metadata, context);
             return writer.toString();
-
         } catch (Exception e) {
             log.error("Error extracting text content", e);
             return "";

@@ -12,6 +12,7 @@ import com.dms.document.model.SyncEventRequest;
 import com.dms.document.repository.DocumentRepository;
 import com.dms.document.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
@@ -102,6 +104,7 @@ public class DocumentService {
         // Save to MongoDB
         DocumentInformation savedDocument = documentRepository.save(document);
 
+        log.info("Saved document: {}", savedDocument.getFilename());
         // Send sync event
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()

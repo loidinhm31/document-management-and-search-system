@@ -12,8 +12,8 @@ spring:
         locator:
           enabled: true
       httpclient:
-        connect-timeout: 20000
-        response-timeout: 20000ms
+        connect-timeout: 30000
+        response-timeout: 30000ms
     loadbalancer:
       retry:
         enabled: true

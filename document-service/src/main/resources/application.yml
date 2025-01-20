@@ -7,8 +7,8 @@ logging:
   level:
     org:
       springframework:
-        web: DEBUG
-        security: DEBUG
+#        web: DEBUG
+#        security: DEBUG
 
 spring:
   application:

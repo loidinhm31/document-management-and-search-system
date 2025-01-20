@@ -1,171 +1,128 @@
 package com.dms.document.service;
 
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.tess4j.TesseractException;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.parser.AutoDetectParser;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.Parser;
+import org.apache.tika.sax.ToTextContentHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
 public class LargeFileProcessor {
+    private final ExecutorService executorService;
+    private final ConcurrentHashMap<String, CompletableFuture<String>> processingTasks;
+    private final AtomicInteger threadCounter = new AtomicInteger(1);
 
-    private final OcrService ocrService;
-    private ExecutorService executorService;
+    @Value("${app.document.chunk-size-mb:5}")
+    private int chunkSizeMB;
 
-    @Value("${app.ocr.chunk-size:10}")
-    private int chunkSize;
-
-    @Value("${app.ocr.temp-dir:/tmp/ocr}")
-    private String tempDir;
-
-    @Value("${app.ocr.max-threads:4}")
-    private int maxThreads;
-
-    public LargeFileProcessor(OcrService ocrService) {
-        this.ocrService = ocrService;
+    public LargeFileProcessor() {
+        this.executorService = Executors.newFixedThreadPool(
+                Runtime.getRuntime().availableProcessors(),
+                r -> {
+                    Thread thread = new Thread(r);
+                    thread.setName("large-file-handler-" + threadCounter.getAndIncrement());
+                    thread.setDaemon(true);
+                    return thread;
+                }
+        );
+        this.processingTasks = new ConcurrentHashMap<>();
     }
 
-    @PostConstruct
-    private void initialize() {
-        this.executorService = Executors.newFixedThreadPool(maxThreads);
-        log.info("Initialized thread pool with {} threads", maxThreads);
-    }
+    public CompletableFuture<String> processLargeFile(Path filePath) {
+        String fileId = filePath.getFileName().toString();
 
-    public String processLargePdf(Path pdfPath) throws IOException, TesseractException {
-        File tempDirectory = createTempDirectory();
-        AtomicInteger processedPages = new AtomicInteger(0);
-        List<CompletableFuture<String>> futures = new ArrayList<>();
+        return processingTasks.computeIfAbsent(fileId, id -> {
+            CompletableFuture<String> future = new CompletableFuture<>();
 
-        try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
-            int totalPages = document.getNumberOfPages();
-            PDFRenderer renderer = new PDFRenderer(document);
-
-            // Try text extraction first
-            String extractedText = ocrService.extractTextFromPdf(pdfPath);
-            if (isTextSufficient(extractedText)) {
-                return extractedText;
-            }
-
-            // Process in chunks
-            for (int chunkStart = 0; chunkStart < totalPages; chunkStart += chunkSize) {
-                int chunkEnd = Math.min(chunkStart + chunkSize, totalPages);
-                futures.add(processChunk(renderer, chunkStart, chunkEnd, tempDirectory, processedPages, totalPages));
-            }
-
-            // Combine results
-            StringBuilder combinedText = new StringBuilder();
-            for (CompletableFuture<String> future : futures) {
+            CompletableFuture.runAsync(() -> {
                 try {
-                    String chunkText = future.get();
-                    combinedText.append(chunkText).append("\n");
+                    String result = processFileInChunks(filePath);
+                    future.complete(result);
                 } catch (Exception e) {
-                    log.error("Error processing PDF chunk", e);
+                    log.error("Error processing file: {}", filePath, e);
+                    future.completeExceptionally(e);
+                } finally {
+                    processingTasks.remove(fileId);
                 }
+            }, executorService);
+
+            return future;
+        });
+    }
+
+    private String processFileInChunks(Path filePath) throws IOException {
+        try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(filePath))) {
+            long fileSize = Files.size(filePath);
+            int chunkSize = chunkSizeMB * 1024 * 1024; // Convert MB to bytes
+            long totalChunks = (fileSize + chunkSize - 1) / chunkSize;
+
+            StringBuilder result = new StringBuilder();
+            byte[] buffer = new byte[chunkSize];
+            int chunkNumber = 0;
+            int bytesRead;
+
+            Parser parser = new AutoDetectParser();
+            ParseContext context = new ParseContext();
+
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                chunkNumber++;
+                log.info("Processing chunk {}/{} for file: {}",
+                        chunkNumber, totalChunks, filePath.getFileName());
+
+                String chunkText = processChunk(buffer, bytesRead, parser, context);
+                result.append(chunkText);
+
+                // Add progress tracking
+                double progress = (chunkNumber * 100.0) / totalChunks;
+                log.info("Progress: {}% for file: {}",
+                        String.format("%.2f", progress), filePath.getFileName());
             }
 
-            return combinedText.toString();
-        } finally {
-            cleanupTempDirectory(tempDirectory);
+            return result.toString();
         }
     }
 
-    private CompletableFuture<String> processChunk(
-            PDFRenderer renderer,
-            int startPage,
-            int endPage,
-            File tempDirectory,
-            AtomicInteger processedPages,
-            int totalPages) {
+    private String processChunk(byte[] buffer, int bytesRead, Parser parser, ParseContext context)
+            throws IOException {
+        try {
+            ToTextContentHandler handler = new ToTextContentHandler();
+            Metadata metadata = new Metadata();
 
-        return CompletableFuture.supplyAsync(() -> {
-            StringBuilder chunkText = new StringBuilder();
+            parser.parse(
+                    new ByteArrayInputStream(buffer, 0, bytesRead),
+                    handler,
+                    metadata,
+                    context
+            );
 
-            try {
-                for (int pageNum = startPage; pageNum < endPage; pageNum++) {
-                    BufferedImage image = renderer.renderImageWithDPI(pageNum, 300);
-
-                    // Preprocess the image
-                    image = ocrService.preprocessImage(image);
-
-                    // Save image temporarily
-                    File tempImage = new File(tempDirectory, UUID.randomUUID() + ".png");
-                    ImageIO.write(image, "PNG", tempImage);
-
-                    // Process with OCR using the public method
-                    String pageText = ocrService.performOcrOnImage(image);
-                    chunkText.append(pageText).append("\n");
-
-                    tempImage.delete();
-
-                    int completed = processedPages.incrementAndGet();
-                    log.info("Processed page {} of {} ({}%)",
-                            completed, totalPages,
-                            (completed * 100) / totalPages);
-
-                    image.flush();
-                }
-
-                return chunkText.toString();
-
-            } catch (Exception e) {
-                log.error("Error processing pages {} to {}", startPage, endPage, e);
-                throw new RuntimeException(e);
-            }
-        }, executorService);
-    }
-
-    private File createTempDirectory() throws IOException {
-        File tempDirectory = new File(tempDir, UUID.randomUUID().toString());
-        if (!tempDirectory.exists() && !tempDirectory.mkdirs()) {
-            throw new IOException("Failed to create temp directory: " + tempDirectory);
-        }
-        return tempDirectory;
-    }
-
-    private void cleanupTempDirectory(File directory) {
-        if (directory != null && directory.exists()) {
-            File[] files = directory.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (!file.delete()) {
-                        log.warn("Failed to delete temporary file: {}", file.getAbsolutePath());
-                    }
-                }
-            }
-            if (!directory.delete()) {
-                log.warn("Failed to delete temporary directory: {}", directory.getAbsolutePath());
-            }
+            return handler.toString();
+        } catch (Exception e) {
+            log.error("Error processing chunk", e);
+            throw new IOException("Failed to process file chunk", e);
         }
     }
 
-    private boolean isTextSufficient(String text) {
-        if (text == null || text.isEmpty()) return false;
-
-        int minChars = 100;
-        int recognizableChars = text.replaceAll("[^a-zA-Z0-9\\s.,;:!?()\\[\\]{}\"'`-]", "").length();
-
-        return recognizableChars > minChars;
+    public void cancelProcessing(String fileId) {
+        CompletableFuture<String> task = processingTasks.get(fileId);
+        if (task != null) {
+            task.cancel(true);
+            processingTasks.remove(fileId);
+        }
     }
 
-    public void shutdown() {
-        if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown();
-        }
+    public double getProcessingProgress(String fileId) {
+        // Implementation for progress tracking
+        // This could be enhanced with a more sophisticated progress tracking mechanism
+        return processingTasks.containsKey(fileId) ? -1 : 100;
     }
 }
