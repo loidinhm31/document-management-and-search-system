@@ -134,7 +134,14 @@ export const DocumentUpload = () => {
         variant: "success"
       });
 
-      form.reset();
+      // Reset form with all default values
+      form.reset({
+        courseCode: "",
+        major: undefined,
+        level: undefined,
+        category: undefined,
+        tags: ""
+      });
       setSelectedFile(null);
 
     } catch (error) {
@@ -195,7 +202,7 @@ export const DocumentUpload = () => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Major</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select major" />
@@ -220,7 +227,7 @@ export const DocumentUpload = () => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Course Level</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select course level" />
@@ -245,7 +252,7 @@ export const DocumentUpload = () => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Document Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select document category" />
