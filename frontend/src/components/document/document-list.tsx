@@ -1,5 +1,5 @@
 import { Download, Eye, Loader2, Trash2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import DocumentSearch from "@/components/document/document-search";
 import { DocumentViewer } from "@/components/document/document-viewer";
@@ -17,30 +17,44 @@ export const DocumentList = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<Document>(null);
+
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentSearchQuery, setCurrentSearchQuery] = useState("");
+  const pageSize = 10;
+
   const { toast } = useToast();
 
-  // Initial data load
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
-  const fetchDocuments = async (query = "") => {
+  const fetchDocuments = useCallback(async (query: string, page: number) => {
     setLoading(true);
     try {
-      const response = await searchService.searchDocuments(query);
+      const response = await searchService.searchDocuments(query, page, pageSize);
       setDocuments(response.data.content);
+      setTotalPages(response.data.totalPages);
+      setCurrentSearchQuery(query);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to fetch documents",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleSearch = useCallback((query: string) => {
+    setCurrentPage(0); // Reset to first page on new search
+    fetchDocuments(query, 0);
+  }, [fetchDocuments]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setCurrentPage(newPage);
+    fetchDocuments(currentSearchQuery, newPage);
+  }, [currentSearchQuery, fetchDocuments]);
+
+
+  const handleDelete = useCallback(async (id: string) => {
     try {
       await documentService.deleteDocument(id);
       toast({
@@ -48,7 +62,17 @@ export const DocumentList = () => {
         description: "Document deleted successfully",
         variant: "success",
       });
-      fetchDocuments();
+
+      // After deletion, check if we need to adjust the current page
+      const isLastItemOnPage = documents.length === 1 && currentPage > 0;
+      const newPage = isLastItemOnPage ? currentPage - 1 : currentPage;
+
+      // Refresh the current page
+      fetchDocuments(currentSearchQuery, newPage);
+
+      if (isLastItemOnPage) {
+        setCurrentPage(newPage);
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -56,15 +80,15 @@ export const DocumentList = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [documents.length, currentPage, currentSearchQuery, fetchDocuments, toast]);
 
   const handleDownload = async (id: string, filename: string) => {
     try {
       const response = await documentService.downloadDocument(id);
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', filename);
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -72,10 +96,15 @@ export const DocumentList = () => {
       toast({
         title: "Error",
         description: "Failed to download document",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
+
+  // Initial load
+  useEffect(() => {
+    fetchDocuments("", 0);
+  }, [fetchDocuments]);
 
   return (
     <div className="space-y-4">
@@ -86,7 +115,7 @@ export const DocumentList = () => {
         <CardContent>
           <div className="mb-4">
             <DocumentSearch
-              onSearch={fetchDocuments}
+              onSearch={handleSearch}
               className="max-w-xs"
             />
           </div>
@@ -96,52 +125,76 @@ export const DocumentList = () => {
               <Loader2 className="w-6 h-6 animate-spin" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {documents.map((doc) => (
-                  <TableRow key={doc.id}>
-                    <TableCell className="font-medium">{doc.filename}</TableCell>
-                    <TableCell>{doc.documentType}</TableCell>
-                    <TableCell>{(doc.fileSize / 1024).toFixed(2)} KB</TableCell>
-                    <TableCell>{new Date(doc.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setSelectedDoc(doc)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDownload(doc.id, doc.filename)}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(doc.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Size</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {documents.map((doc) => (
+                    <TableRow key={doc.id}>
+                      <TableCell className="font-medium">{doc.filename}</TableCell>
+                      <TableCell>{doc.documentType}</TableCell>
+                      <TableCell>{(doc.fileSize / 1024).toFixed(2)} KB</TableCell>
+                      <TableCell>{new Date(doc.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setSelectedDoc(doc)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownload(doc.id, doc.filename)}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(doc.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {totalPages > 1 && (
+                <div className="mt-4 flex justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 0 || loading}
+                  >
+                    Previous
+                  </Button>
+                  <span className="flex items-center px-4">
+                    Page {currentPage + 1} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages - 1 || loading}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
