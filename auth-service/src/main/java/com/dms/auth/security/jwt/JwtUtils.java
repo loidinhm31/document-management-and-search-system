@@ -8,6 +8,7 @@ import com.dms.auth.security.services.CustomUserDetails;
 import io.jsonwebtoken.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
@@ -30,6 +31,7 @@ public class JwtUtils {
     private int accessTokenExpirationMs;
 
     private RSAPrivateKey privateKey;
+    @Getter
     private RSAPublicKey publicKey;
     private String keyId;
 
@@ -93,10 +95,6 @@ public class JwtUtils {
 
         JWKSet jwkSet = new JWKSet(builder.build());
         return jwkSet.toJSONObject();
-    }
-
-    public RSAPublicKey getPublicKey() {
-        return this.publicKey;
     }
 
     public boolean validateJwtToken(String authToken) {

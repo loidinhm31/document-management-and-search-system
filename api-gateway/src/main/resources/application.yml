@@ -6,3 +6,14 @@ spring:
     name: api-gateway
   profiles:
     active: local
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      httpclient:
+        connect-timeout: 20000
+        response-timeout: 20000ms
+    loadbalancer:
+      retry:
+        enabled: true
