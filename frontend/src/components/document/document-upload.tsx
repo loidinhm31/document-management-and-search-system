@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Loader2, Upload } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,11 +22,9 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { documentService } from "@/services/document.service";
 import { useToast } from "@/hooks/use-toast";
+import TagInput from "@/components/tag-input";
 
 const COURSE_LEVELS = [
   { code: "FUNDAMENTAL", name: "Fundamental" },
@@ -53,7 +54,7 @@ const formSchema = z.object({
   major: z.string().min(1, "Major is required"),
   level: z.string().min(1, "Course level is required"),
   category: z.string().min(1, "Document category is required"),
-  tags: z.string().optional()
+  tags: z.array(z.string()).optional()
 });
 
 export const DocumentUpload = () => {
@@ -68,7 +69,7 @@ export const DocumentUpload = () => {
       major: "",
       level: "",
       category: "",
-      tags: ""
+      tags: []
     }
   });
 
@@ -114,19 +115,17 @@ export const DocumentUpload = () => {
       formData.append("level", data.level);
       formData.append("category", data.category);
 
-      if (data.tags) {
-        const tags = data.tags.split(",").map(tag => tag.trim());
-        formData.append("tags", JSON.stringify(tags));
+      // Clean and handle tags properly
+      const cleanedTags = (data.tags || [])
+        .map(tag => tag.trim())
+        .filter(Boolean);
+
+      if (cleanedTags.length > 0) {
+        // Send tags as a simple array, let the service handle the formatting
+        formData.append("tags", cleanedTags);
       }
 
-      const _response = await documentService.uploadDocument(
-        selectedFile,
-        data.courseCode,
-        data.major,
-        data.level,
-        data.category,
-        data.tags ? data.tags.split(",").map(t => t.trim()) : undefined
-      );
+      await documentService.uploadDocument(formData);
 
       toast({
         title: "Success",
@@ -134,13 +133,12 @@ export const DocumentUpload = () => {
         variant: "success"
       });
 
-      // Reset form with all default values
       form.reset({
         courseCode: "",
-        major: undefined,
-        level: undefined,
-        category: undefined,
-        tags: ""
+        major: "",
+        level: "",
+        category: "",
+        tags: []
       });
       setSelectedFile(null);
 
@@ -202,7 +200,7 @@ export const DocumentUpload = () => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Major</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select major" />
@@ -227,7 +225,7 @@ export const DocumentUpload = () => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Course Level</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select course level" />
@@ -252,7 +250,7 @@ export const DocumentUpload = () => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Document Category</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ""}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select document category" />
@@ -278,9 +276,11 @@ export const DocumentUpload = () => {
               <FormItem>
                 <FormLabel>Tags</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Enter tags separated by commas"
-                    {...field}
+                  <TagInput
+                    value={field.value || []}
+                    onChange={field.onChange}
+                    placeholder="Enter tags separated by comma"
+                    disabled={uploading}
                   />
                 </FormControl>
                 <FormMessage />
