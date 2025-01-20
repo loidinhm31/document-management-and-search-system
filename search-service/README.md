@@ -4,6 +4,7 @@ docker run -p 9200:9200 \
 --name elasticsearch \
 -e "discovery.type=single-node" \
 -e "xpack.security.enabled=false" \
+-e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
 -d docker.elastic.co/elasticsearch/elasticsearch:8.8.1
 
 

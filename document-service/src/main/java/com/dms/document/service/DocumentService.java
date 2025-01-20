@@ -20,6 +20,7 @@ import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -130,7 +131,9 @@ public class DocumentService {
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
         Path filePath = Path.of(storageBasePath, document.getFilePath());
-        return Files.readAllBytes(filePath);
+        try (InputStream in = Files.newInputStream(filePath)) {
+            return in.readAllBytes();
+        }
     }
 
     public DocumentInformation updateTags(String documentId, Set<String> tags, String username) {
