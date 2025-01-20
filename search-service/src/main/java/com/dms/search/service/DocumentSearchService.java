@@ -38,9 +38,7 @@ public class DocumentSearchService {
     private final UserClient userClient;
 
     private static final int MIN_SEARCH_LENGTH = 2;
-    private static final Pattern TECHNICAL_PATTERN = Pattern.compile(".*[A-Z]{2,}.*|.*[A-Z][0-9]+.*|.*[0-9]+[A-Z].*");
-    private static final Pattern CODE_PATTERN = Pattern.compile(".*[{}\\[\\]();=+\\-*/].*");
-
+   
     private float getMinScore(String query, SearchContext context) {
         int length = query.trim().length();
 

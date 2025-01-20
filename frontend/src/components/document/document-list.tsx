@@ -1,7 +1,7 @@
 import { Download, Eye, Loader2, Trash2 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 
-import DocumentSearch from "@/components/document/document-search";
+import SearchSuggestions from "@/components/document/search-suggestions";
 import { DocumentViewer } from "@/components/document/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -114,8 +114,9 @@ export const DocumentList = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-4">
-            <DocumentSearch
+            <SearchSuggestions
               onSearch={handleSearch}
+              placeholder="Search documents..."
               className="max-w-xs"
             />
           </div>
