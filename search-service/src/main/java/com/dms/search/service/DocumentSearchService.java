@@ -6,10 +6,10 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import com.dms.search.client.UserClient;
 import com.dms.search.dto.ApiResponse;
+import com.dms.search.dto.SearchContext;
 import com.dms.search.dto.UserDto;
 import com.dms.search.elasticsearch.DocumentIndex;
-import lombok.Builder;
-import lombok.Data;
+import com.dms.search.enums.QueryType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
@@ -29,22 +29,6 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-@Data
-@Builder
-class SearchContext {
-    private QueryType queryType;
-    private String originalQuery;
-    private String uppercaseQuery;
-    private String lowercaseQuery;
-    private String[] terms;
-}
-
-enum QueryType {
-    TECHNICAL,   // For queries that look like technical terms (e.g., "API", "REST", "JWT")
-    CODE,        // For queries that look like code snippets
-    DEFINITION,  // For queries that look like they're seeking definitions
-    GENERAL      // For regular text queries
-}
 
 @Service
 @RequiredArgsConstructor
@@ -63,7 +47,7 @@ public class DocumentSearchService {
         // Lowered base scores to accommodate case-insensitive matching
         float baseScore;
 
-        if (context.getQueryType() == QueryType.DEFINITION) {
+        if (context.queryType() == QueryType.DEFINITION) {
             baseScore = 8.0f;
         } else {
             baseScore = 15.0f;
@@ -90,13 +74,12 @@ public class DocumentSearchService {
             queryType = QueryType.GENERAL;
         }
 
-        return SearchContext.builder()
-                .queryType(queryType)
-                .originalQuery(cleanQuery)
-                .uppercaseQuery(cleanQuery.toUpperCase())
-                .lowercaseQuery(cleanQuery.toLowerCase())
-                .terms(cleanQuery.split("\\s+"))
-                .build();
+        return new SearchContext(
+                queryType,
+                cleanQuery,
+                cleanQuery.toUpperCase(),
+                cleanQuery.toLowerCase()
+        );
     }
 
     private Query buildSearchQuery(SearchContext context, String userId) {
@@ -107,20 +90,20 @@ public class DocumentSearchService {
                                 .value(userId)));
 
         // Build query based on context
-        if (Objects.requireNonNull(context.getQueryType()) == QueryType.DEFINITION) {
+        if (Objects.requireNonNull(context.queryType()) == QueryType.DEFINITION) {
             queryBuilder.must(must -> must
                     .bool(b -> {
                         // Higher boost for phrase matches
                         b.should(should -> should
                                 .matchPhrase(mp -> mp
                                         .field("content")
-                                        .query(context.getOriginalQuery())
+                                        .query(context.originalQuery())
                                         .boost(15.0f)));
 
                         // Cross-field matching for better relevance
                         b.should(should -> should
                                 .multiMatch(mm -> mm
-                                        .query(context.getOriginalQuery())
+                                        .query(context.originalQuery())
                                         .fields("filename^4", "content^2")
                                         .type(TextQueryType.CrossFields)
                                         .operator(Operator.And)
@@ -135,7 +118,7 @@ public class DocumentSearchService {
                         b.should(should -> should
                                 .match(m -> m
                                         .field("content")
-                                        .query(context.getOriginalQuery())
+                                        .query(context.originalQuery())
                                         .fuzziness("AUTO")
                                         .operator(Operator.Or)
                                         .boost(1.0f)));
@@ -144,20 +127,20 @@ public class DocumentSearchService {
                         b.should(should -> should
                                 .term(t -> t
                                         .field("content")
-                                        .value(context.getOriginalQuery())
+                                        .value(context.originalQuery())
                                         .boost(2.0f)));
 
                         b.should(should -> should
                                 .term(t -> t
                                         .field("content")
-                                        .value(context.getLowercaseQuery())
+                                        .value(context.lowercaseQuery())
                                         .boost(1.5f)));
 
                         // Phrase matching with slop
                         b.should(should -> should
                                 .matchPhrase(mp -> mp
                                         .field("content")
-                                        .query(context.getOriginalQuery())
+                                        .query(context.originalQuery())
                                         .slop(2)
                                         .boost(2.0f)));
 
@@ -165,19 +148,19 @@ public class DocumentSearchService {
                         b.should(should -> should
                                 .match(m -> m
                                         .field("filename")
-                                        .query(context.getOriginalQuery())
+                                        .query(context.originalQuery())
                                         .boost(3.0f)));
 
                         b.should(should -> should
                                 .term(t -> t
                                         .field("filename.raw")
-                                        .value(context.getOriginalQuery())
+                                        .value(context.originalQuery())
                                         .boost(4.0f)));
 
                         // Cross-field matching for better relevance
                         b.should(should -> should
                                 .multiMatch(mm -> mm
-                                        .query(context.getOriginalQuery())
+                                        .query(context.originalQuery())
                                         .fields("filename^4", "content^2")
                                         .type(TextQueryType.CrossFields)
                                         .operator(Operator.And)
@@ -212,8 +195,8 @@ public class DocumentSearchService {
             HighlightFieldParameters contentParams = HighlightFieldParameters.builder()
                     .withPreTags("<mark>")
                     .withPostTags("</mark>")
-                    .withFragmentSize(searchContext.getQueryType() == QueryType.CODE ? 200 : 150)
-                    .withNumberOfFragments(searchContext.getQueryType() == QueryType.DEFINITION ? 1 : 2)
+                    .withFragmentSize(searchContext.queryType() == QueryType.DEFINITION ? 200 : 150)
+                    .withNumberOfFragments(searchContext.queryType() == QueryType.DEFINITION ? 1 : 2)
                     .build();
 
             HighlightField contentHighlight = new HighlightField("content", contentParams);
