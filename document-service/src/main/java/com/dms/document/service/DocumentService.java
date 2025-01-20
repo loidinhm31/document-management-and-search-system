@@ -14,7 +14,6 @@ import com.dms.document.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.elasticsearch.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,7 +36,7 @@ public class DocumentService {
     @Value("${app.document.storage.path}")
     private String storageBasePath;
 
-    @Value("${app.document.storage.max-file-size}")
+    @Value("${app.document.max-size-mb}")
     private DataSize maxFileSize;
 
     private final DocumentRepository documentRepository;
@@ -104,17 +103,15 @@ public class DocumentService {
         DocumentInformation savedDocument = documentRepository.save(document);
 
         // Send sync event
-        CompletableFuture.runAsync(() -> {
-            publishEventService.sendSyncEvent(
-                    SyncEventRequest.builder()
-                            .eventId(UUID.randomUUID().toString())
-                            .userId(userDto.getUserId().toString())
-                            .documentId(savedDocument.getId())
-                            .subject(EventType.SYNC_EVENT.name())
-                            .triggerAt(LocalDateTime.now())
-                            .build()
-            );
-        });
+        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
+                SyncEventRequest.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .userId(userDto.getUserId().toString())
+                        .documentId(savedDocument.getId())
+                        .subject(EventType.SYNC_EVENT.name())
+                        .triggerAt(LocalDateTime.now())
+                        .build()
+        ));
 
         return savedDocument;
     }
@@ -138,7 +135,7 @@ public class DocumentService {
 
     public DocumentInformation updateTags(String documentId, Set<String> tags, String username) {
         DocumentInformation document = documentRepository.findByIdAndUserId(documentId, username)
-                .orElseThrow(() -> new ResourceNotFoundException("Document not found"));
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         document.setTags(tags);
         document.setUpdatedAt(new Date());

@@ -15,12 +15,6 @@ spring:
     name: document-service
   profiles:
     active: local
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: 50MB
-      max-request-size: 50MB
-      file-size-threshold: 2MB
   cloud:
     discovery:
       enabled: true
