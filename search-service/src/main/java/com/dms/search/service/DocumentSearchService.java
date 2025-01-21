@@ -3,6 +3,7 @@ package com.dms.search.service;
 import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import com.dms.search.client.UserClient;
 import com.dms.search.dto.ApiResponse;
+import com.dms.search.dto.DocumentResponseDto;
 import com.dms.search.dto.SearchContext;
 import com.dms.search.dto.UserDto;
 import com.dms.search.elasticsearch.DocumentIndex;
@@ -185,7 +186,7 @@ public class DocumentSearchService {
                 .build()._toQuery();
     }
 
-    public Page<DocumentIndex> searchDocuments(String searchQuery, String username, Pageable pageable) {
+    public Page<DocumentResponseDto> searchDocuments(String searchQuery, String username, Pageable pageable) {
         try {
             ApiResponse<UserDto> response = userClient.getUserByUsername(username);
             if (!response.isSuccess() || Objects.isNull(response.getData())) {
@@ -203,8 +204,8 @@ public class DocumentSearchService {
             float minScore = getMinScore(searchQuery, searchContext);
 
             HighlightFieldParameters contentParams = HighlightFieldParameters.builder()
-                    .withPreTags("<mark>")
-                    .withPostTags("</mark>")
+                    .withPreTags("<em><b>")
+                    .withPostTags("</b></em>")
                     .withFragmentSize(searchContext.queryType() == QueryType.DEFINITION ? 200 : 150)
                     .withNumberOfFragments(searchContext.queryType() == QueryType.DEFINITION ? 1 : 2)
                     .build();
@@ -224,10 +225,30 @@ public class DocumentSearchService {
                     DocumentIndex.class
             );
 
-            List<DocumentIndex> documents = searchHits.getSearchHits().stream()
+            List<DocumentResponseDto> documents = searchHits.getSearchHits().stream()
                     .filter(hit -> hit.getScore() >= minScore)
-                    .map(SearchHit::getContent)
-                    .peek(doc -> doc.setContent(null))
+                    .map(hit -> {
+                        DocumentIndex doc = hit.getContent();
+                        // Extract highlights from the hit
+                        List<String> highlights = hit.getHighlightFields().get("content");
+
+                        doc.setContent(null);
+                        return DocumentResponseDto.builder()
+                                .id(hit.getId())
+                                .filename(doc.getFilename())
+                                .courseCode(doc.getCourseCode())
+                                .documentType(doc.getDocumentType())
+                                .major(doc.getMajor())
+                                .courseLevel(doc.getCourseLevel())
+                                .category(doc.getCategory())
+                                .fileSize(doc.getFileSize())
+                                .mimeType(doc.getMimeType())
+                                .tags(doc.getTags())
+                                .createdAt(doc.getCreatedAt())
+                                .userId(doc.getUserId())
+                                .highlights(highlights != null ? highlights : new ArrayList<>())
+                                .build();
+                    })
                     .collect(Collectors.toList());
 
             return new PageImpl<>(

@@ -1,5 +1,6 @@
 package com.dms.search.controller;
 
+import com.dms.search.dto.DocumentResponseDto;
 import com.dms.search.elasticsearch.DocumentIndex;
 import com.dms.search.service.DocumentSearchService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class SearchController {
     private final DocumentSearchService documentSearchService;
 
     @GetMapping
-    public ResponseEntity<Page<DocumentIndex>> searchDocuments(
+    public ResponseEntity<Page<DocumentResponseDto>> searchDocuments(
             @RequestParam String query,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -28,7 +29,7 @@ public class SearchController {
         String username = jwt.getSubject();
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<DocumentIndex> results = documentSearchService.searchDocuments(
+        Page<DocumentResponseDto> results = documentSearchService.searchDocuments(
                 query,
                 username,
                 pageable
