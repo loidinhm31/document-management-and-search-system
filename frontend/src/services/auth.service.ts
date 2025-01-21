@@ -1,16 +1,15 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { LoginRequest, SignupRequest, TokenResponse } from "@/types/auth";
-import { ApiResponse } from "@/types/api";
 
 class AuthService extends BaseService {
   login(data: LoginRequest) {
-    return this.handleApiResponse(axiosInstance.post<ApiResponse<TokenResponse>>("/auth/api/v1/auth/login", data));
+    return this.handleApiResponse(axiosInstance.post<TokenResponse>("/auth/api/v1/auth/login", data));
   }
 
   refreshToken(refreshToken: string) {
     return this.handleApiResponse(
-      axiosInstance.post<ApiResponse<TokenResponse>>("/auth/api/v1/auth/refresh-token", { refreshToken }),
+      axiosInstance.post<TokenResponse>("/auth/api/v1/auth/refresh-token", { refreshToken }),
     );
   }
 
@@ -41,7 +40,7 @@ class AuthService extends BaseService {
 
   verify2FA(username: string, code: string) {
     return this.handleApiResponse(
-      axiosInstance.post<ApiResponse<any>>("/auth/api/v1/auth/2fa/verify", {
+      axiosInstance.post<any>("/auth/api/v1/auth/2fa/verify", {
         username,
         code,
       }),

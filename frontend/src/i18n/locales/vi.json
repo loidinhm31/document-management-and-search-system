@@ -370,6 +370,39 @@
         "error": "Error fetching suggestions"
       },
       "loading": "Loading results..."
+    },
+    "detail": {
+      "title": "Edit Document",
+      "description": "Update document metadata",
+      "backToList": "Back to Documents",
+      "form": {
+        "courseCode": {
+          "label": "Course Code",
+          "placeholder": "Enter course code"
+        },
+        "major": {
+          "label": "Major",
+          "placeholder": "Select major"
+        },
+        "level": {
+          "label": "Course Level",
+          "placeholder": "Select course level"
+        },
+        "category": {
+          "label": "Document Category",
+          "placeholder": "Select document category"
+        },
+        "tags": {
+          "label": "Tags",
+          "placeholder": "Enter tags"
+        }
+      },
+      "buttons": {
+        "update": "Update Document"
+      },
+      "updateSuccess": "Document updated successfully",
+      "updateError": "Failed to update document",
+      "fetchError": "Failed to fetch document details"
     }
   }
 }

@@ -1,7 +1,6 @@
 package com.dms.document.service;
 
 import com.dms.document.client.UserClient;
-import com.dms.document.dto.ApiResponse;
 import com.dms.document.dto.DocumentContent;
 import com.dms.document.dto.UserDto;
 import com.dms.document.enums.*;
@@ -15,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,12 +52,12 @@ public class DocumentService {
                                               DocumentCategory category,
                                               Set<String> tags,
                                               String username) throws IOException {
-        ApiResponse<UserDto> response = userClient.getUserByUsername(username);
-        if (!response.isSuccess() || Objects.isNull(response.getData())) {
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
 
-        UserDto userDto = response.getData();
+        UserDto userDto = response.getBody();
 
         validateDocument(file);
 
@@ -121,11 +121,11 @@ public class DocumentService {
 
 
     public byte[] getDocumentContent(String documentId, String username) throws IOException {
-        ApiResponse<UserDto> response = userClient.getUserByUsername(username);
-        if (!response.isSuccess() || Objects.isNull(response.getData())) {
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getData();
+        UserDto userDto = response.getBody();
 
         DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
@@ -135,6 +135,98 @@ public class DocumentService {
             return in.readAllBytes();
         }
     }
+
+    public DocumentInformation getDocumentDetails(String documentId, String username) {
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
+
+        return documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+    }
+
+    public DocumentInformation updateDocument(
+            String documentId,
+            String courseCode,
+            Major major,
+            CourseLevel level,
+            DocumentCategory category,
+            Set<String> tags,
+            String username) {
+
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
+
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+
+        // Update fields if provided
+        if (courseCode != null) document.setCourseCode(courseCode);
+        if (major != null) document.setMajor(major);
+        if (level != null) document.setCourseLevel(level);
+        if (category != null) document.setCategory(category);
+        if (tags != null) document.setTags(tags);
+
+        document.setUpdatedAt(new Date());
+        document.setUpdatedBy(username);
+
+        DocumentInformation updatedDocument = documentRepository.save(document);
+
+        // Send sync event for elasticsearch update
+        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
+                SyncEventRequest.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .userId(userDto.getUserId().toString())
+                        .documentId(documentId)
+                        .subject(EventType.UPDATE_EVENT.name())
+                        .triggerAt(LocalDateTime.now())
+                        .build()
+        ));
+
+        return updatedDocument;
+    }
+
+    public void deleteDocument(String documentId, String username) {
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
+
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+
+        // Delete the physical file
+        try {
+            Path filePath = Path.of(storageBasePath, document.getFilePath());
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            log.error("Error deleting file for document: {}", documentId, e);
+        }
+
+        // Soft delete in database
+        document.setDeleted(true);
+        document.setUpdatedAt(new Date());
+        document.setUpdatedBy(username);
+        documentRepository.save(document);
+
+        // Send sync event for elasticsearch deletion
+        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
+                SyncEventRequest.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .userId(userDto.getUserId().toString())
+                        .documentId(documentId)
+                        .subject(EventType.DELETE_EVENT.name())
+                        .triggerAt(LocalDateTime.now())
+                        .build()
+        ));
+    }
+
 
     public DocumentInformation updateTags(String documentId, Set<String> tags, String username) {
         DocumentInformation document = documentRepository.findByIdAndUserId(documentId, username)

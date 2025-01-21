@@ -1,8 +1,10 @@
 package com.dms.search.service;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.*;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import com.dms.search.client.UserClient;
-import com.dms.search.dto.ApiResponse;
 import com.dms.search.dto.DocumentResponseDto;
 import com.dms.search.dto.SearchContext;
 import com.dms.search.dto.UserDto;
@@ -11,15 +13,18 @@ import com.dms.search.enums.QueryType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
-import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.HighlightQuery;
 import org.springframework.data.elasticsearch.core.query.highlight.Highlight;
 import org.springframework.data.elasticsearch.core.query.highlight.HighlightField;
 import org.springframework.data.elasticsearch.core.query.highlight.HighlightFieldParameters;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -35,8 +40,7 @@ public class DocumentSearchService {
     private final UserClient userClient;
 
     private static final int MIN_SEARCH_LENGTH = 2;
-    private static final int MAX_SUGGESTIONS = 10;
-    private static final float SUGGESTION_MIN_SCORE = 5.0f;
+    private static final int MAX_SUGGESTIONS = 20;
 
     private float getMinScore(String query, SearchContext context) {
         int length = query.trim().length();
@@ -188,8 +192,8 @@ public class DocumentSearchService {
 
     public Page<DocumentResponseDto> searchDocuments(String searchQuery, String username, Pageable pageable) {
         try {
-            ApiResponse<UserDto> response = userClient.getUserByUsername(username);
-            if (!response.isSuccess() || Objects.isNull(response.getData())) {
+            ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+            if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
                 throw new InvalidDataAccessResourceUsageException("User not found");
             }
 
@@ -197,7 +201,7 @@ public class DocumentSearchService {
                 return Page.empty(pageable);
             }
 
-            UserDto userDto = response.getData();
+            UserDto userDto = response.getBody();
             SearchContext searchContext = analyzeQuery(searchQuery);
 
             Query query = buildSearchQuery(searchContext, userDto.getUserId().toString());
@@ -269,12 +273,12 @@ public class DocumentSearchService {
                 return List.of();
             }
 
-            ApiResponse<UserDto> response = userClient.getUserByUsername(username);
-            if (!response.isSuccess() || Objects.isNull(response.getData())) {
+            ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+            if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
                 return List.of();
             }
 
-            UserDto userDto = response.getData();
+            UserDto userDto = response.getBody();
 
             // Configure highlighting for both filename and content
             HighlightFieldParameters highlightParams = HighlightFieldParameters.builder()

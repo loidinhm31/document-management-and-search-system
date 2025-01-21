@@ -45,7 +45,7 @@ export const TwoFactorForm = ({ username, onSuccess }: TwoFactorFormProps) => {
     setIsLoading(true);
     try {
       const resposne = await authService.verify2FA(username, data.code);
-      if (resposne.data?.success) {
+      if (resposne?.data === "VERIFIED") {
         onSuccess();
       } else {
         const newRetryCount = retryCount + 1;

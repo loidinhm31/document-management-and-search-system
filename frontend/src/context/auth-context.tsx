@@ -46,15 +46,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearAuthData = () => {
-    localStorage.removeItem("JWT_TOKEN");
-    localStorage.removeItem("REFRESH_TOKEN");
-    localStorage.removeItem("USER");
-    localStorage.removeItem("IS_ADMIN");
-    setToken(null);
-    setRefreshToken(null);
-    setCurrentUser(null);
-    setIsAdmin(false);
-    stopRefreshTimer();
+    authService.logout(refreshToken).then(r => {
+      localStorage.removeItem("JWT_TOKEN");
+      localStorage.removeItem("REFRESH_TOKEN");
+      localStorage.removeItem("USER");
+      localStorage.removeItem("IS_ADMIN");
+      setToken(null);
+      setRefreshToken(null);
+      setCurrentUser(null);
+      setIsAdmin(false);
+      stopRefreshTimer();
+    });
   };
 
   const refreshAuthToken = async () => {
@@ -64,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const response = await authService.refreshToken(refreshToken);
-      const newTokenData = response.data.data;
+      const newTokenData = response.data;
       setAuthData(newTokenData);
 
       console.log("Token refreshed successfully");
@@ -110,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchCurrentUser = async () => {
     try {
       const response = await userService.getCurrentUser();
-      const userData = response.data.data;
+      const userData = response.data;
       setCurrentUser(userData);
 
       const isUserAdmin = userData.roles.includes("ROLE_ADMIN");

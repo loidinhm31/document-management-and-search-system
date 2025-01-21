@@ -34,6 +34,7 @@ export interface Document {
   createdBy: string;
   updatedBy: string;
   deleted: boolean;
+  highlights?: string[];
 }
 
 export interface DocumentUploadResponse {
@@ -47,4 +48,12 @@ export interface DocumentSearchResponse {
   totalPages: number;
   size: number;
   number: number;
+}
+
+export interface DocumentMetadataUpdate {
+  courseCode?: string;
+  major?: string;
+  level?: string;
+  category?: string;
+  tags?: string[];
 }

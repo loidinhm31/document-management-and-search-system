@@ -9,6 +9,7 @@ const UserList = lazy(() => import("@/pages/admin/user-list-page"));
 const UserDetails = lazy(() => import("@/pages/admin/user-detail-page"));
 
 const Document = lazy(() => import("@/pages/document/document-page"));
+const DocumentDetail = lazy(() => import("@/pages/document/document-detail-page"));
 
 export interface Route {
   path: string;
@@ -73,6 +74,13 @@ export const routes: Route[] = [
     pageTitle: "pages.document",
     component: Document,
     isSecure: true,
+    permission: [],
+  },
+  {
+    path: "/document/:documentId",
+    pageTitle: "pages.document.detail",
+    component: DocumentDetail,
+    isSecure: false,
     permission: [],
   },
   // Admin Routes

@@ -39,8 +39,8 @@ export default function UserDetail() {
         // Get roles - This endpoint remains the same
         const rolesResponse = await adminService.getAllRoles();
 
-        const userData = userResponse.data.data;
-        const roles = rolesResponse.data.data;
+        const userData = userResponse.data;
+        const roles = rolesResponse.data;
 
         setUserData(userData);
         setSelectedRole(userData.role?.roleName || "");

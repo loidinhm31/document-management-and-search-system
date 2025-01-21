@@ -2,7 +2,6 @@ import { AxiosError, AxiosResponse } from "axios";
 import i18next from "i18next";
 
 import { toast } from "@/hooks/use-toast";
-import { ApiResponse } from "@/types/api";
 
 interface ResponseMessages {
   successMessage?: string;
@@ -10,7 +9,7 @@ interface ResponseMessages {
 }
 
 export class BaseService {
-  protected async handleApiResponse<T>(promise: Promise<AxiosResponse<ApiResponse<T>>>, messages?: ResponseMessages) {
+  protected async handleApiResponse<T>(promise: Promise<AxiosResponse<T>>, messages?: ResponseMessages) {
     try {
       const response = await promise;
       const message = messages?.successMessage;
@@ -28,11 +27,11 @@ export class BaseService {
     toast({
       title: i18next.t("common.success"),
       description: message,
-      variant: "success",
+      variant: "success"
     });
   }
 
-  protected handleApiError(error: AxiosError<ApiResponse<any>>, defaultMessage?: string) {
+  protected handleApiError(error: AxiosError<any>, defaultMessage?: string) {
     const status = error.response?.status;
     let description = error.response?.data?.error?.message || defaultMessage;
 
@@ -63,7 +62,7 @@ export class BaseService {
     toast({
       title: i18next.t("common.error"),
       description,
-      variant: "destructive",
+      variant: "destructive"
     });
   }
 }

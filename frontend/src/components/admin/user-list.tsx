@@ -44,7 +44,7 @@ export default function UserList() {
         size: 10,
       });
 
-      const { content, totalPages: total } = response.data.data;
+      const { content, totalPages: total } = response.data;
       setUsers(content);
       setTotalPages(total);
     } catch (error) {
@@ -59,7 +59,7 @@ export default function UserList() {
     }
   };
 
-  const handleUpdateStatus = async (userId: number, enabled: boolean) => {
+  const handleUpdateStatus = async (userId: string, enabled: boolean) => {
     try {
       const updateData = {
         enabled: enabled,

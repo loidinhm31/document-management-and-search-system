@@ -1,6 +1,6 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
-import { DocumentUploadResponse } from "@/types/document";
+import { DocumentMetadataUpdate, DocumentUploadResponse } from "@/types/document";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
@@ -14,14 +14,25 @@ class DocumentService extends BaseService {
   }
 
   downloadDocument(id: string) {
-    return axiosInstance.get(`/document/api/v1/documents/${id}`, {
+    return axiosInstance.get(`/document/api/v1/documents/downloads/${id}`, {
       responseType: "blob"
     });
   }
 
-  updateDocument(id: string, metadata: Record<string, string>) {
+  getDocumentDetails(id: string) {
+    return axiosInstance.get(`/document/api/v1/documents/${id}`);
+  }
+
+  updateDocument(id: string, data: DocumentMetadataUpdate) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document/api/v1/documents/${id}/metadata`, metadata)
+      axiosInstance.put(`/document/api/v1/documents/${id}`, null, {
+        params: {
+          courseCode: data.courseCode,
+          major: data.major,
+          level: data.level,
+          category: data.category
+        }
+      })
     );
   }
 

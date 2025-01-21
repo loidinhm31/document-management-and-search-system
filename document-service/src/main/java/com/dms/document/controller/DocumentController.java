@@ -36,7 +36,7 @@ public class DocumentController {
                 file, courseCode, major, level, category, tags, jwt.getSubject()));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/downloads/{id}")
     public ResponseEntity<byte[]> getDocument(
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
@@ -45,6 +45,36 @@ public class DocumentController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"document\"")
                 .body(content);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<DocumentInformation> getDocumentDetails(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        String username = jwt.getSubject();
+        DocumentInformation document = documentService.getDocumentDetails(id, username);
+        return ResponseEntity.ok(document);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<DocumentInformation> updateDocument(
+            @PathVariable String id,
+            @RequestParam(required = false) String courseCode,
+            @RequestParam(required = false) Major major,
+            @RequestParam(required = false) CourseLevel level,
+            @RequestParam(required = false) DocumentCategory category,
+            @RequestParam(required = false) Set<String> tags,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(documentService.updateDocument(
+                id, courseCode, major, level, category, tags, jwt.getSubject()));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDocument(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt) {
+        documentService.deleteDocument(id, jwt.getSubject());
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/tags")

@@ -402,7 +402,6 @@ public class UserServiceImpl implements UserService {
     public void updateStatus(UUID userId, UpdateStatusRequest request, boolean isAdmin) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        ;
 
         if (!isAdmin) {
             // Regular users can only update specific fields

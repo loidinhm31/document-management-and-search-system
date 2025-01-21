@@ -4,7 +4,6 @@ import axiosInstance from "@/services/axios.config";
 import { UpdateCredentialsRequest, UpdatePasswordRequest, User } from "@/types/auth";
 
 import { BaseService } from "./base.service";
-import { ApiResponse } from "@/types/api";
 
 class UserService extends BaseService {
   updateCredentials(data: UpdateCredentialsRequest) {
@@ -32,7 +31,7 @@ class UserService extends BaseService {
   }
 
   getCurrentUser() {
-    return this.handleApiResponse(axiosInstance.get<ApiResponse<User>>("/auth/api/v1/users/me"));
+    return this.handleApiResponse(axiosInstance.get<User>("/auth/api/v1/users/me"));
   }
 
   enable2FA(userId: string) {

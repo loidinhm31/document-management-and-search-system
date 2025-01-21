@@ -4,7 +4,6 @@ import com.dms.auth.dtos.request.LoginRequest;
 import com.dms.auth.dtos.request.PasswordResetRequest;
 import com.dms.auth.security.request.RefreshTokenRequest;
 import com.dms.auth.dtos.request.SignupRequest;
-import com.dms.auth.dtos.response.ApiResponse;
 import com.dms.auth.security.response.TokenResponse;
 import com.dms.auth.security.request.Verify2FARequest;
 import com.dms.auth.services.UserService;
@@ -23,58 +22,56 @@ public class AuthController {
     private final UserService userService;
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<TokenResponse>> login(
+    public ResponseEntity<TokenResponse> login(
             @Valid @RequestBody LoginRequest loginRequest,
             HttpServletRequest request) {
         TokenResponse response = userService.authenticateUser(loginRequest, request);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(
+    public ResponseEntity<TokenResponse> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request) {
         TokenResponse response = userService.refreshToken(request.getRefreshToken());
-        return ResponseEntity.ok(ApiResponse.success(response));
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(
+    public ResponseEntity<Void> logout(
             @Valid @RequestBody RefreshTokenRequest request) {
         userService.logout(request.getRefreshToken());
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody SignupRequest signupRequest) {
+    public ResponseEntity<Void> register(@Valid @RequestBody SignupRequest signupRequest) {
         userService.registerUser(signupRequest);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(null));
+                .build();
     }
 
     @PostMapping("/password/forgot")
-    public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestParam @Email String email) {
+    public ResponseEntity<Void> forgotPassword(@RequestParam @Email String email) {
         userService.generatePasswordResetToken(email);
-        return ResponseEntity.ok(
-                ApiResponse.success(null)
-        );
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/password/reset")
-    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
         userService.resetPassword(request.getToken(), request.getNewPassword());
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/2fa/verify")
-    public ResponseEntity<ApiResponse<Void>> verify2FA(
+    public ResponseEntity<String> verify2FA(
             @RequestBody Verify2FARequest verify2FARequest) {
         boolean isValid = userService.validate2FACode(verify2FARequest);
         if (isValid) {
             userService.enable2FA(verify2FARequest.getUsername());
-            return ResponseEntity.ok(ApiResponse.success(null));
+            return ResponseEntity.ok("VERIFIED");
         }
-        return ResponseEntity.ok(ApiResponse.error(HttpStatus.BAD_REQUEST, "Invalid 2FA code"));
+        return ResponseEntity.ok("UNVERIFIED");
     }
 
 

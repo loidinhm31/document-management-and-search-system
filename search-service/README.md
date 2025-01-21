@@ -8,9 +8,45 @@ docker run -p 9200:9200 \
 -d docker.elastic.co/elasticsearch/elasticsearch:8.8.1
 
 
+Add authentication
+```shell
+curl -X GET "localhost:9200/documents/_count" \
+-H "Content-Type: application/json" \
+-u "elastic:NX9DYn+_4WSXRmHwymTo"
+```
+
+
 curl -X DELETE "localhost:9200/documents"
 
 
 curl -X GET "localhost:9200/documents/_search" -H "Content-Type: application/json" -d '{}'
 
 curl -X PUT "localhost:9200/documents" -H "Content-Type: application/json" -d @mapping.json
+
+To get a specific document by ID:
+```shell
+curl -X GET "localhost:9200/documents/_doc/{document_id}" -H "Content-Type: application/json"
+```
+
+To search for documents by user ID:
+```shell
+curl -X GET "localhost:9200/documents/_search" -H "Content-Type: application/json" -d'
+{
+  "query": {
+    "term": {
+      "userId": "your-user-id"
+    }
+  }
+}'
+```
+
+```shell
+curl -X GET "localhost:9200/documents/_search" -H "Content-Type: application/json" -d'
+{
+  "query": {
+    "term": {
+      "id": "678e97961e345b75cc5b7af2"
+    }
+  }
+}'
+```

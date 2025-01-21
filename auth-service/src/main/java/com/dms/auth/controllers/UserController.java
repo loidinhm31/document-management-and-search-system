@@ -5,7 +5,6 @@ import com.dms.auth.dtos.request.UpdatePasswordRequest;
 import com.dms.auth.dtos.request.UpdateProfileRequest;
 import com.dms.auth.dtos.request.UpdateStatusRequest;
 import com.dms.auth.dtos.request.UpdateUserRequest;
-import com.dms.auth.dtos.response.ApiResponse;
 import com.dms.auth.exceptions.InvalidRequestException;
 import com.dms.auth.security.request.Verify2FARequest;
 import com.dms.auth.security.response.UserInfoResponse;
@@ -28,92 +27,92 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<UserDto>> getUserByUsername(@RequestParam String username) {
-        return ResponseEntity.ok(ApiResponse.success(userService.getUserByUsername(username)));
+    public ResponseEntity<UserDto> getUserByUsername(@RequestParam String username) {
+        return ResponseEntity.ok(userService.getUserByUsername(username));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<UserDto>> getUser(@PathVariable UUID id) {
-        return ResponseEntity.ok(ApiResponse.success(userService.getUserById(id)));
+    public ResponseEntity<UserDto> getUser(@PathVariable UUID id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @PutMapping("/{id}/profile")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<Void>> updateProfile(
+    public ResponseEntity<Void> updateProfile(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateProfileRequest request) {
         userService.updateProfile(id, request);
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> updateUserRole(
+    public ResponseEntity<Void> updateUserRole(
             @PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request) {
         userService.updateUserRole(id, request.getRoleName());
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<Void>> updateStatus(
+    public ResponseEntity<Void> updateStatus(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateStatusRequest request,
             @AuthenticationPrincipal UserDetails currentUser) {
         boolean isAdmin = currentUser.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         userService.updateStatus(id, request, isAdmin);
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}/password")
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<Void>> updatePassword(
+    public ResponseEntity<Void> updatePassword(
             @PathVariable UUID id,
             @Valid @RequestBody UpdatePasswordRequest request,
             @AuthenticationPrincipal UserDetails userDetails) throws InvalidRequestException {
         userService.updatePassword(id, request, userDetails);
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserInfoResponse>> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<UserInfoResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
         UserInfoResponse userInfo = userService.getUserInfo(userDetails);
-        return ResponseEntity.ok(ApiResponse.success(userInfo));
+        return ResponseEntity.ok(userInfo);
     }
 
     @PostMapping("/{id}/2fa/enable")
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<String>> enable2FA(
+    public ResponseEntity<String> enable2FA(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID id) {
         GoogleAuthenticatorKey key = userService.generate2FASecret(id);
         String qrCodeUrl = userService.getQrCodeUrl(key, userDetails.getUsername());
-        return ResponseEntity.ok(ApiResponse.success(qrCodeUrl));
+        return ResponseEntity.ok(qrCodeUrl);
     }
 
     @PostMapping("/{id}/2fa/verify")
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<Void>> verify2FA(
+    public ResponseEntity<Void> verify2FA(
             @PathVariable UUID id,
             @RequestBody Verify2FARequest verify2FARequest) {
         userService.verify2FACode(id, verify2FARequest);
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{id}/2fa/disable")
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<Void>> disable2FA(
+    public ResponseEntity<Void> disable2FA(
             @PathVariable UUID id) {
         userService.disable2FA(id);
-        return ResponseEntity.ok(ApiResponse.success(null));
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}/2fa/status")
     @PreAuthorize("@userSecurity.isCurrentUser(#id)")
-    public ResponseEntity<ApiResponse<Boolean>> get2FAStatus(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID id) {
+    public ResponseEntity<Boolean> get2FAStatus(@AuthenticationPrincipal UserDetails userDetails, @PathVariable UUID id) {
         boolean status = userService.get2FAStatus(userDetails.getUsername());
-        return ResponseEntity.ok(ApiResponse.success(status));
+        return ResponseEntity.ok(status);
     }
 }

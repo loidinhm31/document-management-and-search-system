@@ -1,7 +1,6 @@
 import axios, { AxiosError, AxiosHeaders, AxiosResponse, CreateAxiosDefaults } from "axios";
 
 import { APP_API_URL } from "@/env";
-import { ApiResponse } from "@/types/api";
 import { TokenResponse } from "@/types/auth";
 
 const config: CreateAxiosDefaults = {
@@ -41,11 +40,11 @@ const refreshAuthToken = async () => {
   }
 
   try {
-    const response = await axios.post<ApiResponse<TokenResponse>>(`${APP_API_URL}/auth/api/v1/auth/refresh-token`, {
+    const response = await axios.post<TokenResponse>(`${APP_API_URL}/auth/api/v1/auth/refresh-token`, {
       refreshToken,
     });
 
-    const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+    const { accessToken, refreshToken: newRefreshToken } = response.data;
     localStorage.setItem("JWT_TOKEN", accessToken);
     localStorage.setItem("REFRESH_TOKEN", newRefreshToken);
 

@@ -10,7 +10,6 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { APP_API_URL } from "@/env";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/services/auth.service";
 import { LoginRequest, TokenResponse } from "@/types/auth";
@@ -49,7 +48,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     setIsLoading(true);
     try {
       const response = await authService.login(data as LoginRequest);
-      onSuccess(response.data.data);
+      onSuccess(response.data);
     } catch (error) {
       console.log("toast", error);
       toast({

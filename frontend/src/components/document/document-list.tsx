@@ -1,22 +1,25 @@
+import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { Calendar, Download, Eye, Loader2, MoreHorizontal, Trash2 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { DocumentViewer } from "@/components/document/document-viewer";
+import { HighlightCell } from "@/components/document/highlight-cell";
 import SearchSuggestions from "@/components/document/search-suggestions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { searchService } from "@/services/search.service";
-import { HighlightCell } from "@/components/document/highlight-cell";
-import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
-import { DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { useTranslation } from "react-i18next";
 
 export const DocumentList = () => {
   const { t } = useTranslation();
+
+  const navigate = useNavigate();
 
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -156,7 +159,13 @@ export const DocumentList = () => {
                     {documents.map((doc) => (
                       <TableRow key={doc.id}>
                         <TableCell className="font-medium truncate">
-                          {doc.filename}
+                          <Button
+                            variant="link"
+                            className="font-medium truncate p-0 h-auto"
+                            onClick={() => navigate(`/document/${doc.id}`)}
+                          >
+                            {doc.filename}
+                          </Button>
                         </TableCell>
                         <TableCell className="truncate">{doc.courseCode}</TableCell>
                         <TableCell className="truncate">{doc.major}</TableCell>

@@ -54,8 +54,8 @@ export default function UserProfile() {
     const fetch2FAStatus = async () => {
       try {
         const response = await userService.get2FAStatus(currentUser?.userId);
-        if (response.data && typeof response.data.data === "boolean") {
-          setIs2faEnabled(response.data.data);
+        if (response.data && typeof response.data === "boolean") {
+          setIs2faEnabled(response.data);
         }
       } catch (_error) {
         toast({
@@ -89,7 +89,7 @@ export default function UserProfile() {
     setLoading((prev) => ({ ...prev, twoFactor: true }));
     try {
       const response = await userService.enable2FA(currentUser?.userId);
-      const qrCode = response.data.data;
+      const qrCode = response.data;
       if (typeof qrCode === "string") {
         setQrCodeUrl(qrCode);
         setStep(2);

@@ -69,6 +69,7 @@ public class JwtUtils {
                 .and()
                 .issuer("dms-auth-service")
                 .subject(userDetails.getUsername())
+                .claim("is2faEnabled", userDetails.is2faEnabled())
                 .claim("roles", userDetails.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.joining(",")))
