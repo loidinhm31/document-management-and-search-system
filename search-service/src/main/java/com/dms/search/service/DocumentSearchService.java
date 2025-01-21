@@ -1,9 +1,6 @@
 package com.dms.search.service;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
+import co.elastic.clients.elasticsearch._types.query_dsl.*;
 import com.dms.search.client.UserClient;
 import com.dms.search.dto.ApiResponse;
 import com.dms.search.dto.SearchContext;
@@ -24,11 +21,10 @@ import org.springframework.data.elasticsearch.core.query.highlight.HighlightFiel
 import org.springframework.data.elasticsearch.core.query.highlight.HighlightFieldParameters;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 
 @Service
 @RequiredArgsConstructor
@@ -38,20 +34,20 @@ public class DocumentSearchService {
     private final UserClient userClient;
 
     private static final int MIN_SEARCH_LENGTH = 2;
-   
+    private static final int MAX_SUGGESTIONS = 10;
+    private static final float SUGGESTION_MIN_SCORE = 5.0f;
+
     private float getMinScore(String query, SearchContext context) {
         int length = query.trim().length();
 
         // Lowered base scores to accommodate case-insensitive matching
         float baseScore;
-
         if (context.queryType() == QueryType.DEFINITION) {
             baseScore = 8.0f;
         } else {
             baseScore = 15.0f;
         }
 
-        // More lenient scoring for shorter queries
         if (length <= 3) return baseScore * 0.5f;
         if (length <= 5) return baseScore * 0.65f;
         if (length <= 10) return baseScore * 0.85f;
@@ -61,19 +57,10 @@ public class DocumentSearchService {
 
     private SearchContext analyzeQuery(String query) {
         String cleanQuery = query.trim();
-
-        // Analyze query characteristics
         boolean isProbableDefinition = cleanQuery.toLowerCase().split("\\s+").length <= 3;
 
-        QueryType queryType;
-        if (isProbableDefinition) {
-            queryType = QueryType.DEFINITION;
-        } else {
-            queryType = QueryType.GENERAL;
-        }
-
         return new SearchContext(
-                queryType,
+                isProbableDefinition ? QueryType.DEFINITION : QueryType.GENERAL,
                 cleanQuery,
                 cleanQuery.toUpperCase(),
                 cleanQuery.toLowerCase()
@@ -168,8 +155,34 @@ public class DocumentSearchService {
                     }));
         }
 
-
         return queryBuilder.build()._toQuery();
+    }
+
+    private Query buildSuggestionQuery(String prefix, String userId) {
+        return new BoolQuery.Builder()
+                .must(must -> must
+                        .term(term -> term
+                                .field("userId")
+                                .value(userId)))
+                .must(must -> must
+                        .bool(b -> {
+                            // Match in filename
+                            b.should(should -> should
+                                    .match(m -> m
+                                            .field("filename")
+                                            .query(prefix)
+                                            .boost(2.0f)));
+
+                            // Match in content
+                            b.should(should -> should
+                                    .match(m -> m
+                                            .field("content")
+                                            .query(prefix)
+                                            .boost(1.0f)));
+
+                            return b.minimumShouldMatch("1");
+                        }))
+                .build()._toQuery();
     }
 
     public Page<DocumentIndex> searchDocuments(String searchQuery, String username, Pageable pageable) {
@@ -189,7 +202,6 @@ public class DocumentSearchService {
             Query query = buildSearchQuery(searchContext, userDto.getUserId().toString());
             float minScore = getMinScore(searchQuery, searchContext);
 
-            // Configure highlighting based on query type
             HighlightFieldParameters contentParams = HighlightFieldParameters.builder()
                     .withPreTags("<mark>")
                     .withPostTags("</mark>")
@@ -232,6 +244,10 @@ public class DocumentSearchService {
 
     public List<String> getSuggestions(String prefix, String username) {
         try {
+            if (prefix.trim().length() < MIN_SEARCH_LENGTH) {
+                return List.of();
+            }
+
             ApiResponse<UserDto> response = userClient.getUserByUsername(username);
             if (!response.isSuccess() || Objects.isNull(response.getData())) {
                 return List.of();
@@ -239,24 +255,27 @@ public class DocumentSearchService {
 
             UserDto userDto = response.getData();
 
-            Query query = new BoolQuery.Builder()
-                    .must(must -> must
-                            .term(term -> term
-                                    .field("userId")
-                                    .value(userDto.getUserId().toString())
-                            )
-                    )
-                    .must(must -> must
-                            .prefix(p -> p
-                                    .field("filename.raw")
-                                    .value(prefix.toLowerCase())
-                            )
-                    )
-                    .build()._toQuery();
+            // Configure highlighting for both filename and content
+            HighlightFieldParameters highlightParams = HighlightFieldParameters.builder()
+                    .withPreTags("<em><b>")
+                    .withPostTags("</b></em>")
+                    .withFragmentSize(60)
+                    .withNumberOfFragments(3)
+                    .build();
+
+            List<HighlightField> highlightFields = new ArrayList<>();
+            highlightFields.add(new HighlightField("filename", highlightParams));
+            highlightFields.add(new HighlightField("content", highlightParams));
+
+            Highlight highlight = new Highlight(highlightFields);
+
+            Query query = buildSuggestionQuery(prefix, userDto.getUserId().toString());
 
             NativeQuery nativeQuery = NativeQuery.builder()
                     .withQuery(query)
-                    .withPageable(PageRequest.of(0, 5, Sort.by("filename.raw").ascending()))
+                    .withHighlightQuery(new HighlightQuery(highlight, DocumentIndex.class))
+                    .withPageable(PageRequest.of(0, MAX_SUGGESTIONS))
+                    .withTrackScores(true)
                     .build();
 
             SearchHits<DocumentIndex> searchHits = elasticsearchTemplate.search(
@@ -265,7 +284,21 @@ public class DocumentSearchService {
             );
 
             return searchHits.getSearchHits().stream()
-                    .map(hit -> hit.getContent().getFilename())
+                    .map(hit -> {
+                        // Get highlighted fragments
+                        List<String> fileHighlights = hit.getHighlightFields().get("filename");
+                        List<String> contentHighlights = hit.getHighlightFields().get("content");
+
+                        // Prioritize filename matches, fallback to content matches
+                        if (fileHighlights != null && !fileHighlights.isEmpty()) {
+                            return fileHighlights.get(0);
+                        } else if (contentHighlights != null && !contentHighlights.isEmpty()) {
+                            return contentHighlights.get(0);
+                        }
+
+                        // Fallback to original filename if no highlights
+                        return hit.getContent().getFilename();
+                    })
                     .distinct()
                     .collect(Collectors.toList());
 

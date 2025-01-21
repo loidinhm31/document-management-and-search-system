@@ -1,8 +1,8 @@
 import { Download, Eye, Loader2, Trash2 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 
-import SearchSuggestions from "@/components/document/search-suggestions";
 import { DocumentViewer } from "@/components/document/document-viewer";
+import SearchSuggestions from "@/components/document/search-suggestions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { searchService } from "@/services/search.service";
 import { Document } from "@/types/document";
-
 
 export const DocumentList = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -52,7 +51,6 @@ export const DocumentList = () => {
     setCurrentPage(newPage);
     fetchDocuments(currentSearchQuery, newPage);
   }, [currentSearchQuery, fetchDocuments]);
-
 
   const handleDelete = useCallback(async (id: string) => {
     try {
@@ -113,13 +111,7 @@ export const DocumentList = () => {
           <CardTitle>Documents</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <SearchSuggestions
-              onSearch={handleSearch}
-              placeholder="Search documents..."
-              className="max-w-xs"
-            />
-          </div>
+          <SearchSuggestions onSearch={handleSearch} className="mb-4 max-w-none" />
 
           {loading ? (
             <div className="flex justify-center p-4">
