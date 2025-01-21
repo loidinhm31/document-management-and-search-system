@@ -1,4 +1,4 @@
-import { Home, Settings2, Shield, Users } from "lucide-react";
+import { FileText, Home, Settings2, Shield, Users } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -38,7 +38,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
     {
       title: t("navigation.main.document"),
-      icon: Home,
+      icon: FileText,
       href: "/document",
       isActive: location.pathname === "/document",
     },
