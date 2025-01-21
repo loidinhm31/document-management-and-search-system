@@ -1,7 +1,8 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DocumentUpload } from "@/components/document/document-upload";
+
 import { DocumentList } from "@/components/document/document-list";
+import { DocumentUpload } from "@/components/document/document-upload";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DocumentsPage() {
   return (
