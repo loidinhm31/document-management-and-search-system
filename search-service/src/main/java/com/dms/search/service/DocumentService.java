@@ -22,7 +22,7 @@ public class DocumentService {
                     .userId(document.getUserId())
                     .mimeType(document.getMimeType())
                     .documentType(document.getDocumentType())
-                    .major(document.getMajor().getCode())
+                    .major(document.getMajor())
                     .courseCode(document.getCourseCode())
                     .courseLevel(document.getCourseLevel())
                     .category(document.getCategory())

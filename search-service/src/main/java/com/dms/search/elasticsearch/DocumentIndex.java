@@ -1,7 +1,5 @@
 package com.dms.search.elasticsearch;
 
-import com.dms.search.enums.CourseLevel;
-import com.dms.search.enums.DocumentCategory;
 import com.dms.search.enums.DocumentType;
 import lombok.Builder;
 import lombok.Data;
@@ -49,10 +47,10 @@ public class DocumentIndex {
     private String courseCode;
 
     @Field(type = FieldType.Keyword)
-    private CourseLevel courseLevel;
+    private String courseLevel;
 
     @Field(type = FieldType.Keyword)
-    private DocumentCategory category;
+    private String category;
 
     @Field(type = FieldType.Keyword)
     private Set<String> tags;

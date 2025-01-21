@@ -2,6 +2,7 @@ package com.dms.document.service;
 
 import com.dms.document.client.UserClient;
 import com.dms.document.dto.DocumentContent;
+import com.dms.document.dto.DocumentUpdateRequest;
 import com.dms.document.dto.UserDto;
 import com.dms.document.enums.*;
 import com.dms.document.exception.InvalidDocumentException;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
@@ -47,9 +49,9 @@ public class DocumentService {
 
     public DocumentInformation uploadDocument(MultipartFile file,
                                               String courseCode,
-                                              Major major,
-                                              CourseLevel level,
-                                              DocumentCategory category,
+                                              String major,
+                                              String level,
+                                              String category,
                                               Set<String> tags,
                                               String username) throws IOException {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
@@ -149,11 +151,7 @@ public class DocumentService {
 
     public DocumentInformation updateDocument(
             String documentId,
-            String courseCode,
-            Major major,
-            CourseLevel level,
-            DocumentCategory category,
-            Set<String> tags,
+            DocumentUpdateRequest documentUpdateRequest,
             String username) {
 
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
@@ -166,12 +164,13 @@ public class DocumentService {
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Update fields if provided
-        if (courseCode != null) document.setCourseCode(courseCode);
-        if (major != null) document.setMajor(major);
-        if (level != null) document.setCourseLevel(level);
-        if (category != null) document.setCategory(category);
-        if (tags != null) document.setTags(tags);
-
+        if (Objects.nonNull(document)) {
+            document.setCourseCode(documentUpdateRequest.courseCode());
+            document.setMajor(documentUpdateRequest.major());
+            document.setCourseLevel(documentUpdateRequest.level());
+            document.setCategory(documentUpdateRequest.category());
+            document.setTags(documentUpdateRequest.tags());
+        }
         document.setUpdatedAt(new Date());
         document.setUpdatedBy(username);
 
@@ -227,16 +226,69 @@ public class DocumentService {
         ));
     }
 
+    public DocumentInformation updateDocumentFile(String documentId, MultipartFile file, String username) throws IOException {
+        // Verify user access
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
 
-    public DocumentInformation updateTags(String documentId, Set<String> tags, String username) {
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, username)
+        // Get existing document
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
-        document.setTags(tags);
+        // Validate new file
+        validateDocument(file);
+
+        // Delete old file
+        try {
+            Path oldFilePath = Path.of(storageBasePath, document.getFilePath());
+            Files.deleteIfExists(oldFilePath);
+        } catch (IOException e) {
+            log.error("Error deleting old file for document: {}", documentId, e);
+        }
+
+        // Generate new filename and save new file
+        String fileExtension = getFileExtension(file.getOriginalFilename());
+        String uniqueFilename = UUID.randomUUID() + fileExtension;
+        String relativePath = createStoragePath(uniqueFilename);
+        Path fullPath = Path.of(storageBasePath, relativePath);
+
+        // Create directories if they don't exist
+        Files.createDirectories(fullPath.getParent());
+
+        // Save new file to disk
+        Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
+
+        // Extract content and metadata
+        DocumentContent extractedContent = contentExtractorService.extractContent(fullPath);
+
+        // Update document information
+        document.setFilename(uniqueFilename);
+        document.setOriginalFilename(file.getOriginalFilename());
+        document.setFilePath(relativePath);
+        document.setFileSize(file.getSize());
+        document.setMimeType(file.getContentType());
+        document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
+        document.setContent(extractedContent.content());
+        document.setExtractedMetadata(extractedContent.metadata());
         document.setUpdatedAt(new Date());
         document.setUpdatedBy(username);
 
+        // Save updated document
         DocumentInformation updatedDocument = documentRepository.save(document);
+
+        // Send sync event for elasticsearch update
+        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
+                SyncEventRequest.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .userId(userDto.getUserId().toString())
+                        .documentId(documentId)
+                        .subject(EventType.UPDATE_EVENT.name())
+                        .triggerAt(LocalDateTime.now())
+                        .build()
+        ));
 
         return updatedDocument;
     }

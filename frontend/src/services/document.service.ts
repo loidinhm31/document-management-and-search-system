@@ -25,14 +25,7 @@ class DocumentService extends BaseService {
 
   updateDocument(id: string, data: DocumentMetadataUpdate) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document/api/v1/documents/${id}`, null, {
-        params: {
-          courseCode: data.courseCode,
-          major: data.major,
-          level: data.level,
-          category: data.category
-        }
-      })
+      axiosInstance.put(`/document/api/v1/documents/${id}`, data)
     );
   }
 
@@ -42,9 +35,13 @@ class DocumentService extends BaseService {
     );
   }
 
-  updateTags(id: string, tags: string[]) {
-    return this.handleApiResponse<Document>(
-      axiosInstance.put(`/document/api/v1/documents/${id}/tags`, tags)
+  updateFile(id: string, formData: FormData) {
+    return this.handleApiResponse(
+      axiosInstance.put(`/document/api/v1/documents/${id}/file`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      })
     );
   }
 

@@ -1,7 +1,5 @@
 package com.dms.search.dto;
 
-import com.dms.search.enums.CourseLevel;
-import com.dms.search.enums.DocumentCategory;
 import com.dms.search.enums.DocumentType;
 import lombok.Builder;
 import lombok.Data;
@@ -32,9 +30,9 @@ public class DocumentResponseDto {
 
     private String courseCode;
 
-    private CourseLevel courseLevel;
+    private String courseLevel;
 
-    private DocumentCategory category;
+    private String category;
 
     private Set<String> tags;
 

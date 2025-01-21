@@ -1,17 +1,20 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Upload } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import * as z from "zod";
 
+import { DocumentViewer } from "@/components/document/document-viewer";
 import TagInput from "@/components/tag-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 
@@ -53,6 +56,9 @@ const DocumentDetail = () => {
   const navigate = useNavigate();
   const { documentId } = useParams<{ documentId: string }>();
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [documentData, setDocumentData] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
   const { toast } = useToast();
 
   const form = useForm<DocumentFormValues>({
@@ -66,14 +72,35 @@ const DocumentDetail = () => {
     }
   });
 
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: acceptedFiles => {
+      if (acceptedFiles?.length > 0) {
+        setSelectedFile(acceptedFiles[0]);
+      }
+    },
+    maxFiles: 1,
+    accept: {
+      "application/pdf": [".pdf"],
+      "application/msword": [".doc"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+      "application/vnd.ms-excel": [".xls"],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+      "text/plain": [".txt"],
+      "text/csv": [".csv"],
+      "application/json": [".json"],
+      "application/xml": [".xml"],
+      "application/vnd.ms-powerpoint": [".pptx"]
+    }
+  });
+
   useEffect(() => {
     const fetchDocument = async () => {
       if (!documentId) return;
 
       try {
         const response = await documentService.getDocumentDetails(documentId);
-        console.log("response", response.data);
         const document = response.data;
+        setDocumentData(document);
 
         form.reset({
           courseCode: document.courseCode,
@@ -99,19 +126,28 @@ const DocumentDetail = () => {
 
   const onSubmit = async (data: DocumentFormValues) => {
     if (!documentId) return;
+    setUpdating(true);
 
     try {
+      // Update metadata
       await documentService.updateDocument(documentId, {
         courseCode: data.courseCode,
         major: data.major,
         level: data.level,
-        category: data.category
+        category: data.category,
+        tags: data.tags
       });
 
-      // Update tags separately if they've changed
-      const currentTags = form.getValues("tags");
-      if (JSON.stringify(currentTags) !== JSON.stringify(data.tags)) {
-        await documentService.updateTags(documentId, data.tags || []);
+      // Update file if selected
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        await documentService.updateFile(documentId, formData);
+        setSelectedFile(null);
+
+        // Refresh document data to get new file info
+        const response = await documentService.getDocumentDetails(documentId);
+        setDocumentData(response.data);
       }
 
       toast({
@@ -125,6 +161,8 @@ const DocumentDetail = () => {
         description: t("document.detail.updateError"),
         variant: "destructive"
       });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -143,126 +181,181 @@ const DocumentDetail = () => {
         {t("document.detail.backToList")}
       </Button>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("document.detail.title")}</CardTitle>
-          <CardDescription>{t("document.detail.description")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="courseCode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("document.detail.form.courseCode.label")}</FormLabel>
-                    <FormControl>
-                      <Input placeholder={t("document.detail.form.courseCode.placeholder")} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        {/* Document Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("document.detail.title")}</CardTitle>
+            <CardDescription>{t("document.detail.description")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* File Upload Section */}
+                <div className="space-y-4">
+                  <div
+                    {...getRootProps()}
+                    className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                  >
+                    <input {...getInputProps()} />
+                    <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    {isDragActive ? (
+                      <p>{t("document.upload.dropzone.prompt")}</p>
+                    ) : (
+                      <div className="space-y-2">
+                        <p>{t("document.upload.dropzone.info")}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {t("document.upload.dropzone.supportedFormats")} PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON, XML
+                        </p>
+                      </div>
+                    )}
+                    {selectedFile && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        Selected: {selectedFile.name}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
-              <FormField
-                control={form.control}
-                name="major"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("document.detail.form.major.label")}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                <Separator />
+
+                {/* Metadata Form Fields */}
+                <FormField
+                  control={form.control}
+                  name="courseCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("document.detail.form.courseCode.label")}</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("document.detail.form.major.placeholder")} />
-                        </SelectTrigger>
+                        <Input placeholder={t("document.detail.form.courseCode.placeholder")} {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {MAJORS.map((major) => (
-                          <SelectItem key={major.code} value={major.code}>
-                            {major.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="level"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("document.detail.form.level.label")}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                <FormField
+                  control={form.control}
+                  name="major"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("document.detail.form.major.label")}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("document.detail.form.major.placeholder")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {MAJORS.map((major) => (
+                            <SelectItem key={major.code} value={major.code}>
+                              {major.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="level"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("document.detail.form.level.label")}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("document.detail.form.level.placeholder")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COURSE_LEVELS.map((level) => (
+                            <SelectItem key={level.code} value={level.code}>
+                              {level.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("document.detail.form.category.label")}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {DOCUMENT_CATEGORIES.map((category) => (
+                            <SelectItem key={category.value} value={category.value}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="tags"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("document.detail.form.tags.label")}</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("document.detail.form.level.placeholder")} />
-                        </SelectTrigger>
+                        <TagInput
+                          value={field.value || []}
+                          onChange={field.onChange}
+                          placeholder={t("document.detail.form.tags.placeholder")}
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {COURSE_LEVELS.map((level) => (
-                          <SelectItem key={level.code} value={level.code}>
-                            {level.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("document.detail.form.category.label")}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {DOCUMENT_CATEGORIES.map((category) => (
-                          <SelectItem key={category.value} value={category.value}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <Button type="submit" className="w-full" disabled={updating}>
+                  {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {t("document.detail.buttons.update")}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
 
-              <FormField
-                control={form.control}
-                name="tags"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("document.detail.form.tags.label")}</FormLabel>
-                    <FormControl>
-                      <TagInput
-                        value={field.value || []}
-                        onChange={field.onChange}
-                        placeholder={t("document.detail.form.tags.placeholder")}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+        {/* Document Preview */}
+        <Card className="xl:h-[800px]">
+          <CardHeader>
+            <CardTitle>{documentData?.originalFilename}</CardTitle>
+            <CardDescription>
+              {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(2)} KB
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-full max-h-[700px]">
+            {documentData && (
+              <DocumentViewer
+                documentId={documentData.id}
+                documentType={documentData.documentType}
+                mimeType={documentData.mimeType}
+                fileName={documentData.filename}
               />
-
-              <Button type="submit" className="w-full">{t("document.detail.buttons.update")}</Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

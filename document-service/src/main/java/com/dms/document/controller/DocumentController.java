@@ -1,8 +1,6 @@
 package com.dms.document.controller;
 
-import com.dms.document.enums.CourseLevel;
-import com.dms.document.enums.DocumentCategory;
-import com.dms.document.enums.Major;
+import com.dms.document.dto.DocumentUpdateRequest;
 import com.dms.document.model.DocumentInformation;
 import com.dms.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -26,9 +24,9 @@ public class DocumentController {
     public ResponseEntity<DocumentInformation> uploadDocument(
             @RequestParam("file") MultipartFile file,
             @RequestParam String courseCode,
-            @RequestParam Major major,
-            @RequestParam CourseLevel level,
-            @RequestParam DocumentCategory category,
+            @RequestParam String major,
+            @RequestParam String level,
+            @RequestParam String category,
             @RequestParam(required = false) Set<String> tags,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
 
@@ -59,14 +57,10 @@ public class DocumentController {
     @PutMapping("/{id}")
     public ResponseEntity<DocumentInformation> updateDocument(
             @PathVariable String id,
-            @RequestParam(required = false) String courseCode,
-            @RequestParam(required = false) Major major,
-            @RequestParam(required = false) CourseLevel level,
-            @RequestParam(required = false) DocumentCategory category,
-            @RequestParam(required = false) Set<String> tags,
+            @RequestBody DocumentUpdateRequest documentUpdateRequest,
             @AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(documentService.updateDocument(
-                id, courseCode, major, level, category, tags, jwt.getSubject()));
+                id, documentUpdateRequest, jwt.getSubject()));
     }
 
     @DeleteMapping("/{id}")
@@ -77,12 +71,13 @@ public class DocumentController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/tags")
-    public ResponseEntity<DocumentInformation> updateDocumentTags(
+    @PutMapping("/{id}/file")
+    public ResponseEntity<DocumentInformation> updateDocumentFile(
             @PathVariable String id,
-            @RequestBody Set<String> tags,
-            @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(documentService.updateTags(id, tags, jwt.getSubject()));
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal Jwt jwt) throws IOException {
+        String username = jwt.getSubject();
+        return ResponseEntity.ok(documentService.updateDocumentFile(id, file, username));
     }
 
     @GetMapping("/tags/suggestions")

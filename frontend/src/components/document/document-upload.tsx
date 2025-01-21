@@ -107,7 +107,7 @@ export const DocumentUpload = () => {
 
       // Clean and handle tags properly
       const cleanedTags = (data.tags || [])
-        .map(tag => tag.trim())
+        .map((tag: string) => tag.trim())
         .filter(Boolean);
 
       if (cleanedTags.length > 0) {

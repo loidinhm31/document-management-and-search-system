@@ -1,9 +1,6 @@
 package com.dms.search.model;
 
-import com.dms.search.enums.CourseLevel;
-import com.dms.search.enums.DocumentCategory;
 import com.dms.search.enums.DocumentType;
-import com.dms.search.enums.Major;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -46,7 +43,7 @@ public class DocumentInformation {
 
     @Indexed
     @Field("major")
-    private Major major;
+    private String major;
 
     @Indexed
     @Field("course_code")
@@ -54,11 +51,11 @@ public class DocumentInformation {
 
     @Indexed
     @Field("course_level")
-    private CourseLevel courseLevel;
+    private String courseLevel;
 
     @Indexed
     @Field("category")
-    private DocumentCategory category;
+    private String category;
 
     @Indexed
     @Field("tags")

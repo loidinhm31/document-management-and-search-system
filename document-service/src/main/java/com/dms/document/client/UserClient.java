@@ -2,7 +2,6 @@ package com.dms.document.client;
 
 
 import com.dms.document.config.FeignConfig;
-import com.dms.document.dto.ApiResponse;
 import com.dms.document.dto.UserDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
