@@ -6,25 +6,13 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { documentService } from "@/services/document.service";
 import { useToast } from "@/hooks/use-toast";
 import TagInput from "@/components/tag-input";
+import { useTranslation } from "react-i18next";
 
 const COURSE_LEVELS = [
   { code: "FUNDAMENTAL", name: "Fundamental" },
@@ -58,6 +46,8 @@ const formSchema = z.object({
 });
 
 export const DocumentUpload = () => {
+  const { t } = useTranslation();
+
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const { toast } = useToast();
@@ -92,7 +82,7 @@ export const DocumentUpload = () => {
       "text/csv": [".csv"],
       "application/json": [".json"],
       "application/xml": [".xml"],
-      "application/vnd.ms-powerpoint": [".pptx"],
+      "application/vnd.ms-powerpoint": [".pptx"]
     }
   });
 
@@ -100,7 +90,7 @@ export const DocumentUpload = () => {
     if (!selectedFile) {
       toast({
         title: "Error",
-        description: "Please select a file to upload",
+        description: t("document.upload.messages.fileRequired"),
         variant: "destructive"
       });
       return;
@@ -128,8 +118,8 @@ export const DocumentUpload = () => {
       await documentService.uploadDocument(formData);
 
       toast({
-        title: "Success",
-        description: "Document uploaded successfully",
+        title: t("common.success"),
+        description: t("document.upload.messages.success"),
         variant: "success"
       });
 
@@ -144,8 +134,8 @@ export const DocumentUpload = () => {
 
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to upload document",
+        title: t("common.error"),
+        description: t("document.upload.messages.error"),
         variant: "destructive"
       });
     } finally {
@@ -162,18 +152,18 @@ export const DocumentUpload = () => {
         <input {...getInputProps()} />
         <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
         {isDragActive ? (
-          <p>Drop the file here ...</p>
+          <p>{t("document.upload.dropzone.prompt")}</p>
         ) : (
           <div className="space-y-2">
             <p>Drag & drop a file here, or click to select file</p>
             <p className="text-sm text-muted-foreground">
-              Supported formats: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON, XML
+              {t("document.upload.dropzone.supportedFormats")} PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON, XML
             </p>
           </div>
         )}
         {selectedFile && (
           <p className="mt-2 text-sm text-muted-foreground">
-            Selected: {selectedFile.name}
+            {t("Selected")}: {selectedFile.name}
           </p>
         )}
       </div>
@@ -185,9 +175,9 @@ export const DocumentUpload = () => {
             name="courseCode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Course Code</FormLabel>
+                <FormLabel>{t("document.upload.form.courseCode.label")}</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter course code" {...field} />
+                  <Input placeholder={t("document.upload.form.courseCode.placeholder")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -199,11 +189,11 @@ export const DocumentUpload = () => {
             name="major"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Major</FormLabel>
+                <FormLabel>{t("document.upload.form.major.label")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select major" />
+                      <SelectValue placeholder={t("document.upload.form.major.placeholder")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -224,11 +214,11 @@ export const DocumentUpload = () => {
             name="level"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Course Level</FormLabel>
+                <FormLabel>{t("document.upload.form.level.label")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select course level" />
+                      <SelectValue placeholder={t("document.upload.form.level.placeholder")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -249,11 +239,11 @@ export const DocumentUpload = () => {
             name="category"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Document Category</FormLabel>
+                <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select document category" />
+                      <SelectValue placeholder={t("document.upload.form.category.placeholder")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -274,12 +264,12 @@ export const DocumentUpload = () => {
             name="tags"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tags</FormLabel>
+                <FormLabel>{t("document.upload.form.tags.label")}</FormLabel>
                 <FormControl>
                   <TagInput
                     value={field.value || []}
                     onChange={field.onChange}
-                    placeholder="Enter tags separated by comma"
+                    placeholder={t("document.upload.form.tags.placeholder")}
                     disabled={uploading}
                   />
                 </FormControl>
@@ -290,7 +280,7 @@ export const DocumentUpload = () => {
 
           <Button type="submit" disabled={uploading || !selectedFile} className="w-full">
             {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Upload Document
+            {t("document.upload.buttons.upload")}
           </Button>
         </form>
       </Form>

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { DocumentViewer } from "@/components/document/document-viewer";
 import SearchSuggestions from "@/components/document/search-suggestions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -13,8 +13,11 @@ import { searchService } from "@/services/search.service";
 import { HighlightCell } from "@/components/document/highlight-cell";
 import { DropdownMenu, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import { DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
 
 export const DocumentList = () => {
+  const { t } = useTranslation();
+
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
@@ -116,14 +119,20 @@ export const DocumentList = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Documents</CardTitle>
+        <CardTitle>{t("document.list.title")}</CardTitle>
+        <CardDescription>{t("document.list.description")}</CardDescription>
       </CardHeader>
       <CardContent>
-        <SearchSuggestions onSearch={handleSearch} className="mb-4 max-w-none" />
+        <SearchSuggestions
+          onSearch={handleSearch}
+          className="mb-4 max-w-none"
+          placeholder={t("document.search.placeholder")}
+        />
 
         {loading ? (
           <div className="flex justify-center p-4">
             <Loader2 className="h-6 w-6 animate-spin" />
+            <span>{t("document.search.loading")}</span>
           </div>
         ) : (
           <>
@@ -132,15 +141,15 @@ export const DocumentList = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[7%]">Name</TableHead>
-                      <TableHead className="w-[10%]">Course</TableHead>
+                      <TableHead>{t("document.list.headers.name")}</TableHead>
+                      <TableHead>{t("document.list.headers.course")}</TableHead>
                       <TableHead className="w-[10%]">Major</TableHead>
-                      <TableHead className="hidden md:table-cell w-[10%]">Level</TableHead>
-                      <TableHead className="hidden lg:table-cell w-[10%]">Category</TableHead>
-                      <TableHead className="hidden xl:table-cell w-[10%]">Tags</TableHead>
-                      <TableHead className="w-[30%]">Matches</TableHead>
-                      <TableHead className="w-[8%]">Created</TableHead>
-                      <TableHead className="w-[5%] text-right">Actions</TableHead>
+                      <TableHead className="hidden md:table-cell w-[10%]">{t("document.list.headers.level")}</TableHead>
+                      <TableHead className="hidden lg:table-cell w-[10%]">{t("document.list.headers.category")}</TableHead>
+                      <TableHead className="hidden xl:table-cell w-[10%]">{t("document.list.headers.tags")}</TableHead>
+                      <TableHead className="w-[30%]">{t("document.list.headers.matches")}</TableHead>
+                      <TableHead className="w-[8%]">{t("document.list.headers.created")}</TableHead>
+                      <TableHead className="w-[5%] text-right">{t("document.list.headers.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -185,15 +194,15 @@ export const DocumentList = () => {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => setSelectedDoc(doc)}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                View
+                                {t("document.list.actions.view")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownload(doc.id, doc.filename)}>
                                 <Download className="mr-2 h-4 w-4" />
-                                Download
+                                {t("document.list.actions.download")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDelete(doc.id)}>
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
+                                {t("document.list.actions.delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -205,6 +214,7 @@ export const DocumentList = () => {
               </div>
             </div>
 
+            {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-4 flex justify-center gap-2">
                 <Button
@@ -212,17 +222,20 @@ export const DocumentList = () => {
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 0 || loading}
                 >
-                  Previous
+                  {t("document.list.pagination.previous")}
                 </Button>
                 <span className="flex items-center px-4">
-                  Page {currentPage + 1} of {totalPages}
+                  {t("document.list.pagination.pageInfo", {
+                    current: currentPage + 1,
+                    total: totalPages
+                  })}
                 </span>
                 <Button
                   variant="outline"
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages - 1 || loading}
                 >
-                  Next
+                  {t("document.list.pagination.next")}
                 </Button>
               </div>
             )}

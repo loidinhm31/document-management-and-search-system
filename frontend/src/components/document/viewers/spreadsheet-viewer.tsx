@@ -1,5 +1,7 @@
 import { Download } from "lucide-react";
 import React from "react";
+import { useTranslation } from "react-i18next";
+
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -19,6 +21,7 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
                                                                       onSheetChange,
                                                                       onDownload,
                                                                     }) => {
+  const { t } = useTranslation();
   const currentSheet = sheets[activeSheet];
   const headerRow = currentSheet.data[0] || [];
   const dataRows = currentSheet.data.slice(1);
@@ -50,7 +53,7 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
         </div>
         <Button onClick={onDownload} variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
-          Download
+          {t("document.viewer.buttons.download")}
         </Button>
       </div>
       <div className="flex-1 overflow-auto">

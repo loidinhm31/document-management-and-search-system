@@ -1,6 +1,7 @@
 import { Download } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface PowerPointViewerProps {
   content: string[];
@@ -8,6 +9,7 @@ interface PowerPointViewerProps {
 }
 
 export const PowerPointViewer: React.FC<PowerPointViewerProps> = ({ content, onDownload }) => {
+  const { t } = useTranslation();
   const [currentSlide, setCurrentSlide] = useState(0);
 
   const handlePrevSlide = () => {
@@ -41,7 +43,7 @@ export const PowerPointViewer: React.FC<PowerPointViewerProps> = ({ content, onD
             variant="outline"
             size="sm"
           >
-            Previous
+            {t("document.viewer.buttons.previous")}
           </Button>
           <Button
             onClick={handleNextSlide}
@@ -49,15 +51,18 @@ export const PowerPointViewer: React.FC<PowerPointViewerProps> = ({ content, onD
             variant="outline"
             size="sm"
           >
-            Next
+            {t("document.viewer.buttons.next")}
           </Button>
           <span className="text-sm">
-            Slide {currentSlide + 1} of {content.length}
+            {t("document.viewer.buttons.slideInfo", {
+              current: currentSlide + 1,
+              total: content.length
+            })}
           </span>
         </div>
         <Button onClick={onDownload} variant="outline" size="sm">
           <Download className="h-4 w-4 mr-2" />
-          Download
+          {t("document.viewer.buttons.download")}
         </Button>
       </div>
       <div className="flex-1 overflow-auto bg-white p-4">

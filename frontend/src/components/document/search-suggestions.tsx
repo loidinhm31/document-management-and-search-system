@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { searchService } from "@/services/search.service";
+import { useTranslation } from "react-i18next";
 
 interface SearchSuggestionsProps {
   onSearch: (query: string) => void;
@@ -18,6 +19,8 @@ const SearchSuggestions = ({
                              debounceMs = 350,
                              className = ""
                            }: SearchSuggestionsProps) => {
+  const { t } = useTranslation();
+
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -131,8 +134,8 @@ const SearchSuggestions = ({
               value={inputValue}
               onChange={(e) => handleInputChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={placeholder}
-              className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder={t("document.search.placeholder")}
+              className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none"
             />
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           </div>

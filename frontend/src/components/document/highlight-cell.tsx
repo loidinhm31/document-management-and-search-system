@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 export const HighlightCell = ({ highlights }) => {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const MAX_VISIBLE_HIGHLIGHTS = 2;
 
   if (!highlights || highlights.length === 0) {
-    return <div className="text-sm text-muted-foreground italic">No matches found</div>;
+    return (
+      <div className="text-sm text-muted-foreground italic">
+        {t("document.list.status.noMatches")}
+      </div>
+    );
   }
 
   const visibleHighlights = isExpanded ? highlights : highlights.slice(0, MAX_VISIBLE_HIGHLIGHTS);

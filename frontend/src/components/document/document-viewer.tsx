@@ -1,20 +1,22 @@
+import JSZip from 'jszip';
+import { Loader2 } from "lucide-react";
 import mammoth from "mammoth";
 import Papa from "papaparse";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
-import JSZip from 'jszip';
-import { Loader2 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { DocumentType } from "@/types/document";
+
 import { PDFViewer } from "./viewers/pdf-viewer";
-import { WordViewer } from "./viewers/word-viewer";
+import { PowerPointViewer } from "./viewers/powerpoint-viewer";
 import { SpreadsheetViewer } from "./viewers/spreadsheet-viewer";
 import { TextViewer } from "./viewers/text-viewer";
 import { UnsupportedViewer } from "./viewers/unsupported-viewer";
-import { PowerPointViewer } from "./viewers/powerpoint-viewer";
-import { Button } from "@/components/ui/button";
+import { WordViewer } from "./viewers/word-viewer";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -29,6 +31,8 @@ export interface ExcelSheet {
 }
 
 export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }: DocumentViewerProps) => {
+  const { t } = useTranslation();
+
   const [loading, setLoading] = useState(true);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [wordContent, setWordContent] = useState<string | null>(null);
@@ -159,16 +163,16 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
         }
 
         default: {
-          setError(`Unsupported file type: ${documentType}`);
+          setError(t("document.viewer.error.unsupported", { type: documentType }));
           break;
         }
       }
     } catch (err) {
       console.error("Error loading document:", err);
-      setError("Failed to load document");
+      setError(t("document.viewer.error.loading"));
       toast({
-        title: "Error",
-        description: "Failed to load document preview",
+        title: t("document.viewer.error.title"),
+        description: t("document.viewer.error.loading"),
         variant: "destructive"
       });
     } finally {
@@ -190,8 +194,8 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
       URL.revokeObjectURL(url);
     } catch (err) {
       toast({
-        title: "Error",
-        description: "Failed to download file",
+        title: t("document.viewer.error.title"),
+        description: t("document.viewer.error.download"),
         variant: "destructive"
       });
     }
@@ -201,6 +205,7 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">{t("document.viewer.loading")}</span>
       </div>
     );
   }
@@ -210,7 +215,7 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <p className="text-destructive">{error}</p>
         <Button onClick={handleDownload} variant="outline">
-          Download Instead
+          {t("document.viewer.buttons.downloadInstead")}
         </Button>
       </div>
     );
