@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
+import co.elastic.clients.json.JsonData;
 import com.dms.search.client.UserClient;
 import com.dms.search.dto.DocumentResponseDto;
 import com.dms.search.dto.SearchContext;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -190,6 +192,7 @@ public class DocumentSearchService {
                 .build()._toQuery();
     }
 
+
     public Page<DocumentResponseDto> searchDocuments(String searchQuery, String username, Pageable pageable) {
         try {
             ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
@@ -203,10 +206,12 @@ public class DocumentSearchService {
 
             UserDto userDto = response.getBody();
             SearchContext searchContext = analyzeQuery(searchQuery);
-
-            Query query = buildSearchQuery(searchContext, userDto.getUserId().toString());
             float minScore = getMinScore(searchQuery, searchContext);
 
+            // Build the main query with user filter
+            Query query = buildSearchQuery(searchContext, userDto.getUserId().toString());
+
+            // Configure highlighting
             HighlightFieldParameters contentParams = HighlightFieldParameters.builder()
                     .withPreTags("<em><b>")
                     .withPostTags("</b></em>")
@@ -217,11 +222,13 @@ public class DocumentSearchService {
             HighlightField contentHighlight = new HighlightField("content", contentParams);
             Highlight highlight = new Highlight(List.of(contentHighlight));
 
+            // Build the native query
             NativeQuery nativeQuery = NativeQuery.builder()
                     .withQuery(query)
                     .withHighlightQuery(new HighlightQuery(highlight, DocumentIndex.class))
                     .withPageable(pageable)
                     .withTrackScores(true)
+                    .withMinScore(minScore)
                     .build();
 
             SearchHits<DocumentIndex> searchHits = elasticsearchTemplate.search(
@@ -229,11 +236,10 @@ public class DocumentSearchService {
                     DocumentIndex.class
             );
 
-            List<DocumentResponseDto> documents = searchHits.getSearchHits().stream()
-                    .filter(hit -> hit.getScore() >= minScore)
+            // Process results and apply pagination
+            List<DocumentResponseDto> allDocuments = searchHits.getSearchHits().stream()
                     .map(hit -> {
                         DocumentIndex doc = hit.getContent();
-                        // Extract highlights from the hit
                         List<String> highlights = hit.getHighlightFields().get("content");
 
                         doc.setContent(null);
@@ -256,7 +262,7 @@ public class DocumentSearchService {
                     .collect(Collectors.toList());
 
             return new PageImpl<>(
-                    documents,
+                    allDocuments,
                     pageable,
                     searchHits.getTotalHits()
             );
@@ -266,6 +272,7 @@ public class DocumentSearchService {
             throw new RuntimeException("Failed to perform document search", e);
         }
     }
+
 
     public List<String> getSuggestions(String prefix, String username) {
         try {
