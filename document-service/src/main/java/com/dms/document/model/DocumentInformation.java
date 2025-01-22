@@ -67,6 +67,12 @@ public class DocumentInformation {
     @Field("user_id")
     private String userId;
 
+    @Field("is_shared")
+    private boolean isShared;
+
+    @Field("deleted")
+    private boolean deleted;
+
     @Field("created_at")
     private Date createdAt;
 
@@ -78,7 +84,4 @@ public class DocumentInformation {
 
     @Field("updated_by")
     private String updatedBy;
-
-    @Field("deleted")
-    private boolean deleted;
 }

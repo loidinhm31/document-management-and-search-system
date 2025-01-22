@@ -28,6 +28,7 @@ public class DocumentService {
                     .category(document.getCategory())
                     .tags(document.getTags())
                     .fileSize(document.getFileSize())
+                    .isShared(document.isShared())
                     .createdAt(document.getCreatedAt())
                     .build();
 

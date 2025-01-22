@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { DocumentGrid } from "@/components/document/document-grid";
-import { DocumentUpload } from "@/components/document/document-upload";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { DocumentInformation } from "@/types/document";
+import DocumentUploadDialog from "@/components/document/document-upload-dialog";
 
 export default function MyDocumentPage() {
   const { t } = useTranslation();
@@ -65,36 +65,32 @@ export default function MyDocumentPage() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("document.upload.title")}</CardTitle>
-          <CardDescription>{t("document.upload.description")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DocumentUpload onUploadSuccess={() => fetchUserDocuments(0)} />
-        </CardContent>
-      </Card>
-
       <Card className="overflow-hidden">
         <CardHeader>
           <CardTitle>{t("document.myDocuments.title")}</CardTitle>
         </CardHeader>
         <CardContent>
+          <DocumentUploadDialog onUploadSuccess={() => fetchUserDocuments(0)} />
+
           {loading ? (
             <div className="flex justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : (
-            <DocumentGrid
-              documents={documents}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              onDelete={handleDelete}
-              loading={loading}
-              onCardClick={(doc) => navigate(`/document/me/${doc.id}`)}
-              className="p-4"
-            />
+            <>
+              {documents.length > 0 && (
+                <DocumentGrid
+                  documents={documents}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  onDelete={handleDelete}
+                  loading={loading}
+                  onCardClick={(doc) => navigate(`/document/me/${doc.id}`)}
+                  className="pt-4"
+                />
+              )}
+            </>
           )}
         </CardContent>
       </Card>

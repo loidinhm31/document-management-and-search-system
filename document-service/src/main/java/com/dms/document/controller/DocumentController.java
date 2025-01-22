@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -123,6 +124,21 @@ public class DocumentController {
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         String username = jwt.getSubject();
         return ResponseEntity.ok(documentService.updateDocumentFile(id, file, username));
+    }
+
+    @PutMapping("/{id}/sharing")
+    public ResponseEntity<DocumentInformation> toggleSharing(
+            @PathVariable String id,
+            @RequestBody Map<String, Boolean> request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String username = jwt.getSubject();
+        Boolean isShared = request.get("isShared");
+        if (isShared == null) {
+            throw new IllegalArgumentException("isShared parameter is required");
+        }
+
+        DocumentInformation updatedDocument = documentService.toggleSharing(id, isShared, username);
+        return ResponseEntity.ok(updatedDocument);
     }
 
     @GetMapping("/tags/suggestions")

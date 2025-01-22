@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { LazyThumbnail } from "@/components/document/lazy-thumbnail";
+import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import { DocumentViewer } from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,8 +72,8 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
           </div>
         )}
       </CardContent>
-      <CardFooter>
-        <div className="grid grid-cols-3 w-full gap-2">
+      <CardFooter onClick={(e) => e.stopPropagation()}>
+        <div className="grid grid-cols-4 w-full gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -80,7 +81,6 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
             onClick={handlePreview}
           >
             <Eye className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">{t("document.actions.view")}</span>
           </Button>
           <Button
             variant="outline"
@@ -89,8 +89,20 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
             onClick={handleDownload}
           >
             <Download className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">{t("document.actions.download")}</span>
           </Button>
+
+          {/* Share Dialog */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <ShareDocumentDialog
+              documentId={documentInformation.id}
+              documentName={documentInformation.originalFilename}
+              isShared={documentInformation.isShared}
+              onShareToggle={(isShared) => {
+                documentInformation.isShared = isShared;
+              }}
+            />
+          </div>
+
           {onDelete && (
             <Button
               variant="outline"
@@ -99,7 +111,6 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
               onClick={handleDelete}
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">{t("document.actions.delete")}</span>
             </Button>
           )}
         </div>

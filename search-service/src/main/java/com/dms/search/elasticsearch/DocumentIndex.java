@@ -58,6 +58,9 @@ public class DocumentIndex {
     @Field(type = FieldType.Object)
     private Map<String, String> extractedMetadata;
 
+    @Field(type = FieldType.Boolean)
+    private boolean isShared;
+
     @Field(type = FieldType.Date)
     private Date createdAt;
 }

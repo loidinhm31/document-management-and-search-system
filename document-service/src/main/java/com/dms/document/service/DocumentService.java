@@ -347,6 +347,40 @@ public class DocumentService {
         return updatedDocument;
     }
 
+    public DocumentInformation toggleSharing(String documentId, boolean isShared, String username) {
+        // Verify user and get their info
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
+
+        // Get and verify document ownership
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+
+        // Update sharing status
+        document.setShared(isShared);
+        document.setUpdatedAt(new Date());
+        document.setUpdatedBy(username);
+
+        // Save to MongoDB
+        DocumentInformation updatedDocument = documentRepository.save(document);
+
+        // Send sync event for elasticsearch update
+        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
+                SyncEventRequest.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .userId(userDto.getUserId().toString())
+                        .documentId(documentId)
+                        .subject(EventType.UPDATE_EVENT.name())
+                        .triggerAt(LocalDateTime.now())
+                        .build()
+        ));
+
+        return updatedDocument;
+    }
+
     public Set<String> getPopularTags(String prefix) {
         if (prefix != null && !prefix.isEmpty()) {
             return new HashSet<>(documentRepository.findDistinctTagsByPattern(prefix));

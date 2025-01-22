@@ -70,6 +70,12 @@ class DocumentService extends BaseService {
       })
     );
   }
+
+  toggleSharing(documentId: string, isShared: boolean) {
+    return this.handleApiResponse(
+      axiosInstance.put(`/document/api/v1/documents/${documentId}/sharing`, { isShared })
+    );
+  }
 }
 
 export const documentService = new DocumentService();

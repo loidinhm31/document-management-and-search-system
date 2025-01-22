@@ -340,11 +340,6 @@
         "fileRequired": "Please select a file to upload"
       }
     },
-    "actions": {
-      "view": "View",
-      "download": "Download",
-      "delete": "Delete"
-    },
     "viewer": {
       "loading": "Loading document...",
       "error": {
@@ -405,7 +400,23 @@
       "fetchError": "Failed to fetch document details"
     },
     "myDocuments": {
-      "title": "My Documents"
+      "title": "My Documents",
+      "share": {
+        "title": "Share Document",
+        "description": "Share {{name}} with others",
+        "toggle": {
+          "title": "Document Sharing",
+          "description": "When enabled, this document can be accessed by other users"
+        },
+        "status": {
+          "enabled": "This document is currently shared",
+          "disabled": "This document is private"
+        },
+        "success": "Document shared successfully",
+        "error": "Failed to share document",
+        "enableSuccess": "Document sharing enabled",
+        "disableSuccess": "Document sharing disabled"
+      }
     }
   }
 }

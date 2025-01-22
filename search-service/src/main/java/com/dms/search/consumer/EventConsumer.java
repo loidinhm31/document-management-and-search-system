@@ -5,22 +5,19 @@ import com.dms.search.model.DocumentInformation;
 import com.dms.search.model.SyncEventRequest;
 import com.dms.search.repository.DocumentRepository;
 import com.dms.search.service.DocumentService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-@Slf4j
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class EventConsumer {
     private final DocumentService documentService;
     private final DocumentRepository documentRepository;
-
-    public EventConsumer(DocumentService documentService, DocumentRepository documentRepository) {
-        this.documentService = documentService;
-        this.documentRepository = documentRepository;
-    }
 
     @RabbitListener(queues = "${rabbitmq.queues.document-sync}")
     public void consumeSyncEvent(SyncEventRequest syncEventRequest) {
