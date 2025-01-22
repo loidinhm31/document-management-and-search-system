@@ -1,17 +1,16 @@
-import { ArrowLeft, Loader2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
-
-import { DocumentViewer } from "@/components/document/document-viewer";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
+import { DocumentForm, DocumentFormValues } from "@/components/document/document-form";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import DocumentViewer from "@/components/document/viewers/document-viewer";
+import { RoutePaths } from "@/core/route-config";
 
-import { DocumentForm, DocumentFormValues } from "./document-form";
-
-export default function DocumentDetail() {
+export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { documentId } = useParams<{ documentId: string }>();
@@ -59,7 +58,7 @@ export default function DocumentDetail() {
       // Update file if selected
       if (file) {
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append("file", file);
         await documentService.updateFile(documentId, formData);
 
         // Refresh document data to get new file info
@@ -93,7 +92,7 @@ export default function DocumentDetail() {
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" onClick={() => navigate("/document")} className="mb-4">
+      <Button variant="ghost" onClick={() => navigate(RoutePaths.MY_DOCUMENT)} className="mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
         {t("document.detail.backToList")}
       </Button>

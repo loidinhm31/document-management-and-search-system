@@ -21,7 +21,7 @@
   "pages": {
     "home": "Home",
     "profile": "Profile",
-    "document": "Document",
+    "my-document": "My Documents",
     "admin": {
       "title": "Admin",
       "users": "User Management",
@@ -279,9 +279,9 @@
     }
   },
   "document": {
-    "list": {
+    "discovery": {
       "title": "Documents",
-      "description": "View and manage your documents",
+      "description": "Discover documents",
       "headers": {
         "name": "Name",
         "course": "Course",
@@ -295,11 +295,6 @@
       },
       "status": {
         "noMatches": "No matches found"
-      },
-      "actions": {
-        "view": "View",
-        "download": "Download",
-        "delete": "Delete"
       },
       "pagination": {
         "previous": "Previous",
@@ -345,6 +340,11 @@
         "error": "Failed to upload document",
         "fileRequired": "Please select a file to upload"
       }
+    },
+    "actions": {
+      "view": "View",
+      "download": "Download",
+      "delete": "Delete"
     },
     "viewer": {
       "loading": "Loading document...",
@@ -404,6 +404,9 @@
       "updateSuccess": "Document updated successfully",
       "updateError": "Failed to update document",
       "fetchError": "Failed to fetch document details"
+    },
+    "myDocuments": {
+      "title": "My Documents"
     }
   }
 }

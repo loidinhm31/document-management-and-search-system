@@ -4,15 +4,17 @@ import com.dms.document.dto.DocumentUpdateRequest;
 import com.dms.document.model.DocumentInformation;
 import com.dms.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @RestController
@@ -34,6 +36,16 @@ public class DocumentController {
                 file, courseCode, major, level, category, tags, jwt.getSubject()));
     }
 
+    @GetMapping("/user")
+    public ResponseEntity<Page<DocumentInformation>> getUserDocuments(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        String username = jwt.getSubject();
+        Page<DocumentInformation> documents = documentService.getUserDocuments(username, page, size);
+        return ResponseEntity.ok(documents);
+    }
+
     @GetMapping("/downloads/{id}")
     public ResponseEntity<byte[]> getDocument(
             @PathVariable String id,
@@ -43,6 +55,39 @@ public class DocumentController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"document\"")
                 .body(content);
+    }
+
+    @GetMapping("/thumbnails/{id}")
+    public ResponseEntity<byte[]> getDocumentThumbnail(
+            @PathVariable String id,
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader(value = "If-None-Match", required = false) String ifNoneMatch) throws IOException {
+
+        String username = jwt.getSubject();
+        DocumentInformation document = documentService.getDocumentDetails(id, username);
+
+        // Generate ETag based on document's last modified date
+        String eTag = String.format("\"%s\"", DigestUtils.md5DigestAsHex(
+                (document.getId() + document.getUpdatedAt().getTime()).getBytes()
+        ));
+
+        // Check if client's cached version is still valid
+        if (ifNoneMatch != null && ifNoneMatch.equals(eTag)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+                    .eTag(eTag)
+                    .build();
+        }
+
+        // Generate thumbnail
+        byte[] thumbnail = documentService.getDocumentThumbnail(id, username);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS)
+                        .mustRevalidate()
+                        .noTransform())
+                .eTag(eTag)
+                .body(thumbnail);
     }
 
     @GetMapping("/{id}")

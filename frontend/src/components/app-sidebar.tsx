@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { RoutePaths } from "@/core/route-config";
+import { FaCcDiscover } from "react-icons/fa";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isAdmin } = useAuth();
@@ -39,8 +41,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     {
       title: t("navigation.main.document"),
       icon: FileText,
-      href: "/document",
-      isActive: location.pathname === "/document",
+      href: RoutePaths.MY_DOCUMENT,
+      isActive: location.pathname === RoutePaths.MY_DOCUMENT,
     },
   ];
 
@@ -48,8 +50,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     {
       title: t("navigation.admin.userManagement"),
       icon: Users,
-      href: "/admin/users",
-      isActive: location.pathname.startsWith("/admin/users"),
+      href: RoutePaths.ADMIN.USERS,
+      isActive: location.pathname.startsWith(RoutePaths.ADMIN.USERS),
     },
     {
       title: t("navigation.admin.roles"),

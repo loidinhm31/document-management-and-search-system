@@ -4,9 +4,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { DocumentViewer } from "@/components/document/document-viewer";
 import { HighlightCell } from "@/components/document/highlight-cell";
 import SearchSuggestions from "@/components/document/search-suggestions";
+import { DocumentViewer } from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -66,31 +66,6 @@ export const DocumentList = () => {
     fetchDocuments(currentSearchQuery, newPage);
   }, [currentSearchQuery, fetchDocuments]);
 
-  const handleDelete = async (id) => {
-    try {
-      await documentService.deleteDocument(id);
-      toast({
-        title: "Success",
-        description: "Document deleted successfully",
-        variant: "success",
-      });
-
-      const isLastItemOnPage = documents.length === 1 && currentPage > 0;
-      const newPage = isLastItemOnPage ? currentPage - 1 : currentPage;
-      fetchDocuments(currentSearchQuery, newPage);
-
-      if (isLastItemOnPage) {
-        setCurrentPage(newPage);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete document",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleDownload = async (id, filename) => {
     try {
       const response = await documentService.downloadDocument(id);
@@ -122,8 +97,8 @@ export const DocumentList = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("document.list.title")}</CardTitle>
-        <CardDescription>{t("document.list.description")}</CardDescription>
+        <CardTitle>{t("document.discovery.title")}</CardTitle>
+        <CardDescription>{t("document.discovery.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         <SearchSuggestions
@@ -144,15 +119,15 @@ export const DocumentList = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t("document.list.headers.name")}</TableHead>
-                      <TableHead>{t("document.list.headers.course")}</TableHead>
+                      <TableHead>{t("document.discovery.headers.name")}</TableHead>
+                      <TableHead>{t("document.discovery.headers.course")}</TableHead>
                       <TableHead className="w-[10%]">Major</TableHead>
-                      <TableHead className="hidden md:table-cell w-[10%]">{t("document.list.headers.level")}</TableHead>
-                      <TableHead className="hidden lg:table-cell w-[10%]">{t("document.list.headers.category")}</TableHead>
-                      <TableHead className="hidden xl:table-cell w-[10%]">{t("document.list.headers.tags")}</TableHead>
-                      <TableHead className="w-[30%]">{t("document.list.headers.matches")}</TableHead>
-                      <TableHead className="w-[8%]">{t("document.list.headers.created")}</TableHead>
-                      <TableHead className="w-[5%] text-right">{t("document.list.headers.actions")}</TableHead>
+                      <TableHead className="hidden md:table-cell w-[10%]">{t("document.discovery.headers.level")}</TableHead>
+                      <TableHead className="hidden lg:table-cell w-[10%]">{t("document.discovery.headers.category")}</TableHead>
+                      <TableHead className="hidden xl:table-cell w-[10%]">{t("document.discovery.headers.tags")}</TableHead>
+                      <TableHead className="w-[30%]">{t("document.discovery.headers.matches")}</TableHead>
+                      <TableHead className="w-[8%]">{t("document.discovery.headers.created")}</TableHead>
+                      <TableHead className="w-[5%] text-right">{t("document.discovery.headers.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -203,15 +178,11 @@ export const DocumentList = () => {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => setSelectedDoc(doc)}>
                                 <Eye className="mr-2 h-4 w-4" />
-                                {t("document.list.actions.view")}
+                                {t("document.actions.view")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownload(doc.id, doc.filename)}>
                                 <Download className="mr-2 h-4 w-4" />
-                                {t("document.list.actions.download")}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(doc.id)}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                {t("document.list.actions.delete")}
+                                {t("document.actions.download")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -231,10 +202,10 @@ export const DocumentList = () => {
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 0 || loading}
                 >
-                  {t("document.list.pagination.previous")}
+                  {t("document.discovery.pagination.previous")}
                 </Button>
                 <span className="flex items-center px-4">
-                  {t("document.list.pagination.pageInfo", {
+                  {t("document.discovery.pagination.pageInfo", {
                     current: currentPage + 1,
                     total: totalPages
                   })}
@@ -244,7 +215,7 @@ export const DocumentList = () => {
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages - 1 || loading}
                 >
-                  {t("document.list.pagination.next")}
+                  {t("document.discovery.pagination.next")}
                 </Button>
               </div>
             )}

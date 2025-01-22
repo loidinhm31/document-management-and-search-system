@@ -8,8 +8,8 @@ const Profile = lazy(() => import("@/pages/profile-page"));
 const UserList = lazy(() => import("@/pages/admin/user-list-page"));
 const UserDetails = lazy(() => import("@/pages/admin/user-detail-page"));
 
-const Document = lazy(() => import("@/pages/document/document-page"));
-const DocumentDetail = lazy(() => import("@/pages/document/document-detail-page"));
+const MyDocument = lazy(() => import("@/pages/document/my-document-page"));
+const MyDocumentDetail = lazy(() => import("@/pages/document/my-document-detail-page"));
 
 export interface Route {
   path: string;
@@ -29,7 +29,8 @@ export const RoutePaths = {
   FORGOT_PASSWORD: "/forgot-password",
   EMPTY: "/empty",
   PROFILE: "/profile",
-  DOCUMENT: "/document",
+  MY_DOCUMENT: "/document/me",
+  MY_DOCUMENT_DETAIL: "/document/me/:documentId",
   ADMIN: {
     USERS: "/admin/users",
     USER_DETAILS: "/admin/users/:userId",
@@ -70,16 +71,16 @@ export const routes: Route[] = [
     permission: [],
   },
   {
-    path: RoutePaths.DOCUMENT,
-    pageTitle: "pages.document",
-    component: Document,
+    path: RoutePaths.MY_DOCUMENT,
+    pageTitle: "pages.my-document",
+    component: MyDocument,
     isSecure: true,
     permission: [],
   },
   {
-    path: "/document/:documentId",
-    pageTitle: "pages.document.detail",
-    component: DocumentDetail,
+    path: RoutePaths.MY_DOCUMENT_DETAIL,
+    pageTitle: "pages.my-document.detail",
+    component: MyDocumentDetail,
     isSecure: false,
     permission: [],
   },

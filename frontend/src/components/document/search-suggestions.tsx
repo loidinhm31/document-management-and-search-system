@@ -1,10 +1,10 @@
 import { debounce } from "lodash";
 import { Loader2, Search } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 import { searchService } from "@/services/search.service";
-import { useTranslation } from "react-i18next";
 
 interface SearchSuggestionsProps {
   onSearch: (query: string) => void;
@@ -15,7 +15,6 @@ interface SearchSuggestionsProps {
 
 const SearchSuggestions = ({
                              onSearch,
-                             placeholder = "Search documents...",
                              debounceMs = 350,
                              className = ""
                            }: SearchSuggestionsProps) => {

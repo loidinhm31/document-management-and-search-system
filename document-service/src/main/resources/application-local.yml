@@ -6,6 +6,9 @@ app:
       path: ./document/storage
     max-size-threshold-mb: 25MB
     max-size-mb: 50MB
+    thumbnail:
+      width: 300
+      height: 200
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based

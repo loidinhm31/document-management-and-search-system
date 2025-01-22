@@ -41,6 +41,7 @@ export default [
         setTimeout: true,
         localStorage: true,
         clearTimeout: true,
+        caches: true,
       },
       ecmaVersion: "latest",
       sourceType: "module",

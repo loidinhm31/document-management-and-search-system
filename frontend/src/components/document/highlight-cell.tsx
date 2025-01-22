@@ -11,7 +11,7 @@ export const HighlightCell = ({ highlights }) => {
   if (!highlights || highlights.length === 0) {
     return (
       <div className="text-sm text-muted-foreground italic">
-        {t("document.list.status.noMatches")}
+        {t("document.discovery.status.noMatches")}
       </div>
     );
   }

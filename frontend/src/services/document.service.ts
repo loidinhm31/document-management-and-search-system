@@ -1,6 +1,7 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
-import { DocumentMetadataUpdate, DocumentUploadResponse } from "@/types/document";
+import { DocumentInformation, DocumentMetadataUpdate, DocumentUploadResponse } from "@/types/document";
+import { PageResponse } from "@/types/user";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
@@ -14,9 +15,26 @@ class DocumentService extends BaseService {
   }
 
   downloadDocument(id: string) {
-    return axiosInstance.get(`/document/api/v1/documents/downloads/${id}`, {
-      responseType: "blob"
-    });
+    return this.handleApiResponse(
+      axiosInstance.get(`/document/api/v1/documents/downloads/${id}`, {
+        responseType: "blob"
+      })
+    );
+  }
+
+  getUserDocuments(page: number = 0, size: number = 12) {
+    return this.handleApiResponse(
+      axiosInstance.get<PageResponse<DocumentInformation>>("/document/api/v1/documents/user", {
+        params: { page, size }
+      })
+    );
+  }
+
+  getDocumentThumbnail(id: string) {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document/api/v1/documents/thumbnails/${id}`, {
+        responseType: "blob"
+      }));
   }
 
   getDocumentDetails(id: string) {

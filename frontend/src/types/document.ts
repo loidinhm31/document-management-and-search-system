@@ -13,7 +13,7 @@ export enum DocumentType {
   JSON = "JSON"
 }
 
-export interface Document {
+export interface DocumentInformation {
   id: string;
   filename: string;
   originalFilename: string;
@@ -39,11 +39,11 @@ export interface Document {
 
 export interface DocumentUploadResponse {
   success: boolean;
-  data: Document;
+  data: DocumentInformation;
 }
 
 export interface DocumentSearchResponse {
-  content: Document[];
+  content: DocumentInformation[];
   totalElements: number;
   totalPages: number;
   size: number;

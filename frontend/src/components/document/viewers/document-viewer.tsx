@@ -11,12 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { DocumentType } from "@/types/document";
 
-import { PDFViewer } from "./viewers/pdf-viewer";
-import { PowerPointViewer } from "./viewers/powerpoint-viewer";
-import { SpreadsheetViewer } from "./viewers/spreadsheet-viewer";
-import { TextViewer } from "./viewers/text-viewer";
-import { UnsupportedViewer } from "./viewers/unsupported-viewer";
-import { WordViewer } from "./viewers/word-viewer";
+import { PDFViewer } from "./pdf-viewer";
+import { PowerPointViewer } from "./powerpoint-viewer";
+import { SpreadsheetViewer } from "./spreadsheet-viewer";
+import { TextViewer } from "./text-viewer";
+import { UnsupportedViewer } from "./unsupported-viewer";
+import { WordViewer } from "./word-viewer";
 
 interface DocumentViewerProps {
   documentId: string;

@@ -4,7 +4,8 @@ import com.dms.document.client.UserClient;
 import com.dms.document.dto.DocumentContent;
 import com.dms.document.dto.DocumentUpdateRequest;
 import com.dms.document.dto.UserDto;
-import com.dms.document.enums.*;
+import com.dms.document.enums.DocumentType;
+import com.dms.document.enums.EventType;
 import com.dms.document.exception.InvalidDocumentException;
 import com.dms.document.exception.UnsupportedDocumentTypeException;
 import com.dms.document.model.DocumentInformation;
@@ -15,7 +16,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.domain.*;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
@@ -43,8 +47,11 @@ public class DocumentService {
     @Value("${app.document.max-size-mb}")
     private DataSize maxFileSize;
 
+    private final MongoTemplate mongoTemplate;
+
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
+    private final ThumbnailService thumbnailService;
     private final ContentExtractorService contentExtractorService;
 
     public DocumentInformation uploadDocument(MultipartFile file,
@@ -121,6 +128,53 @@ public class DocumentService {
         return savedDocument;
     }
 
+    public Page<DocumentInformation> getUserDocuments(String username, int page, int size) {
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
+
+        // Create query criteria for counting total elements
+        Query countQuery = new Query(Criteria.where("userId").is(userDto.getUserId().toString())
+                .and("deleted").ne(true));
+
+        // Get total count of documents that match the criteria
+        long total = mongoTemplate.count(countQuery, DocumentInformation.class);
+
+        // Calculate correct skip value based on page and size
+        int skip = page * size;
+
+        // Create pageable request with sorting
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // Create query for fetching the actual page of documents
+        Query query = new Query(Criteria.where("userId").is(userDto.getUserId().toString())
+                .and("deleted").ne(true))
+                .with(pageable)
+                .skip(skip)
+                .limit(size);
+
+        // Get documents for current page
+        List<DocumentInformation> documents = mongoTemplate.find(query, DocumentInformation.class);
+
+        // Return PageImpl with correct total count
+        return new PageImpl<>(documents, pageable, total);
+    }
+
+    public byte[] getDocumentThumbnail(String documentId, String username) throws IOException {
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
+
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+
+        Path filePath = Path.of(storageBasePath, document.getFilePath());
+        return thumbnailService.generateThumbnail(filePath, document.getDocumentType().name());
+    }
 
     public byte[] getDocumentContent(String documentId, String username) throws IOException {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
@@ -350,9 +404,9 @@ public class DocumentService {
     }
 
     private String createStoragePath(String filename) {
-        // Create path structure: yyyy/MM/dd/filename
+        // Create path structure: yyyy-MM-dd/filename
         LocalDate now = LocalDate.now();
-        return String.format("%d/%02d/%02d/%s",
+        return String.format("%d-%02d-%02d/%s",
                 now.getYear(), now.getMonthValue(), now.getDayOfMonth(), filename);
     }
 
