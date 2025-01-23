@@ -3,12 +3,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { DocumentGrid } from "@/components/document/document-grid";
+import AdvancedSearch, { SearchFilters } from "@/components/document/my-document/advanced-search";
+import { DocumentGrid } from "@/components/document/my-document/document-grid";
+import DocumentUploadDialog from "@/components/document/my-document/document-upload-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { DocumentInformation } from "@/types/document";
-import DocumentUploadDialog from "@/components/document/document-upload-dialog";
 
 export default function MyDocumentPage() {
   const { t } = useTranslation();
@@ -17,19 +18,20 @@ export default function MyDocumentPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
   const { toast } = useToast();
 
-  const fetchUserDocuments = useCallback(async (page: number = 0) => {
+  const fetchUserDocuments = useCallback(async (page: number = 0, filters: SearchFilters = {}) => {
     setLoading(true);
     try {
-      const response = await documentService.getUserDocuments(page);
+      const response = await documentService.getUserDocuments(page, 12, filters);
       setDocuments(response.data.content);
       setTotalPages(response.data.totalPages);
       setCurrentPage(page);
     } catch (error) {
       toast({
         title: t("common.error"),
-        description: t("document.discovery.error"),
+        description: t("document.myDocuments.search.error"),
         variant: "destructive"
       });
     } finally {
@@ -37,26 +39,32 @@ export default function MyDocumentPage() {
     }
   }, [t, toast]);
 
+  const handleSearch = (filters: SearchFilters) => {
+    setCurrentFilters(filters);
+    setCurrentPage(0);
+    fetchUserDocuments(0, filters);
+  };
+
   const handleDelete = async (id: string) => {
     try {
       await documentService.deleteDocument(id);
       toast({
         title: t("common.success"),
-        description: t("document.discovery.deleteSuccess"),
+        description: t("document.myDocuments.delete.deleteSuccess"),
         variant: "success"
       });
-      fetchUserDocuments(currentPage);
+      fetchUserDocuments(currentPage, currentFilters);
     } catch (error) {
       toast({
         title: t("common.error"),
-        description: t("document.discovery.deleteError"),
+        description: t("document.myDocuments.delete.deleteError"),
         variant: "destructive"
       });
     }
   };
 
   const handlePageChange = (page: number) => {
-    fetchUserDocuments(page);
+    fetchUserDocuments(page, currentFilters);
   };
 
   useEffect(() => {
@@ -66,11 +74,12 @@ export default function MyDocumentPage() {
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>{t("document.myDocuments.title")}</CardTitle>
+          <DocumentUploadDialog onUploadSuccess={() => fetchUserDocuments(0, currentFilters)} />
         </CardHeader>
         <CardContent>
-          <DocumentUploadDialog onUploadSuccess={() => fetchUserDocuments(0)} />
+          <AdvancedSearch onSearch={handleSearch} />
 
           {loading ? (
             <div className="flex justify-center p-8">

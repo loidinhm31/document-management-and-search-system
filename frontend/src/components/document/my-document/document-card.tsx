@@ -2,8 +2,8 @@ import { Download, Eye, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { LazyThumbnail } from "@/components/document/lazy-thumbnail";
-import ShareDocumentDialog from "@/components/document/share-document-dialog";
+import { LazyThumbnail } from "@/components/document/my-document/lazy-thumbnail";
+import ShareDocumentDialog from "@/components/document/my-document/share-document-dialog";
 import { DocumentViewer } from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";

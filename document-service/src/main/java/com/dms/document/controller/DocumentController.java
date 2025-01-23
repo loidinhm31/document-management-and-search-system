@@ -1,7 +1,9 @@
 package com.dms.document.controller;
 
+import com.dms.document.dto.DocumentSearchRequest;
 import com.dms.document.dto.DocumentUpdateRequest;
 import com.dms.document.model.DocumentInformation;
+import com.dms.document.model.DocumentSearchCriteria;
 import com.dms.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -37,13 +39,39 @@ public class DocumentController {
                 file, courseCode, major, level, category, tags, jwt.getSubject()));
     }
 
-    @GetMapping("/user")
-    public ResponseEntity<Page<DocumentInformation>> getUserDocuments(
+    @PostMapping("/user/search")
+    public ResponseEntity<Page<DocumentInformation>> searchUserDocuments(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "12") int size) {
+            @RequestBody(required = false) DocumentSearchRequest request) {
         String username = jwt.getSubject();
-        Page<DocumentInformation> documents = documentService.getUserDocuments(username, page, size);
+
+        // If no request body provided, create default request
+        if (request == null) {
+            request = DocumentSearchRequest.builder()
+                    .page(0)
+                    .size(12)
+                    .sortField("createdAt")
+                    .sortDirection("desc")
+                    .build();
+        }
+
+        // Create search criteria from request
+        DocumentSearchCriteria criteria = DocumentSearchCriteria.builder()
+                .search(request.getSearch())
+                .major(request.getMajor())
+                .level(request.getLevel())
+                .category(request.getCategory())
+                .sortField(request.getSortField())
+                .sortDirection(request.getSortDirection())
+                .build();
+
+        Page<DocumentInformation> documents = documentService.getUserDocuments(
+                username,
+                criteria,
+                request.getPage(),
+                request.getSize() > 0 ? request.getSize() : 12
+        );
+
         return ResponseEntity.ok(documents);
     }
 

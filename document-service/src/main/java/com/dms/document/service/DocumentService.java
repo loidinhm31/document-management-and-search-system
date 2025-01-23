@@ -9,6 +9,7 @@ import com.dms.document.enums.EventType;
 import com.dms.document.exception.InvalidDocumentException;
 import com.dms.document.exception.UnsupportedDocumentTypeException;
 import com.dms.document.model.DocumentInformation;
+import com.dms.document.model.DocumentSearchCriteria;
 import com.dms.document.model.SyncEventRequest;
 import com.dms.document.repository.DocumentRepository;
 import com.dms.document.utils.DocumentUtils;
@@ -22,6 +23,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -128,39 +130,51 @@ public class DocumentService {
         return savedDocument;
     }
 
-    public Page<DocumentInformation> getUserDocuments(String username, int page, int size) {
+    public Page<DocumentInformation> getUserDocuments(String username, DocumentSearchCriteria criteria, int page, int size) {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserDto userDto = response.getBody();
 
-        // Create query criteria for counting total elements
-        Query countQuery = new Query(Criteria.where("userId").is(userDto.getUserId().toString())
-                .and("deleted").ne(true));
+        // Build the query criteria
+        Criteria queryCriteria = Criteria.where("userId").is(userDto.getUserId().toString())
+                .and("deleted").ne(true);
 
-        // Get total count of documents that match the criteria
-        long total = mongoTemplate.count(countQuery, DocumentInformation.class);
+        // Add search criteria if provided
+        if (StringUtils.hasText(criteria.getSearch())) {
+            Criteria searchCriteria = new Criteria().orOperator(
+                    Criteria.where("originalFilename").regex(criteria.getSearch(), "i"),
+                    Criteria.where("content").regex(criteria.getSearch(), "i"),
+                    Criteria.where("courseCode").regex(criteria.getSearch(), "i"),
+                    Criteria.where("tags").regex(criteria.getSearch(), "i")
+            );
+            queryCriteria.andOperator(searchCriteria);
+        }
 
-        // Calculate correct skip value based on page and size
-        int skip = page * size;
+        // Add filters if provided
+        if (StringUtils.hasText(criteria.getMajor())) {
+            queryCriteria.and("major").is(criteria.getMajor());
+        }
+        if (StringUtils.hasText(criteria.getLevel())) {
+            queryCriteria.and("courseLevel").is(criteria.getLevel());
+        }
+        if (StringUtils.hasText(criteria.getCategory())) {
+            queryCriteria.and("category").is(criteria.getCategory());
+        }
 
-        // Create pageable request with sorting
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        // Create pageable with sort
+        Sort sort = Sort.by(Sort.Direction.fromString(criteria.getSortDirection()), criteria.getSortField());
+        Pageable pageable = PageRequest.of(page, size, sort);
 
-        // Create query for fetching the actual page of documents
-        Query query = new Query(Criteria.where("userId").is(userDto.getUserId().toString())
-                .and("deleted").ne(true))
-                .with(pageable)
-                .skip(skip)
-                .limit(size);
-
-        // Get documents for current page
+        // Execute query
+        Query query = new Query(queryCriteria).with(pageable);
+        long total = mongoTemplate.count(query, DocumentInformation.class);
         List<DocumentInformation> documents = mongoTemplate.find(query, DocumentInformation.class);
 
-        // Return PageImpl with correct total count
         return new PageImpl<>(documents, pageable, total);
     }
+
 
     public byte[] getDocumentThumbnail(String documentId, String username) throws IOException {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);

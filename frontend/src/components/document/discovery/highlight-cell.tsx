@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
-import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+
+import { Button } from "@/components/ui/button";
 
 export const HighlightCell = ({ highlights }) => {
   const { t } = useTranslation();

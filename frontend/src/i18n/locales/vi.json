@@ -340,6 +340,12 @@
         "fileRequired": "Please select a file to upload"
       }
     },
+    "actions": {
+      "view": "View",
+      "download": "Download",
+      "delete": "Delete",
+      "share": "Share"
+    },
     "viewer": {
       "loading": "Loading document...",
       "error": {
@@ -416,6 +422,21 @@
         "error": "Failed to share document",
         "enableSuccess": "Document sharing enabled",
         "disableSuccess": "Document sharing disabled"
+      },
+      "delete": {
+        "deleteSuccess": "Document deleted successfully",
+        "deleteError": "Failed to delete document"
+      },
+      "search": {
+        "advancedSearch": {
+          "searchPlaceholder": "Search documents...",
+          "majorPlaceholder": "Select major",
+          "levelPlaceholder": "Select level",
+          "categoryPlaceholder": "Select category",
+          "reset": "Reset Filter",
+          "apply": "Search"
+        },
+        "error": "Failed to search documents"
       }
     }
   }

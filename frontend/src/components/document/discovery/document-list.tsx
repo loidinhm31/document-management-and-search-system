@@ -4,8 +4,8 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { HighlightCell } from "@/components/document/highlight-cell";
-import SearchSuggestions from "@/components/document/search-suggestions";
+import { HighlightCell } from "@/components/document/discovery/highlight-cell";
+import SearchSuggestions from "@/components/document/discovery/search-suggestions";
 import { DocumentViewer } from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

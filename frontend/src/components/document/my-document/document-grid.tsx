@@ -2,7 +2,7 @@ import { Loader2 } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { DocumentCard } from "@/components/document/document-card";
+import { DocumentCard } from "@/components/document/my-document/document-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DocumentInformation } from "@/types/document";

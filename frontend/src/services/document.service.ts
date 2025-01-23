@@ -2,6 +2,7 @@ import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { DocumentInformation, DocumentMetadataUpdate, DocumentUploadResponse } from "@/types/document";
 import { PageResponse } from "@/types/user";
+import { SearchFilters } from "@/components/document/my-document/advanced-search";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
@@ -22,11 +23,20 @@ class DocumentService extends BaseService {
     );
   }
 
-  getUserDocuments(page: number = 0, size: number = 12) {
-    return this.handleApiResponse(
-      axiosInstance.get<PageResponse<DocumentInformation>>("/document/api/v1/documents/user", {
-        params: { page, size }
-      })
+  getUserDocuments(page: number = 0, size: number = 12, filters: SearchFilters = {}) {
+    const searchRequest = {
+      search: filters.search,
+      major: filters.major,
+      level: filters.level,
+      category: filters.category,
+      page,
+      size,
+      sortField: filters.sort?.split(',')[0] || 'createdAt',
+      sortDirection: filters.sort?.split(',')[1] || 'desc'
+    };
+
+    return this.handleApiResponse<PageResponse<DocumentInformation>>(
+      axiosInstance.post("/document/api/v1/documents/user/search", searchRequest)
     );
   }
 

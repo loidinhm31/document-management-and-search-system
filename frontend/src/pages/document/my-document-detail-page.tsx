@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { DocumentForm, DocumentFormValues } from "@/components/document/document-form";
+import { DocumentForm, DocumentFormValues } from "@/components/document/my-document/document-form";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

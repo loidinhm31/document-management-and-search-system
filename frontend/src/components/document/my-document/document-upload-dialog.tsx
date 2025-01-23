@@ -2,7 +2,7 @@ import { Upload } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { DocumentUpload } from "@/components/document/document-upload";
+import { DocumentUpload } from "@/components/document/my-document/document-upload";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
