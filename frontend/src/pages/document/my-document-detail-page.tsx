@@ -9,11 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { RoutePaths } from "@/core/route-config";
+import { useProcessing } from "@/context/processing-provider";
 
 export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { documentId } = useParams<{ documentId: string }>();
+
+  const { addProcessingItem } = useProcessing();
+
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [documentData, setDocumentData] = useState(null);
@@ -59,7 +63,7 @@ export default function MyDocumentDetailPage() {
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
-        await documentService.updateFile(documentId, formData);
+        await handleFileUpdate(documentId, formData);
 
         // Refresh document data to get new file info
         const response = await documentService.getDocumentDetails(documentId);
@@ -79,6 +83,23 @@ export default function MyDocumentDetailPage() {
       });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleFileUpdate = async (documentId: string, formData: FormData) => {
+    try {
+      const response = await documentService.updateFile(documentId, formData);
+      const document = response.data;
+
+      // Add to processing queue
+      addProcessingItem(document.id, document.originalFilename);
+
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("document.detail.updateError"),
+        variant: "destructive"
+      });
     }
   };
 

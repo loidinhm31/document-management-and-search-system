@@ -1,11 +1,14 @@
 package com.dms.document.service;
 
 import com.dms.document.client.UserClient;
-import com.dms.document.dto.DocumentContent;
 import com.dms.document.dto.DocumentUpdateRequest;
+import com.dms.document.dto.ShareSettings;
+import com.dms.document.dto.UpdateShareSettingsRequest;
 import com.dms.document.dto.UserDto;
+import com.dms.document.enums.DocumentStatus;
 import com.dms.document.enums.DocumentType;
 import com.dms.document.enums.EventType;
+import com.dms.document.enums.SharingType;
 import com.dms.document.exception.InvalidDocumentException;
 import com.dms.document.exception.UnsupportedDocumentTypeException;
 import com.dms.document.model.DocumentInformation;
@@ -23,6 +26,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
@@ -54,7 +58,6 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
     private final ThumbnailService thumbnailService;
-    private final ContentExtractorService contentExtractorService;
 
     public DocumentInformation uploadDocument(MultipartFile file,
                                               String courseCode,
@@ -87,24 +90,20 @@ public class DocumentService {
         // Save file to disk
         Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Extract content and metadata
-        DocumentContent extractedContent = contentExtractorService.extractContent(fullPath);
-
         // Create document
         DocumentInformation document = DocumentInformation.builder()
+                .status(DocumentStatus.PENDING)
                 .filename(uniqueFilename)
                 .originalFilename(originalFilename)
-                .filePath(relativePath)
+                .filePath(fullPath.toString())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .documentType(DocumentUtils.determineDocumentType(file.getContentType()))
-                .content(extractedContent.content())
                 .major(major)
                 .courseCode(courseCode)
                 .courseLevel(level)
                 .category(category)
                 .tags(tags != null ? tags : new HashSet<>())
-                .extractedMetadata(extractedContent.metadata())
                 .userId(userDto.getUserId().toString())
                 .createdAt(new Date())
                 .createdBy(username)
@@ -172,9 +171,14 @@ public class DocumentService {
         long total = mongoTemplate.count(query, DocumentInformation.class);
         List<DocumentInformation> documents = mongoTemplate.find(query, DocumentInformation.class);
 
-        return new PageImpl<>(documents, pageable, total);
+        return new PageImpl<>(
+                documents.stream()
+                        .peek(d -> d.setContent(null))
+                        .toList(),
+                pageable,
+                total
+        );
     }
-
 
     public byte[] getDocumentThumbnail(String documentId, String username) throws IOException {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
@@ -186,8 +190,7 @@ public class DocumentService {
         DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
-        Path filePath = Path.of(storageBasePath, document.getFilePath());
-        return thumbnailService.generateThumbnail(filePath, document.getDocumentType().name());
+        return thumbnailService.generateThumbnail(Path.of(document.getFilePath()), document.getDocumentType().name());
     }
 
     public byte[] getDocumentContent(String documentId, String username) throws IOException {
@@ -200,8 +203,7 @@ public class DocumentService {
         DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
-        Path filePath = Path.of(storageBasePath, document.getFilePath());
-        try (InputStream in = Files.newInputStream(filePath)) {
+        try (InputStream in = Files.newInputStream(Path.of(document.getFilePath()))) {
             return in.readAllBytes();
         }
     }
@@ -213,8 +215,10 @@ public class DocumentService {
         }
         UserDto userDto = response.getBody();
 
-        return documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation documentInformation = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+        documentInformation.setContent(null);
+        return documentInformation;
     }
 
     public DocumentInformation updateDocument(
@@ -270,7 +274,7 @@ public class DocumentService {
 
         // Delete the physical file
         try {
-            Path filePath = Path.of(storageBasePath, document.getFilePath());
+            Path filePath = Path.of(document.getFilePath());
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
             log.error("Error deleting file for document: {}", documentId, e);
@@ -311,7 +315,7 @@ public class DocumentService {
 
         // Delete old file
         try {
-            Path oldFilePath = Path.of(storageBasePath, document.getFilePath());
+            Path oldFilePath = Path.of(document.getFilePath());
             Files.deleteIfExists(oldFilePath);
         } catch (IOException e) {
             log.error("Error deleting old file for document: {}", documentId, e);
@@ -329,18 +333,13 @@ public class DocumentService {
         // Save new file to disk
         Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Extract content and metadata
-        DocumentContent extractedContent = contentExtractorService.extractContent(fullPath);
-
         // Update document information
         document.setFilename(uniqueFilename);
         document.setOriginalFilename(file.getOriginalFilename());
-        document.setFilePath(relativePath);
+        document.setFilePath(fullPath.toString());
         document.setFileSize(file.getSize());
         document.setMimeType(file.getContentType());
         document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
-        document.setContent(extractedContent.content());
-        document.setExtractedMetadata(extractedContent.metadata());
         document.setUpdatedAt(new Date());
         document.setUpdatedBy(username);
 
@@ -353,7 +352,7 @@ public class DocumentService {
                         .eventId(UUID.randomUUID().toString())
                         .userId(userDto.getUserId().toString())
                         .documentId(documentId)
-                        .subject(EventType.UPDATE_EVENT.name())
+                        .subject(EventType.UPDATE_EVENT_WITH_FILE.name())
                         .triggerAt(LocalDateTime.now())
                         .build()
         ));
@@ -361,38 +360,28 @@ public class DocumentService {
         return updatedDocument;
     }
 
-    public DocumentInformation toggleSharing(String documentId, boolean isShared, String username) {
-        // Verify user and get their info
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
-        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
-            throw new InvalidDataAccessResourceUsageException("User not found");
-        }
-        UserDto userDto = response.getBody();
+    public ShareSettings getShareSettings(String documentId, String username) {
+        DocumentInformation doc = getDocumentDetails(documentId, username);
+        return new ShareSettings(
+                doc.getSharingType() == SharingType.PUBLIC,
+                doc.getSharedWith()
+        );
+    }
 
-        // Get and verify document ownership
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
-                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+    public DocumentInformation updateShareSettings(
+            String documentId,
+            UpdateShareSettingsRequest request,
+            String username) {
 
-        // Update sharing status
-        document.setShared(isShared);
-        document.setUpdatedAt(new Date());
-        document.setUpdatedBy(username);
+        DocumentInformation doc = getDocumentDetails(documentId, username);
 
-        // Save to MongoDB
-        DocumentInformation updatedDocument = documentRepository.save(document);
+        doc.setSharingType(request.isPublic() ? SharingType.PUBLIC :
+                CollectionUtils.isEmpty(request.sharedWith()) ? SharingType.PRIVATE : SharingType.SPECIFIC);
+        doc.setSharedWith(request.sharedWith());
+        doc.setUpdatedAt(new Date());
+        doc.setUpdatedBy(username);
 
-        // Send sync event for elasticsearch update
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(userDto.getUserId().toString())
-                        .documentId(documentId)
-                        .subject(EventType.UPDATE_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
-
-        return updatedDocument;
+        return documentRepository.save(doc);
     }
 
     public Set<String> getPopularTags(String prefix) {

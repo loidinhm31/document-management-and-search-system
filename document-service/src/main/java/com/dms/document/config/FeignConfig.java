@@ -25,7 +25,3 @@ public class FeignConfig {
         };
     }
 }
-
-// UserClient.java
-
-// UserDto.java

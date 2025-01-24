@@ -15,6 +15,7 @@ export enum DocumentType {
 
 export interface DocumentInformation {
   id: string;
+  status: DocumentStatus;
   filename: string;
   originalFilename: string;
   filePath: string;
@@ -37,11 +38,6 @@ export interface DocumentInformation {
   highlights?: string[];
 }
 
-export interface DocumentUploadResponse {
-  success: boolean;
-  data: DocumentInformation;
-}
-
 export interface DocumentSearchResponse {
   content: DocumentInformation[];
   totalElements: number;
@@ -56,4 +52,11 @@ export interface DocumentMetadataUpdate {
   level?: string;
   category?: string;
   tags?: string[];
+}
+
+export enum DocumentStatus {
+  PENDING = "PENDING",
+  PROCESSING = "PROCESSING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED"
 }

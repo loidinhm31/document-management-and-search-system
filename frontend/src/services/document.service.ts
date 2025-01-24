@@ -1,12 +1,12 @@
+import { SearchFilters } from "@/components/document/my-document/advanced-search";
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
-import { DocumentInformation, DocumentMetadataUpdate, DocumentUploadResponse } from "@/types/document";
+import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
 import { PageResponse } from "@/types/user";
-import { SearchFilters } from "@/components/document/my-document/advanced-search";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
-    return this.handleApiResponse<DocumentUploadResponse>(
+    return this.handleApiResponse<DocumentInformation>(
       axiosInstance.post("/document/api/v1/documents", formData, {
         headers: {
           "Content-Type": "multipart/form-data"
@@ -81,9 +81,18 @@ class DocumentService extends BaseService {
     );
   }
 
-  toggleSharing(documentId: string, isShared: boolean) {
+  getShareSettings(documentId: string) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document/api/v1/documents/${documentId}/sharing`, { isShared })
+      axiosInstance.get(`/document/api/v1/documents/${documentId}/share`)
+    );
+  }
+
+  updateShareSettings(documentId: string, settings: {
+    isPublic: boolean;
+    sharedWith: string[];
+  }) {
+    return this.handleApiResponse(
+      axiosInstance.put(`/document/api/v1/documents/${documentId}/share`, settings)
     );
   }
 }

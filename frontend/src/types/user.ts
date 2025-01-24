@@ -44,3 +44,10 @@ export interface UpdateStatusRequest {
   credentialsExpiryDate?: string;
   accountExpiryDate?: string;
 }
+
+export interface UserSearchResponse {
+  userId: string;
+  username: string;
+  email: string;
+  imageUrl?: string;
+}

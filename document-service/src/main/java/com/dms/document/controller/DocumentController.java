@@ -2,6 +2,8 @@ package com.dms.document.controller;
 
 import com.dms.document.dto.DocumentSearchRequest;
 import com.dms.document.dto.DocumentUpdateRequest;
+import com.dms.document.dto.ShareSettings;
+import com.dms.document.dto.UpdateShareSettingsRequest;
 import com.dms.document.model.DocumentInformation;
 import com.dms.document.model.DocumentSearchCriteria;
 import com.dms.document.service.DocumentService;
@@ -133,8 +135,7 @@ public class DocumentController {
             @PathVariable String id,
             @RequestBody DocumentUpdateRequest documentUpdateRequest,
             @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(documentService.updateDocument(
-                id, documentUpdateRequest, jwt.getSubject()));
+        return ResponseEntity.ok(documentService.updateDocument(id, documentUpdateRequest, jwt.getSubject()));
     }
 
     @DeleteMapping("/{id}")
@@ -154,19 +155,23 @@ public class DocumentController {
         return ResponseEntity.ok(documentService.updateDocumentFile(id, file, username));
     }
 
-    @PutMapping("/{id}/sharing")
-    public ResponseEntity<DocumentInformation> toggleSharing(
+    @GetMapping("/{id}/share")
+    public ResponseEntity<ShareSettings> getShareSettings(
             @PathVariable String id,
-            @RequestBody Map<String, Boolean> request,
             @AuthenticationPrincipal Jwt jwt) {
         String username = jwt.getSubject();
-        Boolean isShared = request.get("isShared");
-        if (isShared == null) {
-            throw new IllegalArgumentException("isShared parameter is required");
-        }
+        ShareSettings settings = documentService.getShareSettings(id, username);
+        return ResponseEntity.ok(settings);
+    }
 
-        DocumentInformation updatedDocument = documentService.toggleSharing(id, isShared, username);
-        return ResponseEntity.ok(updatedDocument);
+    @PutMapping("/{id}/share")
+    public ResponseEntity<DocumentInformation> updateShareSettings(
+            @PathVariable String id,
+            @RequestBody UpdateShareSettingsRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        String username = jwt.getSubject();
+        DocumentInformation document = documentService.updateShareSettings(id, request, username);
+        return ResponseEntity.ok(document);
     }
 
     @GetMapping("/tags/suggestions")

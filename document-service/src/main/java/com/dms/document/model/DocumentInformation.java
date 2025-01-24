@@ -1,6 +1,8 @@
 package com.dms.document.model;
 
+import com.dms.document.enums.DocumentStatus;
 import com.dms.document.enums.DocumentType;
+import com.dms.document.enums.SharingType;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -9,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,11 +70,20 @@ public class DocumentInformation {
     @Field("user_id")
     private String userId;
 
-    @Field("is_shared")
-    private boolean isShared;
+    @Field("sharing_type")
+    private SharingType sharingType;
+
+    @Field("shared_with")
+    private Set<String> sharedWith;
 
     @Field("deleted")
     private boolean deleted;
+
+    @Field("status")
+    private DocumentStatus status;
+
+    @Field("processing_error")
+    private String processingError;
 
     @Field("created_at")
     private Date createdAt;

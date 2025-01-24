@@ -18,3 +18,7 @@ spring:
   cloud:
     discovery:
       enabled: true
+  data:
+    elasticsearch:
+      repositories:
+        enabled: true

@@ -9,8 +9,8 @@
   "navigation": {
     "main": {
       "title": "Application",
-      "home": "Home",
-      "document": "Document"
+      "home": "Discover",
+      "document": "My Document"
     },
     "admin": {
       "title": "Administration",
@@ -19,7 +19,7 @@
     }
   },
   "pages": {
-    "home": "Home",
+    "home": "Discover",
     "profile": "Profile",
     "my-document": "My Documents",
     "admin": {
@@ -280,7 +280,7 @@
   },
   "document": {
     "discovery": {
-      "title": "Documents",
+      "title": "Discover",
       "description": "Discover documents",
       "headers": {
         "name": "Name",
@@ -339,6 +339,16 @@
         "success": "Document uploaded successfully",
         "error": "Failed to upload document",
         "fileRequired": "Please select a file to upload"
+      },
+      "processing": {
+        "status": {
+          "pending": "Pending Processing",
+          "processing": "Processing Document",
+          "completed": "Processed Document",
+          "failed": "Processing Failed",
+          "description": "This may take several minutes for large files.",
+          "unknownError": "An unknown error occurred during processing"
+        }
       }
     },
     "actions": {
@@ -422,7 +432,16 @@
         "success": "Document shared successfully",
         "error": "Failed to share document",
         "enableSuccess": "Document sharing enabled",
-        "disableSuccess": "Document sharing disabled"
+        "disableSuccess": "Document sharing disabled",
+        "specific": {
+          "title": "Share with specific users",
+          "searchPlaceholder": "Search users...",
+          "noResults": "No users found"
+        },
+        "updateSuccess": "Share settings updated successfully",
+        "actions": {
+          "update": "Update sharing settings"
+        }
       },
       "delete": {
         "deleteSuccess": "Document deleted successfully",

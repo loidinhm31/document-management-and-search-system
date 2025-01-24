@@ -1,6 +1,6 @@
 package com.dms.auth.security.services;
 
-import com.dms.auth.entities.User;
+import com.dms.auth.entity.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.Getter;

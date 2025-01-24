@@ -1,7 +1,7 @@
 package com.dms.auth.security.services;
 
-import com.dms.auth.entities.User;
-import com.dms.auth.repositories.UserRepository;
+import com.dms.auth.entity.User;
+import com.dms.auth.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

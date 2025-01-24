@@ -1,6 +1,7 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { LoginRequest, SignupRequest, TokenResponse } from "@/types/auth";
+import { UserSearchResponse } from "@/types/user";
 
 class AuthService extends BaseService {
   login(data: LoginRequest) {

@@ -1,14 +1,14 @@
 package com.dms.auth.security.oauth2;
 
-import com.dms.auth.entities.RefreshToken;
-import com.dms.auth.entities.Role;
-import com.dms.auth.entities.User;
+import com.dms.auth.entity.RefreshToken;
+import com.dms.auth.entity.Role;
+import com.dms.auth.entity.User;
 import com.dms.auth.enums.AppRole;
-import com.dms.auth.repositories.RoleRepository;
-import com.dms.auth.repositories.UserRepository;
+import com.dms.auth.repository.RoleRepository;
+import com.dms.auth.repository.UserRepository;
 import com.dms.auth.security.jwt.JwtUtils;
 import com.dms.auth.security.services.CustomUserDetails;
-import com.dms.auth.services.impl.RefreshTokenService;
+import com.dms.auth.service.impl.RefreshTokenService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

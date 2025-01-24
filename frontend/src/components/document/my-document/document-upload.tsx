@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { documentService } from "@/services/document.service";
 import { useToast } from "@/hooks/use-toast";
 import TagInput from "@/components/tag-input";
+import { useProcessing } from "@/context/processing-provider";
 
 const COURSE_LEVELS = [
   { code: "FUNDAMENTAL", name: "Fundamental" },
@@ -51,6 +52,8 @@ interface DocumentUploadProps {
 
 export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess }) => {
   const { t } = useTranslation();
+  const { addProcessingItem } = useProcessing();
+
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
@@ -116,7 +119,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
         formData.append("tags", cleanedTags.join(","));
       }
 
-      await documentService.uploadDocument(formData);
+      handleUpload(formData)
 
       toast({
         title: t("common.success"),
@@ -145,6 +148,26 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
       });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleUpload = async (formData: FormData) => {
+    try {
+      const response = await documentService.uploadDocument(formData);
+      const document = response.data;
+
+      // Add to processing queue
+      addProcessingItem(document.id, document.originalFilename);
+
+      // Close dialog or continue with your existing flow
+      onUploadSuccess?.();
+
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("document.upload.messages.error"),
+        variant: "destructive"
+      });
     }
   };
 

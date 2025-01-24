@@ -1,4 +1,4 @@
-import { FileText, Home, Settings2, Shield, Users } from "lucide-react";
+import { BookOpen, FileText, Shield, Users } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 import LanguageSwitcher from "@/components/language-switcher";
 import { LogoHeader } from "@/components/logo-header";
 import { NavUser } from "@/components/nav-user";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -17,12 +18,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  useSidebar,
+  useSidebar
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { RoutePaths } from "@/core/route-config";
-import { FaCcDiscover } from "react-icons/fa";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isAdmin } = useAuth();
@@ -34,16 +33,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const mainNavItems = [
     {
       title: t("navigation.main.home"),
-      icon: Home,
+      icon: BookOpen,
       href: "/home",
-      isActive: location.pathname === "/home",
+      isActive: location.pathname === "/home"
     },
     {
       title: t("navigation.main.document"),
       icon: FileText,
       href: RoutePaths.MY_DOCUMENT,
-      isActive: location.pathname === RoutePaths.MY_DOCUMENT,
-    },
+      isActive: location.pathname === RoutePaths.MY_DOCUMENT
+    }
   ];
 
   const adminNavItems = [
@@ -51,14 +50,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("navigation.admin.userManagement"),
       icon: Users,
       href: RoutePaths.ADMIN.USERS,
-      isActive: location.pathname.startsWith(RoutePaths.ADMIN.USERS),
+      isActive: location.pathname.startsWith(RoutePaths.ADMIN.USERS)
     },
     {
       title: t("navigation.admin.roles"),
       icon: Shield,
       href: "/admin/roles",
-      isActive: location.pathname.startsWith("/admin/roles"),
-    },
+      isActive: location.pathname.startsWith("/admin/roles")
+    }
   ];
 
   return (

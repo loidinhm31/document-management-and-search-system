@@ -1,0 +1,40 @@
+app:
+  document:
+    max-size-threshold-mb: 25MB
+
+  ocr:
+    data-path: /usr/share/tesseract-ocr/5/tessdata
+    minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
+    chunk-size: 10
+    max-threads: 4
+    temp-dir: /tmp/ocr
+    dpi: 300
+    image-type: RGB
+  pdf:
+    quality-threshold: 0.8
+    min-text-density: 0.01
+
+spring:
+  data:
+    mongodb:
+      authentication-database: admin
+      username: mongodb
+      password: mongodbpw
+      database: dms
+      port: 27017
+      host: localhost
+
+elasticsearch:
+  host: localhost
+  port: 9200
+  username: elastic  # Default username for Elasticsearch 8.x
+  password: "NX9DYn+_4WSXRmHwymTo"
+
+# RabbitMQ
+rabbitmq:
+  exchanges:
+    internal: internal.exchange
+  queues:
+    document-sync: document-sync.queue
+  routing-keys:
+    internal-document-sync: internal.document-sync.routing-key
