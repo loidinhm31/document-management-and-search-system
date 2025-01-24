@@ -12,8 +12,8 @@ import com.dms.document.enums.SharingType;
 import com.dms.document.exception.InvalidDocumentException;
 import com.dms.document.exception.UnsupportedDocumentTypeException;
 import com.dms.document.model.DocumentInformation;
-import com.dms.document.model.DocumentSearchCriteria;
-import com.dms.document.model.SyncEventRequest;
+import com.dms.document.dto.DocumentSearchCriteria;
+import com.dms.document.dto.SyncEventRequest;
 import com.dms.document.repository.DocumentRepository;
 import com.dms.document.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
@@ -380,6 +380,17 @@ public class DocumentService {
         doc.setSharedWith(request.sharedWith());
         doc.setUpdatedAt(new Date());
         doc.setUpdatedBy(username);
+
+        // Send sync event to update Elasticsearch
+        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
+                SyncEventRequest.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .userId(doc.getUserId())
+                        .documentId(documentId)
+                        .subject(EventType.UPDATE_EVENT.name())
+                        .triggerAt(LocalDateTime.now())
+                        .build()
+        ));
 
         return documentRepository.save(doc);
     }

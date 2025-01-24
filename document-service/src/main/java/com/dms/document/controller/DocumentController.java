@@ -5,7 +5,7 @@ import com.dms.document.dto.DocumentUpdateRequest;
 import com.dms.document.dto.ShareSettings;
 import com.dms.document.dto.UpdateShareSettingsRequest;
 import com.dms.document.model.DocumentInformation;
-import com.dms.document.model.DocumentSearchCriteria;
+import com.dms.document.dto.DocumentSearchCriteria;
 import com.dms.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
