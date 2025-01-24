@@ -4,6 +4,8 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.util.StringUtils;
 
+import java.util.Set;
+
 @Data
 @Builder
 public class DocumentSearchCriteria {
@@ -11,6 +13,7 @@ public class DocumentSearchCriteria {
     private String major;
     private String level;
     private String category;
+    private Set<String> tags;
     private String sortField;
     private String sortDirection;
 

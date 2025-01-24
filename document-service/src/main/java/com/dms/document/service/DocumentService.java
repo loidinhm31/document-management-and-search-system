@@ -18,6 +18,8 @@ import com.dms.document.repository.DocumentRepository;
 import com.dms.document.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.*;
@@ -26,8 +28,6 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -105,6 +105,7 @@ public class DocumentService {
                 .category(category)
                 .tags(tags != null ? tags : new HashSet<>())
                 .userId(userDto.getUserId().toString())
+                .deleted(false)
                 .createdAt(new Date())
                 .createdBy(username)
                 .updatedAt(new Date())
@@ -141,7 +142,7 @@ public class DocumentService {
                 .and("deleted").ne(true);
 
         // Add search criteria if provided
-        if (StringUtils.hasText(criteria.getSearch())) {
+        if (StringUtils.isNotBlank(criteria.getSearch())) {
             Criteria searchCriteria = new Criteria().orOperator(
                     Criteria.where("originalFilename").regex(criteria.getSearch(), "i"),
                     Criteria.where("content").regex(criteria.getSearch(), "i"),
@@ -152,14 +153,19 @@ public class DocumentService {
         }
 
         // Add filters if provided
-        if (StringUtils.hasText(criteria.getMajor())) {
+        if (StringUtils.isNotBlank(criteria.getMajor())) {
             queryCriteria.and("major").is(criteria.getMajor());
         }
-        if (StringUtils.hasText(criteria.getLevel())) {
+        if (StringUtils.isNotBlank(criteria.getLevel())) {
             queryCriteria.and("courseLevel").is(criteria.getLevel());
         }
-        if (StringUtils.hasText(criteria.getCategory())) {
+        if (StringUtils.isNotBlank(criteria.getCategory())) {
             queryCriteria.and("category").is(criteria.getCategory());
+        }
+
+        // Add tag filter if provided
+        if (CollectionUtils.isNotEmpty(criteria.getTags())) {
+            queryCriteria.and("tags").all(criteria.getTags());
         }
 
         // Create pageable with sort
@@ -396,8 +402,10 @@ public class DocumentService {
     }
 
     public Set<String> getPopularTags(String prefix) {
-        if (prefix != null && !prefix.isEmpty()) {
-            return new HashSet<>(documentRepository.findDistinctTagsByPattern(prefix));
+        if (StringUtils.isNotEmpty(prefix)) {
+            return documentRepository.findDistinctTagsByPattern(prefix).stream()
+                    .flatMap(doc -> doc.getTags().stream())
+                    .collect(Collectors.toSet());
         }
 
         // If no prefix, get all unique tags

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import TagInput from "@/components/tag-input";
 
 const courseTypes = [
   { label: "All", value: "all" },
@@ -48,6 +49,7 @@ export interface SearchFilters {
   level?: string;
   category?: string;
   sort?: string;
+  tags?: string[];
 }
 
 interface AdvancedSearchProps {
@@ -61,6 +63,7 @@ export default function AdvancedSearch({ onSearch }: AdvancedSearchProps) {
   const [selectedLevel, setSelectedLevel] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedSort, setSelectedSort] = useState(sortOptions[0].value);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const handleSearch = () => {
     onSearch({
@@ -68,7 +71,8 @@ export default function AdvancedSearch({ onSearch }: AdvancedSearchProps) {
       major: selectedMajor === "all" ? undefined : selectedMajor,
       level: selectedLevel === "all" ? undefined : selectedLevel,
       category: selectedCategory === "all" ? undefined : selectedCategory,
-      sort: selectedSort
+      sort: selectedSort,
+      tags: selectedTags.length > 0 ? selectedTags : undefined
     });
   };
 
@@ -78,6 +82,7 @@ export default function AdvancedSearch({ onSearch }: AdvancedSearchProps) {
     setSelectedLevel("all");
     setSelectedCategory("all");
     setSelectedSort(sortOptions[0].value);
+    setSelectedTags([]);
     onSearch({});
   };
 
@@ -85,7 +90,7 @@ export default function AdvancedSearch({ onSearch }: AdvancedSearchProps) {
     <Card className="mb-4">
       <CardContent className="pt-6">
         <div className="flex flex-col gap-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Search Input */}
             <Input
               placeholder={t("document.myDocuments.search.advancedSearch.searchPlaceholder")}
@@ -154,6 +159,15 @@ export default function AdvancedSearch({ onSearch }: AdvancedSearchProps) {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Tag Input */}
+            <div className="md:col-span-2">
+              <TagInput
+                value={selectedTags}
+                onChange={setSelectedTags}
+                placeholder={t("document.myDocuments.search.advancedSearch.tagsPlaceholder")}
+              />
+            </div>
           </div>
 
           {/* Action Buttons */}

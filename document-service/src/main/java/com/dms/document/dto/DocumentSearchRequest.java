@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -16,6 +18,7 @@ public class DocumentSearchRequest {
     private String category;
     private String sortField;
     private String sortDirection;
+    private Set<String> tags;
     private int page;
     private int size;
 }

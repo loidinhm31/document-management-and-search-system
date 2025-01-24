@@ -62,6 +62,7 @@ public class DocumentController {
                 .major(request.getMajor())
                 .level(request.getLevel())
                 .category(request.getCategory())
+                .tags(request.getTags())
                 .sortField(request.getSortField())
                 .sortDirection(request.getSortDirection())
                 .build();

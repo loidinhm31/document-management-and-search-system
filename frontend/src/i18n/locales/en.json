@@ -454,7 +454,10 @@
           "levelPlaceholder": "Select level",
           "categoryPlaceholder": "Select category",
           "reset": "Reset Filter",
-          "apply": "Search"
+          "apply": "Search",
+          "tagsPlaceholder": "Select tags...",
+          "searchTags": "Search tags...",
+          "noTags": "No tags found"
         },
         "error": "Failed to search documents"
       }

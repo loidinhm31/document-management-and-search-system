@@ -29,6 +29,7 @@ class DocumentService extends BaseService {
       major: filters.major,
       level: filters.level,
       category: filters.category,
+      tags: filters.tags,
       page,
       size,
       sortField: filters.sort?.split(',')[0] || 'createdAt',
