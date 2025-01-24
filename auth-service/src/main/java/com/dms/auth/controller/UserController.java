@@ -127,4 +127,10 @@ public class UserController {
         List<UserSearchResponse> results = userService.searchUsers(query);
         return ResponseEntity.ok(results);
     }
+
+    @PostMapping("/details")
+    //    @PreAuthorize("hasAnyRole('USER', 'MENTOR')")
+    public ResponseEntity<List<UserSearchResponse>> getUsersByIds(@RequestBody List<UUID> userIds) {
+        return ResponseEntity.ok(userService.getUsersByIds(userIds));
+    }
 }

@@ -20,6 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { UserSearchResponse } from "@/types/user";
 
 interface ShareDocumentDialogProps {
   documentId: string;
@@ -39,19 +40,28 @@ export default function ShareDocumentDialog({
   const [open, setOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<UserSearchResponse[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(isShared);
   const [loading, setLoading] = useState(false);
 
+  // Fetch initial share settings when dialog opens
   useEffect(() => {
     if (open) {
       fetchShareSettings();
-      if (searchQuery) {
-        searchUsers();
-      }
     }
-  }, [open, searchQuery]);
+  }, [open]);
+
+  // Handle user search when query changes
+  useEffect(() => {
+    if (open && searchQuery) {
+      const delayDebounceFn = setTimeout(() => {
+        searchUsers();
+      }, 300);
+
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [searchQuery, open]);
 
   const fetchShareSettings = async () => {
     try {
@@ -59,12 +69,39 @@ export default function ShareDocumentDialog({
       const { isPublic, sharedWith = [] } = response.data;
       setIsPublic(isPublic);
       setSelectedUsers(sharedWith || []);
+
+      // If there are shared users, fetch their details
+      if (sharedWith?.length > 0) {
+        setLoading(true);
+        try {
+          // Fetch user details for shared users
+          const userDetailsResponse = await userService.getUsersByIds(sharedWith);
+          setUsers(userDetailsResponse.data);
+        } finally {
+          setLoading(false);
+        }
+      }
     } catch (error) {
       console.error("Error fetching share settings:", error);
     }
   };
 
   const searchUsers = async () => {
+    if (!searchQuery.trim()) {
+      // If search is cleared, show the selected users again
+      if (selectedUsers.length > 0) {
+        try {
+          const userDetailsResponse = await userService.getUsersByIds(selectedUsers);
+          setUsers(userDetailsResponse.data);
+        } catch (error) {
+          console.error("Error fetching selected users:", error);
+        }
+      } else {
+        setUsers([]);
+      }
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await userService.searchUsers(searchQuery);

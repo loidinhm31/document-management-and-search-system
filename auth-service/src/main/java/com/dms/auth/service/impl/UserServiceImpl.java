@@ -466,4 +466,16 @@ public class UserServiceImpl implements UserService {
                 )
                 .toList();
     }
+
+    @Override
+    public List<UserSearchResponse> getUsersByIds(List<UUID> userIds) {
+        return userRepository.findAllById(userIds)
+                .stream()
+                .map(user -> new UserSearchResponse(
+                        user.getUserId().toString(),
+                        user.getUsername(),
+                        user.getEmail()
+                ))
+                .toList();
+    }
 }

@@ -45,4 +45,5 @@ public interface UserService {
     void updateStatus(UUID userId, UpdateStatusRequest request, boolean isAdmin);
 
     List<UserSearchResponse> searchUsers(String query);
+    List<UserSearchResponse> getUsersByIds(List<UUID> userIds);
 }
