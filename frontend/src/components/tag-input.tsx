@@ -1,6 +1,7 @@
 import { debounce } from "lodash";
 import { X } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { Input } from "@/components/ui/input";
 import { documentService } from "@/services/document.service";
@@ -26,6 +27,28 @@ const TagInput = ({
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState({ top: 0, left: 0, width: 0 });
+
+  const updateDropdownPosition = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropdownStyle({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("scroll", updateDropdownPosition);
+    window.addEventListener("resize", updateDropdownPosition);
+    return () => {
+      window.removeEventListener("scroll", updateDropdownPosition);
+      window.removeEventListener("resize", updateDropdownPosition);
+    };
+  }, []);
 
   const fetchTags = async (prefix?: string) => {
     try {
@@ -43,7 +66,6 @@ const TagInput = ({
     }
   };
 
-  // Debounced fetch for input changes
   const debouncedFetchTags = useCallback(
     debounce((prefix: string) => {
       fetchTags(prefix);
@@ -55,14 +77,13 @@ const TagInput = ({
     fetchTags();
   }, []);
 
-  // Handle input changes with debounce
   useEffect(() => {
     if (inputValue.trim()) {
       setLoading(true);
       debouncedFetchTags(inputValue);
       setShowSuggestions(true);
+      updateDropdownPosition();
     } else {
-      // If input is empty, show initial popular tags
       fetchTags();
       setShowSuggestions(false);
     }
@@ -89,7 +110,6 @@ const TagInput = ({
       addTag(inputValue.trim());
     }
 
-    // Handle arrow keys for suggestion navigation
     if (showSuggestions && suggestions.length > 0) {
       if (event.key === "ArrowDown" && suggestions.length > 0) {
         event.preventDefault();
@@ -113,13 +133,50 @@ const TagInput = ({
 
   const focusSuggestion = () => {
     setShowSuggestions(true);
+    updateDropdownPosition();
     if (!inputValue) {
       fetchTags();
     }
-  }
+  };
+
+  const SuggestionsDropdown = () => {
+    if (!showSuggestions || !suggestions.length) return null;
+
+    return createPortal(
+      <div
+        style={{
+          position: "absolute",
+          top: `${dropdownStyle.top}px`,
+          left: `${dropdownStyle.left}px`,
+          width: `${dropdownStyle.width}px`,
+          zIndex: 9999
+        }}
+        className="bg-popover rounded-md border shadow-md"
+      >
+        <div className="p-1">
+          {loading ? (
+            <div className="text-sm text-muted-foreground px-2 py-1.5">
+              Loading...
+            </div>
+          ) : (
+            suggestions.map((suggestion) => (
+              <button
+                key={suggestion}
+                className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accent hover:text-accent-foreground"
+                onClick={() => addTag(suggestion)}
+              >
+                {suggestion}
+              </button>
+            ))
+          )}
+        </div>
+      </div>,
+      document.body
+    );
+  };
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <div
         className={`min-h-10 flex flex-wrap gap-2 p-2 rounded-md border bg-background
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-text"}
@@ -163,29 +220,7 @@ const TagInput = ({
           className="flex-1 !h-6 !min-h-6 !p-0 !border-0 !ring-0 !shadow-none focus-visible:ring-0 bg-transparent placeholder:text-muted-foreground"
         />
       </div>
-
-      {/* Suggestions dropdown */}
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-popover rounded-md border shadow-md">
-          <div className="p-1">
-            {loading ? (
-              <div className="text-sm text-muted-foreground px-2 py-1.5">
-                Loading...
-              </div>
-            ) : (
-              suggestions.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accent hover:text-accent-foreground"
-                  onClick={() => addTag(suggestion)}
-                >
-                  {suggestion}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+      <SuggestionsDropdown />
     </div>
   );
 };
