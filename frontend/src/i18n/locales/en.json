@@ -450,6 +450,7 @@
       "search": {
         "advancedSearch": {
           "searchPlaceholder": "Search documents...",
+          "filters": "Filters",
           "majorPlaceholder": "Select major",
           "levelPlaceholder": "Select level",
           "categoryPlaceholder": "Select category",

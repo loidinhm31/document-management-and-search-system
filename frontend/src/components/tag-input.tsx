@@ -26,9 +26,10 @@ const TagInput = ({
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dropdownStyle, setDropdownStyle] = useState({ top: 0, left: 0, width: 0 });
+  const [hasFetchedInitialSuggestions, setHasFetchedInitialSuggestions] = useState(false);
 
   const updateDropdownPosition = () => {
     if (containerRef.current) {
@@ -42,16 +43,19 @@ const TagInput = ({
   };
 
   useEffect(() => {
-    window.addEventListener("scroll", updateDropdownPosition);
-    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener('scroll', updateDropdownPosition);
+    window.addEventListener('resize', updateDropdownPosition);
     return () => {
-      window.removeEventListener("scroll", updateDropdownPosition);
-      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener('scroll', updateDropdownPosition);
+      window.removeEventListener('resize', updateDropdownPosition);
     };
   }, []);
 
   const fetchTags = async (prefix?: string) => {
+    if (!showSuggestions) return; // Only fetch if suggestions are being shown
+
     try {
+      setLoading(true);
       const response = await documentService.getTagSuggestions(prefix);
       setSuggestions(
         response.data
@@ -70,28 +74,18 @@ const TagInput = ({
     debounce((prefix: string) => {
       fetchTags(prefix);
     }, 350),
-    [value]
+    [value, showSuggestions]
   );
 
   useEffect(() => {
-    fetchTags();
-  }, []);
-
-  useEffect(() => {
-    if (inputValue.trim()) {
-      setLoading(true);
+    if (inputValue.trim() && showSuggestions) {
       debouncedFetchTags(inputValue);
-      setShowSuggestions(true);
-      updateDropdownPosition();
-    } else {
-      fetchTags();
-      setShowSuggestions(false);
     }
 
     return () => {
       debouncedFetchTags.cancel();
     };
-  }, [inputValue, debouncedFetchTags]);
+  }, [inputValue, showSuggestions, debouncedFetchTags]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -131,11 +125,15 @@ const TagInput = ({
     onChange(value.filter(tag => tag !== tagToRemove));
   };
 
-  const focusSuggestion = () => {
+  const handleFocus = () => {
     setShowSuggestions(true);
     updateDropdownPosition();
-    if (!inputValue) {
+
+    // Only fetch initial suggestions on first focus
+    console.log("fetch inital, ", hasFetchedInitialSuggestions);
+    if (!hasFetchedInitialSuggestions) {
       fetchTags();
+      setHasFetchedInitialSuggestions(true);
     }
   };
 
@@ -145,7 +143,7 @@ const TagInput = ({
     return createPortal(
       <div
         style={{
-          position: "absolute",
+          position: 'absolute',
           top: `${dropdownStyle.top}px`,
           left: `${dropdownStyle.left}px`,
           width: `${dropdownStyle.width}px`,
@@ -210,9 +208,8 @@ const TagInput = ({
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={focusSuggestion}
+          onFocus={handleFocus}
           onBlur={() => {
-            // Delay hiding suggestions to allow clicking them
             setTimeout(() => setShowSuggestions(false), 200);
           }}
           placeholder={value.length === 0 ? placeholder : ""}

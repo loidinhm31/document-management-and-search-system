@@ -1,38 +1,11 @@
 import React, { useState } from 'react';
-import { useTranslation } from "react-i18next";
 import { Filter, Search, SortAsc, SortDesc } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import TagInput from "@/components/tag-input";
-
-const courseTypes = [
-  { label: "All", value: "all" },
-  { label: "Fundamental", value: "FUNDAMENTAL" },
-  { label: "Intermediate", value: "INTERMEDIATE" },
-  { label: "Advanced", value: "ADVANCED" },
-  { label: "Specialized", value: "SPECIALIZED" }
-];
-
-const majors = [
-  { label: "All", value: "all" },
-  { label: "Software Engineering", value: "SOFTWARE_ENGINEERING" },
-  { label: "Artificial Intelligence", value: "ARTIFICIAL_INTELLIGENCE" },
-  { label: "Information Security", value: "INFORMATION_SECURITY" },
-  { label: "Internet of Things", value: "IOT" }
-];
-
-const categories = [
-  { label: "All", value: "all" },
-  { label: "Lecture", value: "LECTURE" },
-  { label: "Exercise", value: "EXERCISE" },
-  { label: "Exam", value: "EXAM" },
-  { label: "Reference", value: "REFERENCE" },
-  { label: "Lab", value: "LAB" },
-  { label: "Project", value: "PROJECT" }
-];
+import { useTranslation } from "react-i18next";
+import DocumentFilter from "@/components/document/my-document/document-filter";
 
 const sortOptions = [
   { label: "Created Date (Newest)", value: "createdAt,desc" },
@@ -56,13 +29,18 @@ interface AdvancedSearchProps {
   onSearch: (filters: SearchFilters) => void;
 }
 
-export default function AdvancedSearch({ onSearch }: AdvancedSearchProps) {
+export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
   const { t } = useTranslation();
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Search states
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSort, setSelectedSort] = useState(sortOptions[0].value);
+
+  // Filter states
   const [selectedMajor, setSelectedMajor] = useState("all");
   const [selectedLevel, setSelectedLevel] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedSort, setSelectedSort] = useState(sortOptions[0].value);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const handleSearch = () => {
@@ -86,102 +64,100 @@ export default function AdvancedSearch({ onSearch }: AdvancedSearchProps) {
     onSearch({});
   };
 
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (searchTerm) count++;
+    if (selectedMajor !== "all") count++;
+    if (selectedLevel !== "all") count++;
+    if (selectedCategory !== "all") count++;
+    if (selectedSort !== sortOptions[0].value) count++;
+    if (selectedTags.length > 0) count++;
+    return count;
+  };
+
   return (
-    <Card className="mb-4">
+    <Card className="mb-6">
       <CardContent className="pt-6">
-        <div className="flex flex-col gap-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {/* Search Input */}
-            <Input
-              placeholder={t("document.myDocuments.search.advancedSearch.searchPlaceholder")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-
-            {/* Major Filter */}
-            <Select value={selectedMajor} onValueChange={setSelectedMajor}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("document.myDocuments.search.advancedSearch.majorPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                {majors.map((major) => (
-                  <SelectItem key={major.value} value={major.value}>
-                    {major.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Level Filter */}
-            <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("document.myDocuments.search.advancedSearch.levelPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                {courseTypes.map((level) => (
-                  <SelectItem key={level.value} value={level.value}>
-                    {level.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Category Filter */}
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("document.myDocuments.search.advancedSearch.categoryPlaceholder")} />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Sort Dropdown */}
-            <Select value={selectedSort} onValueChange={setSelectedSort}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {sortOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <span className="flex items-center gap-2">
-                      {option.value.endsWith('desc') ?
-                        <SortDesc className="h-4 w-4" /> :
-                        <SortAsc className="h-4 w-4" />
-                      }
-                      {option.label}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Tag Input */}
-            <div className="md:col-span-2">
-              <TagInput
-                value={selectedTags}
-                onChange={setSelectedTags}
-                placeholder={t("document.myDocuments.search.advancedSearch.tagsPlaceholder")}
+        {/* Primary Search Bar */}
+        <div className="flex flex-wrap gap-4 mb-4">
+          <div className="flex-1 min-w-[200px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t("document.myDocuments.search.advancedSearch.searchPlaceholder")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
               />
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-start gap-2">
-            <Button variant="outline" onClick={handleReset}>
-              {t("document.myDocuments.search.advancedSearch.reset")}
-            </Button>
-            <Button onClick={handleSearch} className="gap-2">
-              <Search className="h-4 w-4" />
-              {t("document.myDocuments.search.advancedSearch.apply")}
-            </Button>
-          </div>
+          {/* Sort Dropdown */}
+          <Select value={selectedSort} onValueChange={setSelectedSort}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  <span className="flex items-center gap-2">
+                    {option.value.endsWith('desc') ?
+                      <SortDesc className="h-4 w-4" /> :
+                      <SortAsc className="h-4 w-4" />
+                    }
+                    {option.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Advanced Filter Toggle */}
+          <Button
+            variant="outline"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="relative gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            {t("document.myDocuments.search.advancedSearch.filters")}
+            {getActiveFilterCount() > 0 && (
+              <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs flex items-center justify-center text-primary-foreground">
+                {getActiveFilterCount()}
+              </span>
+            )}
+          </Button>
         </div>
+
+        {/* Advanced Search Section using DocumentFilter */}
+        {showAdvanced && (
+          <div className="space-y-4">
+            <DocumentFilter
+              majorValue={selectedMajor}
+              onMajorChange={setSelectedMajor}
+              levelValue={selectedLevel}
+              onLevelChange={setSelectedLevel}
+              categoryValue={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              tagsValue={selectedTags}
+              onTagsChange={setSelectedTags}
+              className="md:grid-cols-3 lg:grid-cols-4"
+            />
+
+            {/* Action Buttons */}
+            <div className="flex justify-start gap-2">
+              <Button variant="outline" onClick={handleReset}>
+                {t("document.myDocuments.search.advancedSearch.reset")}
+              </Button>
+              <Button onClick={handleSearch} className="gap-2">
+                <Search className="h-4 w-4" />
+                {t("document.myDocuments.search.advancedSearch.apply")}
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
-}
+};
+
+export default AdvancedSearch;
