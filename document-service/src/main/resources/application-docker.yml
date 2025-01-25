@@ -42,7 +42,7 @@ eureka:
       defaultZone: ${app.eureka.url}/eureka
     enabled: true
   instance:
-    preferIpAddress: false
+    preferIpAddress: true
     hostname: localhost
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10

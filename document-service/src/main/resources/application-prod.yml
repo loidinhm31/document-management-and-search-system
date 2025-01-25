@@ -1,4 +1,0 @@
-app:
-  ocr:
-    data-path: /usr/share/tessdata
-    minimum-text-length: 50

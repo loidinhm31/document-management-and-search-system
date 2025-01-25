@@ -1,7 +1,11 @@
 # Eureka Client
 eureka:
   client:
-    service-url:
+    register-with-eureka: true
+    fetch-registry: true
+    serviceUrl:
       defaultZone: ${EUREKA_URI:http://eureka-discovery-server:8081/eureka}
   instance:
     preferIpAddress: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 20

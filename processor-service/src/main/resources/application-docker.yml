@@ -3,7 +3,7 @@ app:
     max-size-threshold-mb: 25MB
 
   ocr:
-    data-path: /usr/share/tesseract-ocr/5/tessdata
+    data-path: /usr/share/tessdata
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
     chunk-size: 10
     max-threads: 4
