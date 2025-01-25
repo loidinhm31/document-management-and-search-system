@@ -1,3 +1,4 @@
+import { Label } from "@radix-ui/react-menu";
 import React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -58,53 +59,65 @@ export const DocumentFilter = ({
   return (
     <div className={`grid gap-4 ${className}`}>
       {/* Major Filter */}
-      <Select value={majorValue} onValueChange={onMajorChange}>
-        <SelectTrigger>
-          <SelectValue placeholder={t("document.myDocuments.search.advancedSearch.majorPlaceholder")} />
-        </SelectTrigger>
-        <SelectContent>
-          {majors.map((major) => (
-            <SelectItem key={major.value} value={major.value}>
-              {major.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="space-y-2">
+        <Label>{t("document.commonSearch.majorLabel")}</Label>
+        <Select value={majorValue} onValueChange={onMajorChange}>
+          <SelectTrigger>
+            <SelectValue placeholder={t("document.commonSearch.majorPlaceholder")} />
+          </SelectTrigger>
+          <SelectContent>
+            {majors.map((major) => (
+              <SelectItem key={major.value} value={major.value}>
+                {major.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Level Filter */}
-      <Select value={levelValue} onValueChange={onLevelChange}>
-        <SelectTrigger>
-          <SelectValue placeholder={t("document.myDocuments.search.advancedSearch.levelPlaceholder")} />
-        </SelectTrigger>
-        <SelectContent>
-          {courseTypes.map((level) => (
-            <SelectItem key={level.value} value={level.value}>
-              {level.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="space-y-2">
+        <Label>{t("document.commonSearch.levelLabel")}</Label>
+        <Select value={levelValue} onValueChange={onLevelChange}>
+          <SelectTrigger>
+            <SelectValue placeholder={t("document.commonSearch.levelPlaceholder")} />
+          </SelectTrigger>
+          <SelectContent>
+            {courseTypes.map((level) => (
+              <SelectItem key={level.value} value={level.value}>
+                {level.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Category Filter */}
-      <Select value={categoryValue} onValueChange={onCategoryChange}>
-        <SelectTrigger>
-          <SelectValue placeholder={t("document.myDocuments.search.advancedSearch.categoryPlaceholder")} />
-        </SelectTrigger>
-        <SelectContent>
-          {categories.map((category) => (
-            <SelectItem key={category.value} value={category.value}>
-              {category.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="space-y-2">
+        <Label>{t("document.commonSearch.categoryLabel")}</Label>
+        <Select value={categoryValue} onValueChange={onCategoryChange}>
+          <SelectTrigger>
+            <SelectValue placeholder={t("document.commonSearch.categoryPlaceholder")} />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((category) => (
+              <SelectItem key={category.value} value={category.value}>
+                {category.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Tags Input */}
-      <TagInput
-        value={tagsValue}
-        onChange={onTagsChange}
-        placeholder={t("document.myDocuments.search.advancedSearch.tagsPlaceholder")}
-      />
+      <div className="space-y-2">
+        <Label>{t("document.commonSearch.tagLabel")}</Label>
+        <TagInput
+          value={tagsValue}
+          onChange={onTagsChange}
+          placeholder={t("document.commonSearch.tagsPlaceholder")}
+        />
+      </div>
     </div>
   );
 };

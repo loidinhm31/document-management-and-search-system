@@ -278,7 +278,7 @@
     }
   },
   "document": {
-    "discovery": {
+    "discover": {
       "title": "Documents",
       "description": "Discover documents",
       "headers": {

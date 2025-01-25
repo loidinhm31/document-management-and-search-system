@@ -279,9 +279,12 @@
     }
   },
   "document": {
-    "discovery": {
+    "discover": {
       "title": "Discover",
       "description": "Discover documents",
+      "buttons": {
+        "search": "Search"
+      },
       "headers": {
         "name": "Name",
         "course": "Course",
@@ -377,7 +380,7 @@
       }
     },
     "search": {
-      "placeholder": "Search documents...",
+      "placeholder": "Type file name or content to search...",
       "suggestions": {
         "error": "Error fetching suggestions"
       },
@@ -449,19 +452,23 @@
       },
       "search": {
         "advancedSearch": {
-          "searchPlaceholder": "Search documents...",
-          "filters": "Filters",
-          "majorPlaceholder": "Select major",
-          "levelPlaceholder": "Select level",
-          "categoryPlaceholder": "Select category",
-          "reset": "Reset Filter",
-          "apply": "Search",
-          "tagsPlaceholder": "Select tags...",
-          "searchTags": "Search tags...",
-          "noTags": "No tags found"
+          "searchPlaceholder": "Search documents..."
         },
         "error": "Failed to search documents"
       }
+    },
+    "commonSearch": {
+      "filters": "Filters",
+      "majorLabel": "Major",
+      "majorPlaceholder": "Select major",
+      "levelLabel": "Level",
+      "levelPlaceholder": "Select level",
+      "categoryLabel": "Category",
+      "categoryPlaceholder": "Select category",
+      "reset": "Reset Filter",
+      "apply": "Search",
+      "tagLabel":"Tags",
+      "tagsPlaceholder": "Search tags to select..."
     }
   }
 }

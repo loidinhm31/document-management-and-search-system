@@ -1,4 +1,4 @@
-import { DocumentList } from "@/components/document/discovery/document-list";
+import { DocumentList } from "@/components/document/discover/document-list";
 
 export function HomePage() {
   return <>

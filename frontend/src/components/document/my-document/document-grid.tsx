@@ -61,10 +61,10 @@ export const DocumentGrid = React.memo(({
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 0}
           >
-            {t("document.discovery.pagination.previous")}
+            {t("document.discover.pagination.previous")}
           </Button>
           <span className="flex items-center px-4">
-            {t("document.discovery.pagination.pageInfo", {
+            {t("document.discover.pagination.pageInfo", {
               current: currentPage + 1,
               total: totalPages
             })}
@@ -74,7 +74,7 @@ export const DocumentGrid = React.memo(({
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages - 1}
           >
-            {t("document.discovery.pagination.next")}
+            {t("document.discover.pagination.next")}
           </Button>
         </div>
       )}
