@@ -113,7 +113,7 @@ public class DiscoverDocumentSearchService {
         } else {
             queryBuilder.must(must -> must
                     .bool(b -> {
-                        // Vietnamese analyzed content search
+                        // Vietnamese analyzed content search (case-insensitive)
                         b.should(should -> should
                                 .match(m -> m
                                         .field("content")
@@ -121,7 +121,7 @@ public class DiscoverDocumentSearchService {
                                         .query(context.originalQuery())
                                         .boost(2.0f)));
 
-                        // Fuzzy search on base content
+                        // Fuzzy search on base content (case-insensitive)
                         b.should(should -> should
                                 .match(m -> m
                                         .field("content")
@@ -130,12 +130,32 @@ public class DiscoverDocumentSearchService {
                                         .operator(Operator.Or)
                                         .boost(1.0f)));
 
-                        // Exact matches on content
+                        // Multiple case variations for exact matches
                         b.should(should -> should
-                                .term(t -> t
-                                        .field("content.keyword")
-                                        .value(context.originalQuery())
-                                        .boost(3.0f)));
+                                .bool(exactMatch -> {
+                                    // Original case
+                                    exactMatch.should(s -> s
+                                            .term(t -> t
+                                                    .field("content.keyword")
+                                                    .value(context.originalQuery())
+                                                    .boost(3.0f)));
+
+                                    // Lowercase variation
+                                    exactMatch.should(s -> s
+                                            .term(t -> t
+                                                    .field("content.keyword")
+                                                    .value(context.lowercaseQuery())
+                                                    .boost(2.5f)));
+
+                                    // Uppercase variation
+                                    exactMatch.should(s -> s
+                                            .term(t -> t
+                                                    .field("content.keyword")
+                                                    .value(context.uppercaseQuery())
+                                                    .boost(2.5f)));
+
+                                    return exactMatch;
+                                }));
 
                         // Filename search with different analyzers
                         b.should(should -> should
@@ -150,12 +170,32 @@ public class DiscoverDocumentSearchService {
                                         .query(context.originalQuery())
                                         .boost(3.0f)));
 
-                        // Exact filename match
+                        // Multiple case variations for exact filename matches
                         b.should(should -> should
-                                .term(t -> t
-                                        .field("filename.raw")
-                                        .value(context.originalQuery())
-                                        .boost(5.0f)));
+                                .bool(exactMatch -> {
+                                    // Original case
+                                    exactMatch.should(s -> s
+                                            .term(t -> t
+                                                    .field("filename.raw")
+                                                    .value(context.originalQuery())
+                                                    .boost(5.0f)));
+
+                                    // Lowercase variation
+                                    exactMatch.should(s -> s
+                                            .term(t -> t
+                                                    .field("filename.raw")
+                                                    .value(context.lowercaseQuery())
+                                                    .boost(4.5f)));
+
+                                    // Uppercase variation
+                                    exactMatch.should(s -> s
+                                            .term(t -> t
+                                                    .field("filename.raw")
+                                                    .value(context.uppercaseQuery())
+                                                    .boost(4.5f)));
+
+                                    return exactMatch;
+                                }));
 
                         return b.minimumShouldMatch("1");
                     }));
