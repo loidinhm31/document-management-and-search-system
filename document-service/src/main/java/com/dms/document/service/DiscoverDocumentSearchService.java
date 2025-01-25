@@ -11,6 +11,7 @@ import com.dms.document.elasticsearch.DocumentIndex;
 import com.dms.document.enums.QueryType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Page;
@@ -149,7 +150,13 @@ public class DiscoverDocumentSearchService {
                                 .value(userId)));
 
         // Add filter conditions based on request parameters
-        addFilterConditions(queryBuilder, request);
+        addFilterConditions(
+                queryBuilder,
+                request.getMajor(),
+                request.getLevel(),
+                request.getCategory(),
+                request.getTags()
+        );
 
         // Add search conditions if search query exists
         if (StringUtils.isNotEmpty(context.originalQuery())) {
@@ -170,37 +177,14 @@ public class DiscoverDocumentSearchService {
                                 .field("user_id")
                                 .value(userId)));
 
-        // Add filter conditions for suggestions
-        if (StringUtils.isNotBlank(request.getMajor())) {
-            queryBuilder.filter(f -> f
-                    .term(t -> t
-                            .field("major")
-                            .value(request.getMajor())));
-        }
-
-        if (StringUtils.isNotBlank(request.getLevel())) {
-            queryBuilder.filter(f -> f
-                    .term(t -> t
-                            .field("course_level")
-                            .value(request.getLevel())));
-        }
-
-        if (StringUtils.isNotBlank(request.getCategory())) {
-            queryBuilder.filter(f -> f
-                    .term(t -> t
-                            .field("category")
-                            .value(request.getCategory())));
-        }
-
-        if (request.getTags() != null && !request.getTags().isEmpty()) {
-            queryBuilder.filter(f -> f
-                    .terms(t -> t
-                            .field("tags")
-                            .terms(tt -> tt
-                                    .value(request.getTags().stream()
-                                            .map(FieldValue::of)
-                                            .collect(Collectors.toList())))));
-        }
+        // Add filter conditions based on request parameters
+        addFilterConditions(
+                queryBuilder,
+                request.getMajor(),
+                request.getLevel(),
+                request.getCategory(),
+                request.getTags()
+        );
 
         // Add suggestion search conditions
         queryBuilder.must(must -> must
@@ -240,34 +224,34 @@ public class DiscoverDocumentSearchService {
         return queryBuilder.build()._toQuery();
     }
 
-    private void addFilterConditions(BoolQuery.Builder queryBuilder, DocumentSearchRequest request) {
-        if (StringUtils.isNotBlank(request.getMajor())) {
+    private void addFilterConditions(BoolQuery.Builder queryBuilder, String major, String level, String category, Set<String> tags) {
+        if (StringUtils.isNotBlank(major)) {
             queryBuilder.filter(f -> f
                     .term(t -> t
                             .field("major")
-                            .value(request.getMajor())));
+                            .value(major)));
         }
 
-        if (StringUtils.isNotBlank(request.getLevel())) {
+        if (StringUtils.isNotBlank(level)) {
             queryBuilder.filter(f -> f
                     .term(t -> t
                             .field("course_level")
-                            .value(request.getLevel())));
+                            .value(level)));
         }
 
-        if (StringUtils.isNotBlank(request.getCategory())) {
+        if (StringUtils.isNotBlank(category)) {
             queryBuilder.filter(f -> f
                     .term(t -> t
                             .field("category")
-                            .value(request.getCategory())));
+                            .value(category)));
         }
 
-        if (request.getTags() != null && !request.getTags().isEmpty()) {
+        if (CollectionUtils.isNotEmpty(tags)) {
             queryBuilder.filter(f -> f
                     .terms(t -> t
                             .field("tags")
                             .terms(tt -> tt
-                                    .value(request.getTags().stream()
+                                    .value(tags.stream()
                                             .map(FieldValue::of)
                                             .collect(Collectors.toList())))));
         }
