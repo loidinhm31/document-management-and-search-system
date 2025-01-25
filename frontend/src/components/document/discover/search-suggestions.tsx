@@ -12,7 +12,7 @@ interface SearchSuggestionsProps {
   placeholder?: string;
   className?: string;
   debounceMs?: number;
-  filters?: Omit<SearchFilters, 'search' | 'sort'>;
+  filters?: Omit<SearchFilters, "search" | "sort">;
 }
 
 const SearchSuggestions = ({
@@ -23,8 +23,6 @@ const SearchSuggestions = ({
                              placeholder,
                              filters
                            }: SearchSuggestionsProps) => {
-  const { t } = useTranslation();
-
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -111,14 +109,16 @@ const SearchSuggestions = ({
 
   // Handle suggestion selection
   const handleSuggestionSelect = (suggestion: string) => {
-    const cleanText = suggestion.replace(/<\/?[^>]+(>|$)/g, "");
+    const cleanText = suggestion.replace(/<\/?[^>]+(>|$)/g, "")
+      .replace(/[\n\t]+/g, " ").trim();
+
     setInputValue(cleanText);
     if (onInputChange) {
       onInputChange(cleanText);
     }
     onSearch(cleanText);
     setSuggestions([]);
-    setSelectedIndex(-1);
+    setShowSuggestions(false);
   };
 
   // Handle clicks outside of the component
@@ -134,6 +134,12 @@ const SearchSuggestions = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+
+  const cleanSuggestion = (suggestion: string) => {
+    // Replace newlines and tabs with a single space and trim any excess whitespace
+    return suggestion.replace(/[\n\t]+/g, " ").trim();
+  };
 
   return (
     <div ref={containerRef} className={cn("w-full relative", className)}>
@@ -160,13 +166,12 @@ const SearchSuggestions = ({
               <div
                 key={index}
                 className={cn(
-                  "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none",
+                  "w-full text-left px-2 py-1.5 text-sm rounded whitespace-pre-wrap break-words",
                   "hover:bg-accent hover:text-accent-foreground",
-                  "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
                   index === selectedIndex && "bg-accent text-accent-foreground"
                 )}
                 onClick={() => handleSuggestionSelect(suggestion)}
-                dangerouslySetInnerHTML={{ __html: suggestion }}
+                dangerouslySetInnerHTML={{ __html: `...${cleanSuggestion(suggestion)}...` }}
               />
             ))}
           </div>
