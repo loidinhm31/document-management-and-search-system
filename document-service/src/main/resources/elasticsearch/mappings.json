@@ -1,0 +1,80 @@
+{
+  "properties": {
+    "filename": {
+      "type": "text",
+      "analyzer": "vietnamese_analyzer",
+      "fields": {
+        "raw": {
+          "type": "keyword",
+          "ignore_above": 256
+        },
+        "analyzed": {
+          "type": "text",
+          "analyzer": "vietnamese_analyzer",
+          "term_vector": "with_positions_offsets"
+        },
+        "search": {
+          "type": "text",
+          "analyzer": "filename_analyzer"
+        }
+      }
+    },
+    "content": {
+      "type": "text",
+      "analyzer": "vietnamese_analyzer",
+      "term_vector": "with_positions_offsets",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "file_size": {
+      "type": "long"
+    },
+    "mime_type": {
+      "type": "keyword"
+    },
+    "document_type": {
+      "type": "keyword"
+    },
+    "major": {
+      "type": "keyword"
+    },
+    "course_code": {
+      "type": "keyword"
+    },
+    "course_level": {
+      "type": "keyword"
+    },
+    "category": {
+      "type": "keyword"
+    },
+    "tags": {
+      "type": "keyword"
+    },
+    "extracted_metadata": {
+      "type": "object",
+      "enabled": true
+    },
+    "user_id": {
+      "type": "keyword"
+    },
+    "sharing_type": {
+      "type": "keyword"
+    },
+    "shared_with": {
+      "type": "keyword"
+    },
+    "deleted": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "keyword"
+    },
+    "created_at": {
+      "type": "date"
+    }
+  }
+}

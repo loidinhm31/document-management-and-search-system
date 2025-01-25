@@ -1,0 +1,41 @@
+{
+  "analysis": {
+    "analyzer": {
+      "vietnamese_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "asciifolding",
+          "vietnamese_stop",
+          "vietnamese_word_delimiter"
+        ]
+      },
+      "filename_analyzer": {
+        "type": "custom",
+        "tokenizer": "standard",
+        "filter": [
+          "lowercase",
+          "asciifolding"
+        ]
+      }
+    },
+    "filter": {
+      "vietnamese_stop": {
+        "type": "stop",
+        "stopwords": ["và", "hoặc", "trong", "các", "của", "có", "được", "với", "những", "để", "theo", "từ", "về"]
+      },
+      "vietnamese_word_delimiter": {
+        "type": "word_delimiter_graph",
+        "preserve_original": true,
+        "catenate_words": true,
+        "generate_word_parts": true,
+        "generate_number_parts": true,
+        "catenate_numbers": true,
+        "split_on_case_change": true,
+        "split_on_numerics": true,
+        "stem_english_possessive": false
+      }
+    }
+  }
+}

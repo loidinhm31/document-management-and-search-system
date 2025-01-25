@@ -1,7 +1,7 @@
 package com.dms.document.controller;
 
 import com.dms.document.dto.DocumentResponseDto;
-import com.dms.document.service.DocumentSearchService;
+import com.dms.document.service.DiscoverDocumentSearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/search")
 public class SearchController {
-    private final DocumentSearchService documentSearchService;
+    private final DiscoverDocumentSearchService discoverDocumentSearchService;
 
     @GetMapping
     public ResponseEntity<Page<DocumentResponseDto>> searchDocuments(
@@ -31,7 +31,7 @@ public class SearchController {
         String username = jwt.getSubject();
         Pageable pageable = PageRequest.of(page, size);
 
-        Page<DocumentResponseDto> results = documentSearchService.searchDocuments(
+        Page<DocumentResponseDto> results = discoverDocumentSearchService.searchDocuments(
                 query,
                 username,
                 pageable
@@ -46,7 +46,7 @@ public class SearchController {
             @AuthenticationPrincipal Jwt jwt) {
         String username = jwt.getSubject();
 
-        List<String> suggestions = documentSearchService.getSuggestions(query, username);
+        List<String> suggestions = discoverDocumentSearchService.getSuggestions(query, username);
         return ResponseEntity.ok(suggestions);
     }
 

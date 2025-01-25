@@ -29,13 +29,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class DocumentSearchService {
+public class DiscoverDocumentSearchService {
     private final ElasticsearchOperations elasticsearchOperations;
     private final UserClient userClient;
 
@@ -76,21 +77,29 @@ public class DocumentSearchService {
         BoolQuery.Builder queryBuilder = new BoolQuery.Builder()
                 .must(must -> must
                         .term(term -> term
-                                .field("userId")
+                                .field("user_id")
                                 .value(userId)));
 
         // Build query based on context
         if (Objects.requireNonNull(context.queryType()) == QueryType.DEFINITION) {
             queryBuilder.must(must -> must
                     .bool(b -> {
-                        // Higher boost for phrase matches
+                        // Higher boost for phrase matches in content
                         b.should(should -> should
                                 .matchPhrase(mp -> mp
                                         .field("content")
                                         .query(context.originalQuery())
                                         .boost(15.0f)));
 
-                        // Cross-field matching for better relevance
+                        // Search in analyzed fields for better Vietnamese text handling
+                        b.should(should -> should
+                                .match(m -> m
+                                        .field("content")
+                                        .analyzer("vietnamese_analyzer")
+                                        .query(context.originalQuery())
+                                        .boost(10.0f)));
+
+                        // Cross-field matching
                         b.should(should -> should
                                 .multiMatch(mm -> mm
                                         .query(context.originalQuery())
@@ -104,7 +113,15 @@ public class DocumentSearchService {
         } else {
             queryBuilder.must(must -> must
                     .bool(b -> {
-                        // Case-insensitive text search
+                        // Vietnamese analyzed content search
+                        b.should(should -> should
+                                .match(m -> m
+                                        .field("content")
+                                        .analyzer("vietnamese_analyzer")
+                                        .query(context.originalQuery())
+                                        .boost(2.0f)));
+
+                        // Fuzzy search on base content
                         b.should(should -> should
                                 .match(m -> m
                                         .field("content")
@@ -113,49 +130,33 @@ public class DocumentSearchService {
                                         .operator(Operator.Or)
                                         .boost(1.0f)));
 
-                        // Try both original case and lowercase for exact matches
+                        // Exact matches on content
                         b.should(should -> should
                                 .term(t -> t
-                                        .field("content")
+                                        .field("content.keyword")
                                         .value(context.originalQuery())
-                                        .boost(2.0f)));
+                                        .boost(3.0f)));
 
-                        b.should(should -> should
-                                .term(t -> t
-                                        .field("content")
-                                        .value(context.lowercaseQuery())
-                                        .boost(1.5f)));
-
-                        // Phrase matching with slop
-                        b.should(should -> should
-                                .matchPhrase(mp -> mp
-                                        .field("content")
-                                        .query(context.originalQuery())
-                                        .slop(2)
-                                        .boost(2.0f)));
-
-                        // Filename matching with case variations
+                        // Filename search with different analyzers
                         b.should(should -> should
                                 .match(m -> m
-                                        .field("filename")
+                                        .field("filename.analyzed")
+                                        .query(context.originalQuery())
+                                        .boost(4.0f)));
+
+                        b.should(should -> should
+                                .match(m -> m
+                                        .field("filename.search")
                                         .query(context.originalQuery())
                                         .boost(3.0f)));
 
+                        // Exact filename match
                         b.should(should -> should
                                 .term(t -> t
                                         .field("filename.raw")
                                         .value(context.originalQuery())
-                                        .boost(4.0f)));
+                                        .boost(5.0f)));
 
-                        // Cross-field matching for better relevance
-                        b.should(should -> should
-                                .multiMatch(mm -> mm
-                                        .query(context.originalQuery())
-                                        .fields("filename^4", "content^2")
-                                        .type(TextQueryType.CrossFields)
-                                        .operator(Operator.And)
-                                        .minimumShouldMatch("75%")
-                                        .boost(4.0f)));
                         return b.minimumShouldMatch("1");
                     }));
         }
@@ -167,29 +168,43 @@ public class DocumentSearchService {
         return new BoolQuery.Builder()
                 .must(must -> must
                         .term(term -> term
-                                .field("userId")
+                                .field("user_id")
                                 .value(userId)))
                 .must(must -> must
                         .bool(b -> {
-                            // Match in filename
+                            // Vietnamese-aware filename match
                             b.should(should -> should
                                     .match(m -> m
-                                            .field("filename")
+                                            .field("filename.analyzed")
                                             .query(prefix)
-                                            .boost(2.0f)));
+                                            .boost(4.0f)));
 
-                            // Match in content
+                            // Basic filename search
+                            b.should(should -> should
+                                    .match(m -> m
+                                            .field("filename.search")
+                                            .query(prefix)
+                                            .boost(3.0f)));
+
+                            // Exact filename match
+                            b.should(should -> should
+                                    .term(t -> t
+                                            .field("filename.raw")
+                                            .value(prefix)
+                                            .boost(5.0f)));
+
+                            // Content search with Vietnamese analysis
                             b.should(should -> should
                                     .match(m -> m
                                             .field("content")
+                                            .analyzer("vietnamese_analyzer")
                                             .query(prefix)
-                                            .boost(1.0f)));
+                                            .boost(2.0f)));
 
                             return b.minimumShouldMatch("1");
                         }))
                 .build()._toQuery();
     }
-
 
     public Page<DocumentResponseDto> searchDocuments(String searchQuery, String username, Pageable pageable) {
         try {
@@ -206,21 +221,35 @@ public class DocumentSearchService {
             SearchContext searchContext = analyzeQuery(searchQuery);
             float minScore = getMinScore(searchQuery, searchContext);
 
-            // Build the main query with user filter
             Query query = buildSearchQuery(searchContext, userDto.getUserId().toString());
 
             // Configure highlighting
+            List<HighlightField> highlightFields = new ArrayList<>();
+
+            // Configure separate highlight parameters for each field
+            HighlightFieldParameters filenameParams = HighlightFieldParameters.builder()
+                    .withPreTags("<em><b>")
+                    .withPostTags("</b></em>")
+                    .withFragmentSize(searchContext.queryType() == QueryType.DEFINITION ? 200 : 150)
+                    .withNumberOfFragments(searchContext.queryType() == QueryType.DEFINITION ? 1 : 2)
+                    .withType("unified")
+                    .build();
+
+            highlightFields.add(new HighlightField("filename.analyzed", filenameParams));
+            highlightFields.add(new HighlightField("filename.search", filenameParams));
+
             HighlightFieldParameters contentParams = HighlightFieldParameters.builder()
                     .withPreTags("<em><b>")
                     .withPostTags("</b></em>")
                     .withFragmentSize(searchContext.queryType() == QueryType.DEFINITION ? 200 : 150)
                     .withNumberOfFragments(searchContext.queryType() == QueryType.DEFINITION ? 1 : 2)
+                    .withType("unified")
                     .build();
 
-            HighlightField contentHighlight = new HighlightField("content", contentParams);
-            Highlight highlight = new Highlight(List.of(contentHighlight));
+            highlightFields.add(new HighlightField("content", contentParams));
 
-            // Build the native query
+            Highlight highlight = new Highlight(highlightFields);
+
             NativeQuery nativeQuery = NativeQuery.builder()
                     .withQuery(query)
                     .withHighlightQuery(new HighlightQuery(highlight, DocumentIndex.class))
@@ -234,43 +263,48 @@ public class DocumentSearchService {
                     DocumentIndex.class
             );
 
-            // Process results and apply pagination
-            List<DocumentResponseDto> allDocuments = searchHits.getSearchHits().stream()
-                    .map(hit -> {
-                        DocumentIndex doc = hit.getContent();
-                        List<String> highlights = hit.getHighlightFields().get("content");
-
-                        doc.setContent(null);
-                        return DocumentResponseDto.builder()
-                                .id(hit.getId())
-                                .filename(doc.getFilename())
-                                .courseCode(doc.getCourseCode())
-                                .documentType(doc.getDocumentType())
-                                .major(doc.getMajor())
-                                .courseLevel(doc.getCourseLevel())
-                                .category(doc.getCategory())
-                                .fileSize(doc.getFileSize())
-                                .mimeType(doc.getMimeType())
-                                .tags(doc.getTags())
-                                .createdAt(doc.getCreatedAt())
-                                .userId(doc.getUserId())
-                                .highlights(highlights != null ? highlights : new ArrayList<>())
-                                .build();
-                    })
-                    .collect(Collectors.toList());
-
-            return new PageImpl<>(
-                    allDocuments,
-                    pageable,
-                    searchHits.getTotalHits()
-            );
-
+            return processSearchResults(searchHits, pageable);
         } catch (Exception e) {
             log.error("Search operation failed. Query: {}, Error: {}", searchQuery, e.getMessage());
             throw new RuntimeException("Failed to perform document search", e);
         }
     }
 
+    private Page<DocumentResponseDto> processSearchResults(SearchHits<DocumentIndex> searchHits, Pageable pageable) {
+        List<DocumentResponseDto> allDocuments = searchHits.getSearchHits().stream()
+                .map(hit -> {
+                    DocumentIndex doc = hit.getContent();
+                    List<String> highlights = new ArrayList<>();
+
+                    // Collect all highlights
+                    Map<String, List<String>> highlightFields = hit.getHighlightFields();
+                    highlightFields.values().forEach(highlights::addAll);
+
+                    doc.setContent(null);
+                    return DocumentResponseDto.builder()
+                            .id(hit.getId())
+                            .filename(doc.getFilename())
+                            .courseCode(doc.getCourseCode())
+                            .documentType(doc.getDocumentType())
+                            .major(doc.getMajor())
+                            .courseLevel(doc.getCourseLevel())
+                            .category(doc.getCategory())
+                            .fileSize(doc.getFileSize())
+                            .mimeType(doc.getMimeType())
+                            .tags(doc.getTags())
+                            .createdAt(doc.getCreatedAt())
+                            .userId(doc.getUserId())
+                            .highlights(highlights)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(
+                allDocuments,
+                pageable,
+                searchHits.getTotalHits()
+        );
+    }
 
     public List<String> getSuggestions(String prefix, String username) {
         try {
@@ -285,17 +319,31 @@ public class DocumentSearchService {
 
             UserDto userDto = response.getBody();
 
-            // Configure highlighting for both filename and content
-            HighlightFieldParameters highlightParams = HighlightFieldParameters.builder()
+            // Configure highlighting
+            List<HighlightField> highlightFields = new ArrayList<>();
+
+            // Highlight filename with Vietnamese and basic analyzers
+            HighlightFieldParameters filenameParams = HighlightFieldParameters.builder()
                     .withPreTags("<em><b>")
                     .withPostTags("</b></em>")
                     .withFragmentSize(60)
-                    .withNumberOfFragments(3)
+                    .withNumberOfFragments(1)
+                    .withType("unified")
                     .build();
 
-            List<HighlightField> highlightFields = new ArrayList<>();
-            highlightFields.add(new HighlightField("filename", highlightParams));
-            highlightFields.add(new HighlightField("content", highlightParams));
+            highlightFields.add(new HighlightField("filename.analyzed", filenameParams));
+            highlightFields.add(new HighlightField("filename.search", filenameParams));
+
+            // Highlight content with Vietnamese analyzer
+            HighlightFieldParameters contentParams = HighlightFieldParameters.builder()
+                    .withPreTags("<em><b>")
+                    .withPostTags("</b></em>")
+                    .withFragmentSize(150)
+                    .withNumberOfFragments(2)
+                    .withType("unified")
+                    .build();
+
+            highlightFields.add(new HighlightField("content", contentParams));
 
             Highlight highlight = new Highlight(highlightFields);
 
@@ -315,18 +363,20 @@ public class DocumentSearchService {
 
             return searchHits.getSearchHits().stream()
                     .map(hit -> {
-                        // Get highlighted fragments
-                        List<String> fileHighlights = hit.getHighlightFields().get("filename");
+                        // Prioritize filename highlights
+                        List<String> filenameHighlightsAnalyzed = hit.getHighlightFields().get("filename.analyzed");
+                        List<String> filenameHighlightsSearch = hit.getHighlightFields().get("filename.search");
                         List<String> contentHighlights = hit.getHighlightFields().get("content");
 
-                        // Prioritize filename matches, fallback to content matches
-                        if (fileHighlights != null && !fileHighlights.isEmpty()) {
-                            return fileHighlights.get(0);
+                        if (filenameHighlightsAnalyzed != null && !filenameHighlightsAnalyzed.isEmpty()) {
+                            return filenameHighlightsAnalyzed.get(0);
+                        } else if (filenameHighlightsSearch != null && !filenameHighlightsSearch.isEmpty()) {
+                            return filenameHighlightsSearch.get(0);
                         } else if (contentHighlights != null && !contentHighlights.isEmpty()) {
                             return contentHighlights.get(0);
                         }
 
-                        // Fallback to original filename if no highlights
+                        // Fallback to original filename
                         return hit.getContent().getFilename();
                     })
                     .distinct()
@@ -337,4 +387,5 @@ public class DocumentSearchService {
             return List.of();
         }
     }
+
 }

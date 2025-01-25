@@ -24,6 +24,9 @@ public class DocumentInformation {
     @Field("filename")
     private String filename;
 
+    @Field("content")
+    private String content;
+
     @Field("original_filename")
     private String originalFilename;
 
@@ -39,9 +42,6 @@ public class DocumentInformation {
     @Indexed
     @Field("document_type")
     private DocumentType documentType;
-
-    @Field("content")
-    private String content;
 
     @Indexed
     @Field("major")

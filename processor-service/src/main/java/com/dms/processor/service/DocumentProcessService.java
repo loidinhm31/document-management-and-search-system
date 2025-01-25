@@ -29,6 +29,9 @@ public class DocumentProcessService {
         documentRepository.save(document);
 
         try {
+            // First, remove existing document from index if it exists
+            documentIndexRepository.deleteById(document.getId());
+
             DocumentIndex documentIndex = DocumentIndex.builder()
                     .id(document.getId())
                     .filename(document.getOriginalFilename())
@@ -45,9 +48,11 @@ public class DocumentProcessService {
                     .sharingType(document.getSharingType())
                     .sharedWith(document.getSharedWith())
                     .deleted(document.isDeleted())
+                    .status(document.getStatus())
                     .createdAt(document.getCreatedAt())
                     .build();
 
+            // Save to create initial index
             documentIndexRepository.save(documentIndex);
 
             // Continue process document for SYNC_EVENT or UPDATE_EVENT_WITH_FILE
@@ -55,22 +60,33 @@ public class DocumentProcessService {
                 // Extract content and metadata
                 DocumentContent extractedContent = contentExtractorService.extractContent(Path.of(document.getFilePath()));
                 if (StringUtils.isNotEmpty(extractedContent.content())) {
+                    // Update MongoDB document
                     document.setContent(extractedContent.content());
                     document.setExtractedMetadata(extractedContent.metadata());
                     document.setStatus(DocumentStatus.COMPLETED);
                     document.setUpdatedAt(new Date());
                     documentRepository.save(document);
 
+                    // Update Elasticsearch document
                     documentIndex.setStatus(DocumentStatus.COMPLETED);
                     documentIndex.setContent(extractedContent.content());
                     documentIndex.setExtractedMetadata(extractedContent.metadata());
-                    documentRepository.save(document);
                     documentIndexRepository.save(documentIndex);
+
+                    log.info("Successfully processed and indexed document: {}", document.getId());
+                } else {
+                    log.warn("No content extracted for document: {}", document.getId());
+                    document.setStatus(DocumentStatus.FAILED);
+                    document.setProcessingError("No content could be extracted");
+                    documentRepository.save(document);
                 }
             }
-            log.info("Successfully indexed document: {}", document.getId());
         } catch (Exception e) {
             log.error("Error indexing document: {}", document.getId(), e);
+            document.setStatus(DocumentStatus.FAILED);
+            document.setProcessingError(e.getMessage());
+            document.setUpdatedAt(new Date());
+            documentRepository.save(document);
             throw new RuntimeException("Failed to index document", e);
         }
     }
