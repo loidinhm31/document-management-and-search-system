@@ -50,25 +50,31 @@ export default function MyDocumentDetailPage() {
     setUpdating(true);
 
     try {
-      // Update metadata
-      await documentService.updateDocument(documentId, {
-        courseCode: data.courseCode,
-        major: data.major,
-        level: data.level,
-        category: data.category,
-        tags: data.tags
-      });
-
-      // Update file if selected
       if (file) {
+        // Send both metadata and file in single request
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("courseCode", data.courseCode);
+        formData.append("major", data.major);
+        formData.append("level", data.level);
+        formData.append("category", data.category);
+        data.tags.forEach(tag => formData.append("tags", tag));
         await handleFileUpdate(documentId, formData);
 
-        // Refresh document data to get new file info
-        const response = await documentService.getDocumentDetails(documentId);
-        setDocumentData(response.data);
+      } else {
+        // Metadata-only update
+        await documentService.updateDocument(documentId, {
+          courseCode: data.courseCode,
+          major: data.major,
+          level: data.level,
+          category: data.category,
+          tags: data.tags
+        });
       }
+
+      // Refresh document data
+      const response = await documentService.getDocumentDetails(documentId);
+      setDocumentData(response.data);
 
       toast({
         title: t("common.success"),
@@ -88,7 +94,7 @@ export default function MyDocumentDetailPage() {
 
   const handleFileUpdate = async (documentId: string, formData: FormData) => {
     try {
-      const response = await documentService.updateFile(documentId, formData);
+      const response = await documentService.updateDocumentWithFile(documentId, formData);
       const document = response.data;
 
       // Add to processing queue

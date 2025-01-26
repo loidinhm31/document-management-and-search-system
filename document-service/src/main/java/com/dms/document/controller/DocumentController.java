@@ -150,9 +150,17 @@ public class DocumentController {
     public ResponseEntity<DocumentInformation> updateDocumentFile(
             @PathVariable String id,
             @RequestParam("file") MultipartFile file,
+            DocumentUpdateRequest metadata,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
-        String username = jwt.getSubject();
-        return ResponseEntity.ok(documentService.updateDocumentFile(id, file, username));
+
+        DocumentInformation document = documentService.updateDocumentWithFile(
+                id,
+                file,
+                metadata,
+                jwt.getSubject()
+        );
+
+        return ResponseEntity.ok(document);
     }
 
     @GetMapping("/{id}/share")

@@ -64,7 +64,7 @@ class DocumentService extends BaseService {
     );
   }
 
-  updateFile(id: string, formData: FormData) {
+  updateDocumentWithFile(id: string, formData: FormData) {
     return this.handleApiResponse(
       axiosInstance.put(`/document/api/v1/documents/${id}/file`, formData, {
         headers: {

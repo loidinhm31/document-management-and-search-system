@@ -64,6 +64,7 @@ public class DocumentProcessService {
                     document.setContent(extractedContent.content());
                     document.setExtractedMetadata(extractedContent.metadata());
                     document.setStatus(DocumentStatus.COMPLETED);
+                    document.setProcessingError(null);
                     document.setUpdatedAt(new Date());
                     documentRepository.save(document);
 

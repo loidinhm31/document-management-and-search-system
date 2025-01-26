@@ -28,6 +28,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -268,6 +269,71 @@ public class DocumentService {
         return updatedDocument;
     }
 
+    @Transactional
+    public DocumentInformation updateDocumentWithFile(
+            String documentId,
+            MultipartFile file,
+            DocumentUpdateRequest metadata,
+            String username) throws IOException {
+
+        // Get existing document
+        DocumentInformation document = getDocumentDetails(documentId, username);
+
+        // Delete old file
+        try {
+            Path oldFilePath = Path.of(document.getFilePath());
+            Files.deleteIfExists(oldFilePath);
+        } catch (IOException e) {
+            log.error("Error deleting old file for document: {}", documentId, e);
+        }
+
+        // Save new file
+        String fileExtension = getFileExtension(file.getOriginalFilename());
+        String uniqueFilename = UUID.randomUUID() + fileExtension;
+        String relativePath = createStoragePath(uniqueFilename);
+        Path fullPath = Path.of(storageBasePath, relativePath);
+
+        // Create directories if they don't exist
+        Files.createDirectories(fullPath.getParent());
+
+        // Save new file to disk
+        Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
+
+        // Update document information
+        document.setFilename(uniqueFilename);
+        document.setOriginalFilename(file.getOriginalFilename());
+        document.setFilePath(fullPath.toString());
+        document.setFileSize(file.getSize());
+        document.setMimeType(file.getContentType());
+        document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
+
+        // Update metadata
+        document.setCourseCode(metadata.courseCode());
+        document.setMajor(metadata.major());
+        document.setCourseLevel(metadata.level());
+        document.setCategory(metadata.category());
+        document.setTags(metadata.tags());
+
+        document.setUpdatedAt(new Date());
+        document.setUpdatedBy(username);
+
+        // Save all changes in one transaction
+        DocumentInformation updatedDocument = documentRepository.save(document);
+
+        // Send single sync event for both file and metadata update
+        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
+                SyncEventRequest.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .userId(document.getUserId())
+                        .documentId(documentId)
+                        .subject(EventType.UPDATE_EVENT_WITH_FILE.name())
+                        .triggerAt(LocalDateTime.now())
+                        .build()
+        ));
+
+        return updatedDocument;
+    }
+
     public void deleteDocument(String documentId, String username) {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
@@ -302,68 +368,6 @@ public class DocumentService {
                         .triggerAt(LocalDateTime.now())
                         .build()
         ));
-    }
-
-    public DocumentInformation updateDocumentFile(String documentId, MultipartFile file, String username) throws IOException {
-        // Verify user access
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
-        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
-            throw new InvalidDataAccessResourceUsageException("User not found");
-        }
-        UserDto userDto = response.getBody();
-
-        // Get existing document
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
-                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
-
-        // Validate new file
-        validateDocument(file);
-
-        // Delete old file
-        try {
-            Path oldFilePath = Path.of(document.getFilePath());
-            Files.deleteIfExists(oldFilePath);
-        } catch (IOException e) {
-            log.error("Error deleting old file for document: {}", documentId, e);
-        }
-
-        // Generate new filename and save new file
-        String fileExtension = getFileExtension(file.getOriginalFilename());
-        String uniqueFilename = UUID.randomUUID() + fileExtension;
-        String relativePath = createStoragePath(uniqueFilename);
-        Path fullPath = Path.of(storageBasePath, relativePath);
-
-        // Create directories if they don't exist
-        Files.createDirectories(fullPath.getParent());
-
-        // Save new file to disk
-        Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
-
-        // Update document information
-        document.setFilename(uniqueFilename);
-        document.setOriginalFilename(file.getOriginalFilename());
-        document.setFilePath(fullPath.toString());
-        document.setFileSize(file.getSize());
-        document.setMimeType(file.getContentType());
-        document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
-        document.setUpdatedAt(new Date());
-        document.setUpdatedBy(username);
-
-        // Save updated document
-        DocumentInformation updatedDocument = documentRepository.save(document);
-
-        // Send sync event for elasticsearch update
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(userDto.getUserId().toString())
-                        .documentId(documentId)
-                        .subject(EventType.UPDATE_EVENT_WITH_FILE.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
-
-        return updatedDocument;
     }
 
     public ShareSettings getShareSettings(String documentId, String username) {
