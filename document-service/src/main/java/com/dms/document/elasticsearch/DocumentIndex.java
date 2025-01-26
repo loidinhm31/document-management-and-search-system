@@ -105,6 +105,9 @@ public class DocumentIndex {
     @Field(type = FieldType.Keyword)
     private DocumentStatus status;
 
+    @Field(type = FieldType.Keyword)
+    private String language;
+
     @Field(type = FieldType.Date, name = "created_at")
     private Date createdAt;
 }

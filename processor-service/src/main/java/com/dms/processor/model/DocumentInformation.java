@@ -84,6 +84,9 @@ public class DocumentInformation {
     @Field("processing_error")
     private String processingError;
 
+    @Field("language")
+    private String language;
+
     @Field("created_at")
     private Date createdAt;
 

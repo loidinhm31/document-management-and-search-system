@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.util.Date;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class DocumentProcessService {
     private final DocumentRepository documentRepository;
     private final DocumentIndexRepository documentIndexRepository;
     private final ContentExtractorService contentExtractorService;
+    private final LanguageDetectionService languageDetectionService;
 
     public void indexDocument(DocumentInformation document, EventType eventType) {
         // Update status to PROCESSING
@@ -60,9 +62,14 @@ public class DocumentProcessService {
                 // Extract content and metadata
                 DocumentContent extractedContent = contentExtractorService.extractContent(Path.of(document.getFilePath()));
                 if (StringUtils.isNotEmpty(extractedContent.content())) {
+                    // Detect language
+                    Optional<String> detectedLanguage = languageDetectionService.detectLanguage(extractedContent.content());
+
+
                     // Update MongoDB document
                     document.setContent(extractedContent.content());
                     document.setExtractedMetadata(extractedContent.metadata());
+                    detectedLanguage.ifPresent(document::setLanguage);
                     document.setStatus(DocumentStatus.COMPLETED);
                     document.setProcessingError(null);
                     document.setUpdatedAt(new Date());
@@ -72,6 +79,7 @@ public class DocumentProcessService {
                     documentIndex.setStatus(DocumentStatus.COMPLETED);
                     documentIndex.setContent(extractedContent.content());
                     documentIndex.setExtractedMetadata(extractedContent.metadata());
+                    detectedLanguage.ifPresent(documentIndex::setLanguage);
                     documentIndexRepository.save(documentIndex);
 
                     log.info("Successfully processed and indexed document: {}", document.getId());
