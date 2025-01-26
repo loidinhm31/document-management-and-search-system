@@ -147,12 +147,18 @@ public class DocumentController {
     }
 
     @PutMapping("/{id}/file")
-    public ResponseEntity<DocumentInformation> updateDocumentFile(
+    public ResponseEntity<DocumentInformation> updateDocumentWithFile(
             @PathVariable String id,
             @RequestParam("file") MultipartFile file,
-            DocumentUpdateRequest metadata,
+            @RequestParam String courseCode,
+            @RequestParam String major,
+            @RequestParam String level,
+            @RequestParam String category,
+            @RequestParam(required = false) Set<String> tags,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
-
+        DocumentUpdateRequest metadata = new DocumentUpdateRequest(
+                courseCode, major, level, category, tags
+        );
         DocumentInformation document = documentService.updateDocumentWithFile(
                 id,
                 file,
