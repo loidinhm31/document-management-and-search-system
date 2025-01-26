@@ -9,6 +9,7 @@ import com.dms.document.client.UserClient;
 import com.dms.document.dto.*;
 import com.dms.document.elasticsearch.DocumentIndex;
 import com.dms.document.enums.QueryType;
+import com.dms.document.enums.SharingType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -143,11 +144,10 @@ public class DiscoverDocumentSearchService {
     }
 
     private Query buildSearchQuery(DocumentSearchRequest request, SearchContext context, String userId) {
-        BoolQuery.Builder queryBuilder = new BoolQuery.Builder()
-                .must(must -> must
-                        .term(term -> term
-                                .field("user_id")
-                                .value(userId)));
+        BoolQuery.Builder queryBuilder = new BoolQuery.Builder();
+
+        // Add sharing access filter
+        addSharingAccessFilter(queryBuilder, userId);
 
         // Add filter conditions based on request parameters
         addFilterConditions(
@@ -171,11 +171,10 @@ public class DiscoverDocumentSearchService {
     }
 
     private Query buildSuggestionQuery(SuggestionRequest request, String userId) {
-        BoolQuery.Builder queryBuilder = new BoolQuery.Builder()
-                .must(must -> must
-                        .term(term -> term
-                                .field("user_id")
-                                .value(userId)));
+        BoolQuery.Builder queryBuilder = new BoolQuery.Builder();
+
+        // Add sharing access filter
+        addSharingAccessFilter(queryBuilder, userId);
 
         // Add filter conditions based on request parameters
         addFilterConditions(
@@ -501,5 +500,41 @@ public class DiscoverDocumentSearchService {
         if (fieldHighlights != null && !fieldHighlights.isEmpty()) {
             highlights.addAll(fieldHighlights);
         }
+    }
+
+    private void addSharingAccessFilter(BoolQuery.Builder queryBuilder, String userId) {
+        // Exclude deleted documents
+        queryBuilder.filter(f -> f
+                .term(t -> t
+                        .field("deleted")
+                        .value(false)));
+
+        // Add sharing access filters
+        queryBuilder.filter(f -> f
+                .bool(b -> {
+                    return b.should(s -> s
+                                    // Owner access
+                                    .term(t -> t
+                                            .field("user_id")
+                                            .value(userId)))
+                            .should(s -> s
+                                    // Public access
+                                    .term(t -> t
+                                            .field("sharing_type")
+                                            .value(SharingType.PUBLIC.name())))
+                            .should(s -> s
+                                    // Specific users access
+                                    .bool(sb -> sb
+                                            .must(m -> m
+                                                    .term(t -> t
+                                                            .field("sharing_type")
+                                                            .value(SharingType.SPECIFIC.name())))
+                                            .must(m -> m
+                                                    .terms(t -> t
+                                                            .field("shared_with")
+                                                            .terms(tt -> tt
+                                                                    .value(Collections.singletonList(FieldValue.of(userId))))))))
+                            .minimumShouldMatch("1");
+                }));
     }
 }

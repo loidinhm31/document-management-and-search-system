@@ -80,6 +80,16 @@ public class DocumentProcessService {
                     document.setProcessingError("No content could be extracted");
                     documentRepository.save(document);
                 }
+            } else if (eventType.equals(EventType.UPDATE_EVENT)) {
+                // Update MongoDB document
+                document.setStatus(DocumentStatus.COMPLETED);
+                document.setUpdatedAt(new Date());
+                documentRepository.save(document);
+
+                // Update Elasticsearch document
+                documentIndex.setStatus(DocumentStatus.COMPLETED);
+                documentIndexRepository.save(documentIndex);
+                log.info("Successfully updated and indexed document: {}", document.getId());
             }
         } catch (Exception e) {
             log.error("Error indexing document: {}", document.getId(), e);

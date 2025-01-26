@@ -93,10 +93,10 @@ public class DocumentIndex {
     @Field(type = FieldType.Keyword, name = "user_id")
     private String userId;
 
-    @Field(type = FieldType.Keyword)
+    @Field(type = FieldType.Keyword, name = "sharing_type")
     private SharingType sharingType;
 
-    @Field(type = FieldType.Keyword)
+    @Field(type = FieldType.Keyword, name = "shared_with")
     private Set<String> sharedWith;
 
     @Field(type = FieldType.Boolean)

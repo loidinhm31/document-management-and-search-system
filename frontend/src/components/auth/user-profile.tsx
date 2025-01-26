@@ -115,6 +115,7 @@ export default function UserProfile() {
       toast({
         title: t("common.success"),
         description: t("profile.twoFactor.messages.disableSuccess"),
+        variant: "success"
       });
     } catch (_error) {
       toast({
