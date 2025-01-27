@@ -160,9 +160,9 @@ public class ThumbnailService {
         int cellWidth = 52;
         int cellHeight = 25;
         int startX = 15;
-        int startY = 15; // Moved up to show sheet name
+        int startY = 15;
         int cols = 5;
-        int rows = 7; // Increased to show more content
+        int rows = 7;
 
         // Draw sheet name tab
         g2d.setColor(new Color(240, 240, 240));
