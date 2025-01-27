@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
-import { DocumentInformation, DocumentType } from "@/types/document";
+import { DocumentInformation, DocumentStatus, DocumentType } from "@/types/document";
 
 
 interface LazyThumbnailProps {
@@ -123,7 +123,8 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
             src={thumbnailUrl}
             alt={documentInformation.filename}
             className={cn("w-full h-full rounded-md",
-              documentInformation.documentType === DocumentType.PDF ? "object-cover" : "object-contain",
+              documentInformation.documentType === DocumentType.PDF &&
+              documentInformation.status === DocumentStatus.COMPLETED ? "object-cover" : "object-contain"
             )}
             loading="lazy"
           />

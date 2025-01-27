@@ -83,14 +83,14 @@ public class EventConsumer {
                         log.info("Processing document: {}", document.getId());
 
                         // Index document
-                        documentProcessService.indexDocument(document, eventType);
+                        documentProcessService.processDocument(document, eventType);
 
                         // Generate thumbnail if needed (base on extracted content)
                         if (eventType == EventType.SYNC_EVENT || eventType == EventType.UPDATE_EVENT_WITH_FILE) {
                             try {
                                 documentProcessService.cleanThumbnail(document);
 
-                                documentProcessService.generateAndSaveThumbnail(document);
+                                documentProcessService.handleThumbnail(document);
                             } catch (Exception e) {
                                 log.error("Error generating thumbnail for document: {}", document.getId(), e);
                             }
