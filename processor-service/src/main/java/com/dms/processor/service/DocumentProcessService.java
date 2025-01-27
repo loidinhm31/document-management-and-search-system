@@ -123,23 +123,44 @@ public class DocumentProcessService {
         }
     }
 
-    public String generateAndSaveThumbnail(DocumentInformation document) throws IOException {
+    public void generateAndSaveThumbnail(DocumentInformation documentInformation) throws IOException {
         // Generate thumbnail
         byte[] thumbnailData = thumbnailService.generateThumbnail(
-                Path.of(document.getFilePath()),
-                document.getDocumentType(),
-                document.getContent()
+                Path.of(documentInformation.getFilePath()),
+                documentInformation.getDocumentType(),
+                documentInformation.getContent()
         );
 
         // Create thumbnail directory if it doesn't exist
-        Path thumbnailDir = Path.of(document.getFilePath()).getParent().resolve("thumbnails");
+        Path thumbnailDir = Path.of(documentInformation.getFilePath()).getParent().resolve("thumbnails");
         Files.createDirectories(thumbnailDir);
 
         // Save thumbnail
-        String thumbnailFilename = document.getId() + "_thumb.png";
+        String thumbnailFilename = documentInformation.getId() + "_thumb.png";
         Path thumbnailPath = thumbnailDir.resolve(thumbnailFilename);
         Files.write(thumbnailPath, thumbnailData);
+        documentInformation.setThumbnailPath(thumbnailPath.toString());
+        documentRepository.save(documentInformation);
+    }
 
-        return thumbnailPath.toString();
+    public void cleanThumbnail(DocumentInformation documentInformation) {
+        // Clear thumbnail path since we're updating the file
+        String oldThumbnailPath = documentInformation.getThumbnailPath();
+        documentInformation.setThumbnailPath(null);
+
+        // Delete old files
+        try {
+            // Delete old main file
+            Path oldFilePath = Path.of(documentInformation.getFilePath());
+            Files.deleteIfExists(oldFilePath);
+
+            // Delete old thumbnail if exists
+            if (StringUtils.isNotEmpty(oldThumbnailPath)) {
+                Path oldThumbnailPathFile = Path.of(oldThumbnailPath);
+                Files.deleteIfExists(oldThumbnailPathFile);
+            }
+        } catch (IOException e) {
+            log.error("Error deleting old files for document: {}", documentInformation.getId(), e);
+        }
     }
 }

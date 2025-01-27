@@ -1,19 +1,17 @@
 package com.dms.processor.consumer;
 
+import com.dms.processor.dto.SyncEventRequest;
 import com.dms.processor.enums.EventType;
 import com.dms.processor.model.DocumentInformation;
-import com.dms.processor.dto.SyncEventRequest;
 import com.dms.processor.repository.DocumentRepository;
 import com.dms.processor.service.DocumentProcessService;
-import com.dms.processor.service.ThumbnailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 
 @Component
@@ -47,7 +45,13 @@ public class EventConsumer {
 
     private void handleDeleteEvent(SyncEventRequest request) {
         log.info("Processing delete event for document: {}", request.getDocumentId());
-        documentProcessService.deleteDocumentFromIndex(request.getDocumentId());
+        DocumentInformation document = documentRepository.findById(request.getDocumentId()).orElse(null);
+        if (Objects.nonNull(document) &&
+                StringUtils.isNotEmpty(document.getThumbnailPath())) {
+            documentProcessService.cleanThumbnail(document);
+
+            documentProcessService.deleteDocumentFromIndex(document.getId());
+        }
     }
 
     private void handleUpdateEvent(SyncEventRequest request, EventType eventType) {
@@ -70,7 +74,11 @@ public class EventConsumer {
                 document -> {
                     if (document.isDeleted()) {
                         log.info("Document {} is marked as deleted, removing from index", document.getId());
-                        documentProcessService.deleteDocumentFromIndex(document.getId());
+                        if (StringUtils.isNotEmpty(document.getThumbnailPath())) {
+                            documentProcessService.cleanThumbnail(document);
+
+                            documentProcessService.deleteDocumentFromIndex(document.getId());
+                        }
                     } else {
                         log.info("Processing document: {}", document.getId());
 
@@ -80,9 +88,9 @@ public class EventConsumer {
                         // Generate thumbnail if needed (base on extracted content)
                         if (eventType == EventType.SYNC_EVENT || eventType == EventType.UPDATE_EVENT_WITH_FILE) {
                             try {
-                                String thumbnailPath = documentProcessService.generateAndSaveThumbnail(document);
-                                document.setThumbnailPath(thumbnailPath);
-                                documentRepository.save(document);
+                                documentProcessService.cleanThumbnail(document);
+
+                                documentProcessService.generateAndSaveThumbnail(document);
                             } catch (Exception e) {
                                 log.error("Error generating thumbnail for document: {}", document.getId(), e);
                             }
