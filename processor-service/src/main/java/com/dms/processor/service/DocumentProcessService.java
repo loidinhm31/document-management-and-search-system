@@ -150,10 +150,6 @@ public class DocumentProcessService {
 
         // Delete old files
         try {
-            // Delete old main file
-            Path oldFilePath = Path.of(documentInformation.getFilePath());
-            Files.deleteIfExists(oldFilePath);
-
             // Delete old thumbnail if exists
             if (StringUtils.isNotEmpty(oldThumbnailPath)) {
                 Path oldThumbnailPathFile = Path.of(oldThumbnailPath);

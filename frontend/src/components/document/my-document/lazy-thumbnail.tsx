@@ -1,9 +1,9 @@
 import { Loader2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
+import { cn } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { DocumentInformation, DocumentType } from "@/types/document";
-import { cn } from "@/lib/utils";
 
 
 interface LazyThumbnailProps {
@@ -36,11 +36,23 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
   }, []);
 
   useEffect(() => {
+    // Cleanup old thumbnail URL when document information changes
+    if (thumbnailUrl) {
+      URL.revokeObjectURL(thumbnailUrl);
+      setThumbnailUrl("");
+    }
+  }, [documentInformation.updatedAt]); // Re-run when document is updated
+
+  useEffect(() => {
     if (!isVisible) return;
 
     const loadThumbnail = async () => {
       try {
-        const cacheKeyUrl = `document/api/v1/documents/thumbnails/${documentInformation.id}`;
+        setLoading(true);
+        setError(false);
+
+        // Create a unique cache key that includes updatedAt to bust cache on updates
+        const cacheKeyUrl = `document/api/v1/documents/thumbnails/${documentInformation.id}?v=${documentInformation.updatedAt}`;
 
         // Try to get from cache first
         const cache = await caches.open("document-thumbnails");
@@ -71,7 +83,7 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
           headers: headers
         });
 
-        // Cache the response
+        // Cache the response with the version-specific URL
         await cache.put(cacheKeyUrl, responseToCache);
 
         setThumbnailUrl(URL.createObjectURL(blob));
@@ -84,7 +96,7 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
     };
 
     loadThumbnail();
-  }, [isVisible, documentInformation.id]);
+  }, [isVisible, documentInformation.id, documentInformation.updatedAt]); // Add updatedAt to dependencies
 
   // Cleanup URLs on unmount
   useEffect(() => {

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -99,10 +100,8 @@ public class DocumentController {
 
         // For non-placeholder (actual) thumbnails, use normal caching
         if (!thumbnailResponse.isPlaceholder()) {
-            // Generate ETag for actual thumbnails
-            String eTag = String.format("\"%s\"", DigestUtils.md5DigestAsHex(
-                    (document.getId() + document.getUpdatedAt().getTime()).getBytes()
-            ));
+            // Generate ETag considering both document update time and file content
+            String eTag = generateETag(document);
 
             // Check if client's cached version is still valid
             if (ifNoneMatch != null && ifNoneMatch.equals(eTag)) {
@@ -129,6 +128,20 @@ public class DocumentController {
                 .headers(headers)
                 .contentType(MediaType.IMAGE_PNG)
                 .body(thumbnailResponse.getData());
+    }
+
+    private String generateETag(DocumentInformation document) {
+        // Include all relevant information that should trigger a cache invalidation
+        String contentKey = String.format("%s_%s_%s_%s_%s",
+                document.getId(),
+                document.getUpdatedAt().getTime(),
+                document.getFileSize(),
+                document.getFilename(),
+                // Include thumbnail path or "none" if not yet generated
+                Optional.ofNullable(document.getThumbnailPath()).orElse("none")
+        );
+
+        return String.format("\"%s\"", DigestUtils.md5DigestAsHex(contentKey.getBytes()));
     }
 
     @GetMapping("/{id}")
