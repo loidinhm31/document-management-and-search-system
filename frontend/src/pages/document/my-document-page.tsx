@@ -74,9 +74,11 @@ export default function MyDocumentPage() {
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t("document.myDocuments.title")}</CardTitle>
-          <DocumentUploadDialog onUploadSuccess={() => fetchUserDocuments(0, currentFilters)} />
+        <CardHeader>
+          <div className="space-y-4">
+            <CardTitle>{t("document.myDocuments.title")}</CardTitle>
+            <DocumentUploadDialog onUploadSuccess={() => fetchUserDocuments(0, currentFilters)} />
+          </div>
         </CardHeader>
         <CardContent>
           <AdvancedSearch onSearch={handleSearch} />

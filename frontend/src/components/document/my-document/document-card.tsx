@@ -54,12 +54,19 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
     onDelete?.();
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only navigate if clicking directly on the card, not on any buttons or dialogs
+    if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.card-clickable-area')) {
+      onClick?.();
+    }
+  };
+
   return (
-    <Card className="h-full flex flex-col overflow-hidden" onClick={onClick}>
-      <CardHeader>
+    <Card className="h-full flex flex-col overflow-hidden" onClick={handleCardClick}>
+      <CardHeader className="card-clickable-area">
         <CardTitle className="truncate text-base">{documentInformation.originalFilename}</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0">
+      <CardContent className="flex-1 min-h-0 card-clickable-area">
         <div className="relative w-full h-40 overflow-hidden rounded-lg">
           <LazyThumbnail documentInformation={documentInformation} />
         </div>
@@ -72,7 +79,7 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
           </div>
         )}
       </CardContent>
-      <CardFooter onClick={(e) => e.stopPropagation()}>
+      <CardFooter>
         <div className="grid grid-cols-4 w-full gap-2">
           <Button
             variant="outline"
@@ -92,7 +99,7 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
           </Button>
 
           {/* Share Dialog */}
-          <div onClick={(e) => e.stopPropagation()}>
+          <div>
             <ShareDocumentDialog
               documentId={documentInformation.id}
               documentName={documentInformation.originalFilename}
@@ -116,26 +123,27 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
         </div>
       </CardFooter>
 
-      {showPreview && (
-        <Dialog open={showPreview} onOpenChange={setShowPreview}>
-          <DialogContent className="max-w-4xl h-[80vh]">
-            <DialogHeader>
-              <DialogTitle>{documentInformation.filename}</DialogTitle>
-              <DialogDescription>
-                {documentInformation.mimeType} - {(documentInformation.fileSize / 1024).toFixed(2)} KB
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 overflow-auto">
-              <DocumentViewer
-                documentId={documentInformation.id}
-                documentType={documentInformation.documentType}
-                mimeType={documentInformation.mimeType}
-                fileName={documentInformation.filename}
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent
+          className="max-w-4xl h-[80vh]"
+          onClick={e => e.stopPropagation()} // Prevent clicks in dialog from propagating
+        >
+          <DialogHeader>
+            <DialogTitle>{documentInformation.filename}</DialogTitle>
+            <DialogDescription>
+              {documentInformation.mimeType} - {(documentInformation.fileSize / 1024).toFixed(2)} KB
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto">
+            <DocumentViewer
+              documentId={documentInformation.id}
+              documentType={documentInformation.documentType}
+              mimeType={documentInformation.mimeType}
+              fileName={documentInformation.filename}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 });
