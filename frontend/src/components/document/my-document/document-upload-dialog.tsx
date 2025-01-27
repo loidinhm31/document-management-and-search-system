@@ -39,7 +39,8 @@ export default function DocumentUploadDialog({ onUploadSuccess, trigger }: Docum
       <DialogTrigger asChild>
         {trigger || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"
+                     onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{t("document.upload.title")}</DialogTitle>
           <DialogDescription>
