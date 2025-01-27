@@ -197,7 +197,7 @@ public class DocumentService {
         DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
-        return thumbnailService.generateThumbnail(Path.of(document.getFilePath()), document.getDocumentType().name());
+        return thumbnailService.generateThumbnail(Path.of(document.getFilePath()), document.getDocumentType(), document.getContent());
     }
 
     public byte[] getDocumentContent(String documentId, String username) throws IOException {

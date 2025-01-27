@@ -67,7 +67,7 @@ public class DocumentProcessService {
 
 
                     // Update MongoDB document
-                    document.setContent(extractedContent.content());
+                    document.setContent(extractedContent.content().trim());
                     document.setExtractedMetadata(extractedContent.metadata());
                     detectedLanguage.ifPresent(document::setLanguage);
                     document.setStatus(DocumentStatus.COMPLETED);
@@ -77,7 +77,7 @@ public class DocumentProcessService {
 
                     // Update Elasticsearch document
                     documentIndex.setStatus(DocumentStatus.COMPLETED);
-                    documentIndex.setContent(extractedContent.content());
+                    documentIndex.setContent(extractedContent.content().trim());
                     documentIndex.setExtractedMetadata(extractedContent.metadata());
                     detectedLanguage.ifPresent(documentIndex::setLanguage);
                     documentIndexRepository.save(documentIndex);
