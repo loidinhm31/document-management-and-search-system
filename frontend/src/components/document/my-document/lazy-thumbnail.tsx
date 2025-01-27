@@ -52,7 +52,7 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
         setError(false);
 
         // Create a unique cache key that includes updatedAt to bust cache on updates
-        const cacheKeyUrl = `document/api/v1/documents/thumbnails/${documentInformation.id}?v=${documentInformation.updatedAt}`;
+        const cacheKeyUrl = `document/api/v1/documents/thumbnails/${documentInformation.id}?v=${new Date(documentInformation.updatedAt).getTime()}`;
 
         // Try to get from cache first
         const cache = await caches.open("document-thumbnails");
