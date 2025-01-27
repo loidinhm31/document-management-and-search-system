@@ -8,6 +8,9 @@ app:
     thumbnail:
       width: 300
       height: 200
+    placeholder:
+      processing: classpath:placeholders/processing-thumbnail.png
+      error: classpath:placeholders/error-thumbnail.png
 
 spring:
   servlet:

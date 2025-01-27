@@ -5,11 +5,15 @@ import com.dms.processor.model.DocumentInformation;
 import com.dms.processor.dto.SyncEventRequest;
 import com.dms.processor.repository.DocumentRepository;
 import com.dms.processor.service.DocumentProcessService;
+import com.dms.processor.service.ThumbnailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 
 @Component
@@ -68,8 +72,21 @@ public class EventConsumer {
                         log.info("Document {} is marked as deleted, removing from index", document.getId());
                         documentProcessService.deleteDocumentFromIndex(document.getId());
                     } else {
-                        log.info("Indexing document: {}", document.getId());
+                        log.info("Processing document: {}", document.getId());
+
+                        // Index document
                         documentProcessService.indexDocument(document, eventType);
+
+                        // Generate thumbnail if needed (base on extracted content)
+                        if (eventType == EventType.SYNC_EVENT || eventType == EventType.UPDATE_EVENT_WITH_FILE) {
+                            try {
+                                String thumbnailPath = documentProcessService.generateAndSaveThumbnail(document);
+                                document.setThumbnailPath(thumbnailPath);
+                                documentRepository.save(document);
+                            } catch (Exception e) {
+                                log.error("Error generating thumbnail for document: {}", document.getId(), e);
+                            }
+                        }
                     }
                 },
                 () -> log.warn("Document not found: {}", request.getDocumentId())

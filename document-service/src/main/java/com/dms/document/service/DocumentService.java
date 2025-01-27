@@ -1,10 +1,7 @@
 package com.dms.document.service;
 
 import com.dms.document.client.UserClient;
-import com.dms.document.dto.DocumentUpdateRequest;
-import com.dms.document.dto.ShareSettings;
-import com.dms.document.dto.UpdateShareSettingsRequest;
-import com.dms.document.dto.UserDto;
+import com.dms.document.dto.*;
 import com.dms.document.enums.DocumentStatus;
 import com.dms.document.enums.DocumentType;
 import com.dms.document.enums.EventType;
@@ -12,8 +9,6 @@ import com.dms.document.enums.SharingType;
 import com.dms.document.exception.InvalidDocumentException;
 import com.dms.document.exception.UnsupportedDocumentTypeException;
 import com.dms.document.model.DocumentInformation;
-import com.dms.document.dto.DocumentSearchCriteria;
-import com.dms.document.dto.SyncEventRequest;
 import com.dms.document.repository.DocumentRepository;
 import com.dms.document.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
@@ -21,14 +16,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.core.io.Resource;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.unit.DataSize;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,11 +51,16 @@ public class DocumentService {
     @Value("${app.document.max-size-mb}")
     private DataSize maxFileSize;
 
+    @Value("${app.document.placeholder.processing}")
+    private Resource processingPlaceholder;
+
+    @Value("${app.document.placeholder.error}")
+    private Resource errorPlaceholder;
+
     private final MongoTemplate mongoTemplate;
 
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
-    private final ThumbnailService thumbnailService;
 
     public DocumentInformation uploadDocument(MultipartFile file,
                                               String courseCode,
@@ -73,7 +75,6 @@ public class DocumentService {
         }
 
         UserDto userDto = response.getBody();
-
         validateDocument(file);
 
         // Generate unique filename
@@ -91,7 +92,7 @@ public class DocumentService {
         // Save file to disk
         Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Create document
+        // Create document with PENDING status
         DocumentInformation document = DocumentInformation.builder()
                 .status(DocumentStatus.PENDING)
                 .filename(uniqueFilename)
@@ -115,9 +116,9 @@ public class DocumentService {
 
         // Save to MongoDB
         DocumentInformation savedDocument = documentRepository.save(document);
-
         log.info("Saved document: {}", savedDocument.getFilename());
-        // Send sync event
+
+        // Send sync event for processing
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()
                         .eventId(UUID.randomUUID().toString())
@@ -187,7 +188,7 @@ public class DocumentService {
         );
     }
 
-    public byte[] getDocumentThumbnail(String documentId, String username) throws IOException {
+    public ThumbnailResponse getDocumentThumbnail(String documentId, String username) throws IOException {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
@@ -197,7 +198,63 @@ public class DocumentService {
         DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
-        return thumbnailService.generateThumbnail(Path.of(document.getFilePath()), document.getDocumentType(), document.getContent());
+        // If document is still being processed, return processing placeholder
+        // with a header indicating it's still processing
+        if (document.getStatus() == DocumentStatus.PENDING ||
+                document.getStatus() == DocumentStatus.PROCESSING) {
+            return ThumbnailResponse.builder()
+                    .data(getProcessingPlaceholder())
+                    .status(HttpStatus.ACCEPTED)
+                    .isPlaceholder(true)
+                    .retryAfterSeconds(10) // Suggest client to retry after 10 seconds
+                    .build();
+        }
+
+        // If document has failed processing, return error placeholder
+        if (document.getStatus() == DocumentStatus.FAILED) {
+            return ThumbnailResponse.builder()
+                    .data(getErrorPlaceholder())
+                    .status(HttpStatus.NOT_FOUND)
+                    .isPlaceholder(true)
+                    .build();
+        }
+
+        // If thumbnail path is not available, return error placeholder
+        if (StringUtils.isEmpty(document.getThumbnailPath())) {
+            log.warn("Thumbnail path not found for document: {}", documentId);
+            return ThumbnailResponse.builder()
+                    .data(getErrorPlaceholder())
+                    .status(HttpStatus.NOT_FOUND)
+                    .isPlaceholder(true)
+                    .build();
+        }
+
+        try {
+            // Try to read the thumbnail file
+            Path thumbnailPath = Path.of(document.getThumbnailPath());
+            if (Files.exists(thumbnailPath)) {
+                byte[] thumbnailData = Files.readAllBytes(thumbnailPath);
+                return ThumbnailResponse.builder()
+                        .data(thumbnailData)
+                        .status(HttpStatus.OK)
+                        .isPlaceholder(false)
+                        .build();
+            } else {
+                log.warn("Thumbnail file not found at path: {}", document.getThumbnailPath());
+                return ThumbnailResponse.builder()
+                        .data(getErrorPlaceholder())
+                        .status(HttpStatus.NOT_FOUND)
+                        .isPlaceholder(true)
+                        .build();
+            }
+        } catch (IOException e) {
+            log.error("Error reading thumbnail for document: {}", documentId, e);
+            return ThumbnailResponse.builder()
+                    .data(getErrorPlaceholder())
+                    .status(HttpStatus.NOT_FOUND)
+                    .isPlaceholder(true)
+                    .build();
+        }
     }
 
     public byte[] getDocumentContent(String documentId, String username) throws IOException {
@@ -269,7 +326,6 @@ public class DocumentService {
         return updatedDocument;
     }
 
-    @Transactional
     public DocumentInformation updateDocumentWithFile(
             String documentId,
             MultipartFile file,
@@ -300,6 +356,7 @@ public class DocumentService {
         Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
         // Update document information
+        document.setStatus(DocumentStatus.PENDING); // Reset to pending for reprocessing
         document.setFilename(uniqueFilename);
         document.setOriginalFilename(file.getOriginalFilename());
         document.setFilePath(fullPath.toString());
@@ -313,14 +370,13 @@ public class DocumentService {
         document.setCourseLevel(metadata.level());
         document.setCategory(metadata.category());
         document.setTags(metadata.tags());
-
         document.setUpdatedAt(new Date());
         document.setUpdatedBy(username);
 
-        // Save all changes in one transaction
+        // Save all changes
         DocumentInformation updatedDocument = documentRepository.save(document);
 
-        // Send single sync event for both file and metadata update
+        // Send sync event for reprocessing
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()
                         .eventId(UUID.randomUUID().toString())
@@ -475,6 +531,18 @@ public class DocumentService {
                 .filter(f -> f.contains("."))
                 .map(f -> f.substring(f.lastIndexOf(".")))
                 .orElse("");
+    }
+
+    private byte[] getProcessingPlaceholder() throws IOException {
+        try (InputStream is = processingPlaceholder.getInputStream()) {
+            return is.readAllBytes();
+        }
+    }
+
+    private byte[] getErrorPlaceholder() throws IOException {
+        try (InputStream is = errorPlaceholder.getInputStream()) {
+            return is.readAllBytes();
+        }
     }
 
 }

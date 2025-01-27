@@ -33,6 +33,9 @@ public class DocumentInformation {
     @Field("file_path")
     private String filePath;
 
+    @Field("thumbnail_path")
+    private String thumbnailPath;
+
     @Field("file_size")
     private Long fileSize;
 

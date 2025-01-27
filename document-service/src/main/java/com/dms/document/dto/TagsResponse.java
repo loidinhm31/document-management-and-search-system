@@ -1,4 +1,4 @@
-package com.dms.document.model;
+package com.dms.document.dto;
 
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Field;

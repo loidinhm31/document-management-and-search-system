@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Optional;
@@ -24,6 +26,7 @@ public class DocumentProcessService {
     private final DocumentIndexRepository documentIndexRepository;
     private final ContentExtractorService contentExtractorService;
     private final LanguageDetectionService languageDetectionService;
+    private final ThumbnailService thumbnailService;
 
     public void indexDocument(DocumentInformation document, EventType eventType) {
         // Update status to PROCESSING
@@ -118,5 +121,25 @@ public class DocumentProcessService {
             log.error("Error deleting document {} from index", documentId, e);
             throw new RuntimeException("Failed to delete document from index", e);
         }
+    }
+
+    public String generateAndSaveThumbnail(DocumentInformation document) throws IOException {
+        // Generate thumbnail
+        byte[] thumbnailData = thumbnailService.generateThumbnail(
+                Path.of(document.getFilePath()),
+                document.getDocumentType(),
+                document.getContent()
+        );
+
+        // Create thumbnail directory if it doesn't exist
+        Path thumbnailDir = Path.of(document.getFilePath()).getParent().resolve("thumbnails");
+        Files.createDirectories(thumbnailDir);
+
+        // Save thumbnail
+        String thumbnailFilename = document.getId() + "_thumb.png";
+        Path thumbnailPath = thumbnailDir.resolve(thumbnailFilename);
+        Files.write(thumbnailPath, thumbnailData);
+
+        return thumbnailPath.toString();
     }
 }

@@ -2,12 +2,12 @@ import { Loader2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
 import { documentService } from "@/services/document.service";
-import { DocumentInformation } from "@/types/document";
+import { DocumentInformation, DocumentType } from "@/types/document";
+import { cn } from "@/lib/utils";
 
 
 interface LazyThumbnailProps {
   documentInformation: DocumentInformation;
-  onLoad?: () => void;
 }
 
 export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailProps) => {
@@ -110,7 +110,9 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
           <img
             src={thumbnailUrl}
             alt={documentInformation.filename}
-            className="w-full h-full object-cover rounded-md"
+            className={cn("w-full h-full rounded-md",
+              documentInformation.documentType === DocumentType.PDF ? "object-cover" : "object-contain",
+            )}
             loading="lazy"
           />
         )

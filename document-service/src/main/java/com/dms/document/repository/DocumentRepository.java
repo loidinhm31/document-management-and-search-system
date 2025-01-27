@@ -1,13 +1,12 @@
 package com.dms.document.repository;
 
 import com.dms.document.model.DocumentInformation;
-import com.dms.document.model.TagsResponse;
+import com.dms.document.dto.TagsResponse;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface DocumentRepository extends MongoRepository<DocumentInformation, String> {
     Optional<DocumentInformation> findByIdAndUserId(String id, String userId);

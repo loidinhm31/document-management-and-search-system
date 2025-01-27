@@ -1,6 +1,6 @@
-package com.dms.document.service;
+package com.dms.processor.service;
 
-import com.dms.document.enums.DocumentType;
+import com.dms.processor.enums.DocumentType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;

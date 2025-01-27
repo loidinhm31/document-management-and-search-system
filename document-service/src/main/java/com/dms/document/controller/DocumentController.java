@@ -1,11 +1,8 @@
 package com.dms.document.controller;
 
-import com.dms.document.dto.DocumentSearchRequest;
-import com.dms.document.dto.DocumentUpdateRequest;
-import com.dms.document.dto.ShareSettings;
-import com.dms.document.dto.UpdateShareSettingsRequest;
+import com.dms.document.dto.*;
+import com.dms.document.enums.DocumentStatus;
 import com.dms.document.model.DocumentInformation;
-import com.dms.document.dto.DocumentSearchCriteria;
 import com.dms.document.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -96,29 +93,42 @@ public class DocumentController {
 
         String username = jwt.getSubject();
         DocumentInformation document = documentService.getDocumentDetails(id, username);
+        ThumbnailResponse thumbnailResponse = documentService.getDocumentThumbnail(id, username);
 
-        // Generate ETag based on document's last modified date
-        String eTag = String.format("\"%s\"", DigestUtils.md5DigestAsHex(
-                (document.getId() + document.getUpdatedAt().getTime()).getBytes()
-        ));
+        HttpHeaders headers = new HttpHeaders();
 
-        // Check if client's cached version is still valid
-        if (ifNoneMatch != null && ifNoneMatch.equals(eTag)) {
-            return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
-                    .eTag(eTag)
-                    .build();
+        // For non-placeholder (actual) thumbnails, use normal caching
+        if (!thumbnailResponse.isPlaceholder()) {
+            // Generate ETag for actual thumbnails
+            String eTag = String.format("\"%s\"", DigestUtils.md5DigestAsHex(
+                    (document.getId() + document.getUpdatedAt().getTime()).getBytes()
+            ));
+
+            // Check if client's cached version is still valid
+            if (ifNoneMatch != null && ifNoneMatch.equals(eTag)) {
+                return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+                        .eTag(eTag)
+                        .build();
+            }
+
+            headers.setETag(eTag);
+            headers.setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS)
+                    .mustRevalidate()
+                    .noTransform());
+        } else {
+            // For placeholders, prevent caching
+            headers.setCacheControl(CacheControl.noCache());
+
+            // If it's a processing placeholder, add retry-after header
+            if (thumbnailResponse.getRetryAfterSeconds() != null) {
+                headers.set("Retry-After", String.valueOf(thumbnailResponse.getRetryAfterSeconds()));
+            }
         }
 
-        // Generate thumbnail
-        byte[] thumbnail = documentService.getDocumentThumbnail(id, username);
-
-        return ResponseEntity.ok()
+        return ResponseEntity.status(thumbnailResponse.getStatus())
+                .headers(headers)
                 .contentType(MediaType.IMAGE_PNG)
-                .cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS)
-                        .mustRevalidate()
-                        .noTransform())
-                .eTag(eTag)
-                .body(thumbnail);
+                .body(thumbnailResponse.getData());
     }
 
     @GetMapping("/{id}")
