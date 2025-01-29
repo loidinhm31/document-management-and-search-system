@@ -134,6 +134,7 @@ export default function MyDocumentDetailPage() {
           <CardContent>
             <DocumentForm
               initialValues={{
+                summary: documentData?.summary,
                 courseCode: documentData?.courseCode,
                 major: documentData?.major,
                 level: documentData?.courseLevel,

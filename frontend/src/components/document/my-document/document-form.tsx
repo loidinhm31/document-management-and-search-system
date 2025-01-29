@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Upload } from "lucide-react";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useLanguageDetection } from "@/hooks/use-language-detection";
 
 export const COURSE_LEVELS = [
   { code: "FUNDAMENTAL", name: "Fundamental" },
@@ -35,7 +37,10 @@ export const DOCUMENT_CATEGORIES = [
   { value: "PROJECT", name: "Project examples" }
 ];
 
-export const documentSchema = z.object({
+const documentSchema = z.object({
+  summary: z.string()
+    .min(200, "Summary must be at least 200 characters")
+    .max(500, "Summary must not exceed 500 characters"),
   courseCode: z.string().min(1, "Course code is required"),
   major: z.string().min(1, "Major is required"),
   level: z.string().min(1, "Course level is required"),
@@ -55,10 +60,12 @@ interface DocumentFormProps {
 export function DocumentForm({ initialValues, onSubmit, loading = false, submitLabel = "Upload" }: DocumentFormProps) {
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const { detectLanguage, detectedLanguage, detectingLanguage } = useLanguageDetection();
 
   const form = useForm<DocumentFormValues>({
     resolver: zodResolver(documentSchema),
     defaultValues: initialValues || {
+      summary: "",
       courseCode: "",
       major: "",
       level: "",
@@ -66,6 +73,16 @@ export function DocumentForm({ initialValues, onSubmit, loading = false, submitL
       tags: []
     }
   });
+
+  // Watch summary field changes for language detection
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "summary" && value.summary) {
+        detectLanguage(value.summary);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch, detectLanguage]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: acceptedFiles => {
@@ -112,7 +129,8 @@ export function DocumentForm({ initialValues, onSubmit, loading = false, submitL
             <div className="space-y-2">
               <p>{t("document.upload.dropzone.info")}</p>
               <p className="text-sm text-muted-foreground">
-                {t("document.upload.dropzone.supportedFormats")} PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON, XML
+                {t("document.upload.dropzone.supportedFormats")} PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON,
+                XML
               </p>
             </div>
           )}
@@ -124,6 +142,34 @@ export function DocumentForm({ initialValues, onSubmit, loading = false, submitL
         </div>
 
         <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="summary"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Summary (200-500 characters)</FormLabel>
+                <div className="space-y-2">
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Enter document summary..."
+                      className="min-h-[150px]"
+                    />
+                  </FormControl>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>{field.value?.length || 0}/500 characters</span>
+                    {detectingLanguage ? (
+                      <span>Detecting language...</span>
+                    ) : detectedLanguage && (
+                      <span>Detected language: {detectedLanguage}</span>
+                    )}
+                  </div>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="courseCode"

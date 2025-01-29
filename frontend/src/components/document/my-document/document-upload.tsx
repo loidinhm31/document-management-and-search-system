@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Loader2, Upload } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +14,8 @@ import { documentService } from "@/services/document.service";
 import { useToast } from "@/hooks/use-toast";
 import TagInput from "@/components/tag-input";
 import { useProcessing } from "@/context/processing-provider";
+import { useLanguageDetection } from "@/hooks/use-language-detection";
+import { Textarea } from "@/components/ui/textarea";
 
 const COURSE_LEVELS = [
   { code: "FUNDAMENTAL", name: "Fundamental" },
@@ -39,6 +41,9 @@ const DOCUMENT_CATEGORIES = [
 ];
 
 const formSchema = z.object({
+  summary: z.string()
+    .min(200, "Summary must be at least 200 characters")
+    .max(500, "Summary must not exceed 500 characters"),
   courseCode: z.string().min(1, "Course code is required"),
   major: z.string().min(1, "Major is required"),
   level: z.string().min(1, "Course level is required"),
@@ -58,9 +63,12 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
+  const { detectLanguage, detectedLanguage, detectingLanguage } = useLanguageDetection();
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      summary: "",
       courseCode: "",
       major: "",
       level: "",
@@ -119,7 +127,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
         formData.append("tags", cleanedTags.join(","));
       }
 
-      handleUpload(formData)
+      handleUpload(formData);
 
       toast({
         title: t("common.success"),
@@ -171,6 +179,16 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
     }
   };
 
+  // Watch summary field changes for language detection
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "summary" && value.summary) {
+        detectLanguage(value.summary);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch, detectLanguage]);
+
   return (
     <div className="space-y-6">
       <div
@@ -198,6 +216,34 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="summary"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Summary (200-500 characters)</FormLabel>
+                <div className="space-y-2">
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      placeholder="Enter document summary..."
+                      className="min-h-[150px]"
+                    />
+                  </FormControl>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>{field.value?.length || 0}/500 characters</span>
+                    {detectingLanguage ? (
+                      <span>Detecting language...</span>
+                    ) : detectedLanguage && (
+                      <span>Detected language: {detectedLanguage}</span>
+                    )}
+                  </div>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="courseCode"
