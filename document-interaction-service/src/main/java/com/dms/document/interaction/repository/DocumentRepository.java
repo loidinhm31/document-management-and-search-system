@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface DocumentRepository extends MongoRepository<DocumentInformation, String> {
     Optional<DocumentInformation> findByIdAndUserId(String id, String userId);
 
+    List<DocumentInformation> findByIdIn(List<String> ids);
+
     @Query(value = "{'tags': {'$regex': ?0, '$options': 'i'}, 'deleted': {'$ne': true}}", fields = "{'_id': 0, 'tags': 1}")
     List<TagsResponse> findDistinctTagsByPattern(String pattern);
 

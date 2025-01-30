@@ -105,6 +105,8 @@ public class DocumentService {
                 .category(category)
                 .tags(tags != null ? tags : new HashSet<>())
                 .userId(userDto.getUserId().toString())
+                .sharingType(SharingType.PRIVATE)
+                .sharedWith(new HashSet<>())
                 .deleted(false)
                 .createdAt(new Date())
                 .createdBy(username)
