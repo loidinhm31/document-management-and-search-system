@@ -100,7 +100,7 @@ export const DocumentFilter = ({
             <SelectValue placeholder={t("document.commonSearch.majorPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
             {majors.map((major) => (
               <SelectItem key={major.code} value={major.code}>
                 {major.translations[i18n.language] || major.translations.en}
@@ -118,7 +118,7 @@ export const DocumentFilter = ({
             <SelectValue placeholder={t("document.commonSearch.levelPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
             {courseLevels.map((level) => (
               <SelectItem key={level.code} value={level.code}>
                 {level.translations[i18n.language] || level.translations.en}
@@ -136,7 +136,7 @@ export const DocumentFilter = ({
             <SelectValue placeholder={t("document.commonSearch.categoryPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category.code} value={category.code}>
                 {category.translations[i18n.language] || category.translations.en}

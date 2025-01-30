@@ -12,9 +12,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/context/auth-context";
-import { getRoutes } from "@/core/route-config";
 import { ProcessingProvider } from "@/context/processing-provider";
 import { ProcessingStatus } from "@/context/processing-status";
+import { getRoutes } from "@/core/route-config";
 
 const LoadingFallback = () => (
   <div className="flex h-screen w-full items-center justify-center">

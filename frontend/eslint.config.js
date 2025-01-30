@@ -44,6 +44,7 @@ export default [
         caches: true,
         clearInterval: true,
         setInterval: true,
+        process: true,
       },
       ecmaVersion: "latest",
       sourceType: "module",

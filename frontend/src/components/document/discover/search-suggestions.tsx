@@ -1,76 +1,53 @@
 import { debounce } from "lodash";
 import { Loader2, Search } from "lucide-react";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
 import { cn } from "@/lib/utils";
-import { searchService, SearchFilters } from "@/services/search.service";
+import { AppDispatch, RootState } from "@/store";
+import {
+  fetchSuggestions,
+  selectSuggestions,
+  setSearchTerm
+} from "@/store/slices/searchSlice";
 
 interface SearchSuggestionsProps {
-  onSearch: (query: string) => void;
-  onInputChange?: (value: string) => void;
-  placeholder?: string;
+  onSearch: () => void;
   className?: string;
-  debounceMs?: number;
-  filters?: Omit<SearchFilters, "search" | "sort">;
+  placeholder?: string;
 }
 
 const SearchSuggestions = ({
                              onSearch,
-                             onInputChange,
-                             debounceMs = 350,
                              className = "",
-                             placeholder,
-                             filters
+                             placeholder
                            }: SearchSuggestionsProps) => {
-  const [inputValue, setInputValue] = useState("");
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const suggestions = useSelector(selectSuggestions);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchTerm = useSelector((state: RootState) => state.search.searchTerm);
+  const loadingSuggestions = useSelector((state: RootState) => state.search.loadingSuggestions);
 
-  // Fetch suggestions with debounce
-  const fetchSuggestions = useCallback(
-    debounce(async (query: string) => {
-      if (!query.trim() || !showSuggestions) {
-        setSuggestions([]);
-        setLoading(false);
-        return;
+  // Debounced suggestion fetching
+  const debouncedFetchSuggestions = useRef(
+    debounce((value: string) => {
+      if (value.trim()) {
+        dispatch(fetchSuggestions(value));
+        setShowSuggestions(true);
+      } else {
+        setShowSuggestions(false);
       }
+    }, 350)
+  ).current;
 
-      try {
-        // Include filters in suggestions request
-        const response = await searchService.suggestions(query, filters);
-        setSuggestions(response.data || []);
-      } catch (error) {
-        console.error("Error fetching suggestions:", error);
-        setSuggestions([]);
-      } finally {
-        setLoading(false);
-      }
-    }, debounceMs),
-    [showSuggestions, filters] // Add filters to dependencies
-  );
-
-  // Refetch suggestions when filters change
-  useEffect(() => {
-    if (inputValue && showSuggestions) {
-      fetchSuggestions(inputValue);
-    }
-  }, [filters, inputValue, showSuggestions]);
-
-  // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setInputValue(value);
-    if (onInputChange) {
-      onInputChange(value);
-    }
-    setSelectedIndex(-1);
-    setLoading(true);
-    fetchSuggestions(value);
+    dispatch(setSearchTerm(value));
+
+    // Always try to fetch suggestions when input changes
+    debouncedFetchSuggestions(value);
   };
 
   // Handle keyboard navigation
@@ -94,39 +71,40 @@ const SearchSuggestions = ({
         event.preventDefault();
         if (selectedIndex >= 0 && suggestions[selectedIndex]) {
           handleSuggestionSelect(suggestions[selectedIndex]);
-        } else {
-          onSearch(inputValue);
-          setSuggestions([]);
-          setSelectedIndex(-1);
+        } else if (searchTerm.trim()) {
+          onSearch();
+          setShowSuggestions(false);
         }
         break;
       case "Escape":
-        setSuggestions([]);
-        setSelectedIndex(-1);
+        setShowSuggestions(false);
         break;
     }
   };
 
-  // Handle suggestion selection
   const handleSuggestionSelect = (suggestion: string) => {
-    const cleanText = suggestion.replace(/<\/?[^>]+(>|$)/g, "")
-      .replace(/[\n\t]+/g, " ").trim();
+    // Remove HTML tags and clean up whitespace
+    const cleanText = suggestion
+      .replace(/<\/?[^>]+(>|$)/g, "")
+      .replace(/[\n\t]+/g, " ")
+      .trim();
 
-    setInputValue(cleanText);
-    if (onInputChange) {
-      onInputChange(cleanText);
-    }
-    onSearch(cleanText);
-    setSuggestions([]);
+    dispatch(setSearchTerm(cleanText));
     setShowSuggestions(false);
+    onSearch();
   };
 
-  // Handle clicks outside of the component
+  // Reset suggestions visibility when search term changes to empty
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setShowSuggestions(false);
+    }
+  }, [searchTerm]);
+
+  // Handle click outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setSuggestions([]);
-        setSelectedIndex(-1);
         setShowSuggestions(false);
       }
     };
@@ -135,31 +113,30 @@ const SearchSuggestions = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-
-  const cleanSuggestion = (suggestion: string) => {
-    // Replace newlines and tabs with a single space and trim any excess whitespace
-    return suggestion.replace(/[\n\t]+/g, " ").trim();
-  };
-
   return (
     <div ref={containerRef} className={cn("w-full relative", className)}>
       <div className="relative rounded-lg border shadow-sm">
         <div className="flex items-center px-3 gap-2">
           <Search className="h-4 w-4 shrink-0 opacity-50" />
           <input
-            ref={inputRef}
-            value={inputValue}
+            value={searchTerm}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            onFocus={() => setShowSuggestions(true)}
+            onFocus={() => {
+              // Show suggestions on focus if there's a search term
+              if (searchTerm.trim()) {
+                setShowSuggestions(true);
+                debouncedFetchSuggestions(searchTerm);
+              }
+            }}
             placeholder={placeholder}
             className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none"
           />
-          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          {loadingSuggestions && <Loader2 className="h-4 w-4 animate-spin" />}
         </div>
       </div>
 
-      {suggestions.length > 0 && showSuggestions && (
+      {suggestions.length > 0 && showSuggestions && searchTerm && (
         <div className="absolute mt-2 w-full rounded-md border bg-popover text-popover-foreground shadow-md z-50">
           <div className="overflow-hidden p-1">
             {suggestions.map((suggestion, index) => (
@@ -171,7 +148,7 @@ const SearchSuggestions = ({
                   index === selectedIndex && "bg-accent text-accent-foreground"
                 )}
                 onClick={() => handleSuggestionSelect(suggestion)}
-                dangerouslySetInnerHTML={{ __html: `...${cleanSuggestion(suggestion)}...` }}
+                dangerouslySetInnerHTML={{ __html: `...${suggestion}...` }}
               />
             ))}
           </div>
