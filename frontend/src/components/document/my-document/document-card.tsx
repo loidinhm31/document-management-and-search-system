@@ -54,19 +54,17 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
     onDelete?.();
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Only navigate if clicking directly on the card, not on any buttons or dialogs
-    if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.card-clickable-area')) {
-      onClick?.();
-    }
-  };
-
   return (
-    <Card className="h-full flex flex-col overflow-hidden" onClick={handleCardClick}>
-      <CardHeader className="card-clickable-area">
-        <CardTitle className="truncate text-base">{documentInformation.originalFilename}</CardTitle>
+    <Card className="h-full flex flex-col overflow-hidden">
+      <CardHeader>
+        <CardTitle
+          className="truncate text-base cursor-pointer hover:text-primary"
+          onClick={() => onClick?.()}
+        >
+          {documentInformation.originalFilename}
+        </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 card-clickable-area">
+      <CardContent className="flex-1 min-h-0">
         <div className="relative w-full h-40 overflow-hidden rounded-lg">
           <LazyThumbnail documentInformation={documentInformation} />
         </div>
@@ -126,7 +124,6 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent
           className="max-w-4xl h-[80vh]"
-          onClick={e => e.stopPropagation()} // Prevent clicks in dialog from propagating
         >
           <DialogHeader>
             <DialogTitle>{documentInformation.filename}</DialogTitle>
