@@ -9,7 +9,7 @@ interface ModelPredictionResponse {
 class PredictionService extends BaseService {
   getDocumentPrediction(text: string, filename: string, language = "en") {
     return this.handleApiResponse<ModelPredictionResponse>(
-      axiosInstance.post(`/document/api/v1/prediction/classification`, null, {
+      axiosInstance.post(`/document-interaction/api/v1/prediction/classification`, null, {
         params: {
           text,
           filename,

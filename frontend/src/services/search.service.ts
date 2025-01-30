@@ -1,6 +1,7 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
-import { DocumentSearchResponse } from "@/types/document";
+import { DocumentInformation, DocumentSearchResponse } from "@/types/document";
+import { PageResponse } from "@/types/user";
 
 export interface SearchFilters {
   search?: string;
@@ -14,7 +15,7 @@ export interface SearchFilters {
 class SearchService extends BaseService {
   searchDocuments(filters: SearchFilters, page = 0, size = 10) {
     return this.handleApiResponse<DocumentSearchResponse>(
-      axiosInstance.post(`/document/api/v1/search`, {
+      axiosInstance.post(`/document-search/api/v1/search`, {
         ...filters,
         page,
         size
@@ -24,10 +25,28 @@ class SearchService extends BaseService {
 
   suggestions(query: string, filters?: Omit<SearchFilters, 'search' | 'sort'>) {
     return this.handleApiResponse<string[]>(
-      axiosInstance.post(`/document/api/v1/search/suggestions`, {
+      axiosInstance.post(`/document-search/api/v1/search/suggestions`, {
         query,
         ...filters
       })
+    );
+  }
+
+  getUserDocuments(page: number = 0, size: number = 12, filters: SearchFilters = {}) {
+    const searchRequest = {
+      search: filters.search,
+      major: filters.major,
+      level: filters.level,
+      category: filters.category,
+      tags: filters.tags,
+      page,
+      size,
+      sortField: filters.sort?.split(',')[0] || 'createdAt',
+      sortDirection: filters.sort?.split(',')[1] || 'desc'
+    };
+
+    return this.handleApiResponse<PageResponse<DocumentInformation>>(
+      axiosInstance.post("/document-search/api/v1/documents/user/search", searchRequest)
     );
   }
 }

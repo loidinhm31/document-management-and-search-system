@@ -9,6 +9,7 @@ import DocumentUploadDialog from "@/components/document/my-document/document-upl
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
+import { searchService } from "@/services/search.service";
 import { DocumentInformation } from "@/types/document";
 
 export default function MyDocumentPage() {
@@ -24,7 +25,7 @@ export default function MyDocumentPage() {
   const fetchUserDocuments = useCallback(async (page: number = 0, filters: SearchFilters = {}) => {
     setLoading(true);
     try {
-      const response = await documentService.getUserDocuments(page, 12, filters);
+      const response = await searchService.getUserDocuments(page, 12, filters);
       setDocuments(response.data.content);
       setTotalPages(response.data.totalPages);
       setCurrentPage(page);

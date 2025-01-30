@@ -11,7 +11,7 @@ export enum MasterDataType {
 class MasterDataService extends BaseService {
   getByType(type: MasterDataType) {
     return this.handleApiResponse<MasterData[]>(
-      axiosInstance.get(`/document/api/v1/master-data/${type}/active`)
+      axiosInstance.get(`/document-interaction/api/v1/master-data/${type}/active`)
     );
   }
 }
