@@ -6,7 +6,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import com.dms.document.search.client.UserClient;
-import com.dms.document.dto.*;
 import com.dms.document.search.dto.*;
 import com.dms.document.search.elasticsearch.DocumentIndex;
 import com.dms.document.search.enums.QueryType;

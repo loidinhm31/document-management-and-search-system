@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: 8085
   error:
     include-message: always
 
@@ -12,13 +12,9 @@ server:
 
 spring:
   application:
-    name: document-search-service
+    name: document-interaction-service
   profiles:
     active: local
   cloud:
     discovery:
       enabled: true
-  data:
-    elasticsearch:
-      repositories:
-        enabled: true

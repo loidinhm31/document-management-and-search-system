@@ -1,6 +1,13 @@
 app:
   eureka:
     url: http://localhost:8081
+  document:
+    storage:
+      path: ./document/storage
+    max-size-mb: 50MB
+    thumbnail:
+      width: 300
+      height: 200
 
 spring:
   servlet:

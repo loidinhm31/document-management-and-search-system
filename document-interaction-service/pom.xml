@@ -9,16 +9,15 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.dms</groupId>
-    <artifactId>document-search-service</artifactId>
+    <artifactId>document-interaction-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>document-search-service</name>
-    <description>document-search-service</description>
+    <name>document-interaction-service</name>
+    <description>document-interaction-service</description>
     <url/>
 
     <properties>
         <java.version>17</java.version>
         <spring-cloud.version>2023.0.0</spring-cloud.version>
-        <elasticsearch.version>8.8.1</elasticsearch.version>
     </properties>
 
     <dependencies>
@@ -40,12 +39,6 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Elasticsearch -->
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-elasticsearch</artifactId>
-        </dependency>
-
         <!-- MongoDB -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -58,10 +51,28 @@
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
 
+        <!-- RabbitMQ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <!-- Feign Client -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
+        </dependency>
+
+        <!-- PDF Box for PDF processing -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>2.0.29</version>
         </dependency>
 
         <!-- Lombok -->
@@ -82,6 +93,7 @@
             <artifactId>commons-collections4</artifactId>
             <version>4.4</version>
         </dependency>
+
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -139,3 +151,4 @@
         </repository>
     </repositories>
 </project>
+

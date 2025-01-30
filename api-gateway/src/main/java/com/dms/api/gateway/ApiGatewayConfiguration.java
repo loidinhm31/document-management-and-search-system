@@ -32,16 +32,16 @@ public class ApiGatewayConfiguration {
                                 "/auth/(?<segment>.*)",
                                 "/${segment}"))
                         .uri("lb://auth-service"))
-                .route(r-> r.path("/document/**")
+                .route(r-> r.path("/document-interaction/**")
                         .filters(f -> f.rewritePath(
-                                "/document/(?<segment>.*)",
+                                "/document-interaction/(?<segment>.*)",
                                 "/${segment}"))
-                        .uri("lb://document-service"))
-                .route(r-> r.path("/search/**")
+                        .uri("lb://document-interaction-service"))
+                .route(r-> r.path("/document-search/**")
                         .filters(f -> f.rewritePath(
-                                "/search/(?<segment>.*)",
+                                "/document-search/(?<segment>.*)",
                                 "/${segment}"))
-                        .uri("lb://search-service"))
+                        .uri("lb://document-search-service"))
                 .build();
     }
 

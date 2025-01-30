@@ -1,24 +1,8 @@
 app:
   eureka:
     url: http://localhost:8081
-  document:
-    storage:
-      path: ./document/storage
-    max-size-mb: 50MB
-    thumbnail:
-      width: 300
-      height: 200
-    placeholder:
-      processing: classpath:placeholders/processing-thumbnail.png
-      error: classpath:placeholders/error-thumbnail.png
 
 spring:
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: ${app.document.max-file-size:50MB}
-      max-request-size: ${app.document.max-file-size:50MB}
-      file-size-threshold: 2MB
   security:
     oauth2:
       resourceserver:
@@ -56,24 +40,3 @@ elasticsearch:
   port: 9200
   username: elastic  # Default username for Elasticsearch 8.x
   password: "NX9DYn+_4WSXRmHwymTo"
-
-model-service:
-  url: http://localhost:8000
-  api-key: ${MODEL_SERVICE_API_KEY:your-secret-key}
-
-resilience4j:
-  circuitbreaker:
-    instances:
-      modelService:
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        permittedNumberOfCallsInHalfOpenState: 3
-        waitDurationInOpenState: 5s
-        failureRateThreshold: 50
-  retry:
-    instances:
-      modelService:
-        maxAttempts: 3
-        waitDuration: 1s
-        enableExponentialBackoff: true
-        exponentialBackoffMultiplier: 2
