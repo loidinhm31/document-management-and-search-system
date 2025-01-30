@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.dms</groupId>
-    <artifactId>document-service</artifactId>
+    <artifactId>document-search-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>document-service</name>
-    <description>document-service</description>
+    <name>document-search-service</name>
+    <description>document-search-service</description>
     <url/>
 
     <properties>
