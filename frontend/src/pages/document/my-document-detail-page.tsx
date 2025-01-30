@@ -1,15 +1,16 @@
+import { ArrowLeft, Loader2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
-import React, { useEffect, useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { documentService } from "@/services/document.service";
+
 import { DocumentForm, DocumentFormValues } from "@/components/document/my-document/document-form";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import DocumentViewer from "@/components/document/viewers/document-viewer";
-import { RoutePaths } from "@/core/route-config";
 import { useProcessing } from "@/context/processing-provider";
+import { RoutePaths } from "@/core/route-config";
+import { useToast } from "@/hooks/use-toast";
+import { documentService } from "@/services/document.service";
 
 export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
@@ -54,6 +55,7 @@ export default function MyDocumentDetailPage() {
         // Send both metadata and file in single request
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("summary", data.summary);
         formData.append("courseCode", data.courseCode);
         formData.append("major", data.major);
         formData.append("level", data.level);
@@ -64,6 +66,7 @@ export default function MyDocumentDetailPage() {
       } else {
         // Metadata-only update
         await documentService.updateDocument(documentId, {
+          summary: data.summary,
           courseCode: data.courseCode,
           major: data.major,
           level: data.level,
@@ -134,7 +137,7 @@ export default function MyDocumentDetailPage() {
           <CardContent>
             <DocumentForm
               initialValues={{
-                summary: documentData?.summary,
+                summary: documentData?.summary ? documentData.summary : undefined,
                 courseCode: documentData?.courseCode,
                 major: documentData?.major,
                 level: documentData?.courseLevel,

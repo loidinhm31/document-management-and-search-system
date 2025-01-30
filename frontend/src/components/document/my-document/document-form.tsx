@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import i18n from "i18next";
 import { Loader2, Upload } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
@@ -6,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
+import { CategoryPredictions } from "@/components/document/confidence-to-color";
 import TagInput from "@/components/tag-input";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -13,34 +15,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
+import { masterDataService, MasterDataType } from "@/services/master-data.service";
+import { MasterData } from "@/types/document";
 
-export const COURSE_LEVELS = [
-  { code: "FUNDAMENTAL", name: "Fundamental" },
-  { code: "INTERMEDIATE", name: "Intermediate" },
-  { code: "ADVANCED", name: "Advanced" },
-  { code: "SPECIALIZED", name: "Specialized" }
-];
-
-export const MAJORS = [
-  { code: "SOFTWARE_ENGINEERING", name: "Software Engineering" },
-  { code: "ARTIFICIAL_INTELLIGENCE", name: "Artificial Intelligence" },
-  { code: "INFORMATION_SECURITY", name: "Information Security" },
-  { code: "IOT", name: "Internet Of Things" }
-];
-
-export const DOCUMENT_CATEGORIES = [
-  { value: "LECTURE", name: "Lecture materials" },
-  { value: "EXERCISE", name: "Exercises and assignments" },
-  { value: "EXAM", name: "Exam materials" },
-  { value: "REFERENCE", name: "Reference materials" },
-  { value: "LAB", name: "Lab instructions" },
-  { value: "PROJECT", name: "Project examples" }
-];
 
 const documentSchema = z.object({
   summary: z.string()
-    .min(200, "Summary must be at least 200 characters")
-    .max(500, "Summary must not exceed 500 characters"),
+    .optional()
+    .refine(
+      (val) => !val || (val.length >= 50 && val.length <= 500),
+      (val) => ({
+        message: val && val.length < 50
+          ? "Summary must be at least 50 characters"
+          : "Summary must not exceed 500 characters"
+      })
+    ),
   courseCode: z.string().min(1, "Course code is required"),
   major: z.string().min(1, "Major is required"),
   level: z.string().min(1, "Course level is required"),
@@ -57,10 +46,16 @@ interface DocumentFormProps {
   submitLabel?: string;
 }
 
-export function DocumentForm({ initialValues, onSubmit, loading = false, submitLabel = "Upload" }: DocumentFormProps) {
+export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }: DocumentFormProps) {
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { detectLanguage, detectedLanguage, detectingLanguage } = useLanguageDetection();
+
+  const [courseLevels, setCourseLevels] = useState<MasterData[]>([]);
+  const [majors, setMajors] = useState<MasterData[]>([]);
+  const [categories, setCategories] = useState<MasterData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [shouldFetchPredictions, setShouldFetchPredictions] = useState(false);
 
   const form = useForm<DocumentFormValues>({
     resolver: zodResolver(documentSchema),
@@ -73,6 +68,28 @@ export function DocumentForm({ initialValues, onSubmit, loading = false, submitL
       tags: []
     }
   });
+
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      try {
+        const [levelsResponse, majorsResponse, categoriesResponse] = await Promise.all([
+          masterDataService.getByType(MasterDataType.COURSE_LEVEL),
+          masterDataService.getByType(MasterDataType.MAJOR),
+          masterDataService.getByType(MasterDataType.DOCUMENT_CATEGORY)
+        ]);
+
+        setCourseLevels(levelsResponse.data);
+        setMajors(majorsResponse.data);
+        setCategories(categoriesResponse.data);
+      } catch (error) {
+        console.error('Error fetching master data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMasterData();
+  }, []);
 
   // Watch summary field changes for language detection
   useEffect(() => {
@@ -147,13 +164,17 @@ export function DocumentForm({ initialValues, onSubmit, loading = false, submitL
             name="summary"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Summary (200-500 characters)</FormLabel>
+                <FormLabel>Summary (50-500 characters)</FormLabel>
                 <div className="space-y-2">
                   <FormControl>
                     <Textarea
                       {...field}
                       placeholder="Enter document summary..."
                       className="min-h-[150px]"
+                      onBlur={() => {
+                        field.onBlur(); // Call the original onBlur
+                        setShouldFetchPredictions(true);
+                      }}
                     />
                   </FormControl>
                   <div className="flex justify-between text-sm text-muted-foreground">
@@ -189,17 +210,17 @@ export function DocumentForm({ initialValues, onSubmit, loading = false, submitL
             name="major"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("document.detail.form.major.label")}</FormLabel>
+                <FormLabel>{t("document.upload.form.major.label")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={t("document.detail.form.major.placeholder")} />
+                      <SelectValue placeholder={t("document.upload.form.major.placeholder")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {MAJORS.map((major) => (
+                    {majors.map((major) => (
                       <SelectItem key={major.code} value={major.code}>
-                        {major.name}
+                        {major.translations[i18n.language] || major.translations.en}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -214,17 +235,17 @@ export function DocumentForm({ initialValues, onSubmit, loading = false, submitL
             name="level"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("document.detail.form.level.label")}</FormLabel>
+                <FormLabel>{t("document.upload.form.level.label")}</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={t("document.detail.form.level.placeholder")} />
+                      <SelectValue placeholder={t("document.upload.form.level.placeholder")} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {COURSE_LEVELS.map((level) => (
+                    {courseLevels.map((level) => (
                       <SelectItem key={level.code} value={level.code}>
-                        {level.name}
+                        {level.translations[i18n.language] || level.translations.en}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -239,21 +260,18 @@ export function DocumentForm({ initialValues, onSubmit, loading = false, submitL
             name="category"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("document.detail.form.category.label")}</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {DOCUMENT_CATEGORIES.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
+                <CategoryPredictions
+                  text={form.watch("summary")}
+                  filename={selectedFile?.name || ""}
+                  language={detectedLanguage || "en"}
+                  value={field.value}
+                  categories={categories}
+                  onValueChange={field.onChange}
+                  shouldFetchPredictions={shouldFetchPredictions}
+                  setShouldFetchPredictions={setShouldFetchPredictions}
+                  disabled={loading}
+                />
                 <FormMessage />
               </FormItem>
             )}

@@ -1,9 +1,12 @@
 import { Label } from "@radix-ui/react-menu";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import TagInput from "@/components/tag-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MasterData } from "@/types/document";
+import { masterDataService, MasterDataType } from "@/services/master-data.service";
+import i18n from "i18next";
 
 export const courseTypes = [
   { label: "All", value: "all" },
@@ -56,6 +59,37 @@ export const DocumentFilter = ({
                                }: DocumentFilterProps) => {
   const { t } = useTranslation();
 
+  const [courseLevels, setCourseLevels] = useState<MasterData[]>([]);
+  const [majors, setMajors] = useState<MasterData[]>([]);
+  const [categories, setCategories] = useState<MasterData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMasterData = async () => {
+      try {
+        const [levelsResponse, majorsResponse, categoriesResponse] = await Promise.all([
+          masterDataService.getByType(MasterDataType.COURSE_LEVEL),
+          masterDataService.getByType(MasterDataType.MAJOR),
+          masterDataService.getByType(MasterDataType.DOCUMENT_CATEGORY)
+        ]);
+
+        setCourseLevels(levelsResponse.data);
+        setMajors(majorsResponse.data);
+        setCategories(categoriesResponse.data);
+      } catch (error) {
+        console.error('Error fetching master data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMasterData();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className={`grid gap-4 ${className}`}>
       {/* Major Filter */}
@@ -66,9 +100,10 @@ export const DocumentFilter = ({
             <SelectValue placeholder={t("document.commonSearch.majorPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
             {majors.map((major) => (
-              <SelectItem key={major.value} value={major.value}>
-                {major.label}
+              <SelectItem key={major.code} value={major.code}>
+                {major.translations[i18n.language] || major.translations.en}
               </SelectItem>
             ))}
           </SelectContent>
@@ -83,9 +118,10 @@ export const DocumentFilter = ({
             <SelectValue placeholder={t("document.commonSearch.levelPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            {courseTypes.map((level) => (
-              <SelectItem key={level.value} value={level.value}>
-                {level.label}
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            {courseLevels.map((level) => (
+              <SelectItem key={level.code} value={level.code}>
+                {level.translations[i18n.language] || level.translations.en}
               </SelectItem>
             ))}
           </SelectContent>
@@ -100,9 +136,10 @@ export const DocumentFilter = ({
             <SelectValue placeholder={t("document.commonSearch.categoryPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
             {categories.map((category) => (
-              <SelectItem key={category.value} value={category.value}>
-                {category.label}
+              <SelectItem key={category.code} value={category.code}>
+                {category.translations[i18n.language] || category.translations.en}
               </SelectItem>
             ))}
           </SelectContent>

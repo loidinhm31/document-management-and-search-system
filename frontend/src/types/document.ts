@@ -47,6 +47,7 @@ export interface DocumentSearchResponse {
 }
 
 export interface DocumentMetadataUpdate {
+  summary?: string;
   courseCode?: string;
   major?: string;
   level?: string;
@@ -59,4 +60,21 @@ export enum DocumentStatus {
   PROCESSING = "PROCESSING",
   COMPLETED = "COMPLETED",
   FAILED = "FAILED"
+}
+
+export interface MasterData {
+  id: string;
+  type: string;
+  code: string;
+  translations: {
+    en: string;
+    vi: string;
+  };
+  description?: string;
+  isActive: boolean;
+}
+
+export interface CategoryPrediction {
+  category: string;
+  confidence: number;
 }
