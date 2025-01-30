@@ -358,7 +358,9 @@
       "view": "View",
       "download": "Download",
       "delete": "Delete",
-      "share": "Share"
+      "share": "Share",
+      "bookmark": "Bookmark",
+      "bookmarked": "Bookmarked"
     },
     "viewer": {
       "loading": "Loading document...",
@@ -391,6 +393,10 @@
       "description": "Update document metadata",
       "backToList": "Back to Documents",
       "form": {
+        "summary": {
+          "label": "Summary (50-500 characters)",
+          "placeholder": "Enter summary"
+        },
         "courseCode": {
           "label": "Course Code",
           "placeholder": "Enter course code"
@@ -412,12 +418,27 @@
           "placeholder": "Enter tags"
         }
       },
+      "fields": {
+        "uploadedBy": "Uploaded by",
+        "uploadDate": "Upload date",
+        "summary": "Summary",
+        "courseCode": "Major",
+        "major": "Major",
+        "level": "Course Level",
+        "category": "Document Category",
+        "tags": "Tags"
+      },
       "buttons": {
         "update": "Update Document"
       },
       "updateSuccess": "Document updated successfully",
       "updateError": "Failed to update document",
       "fetchError": "Failed to fetch document details"
+    },
+    "bookmark": {
+      "addSuccess": "Document bookmarked successfully",
+      "removeSuccess": "Document removed from bookmarks",
+      "error": "Failed to update bookmark"
     },
     "myDocuments": {
       "title": "My Documents",

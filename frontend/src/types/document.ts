@@ -23,6 +23,7 @@ export interface DocumentInformation {
   mimeType: string;
   documentType: DocumentType;
   content?: string;
+  summary?: string;
   major: string;
   courseCode: string;
   courseLevel: string;

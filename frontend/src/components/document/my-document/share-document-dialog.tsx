@@ -17,10 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { userService } from "@/services/user.service";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserSearchResponse } from "@/types/user";
+import { Separator } from "@radix-ui/react-separator";
 
 interface ShareDocumentDialogProps {
   documentId: string;
@@ -182,12 +182,10 @@ export default function ShareDocumentDialog({
         <Button
           variant="outline"
           size="sm"
-          className="w-full"
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
+          className="flex items-center gap-2 px-4"
         >
-          <Share2 className="mr-2 h-4 w-4" />
+          <Share2 className="h-4 w-4" />
+          {t("document.actions.share")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">

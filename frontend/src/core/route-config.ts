@@ -1,5 +1,7 @@
 import React, { lazy } from "react";
 
+import DocumentDetailPage from "@/pages/document/discover/document-detail-page";
+
 const Login = lazy(() => import("@/pages/login-page"));
 const Register = lazy(() => import("@/pages/register-page"));
 const ForgotPassword = lazy(() => import("@/pages/forgot-password-page"));
@@ -8,8 +10,11 @@ const Profile = lazy(() => import("@/pages/profile-page"));
 const UserList = lazy(() => import("@/pages/admin/user-list-page"));
 const UserDetails = lazy(() => import("@/pages/admin/user-detail-page"));
 
-const MyDocument = lazy(() => import("@/pages/document/my-document-page"));
-const MyDocumentDetail = lazy(() => import("@/pages/document/my-document-detail-page"));
+const MyDocument = lazy(() => import("@/pages/document/my-document/my-document-page"));
+const MyDocumentDetail = lazy(() => import("@/pages/document/my-document/my-document-detail-page"));
+
+const DocumentDetail = lazy(() => import("@/pages/document/discover/document-detail-page"));
+
 
 export interface Route {
   path: string;
@@ -31,6 +36,7 @@ export const RoutePaths = {
   PROFILE: "/profile",
   MY_DOCUMENT: "/document/me",
   MY_DOCUMENT_DETAIL: "/document/me/:documentId",
+  DOCUMENT_DETAIL: "/document/:documentId",
   ADMIN: {
     USERS: "/admin/users",
     USER_DETAILS: "/admin/users/:userId",
@@ -83,6 +89,12 @@ export const routes: Route[] = [
     component: MyDocumentDetail,
     isSecure: false,
     permission: [],
+  },
+  {
+    path: RoutePaths.DOCUMENT_DETAIL,
+    pageTitle: "pages.document.detail",
+    component: DocumentDetail,
+    isSecure: false,
   },
   // Admin Routes
   {

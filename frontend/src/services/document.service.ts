@@ -76,6 +76,24 @@ class DocumentService extends BaseService {
       axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/share`, settings)
     );
   }
+
+  bookmarkDocument(id: string) {
+    return this.handleApiResponse(
+      axiosInstance.post(`/document-interaction/api/v1/bookmarks/documents/${id}`)
+    );
+  }
+
+  unbookmarkDocument(id: string) {
+    return this.handleApiResponse(
+      axiosInstance.delete(`/document-interaction/api/v1/bookmarks/documents/${id}`)
+    );
+  }
+
+  isDocumentBookmarked(id: string) {
+    return this.handleApiResponse<boolean>(
+      axiosInstance.get(`/document-interaction/api/v1/bookmarks/documents/${id}/status`)
+    );
+  }
 }
 
 export const documentService = new DocumentService();
