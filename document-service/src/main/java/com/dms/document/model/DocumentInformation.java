@@ -11,7 +11,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,6 +23,12 @@ public class DocumentInformation {
 
     @Field("filename")
     private String filename;
+
+    @Field("content")
+    private String content;
+
+    @Field("summary")
+    private String summary;
 
     @Field("original_filename")
     private String originalFilename;
@@ -43,9 +48,6 @@ public class DocumentInformation {
     @Indexed
     @Field("document_type")
     private DocumentType documentType;
-
-    @Field("content")
-    private String content;
 
     @Indexed
     @Field("major")

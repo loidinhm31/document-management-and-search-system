@@ -27,6 +27,9 @@ public class DocumentInformation {
     @Field("content")
     private String content;
 
+    @Field("summary")
+    private String summary;
+
     @Field("original_filename")
     private String originalFilename;
 

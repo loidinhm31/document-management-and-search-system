@@ -14,6 +14,7 @@ public class DocumentIndexMapper {
                 .userId(doc.getUserId())
                 .mimeType(doc.getMimeType())
                 .documentType(doc.getDocumentType())
+                .summary(doc.getSummary())
                 .major(doc.getMajor())
                 .courseCode(doc.getCourseCode())
                 .courseLevel(doc.getCourseLevel())

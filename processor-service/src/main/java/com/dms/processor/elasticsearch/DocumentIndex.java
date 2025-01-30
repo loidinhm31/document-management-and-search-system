@@ -72,6 +72,23 @@ public class DocumentIndex {
     @Field(type = FieldType.Keyword, name = "document_type")
     private DocumentType documentType;
 
+    @MultiField(
+            mainField = @Field(
+                    type = FieldType.Text,
+                    analyzer = "vietnamese_analyzer",
+                    searchAnalyzer = "vietnamese_analyzer",
+                    termVector = TermVector.with_positions_offsets
+            ),
+            otherFields = {
+                    @InnerField(
+                            suffix = "keyword",
+                            type = FieldType.Keyword,
+                            ignoreAbove = 256
+                    )
+            }
+    )
+    private String summary;
+
     @Field(type = FieldType.Keyword)
     private String major;
 

@@ -27,6 +27,7 @@ public class DocumentController {
     @PostMapping
     public ResponseEntity<DocumentInformation> uploadDocument(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false) String summary,
             @RequestParam String courseCode,
             @RequestParam String major,
             @RequestParam String level,
@@ -35,7 +36,7 @@ public class DocumentController {
             @AuthenticationPrincipal Jwt jwt) throws IOException {
 
         return ResponseEntity.ok(documentService.uploadDocument(
-                file, courseCode, major, level, category, tags, jwt.getSubject()));
+                file, summary, courseCode, major, level, category, tags, jwt.getSubject()));
     }
 
     @PostMapping("/user/search")
@@ -173,6 +174,7 @@ public class DocumentController {
     public ResponseEntity<DocumentInformation> updateDocumentWithFile(
             @PathVariable String id,
             @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false) String summary,
             @RequestParam String courseCode,
             @RequestParam String major,
             @RequestParam String level,
@@ -180,7 +182,7 @@ public class DocumentController {
             @RequestParam(required = false) Set<String> tags,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         DocumentUpdateRequest metadata = new DocumentUpdateRequest(
-                courseCode, major, level, category, tags
+                summary, courseCode, major, level, category, tags
         );
         DocumentInformation document = documentService.updateDocumentWithFile(
                 id,

@@ -39,6 +39,17 @@
     "document_type": {
       "type": "keyword"
     },
+    "summary": {
+      "type": "text",
+      "analyzer": "vietnamese_analyzer",
+      "term_vector": "with_positions_offsets",
+      "fields": {
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
     "major": {
       "type": "keyword"
     },

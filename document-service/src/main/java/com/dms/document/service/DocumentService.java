@@ -63,6 +63,7 @@ public class DocumentService {
     private final UserClient userClient;
 
     public DocumentInformation uploadDocument(MultipartFile file,
+                                              String summary,
                                               String courseCode,
                                               String major,
                                               String level,
@@ -101,6 +102,7 @@ public class DocumentService {
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .documentType(DocumentUtils.determineDocumentType(file.getContentType()))
+                .summary(summary)
                 .major(major)
                 .courseCode(courseCode)
                 .courseLevel(level)
@@ -301,6 +303,7 @@ public class DocumentService {
 
         // Update fields if provided
         if (Objects.nonNull(document)) {
+            document.setSummary(documentUpdateRequest.summary());
             document.setCourseCode(documentUpdateRequest.courseCode());
             document.setMajor(documentUpdateRequest.major());
             document.setCourseLevel(documentUpdateRequest.level());
@@ -329,7 +332,7 @@ public class DocumentService {
     public DocumentInformation updateDocumentWithFile(
             String documentId,
             MultipartFile file,
-            DocumentUpdateRequest metadata,
+            DocumentUpdateRequest documentUpdateRequest,
             String username) throws IOException {
 
         // Get existing document
@@ -365,11 +368,12 @@ public class DocumentService {
         document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
 
         // Update metadata
-        document.setCourseCode(metadata.courseCode());
-        document.setMajor(metadata.major());
-        document.setCourseLevel(metadata.level());
-        document.setCategory(metadata.category());
-        document.setTags(metadata.tags());
+        document.setSummary(documentUpdateRequest.summary());
+        document.setCourseCode(documentUpdateRequest.courseCode());
+        document.setMajor(documentUpdateRequest.major());
+        document.setCourseLevel(documentUpdateRequest.level());
+        document.setCategory(documentUpdateRequest.category());
+        document.setTags(documentUpdateRequest.tags());
         document.setUpdatedAt(new Date());
         document.setUpdatedBy(username);
 
