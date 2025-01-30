@@ -3,18 +3,19 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
-import DocumentViewer from "@/components/document/viewers/document-viewer";
 import ShareDocumentDialog from "@/components/document/my-document/share-document-dialog";
+import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { masterDataService, MasterDataType } from "@/services/master-data.service";
-import { DocumentInformation, MasterData } from "@/types/document";
-import { useAuth } from "@/context/auth-context";
-import i18n from "i18next";
+import { useAppDispatch, useAppSelector } from "@/store/hook";
+import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
+import { DocumentInformation } from "@/types/document";
+import { getMasterDataTranslation } from "@/lib/utils";
 
 export default function DocumentDetailPage() {
   const { t } = useTranslation();
@@ -22,41 +23,20 @@ export default function DocumentDetailPage() {
   const { documentId } = useParams<{ documentId: string }>();
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const dispatch = useAppDispatch();
 
   const [loading, setLoading] = useState(true);
   const [document, setDocument] = useState<DocumentInformation | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [masterData, setMasterData] = useState<{
-    majors: MasterData[];
-    levels: MasterData[];
-    categories: MasterData[];
-  }>({
-    majors: [],
-    levels: [],
-    categories: []
-  });
+
+  const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
   useEffect(() => {
-    const fetchMasterData = async () => {
-      try {
-        const [majorsResponse, levelsResponse, categoriesResponse] = await Promise.all([
-          masterDataService.getByType(MasterDataType.MAJOR),
-          masterDataService.getByType(MasterDataType.COURSE_LEVEL),
-          masterDataService.getByType(MasterDataType.DOCUMENT_CATEGORY)
-        ]);
-
-        setMasterData({
-          majors: majorsResponse.data,
-          levels: levelsResponse.data,
-          categories: categoriesResponse.data
-        });
-      } catch (error) {
-        console.error('Error fetching master data:', error);
-      }
-    };
-
-    fetchMasterData();
-  }, []);
+    // Only fetch master data if not already loaded
+    if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
+      dispatch(fetchMasterData());
+    }
+  }, [dispatch, majors.length, levels.length, categories.length]);
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -118,24 +98,7 @@ export default function DocumentDetailPage() {
     }
   };
 
-  const getMasterDataTranslation = (code: string, type: 'major' | 'level' | 'category') => {
-    let data: MasterData[] = [];
-    switch (type) {
-      case 'major':
-        data = masterData.majors;
-        break;
-      case 'level':
-        data = masterData.levels;
-        break;
-      case 'category':
-        data = masterData.categories;
-        break;
-    }
-    const item = data.find(item => item.code === code);
-    return item ? (item.translations[i18n.language] || item.translations.en) : code;
-  };
-
-  if (loading) {
+  if (loading || masterDataLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -144,8 +107,6 @@ export default function DocumentDetailPage() {
   }
 
   if (!document) return null;
-
-  const isDocumentCreator = currentUser?.username === document.createdBy;
 
   return (
     <div className="space-y-6">
@@ -204,7 +165,8 @@ export default function DocumentDetailPage() {
                     documentId={document.id}
                     documentName={document.originalFilename}
                     isShared={true}
-                    onShareToggle={() => {}}
+                    onShareToggle={() => {
+                    }}
                   />
                 )}
               </div>
@@ -227,21 +189,21 @@ export default function DocumentDetailPage() {
               <div className="space-y-2">
                 <Label>{t("document.detail.fields.major")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {getMasterDataTranslation(document.major, 'major')}
+                  {getMasterDataTranslation(document.major, "major", { majors })}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label>{t("document.detail.fields.level")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {getMasterDataTranslation(document.courseLevel, 'level')}
+                  {getMasterDataTranslation(document.courseLevel, "level", { levels })}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label>{t("document.detail.fields.category")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {getMasterDataTranslation(document.category, 'category')}
+                  {getMasterDataTranslation(document.category, "category", { categories })}
                 </p>
               </div>
 

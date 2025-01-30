@@ -32,6 +32,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
+import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
 import {
   fetchDocuments,
   resetFilters,
@@ -45,6 +46,7 @@ import {
   setSort,
   setTags
 } from "@/store/slices/searchSlice";
+import { getMasterDataTranslation } from "@/lib/utils";
 
 const sortOptions = [
   { label: "Created Date (Newest)", value: "createdDate,desc" },
@@ -53,7 +55,6 @@ const sortOptions = [
   { label: "Name (Z-A)", value: "filename,desc" }
 ];
 
-const PAGE_SIZE = 10; // Number of items per page
 
 export const DocumentList = () => {
   const { t } = useTranslation();
@@ -72,13 +73,20 @@ export const DocumentList = () => {
     currentPage,
     totalPages
   } = useAppSelector(selectSearchState);
+
+  const { majors, levels, categories } = useAppSelector(selectMasterData);
+
   const [selectedDoc, setSelectedDoc] = React.useState(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
 
   // Initial fetch
   useEffect(() => {
     dispatch(fetchDocuments());
-  }, [dispatch]);
+    // Only fetch master data if not already loaded
+    if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
+      dispatch(fetchMasterData());
+    }
+  }, [dispatch, majors.length, levels.length, categories.length]);
 
   const handleSearch = () => {
     dispatch(setPage(0)); // Reset to first page when searching
@@ -311,7 +319,8 @@ export const DocumentList = () => {
                                 className="hidden xl:table-cell w-[10%]">{t("document.discover.headers.tags")}</TableHead>
                               <TableHead className="w-[30%]">{t("document.discover.headers.matches")}</TableHead>
                               <TableHead className="w-[8%]">{t("document.discover.headers.created")}</TableHead>
-                              <TableHead className="w-[5%] text-right">{t("document.discover.headers.actions")}</TableHead>
+                              <TableHead
+                                className="w-[5%] text-right">{t("document.discover.headers.actions")}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -327,9 +336,18 @@ export const DocumentList = () => {
                                   </Button>
                                 </TableCell>
                                 <TableCell className="truncate">{doc.courseCode}</TableCell>
-                                <TableCell className="truncate">{doc.major}</TableCell>
-                                <TableCell className="hidden md:table-cell">{doc.courseLevel}</TableCell>
-                                <TableCell className="hidden lg:table-cell">{doc.category}</TableCell>
+                                <TableCell
+                                  className="truncate">{getMasterDataTranslation(doc.major, "major", {
+                                  majors
+                                })}</TableCell>
+                                <TableCell
+                                  className="hidden md:table-cell"> {getMasterDataTranslation(doc.courseLevel, "level", {
+                                  levels
+                                })}</TableCell>
+                                <TableCell
+                                  className="hidden lg:table-cell">{getMasterDataTranslation(doc.category, "category", {
+                                  categories
+                                })}</TableCell>
                                 <TableCell className="hidden xl:table-cell">
                                   <div className="flex flex-wrap gap-1">
                                     {doc.tags?.map((tag, index) => (

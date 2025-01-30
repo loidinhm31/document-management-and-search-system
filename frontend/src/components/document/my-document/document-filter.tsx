@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MasterData } from "@/types/document";
 import { masterDataService, MasterDataType } from "@/services/master-data.service";
 import i18n from "i18next";
+import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hook";
 
 export const courseTypes = [
   { label: "All", value: "all" },
@@ -59,32 +61,14 @@ export const DocumentFilter = ({
                                }: DocumentFilterProps) => {
   const { t } = useTranslation();
 
-  const [courseLevels, setCourseLevels] = useState<MasterData[]>([]);
-  const [majors, setMajors] = useState<MasterData[]>([]);
-  const [categories, setCategories] = useState<MasterData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { majors, levels, categories, loading } = useAppSelector(selectMasterData);
 
   useEffect(() => {
-    const fetchMasterData = async () => {
-      try {
-        const [levelsResponse, majorsResponse, categoriesResponse] = await Promise.all([
-          masterDataService.getByType(MasterDataType.COURSE_LEVEL),
-          masterDataService.getByType(MasterDataType.MAJOR),
-          masterDataService.getByType(MasterDataType.DOCUMENT_CATEGORY)
-        ]);
-
-        setCourseLevels(levelsResponse.data);
-        setMajors(majorsResponse.data);
-        setCategories(categoriesResponse.data);
-      } catch (error) {
-        console.error('Error fetching master data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMasterData();
-  }, []);
+    if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
+      dispatch(fetchMasterData());
+    }
+  }, [dispatch, majors.length, levels.length, categories.length]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -119,7 +103,7 @@ export const DocumentFilter = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
-            {courseLevels.map((level) => (
+            {levels.map((level) => (
               <SelectItem key={level.code} value={level.code}>
                 {level.translations[i18n.language] || level.translations.en}
               </SelectItem>

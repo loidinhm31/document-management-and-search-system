@@ -15,8 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
-import { masterDataService, MasterDataType } from "@/services/master-data.service";
-import { MasterData } from "@/types/document";
+import { useAppDispatch, useAppSelector } from "@/store/hook";
+import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
 
 
 const documentSchema = z.object({
@@ -51,11 +51,11 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { detectLanguage, detectedLanguage, detectingLanguage } = useLanguageDetection();
 
-  const [courseLevels, setCourseLevels] = useState<MasterData[]>([]);
-  const [majors, setMajors] = useState<MasterData[]>([]);
-  const [categories, setCategories] = useState<MasterData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [shouldFetchPredictions, setShouldFetchPredictions] = useState(false);
+
+  const dispatch = useAppDispatch();
+  const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
+
 
   const form = useForm<DocumentFormValues>({
     resolver: zodResolver(documentSchema),
@@ -70,26 +70,10 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
   });
 
   useEffect(() => {
-    const fetchMasterData = async () => {
-      try {
-        const [levelsResponse, majorsResponse, categoriesResponse] = await Promise.all([
-          masterDataService.getByType(MasterDataType.COURSE_LEVEL),
-          masterDataService.getByType(MasterDataType.MAJOR),
-          masterDataService.getByType(MasterDataType.DOCUMENT_CATEGORY)
-        ]);
-
-        setCourseLevels(levelsResponse.data);
-        setMajors(majorsResponse.data);
-        setCategories(categoriesResponse.data);
-      } catch (error) {
-        console.error('Error fetching master data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMasterData();
-  }, []);
+    if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
+      dispatch(fetchMasterData());
+    }
+  }, [dispatch, majors.length, levels.length, categories.length]);
 
   // Watch summary field changes for language detection
   useEffect(() => {
@@ -243,7 +227,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {courseLevels.map((level) => (
+                    {levels.map((level) => (
                       <SelectItem key={level.code} value={level.code}>
                         {level.translations[i18n.language] || level.translations.en}
                       </SelectItem>
@@ -270,7 +254,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
                   onValueChange={field.onChange}
                   shouldFetchPredictions={shouldFetchPredictions}
                   setShouldFetchPredictions={setShouldFetchPredictions}
-                  disabled={loading}
+                  disabled={masterDataLoading}
                 />
                 <FormMessage />
               </FormItem>
@@ -288,7 +272,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
                     value={field.value || []}
                     onChange={field.onChange}
                     placeholder={t("document.detail.form.tags.placeholder")}
-                    disabled={loading}
+                    disabled={masterDataLoading}
                   />
                 </FormControl>
                 <FormMessage />
@@ -296,8 +280,8 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
             )}
           />
 
-          <Button type="submit" disabled={loading || (!initialValues && !selectedFile)} className="w-full">
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" disabled={masterDataLoading || (!initialValues && !selectedFile)} className="w-full">
+            {masterDataLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {submitLabel}
           </Button>
         </div>
