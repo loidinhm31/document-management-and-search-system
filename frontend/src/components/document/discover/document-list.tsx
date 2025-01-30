@@ -70,8 +70,7 @@ export const DocumentList = () => {
     selectedCategory,
     selectedTags,
     currentPage,
-    totalPages,
-    totalElements
+    totalPages
   } = useAppSelector(selectSearchState);
   const [selectedDoc, setSelectedDoc] = React.useState(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
@@ -118,6 +117,15 @@ export const DocumentList = () => {
   const formatDate = (dateString: string | Date) => {
     const date = typeof dateString === "string" ? new Date(dateString) : dateString;
     return date.toLocaleString();
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (selectedMajor !== "all") count++;
+    if (selectedLevel !== "all") count++;
+    if (selectedCategory !== "all") count++;
+    if (selectedTags.length > 0) count++;
+    return count;
   };
 
   return (
@@ -172,6 +180,11 @@ export const DocumentList = () => {
               >
                 <Filter className="h-4 w-4" />
                 {t("document.commonSearch.filters")}
+                {getActiveFilterCount() > 0 && (
+                  <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                    {getActiveFilterCount()}
+                  </span>
+                )}
               </Button>
 
               <Button variant="outline" onClick={handleReset}>

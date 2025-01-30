@@ -66,11 +66,9 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (searchTerm) count++;
     if (selectedMajor !== "all") count++;
     if (selectedLevel !== "all") count++;
     if (selectedCategory !== "all") count++;
-    if (selectedSort !== sortOptions[0].value) count++;
     if (selectedTags.length > 0) count++;
     return count;
   };
