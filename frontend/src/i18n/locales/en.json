@@ -489,7 +489,7 @@
       "categoryPlaceholder": "Select category",
       "reset": "Reset Filter",
       "apply": "Search",
-      "tagLabel":"Tags",
+      "tagLabel": "Tags",
       "tagsPlaceholder": "Search tags to select..."
     },
     "versions": {
@@ -507,11 +507,13 @@
       },
       "actions": {
         "view": "View",
-        "download": "Download"
+        "download": "Download",
+        "revert": "Revert"
       },
       "error": {
         "load": "Failed to load version",
-        "download": "Failed to download version"
+        "download": "Failed to download version",
+        "revertError": "Cannot revert to this version"
       },
       "status": {
         "completed": "Processed",

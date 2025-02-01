@@ -1,51 +1,73 @@
-import React from "react";
-import { Clock, MoreHorizontal, User } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronUp, Clock, Download, History, Loader2, User, X } from "lucide-react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
+import { documentService } from "@/services/document.service";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
+  AccordionTrigger
 } from "@/components/ui/accordion";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DocumentStatus, DocumentVersion } from "@/types/document";
+import { useAuth } from "@/context/auth-context";
+import { DocumentVersion } from "@/types/document";
 
 interface VersionHistoryProps {
   versions: DocumentVersion[];
   currentVersion: number;
   onViewVersion: (version: number) => void;
   onDownloadVersion: (version: number) => void;
+  documentCreator?: string;
+  documentId?: string;
 }
 
-const DocumentVersionHistory = ({
-                          versions,
-                          currentVersion,
-                          onViewVersion,
-                          onDownloadVersion,
-                        }: VersionHistoryProps) => {
+const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
+                                                                 versions,
+                                                                 currentVersion,
+                                                                 onViewVersion,
+                                                                 onDownloadVersion,
+                                                                 documentCreator,
+                                                                 documentId
+                                                               }) => {
   const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
+  const { currentUser } = useAuth();
+  const isDocumentCreator = currentUser?.username === documentCreator;
 
-  const getStatusColor = (status: DocumentStatus) => {
-    switch (status) {
-      case DocumentStatus.COMPLETED:
+  const handleRevertVersion = async (versionNumber: number) => {
+    if (!isDocumentCreator) return;
+
+    setLoading(true);
+    try {
+      await documentService.revertToVersion(documentId, versionNumber);
+      toast({
+        title: t("common.success"),
+        description: t("document.versions.revertSuccess"),
+        variant: "success"
+      });
+      window.location.reload(); // Refresh to show changes
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("document.versions.error.revertError"),
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
         return "bg-green-50 text-green-700 ring-green-600/20";
-      case DocumentStatus.PROCESSING:
+      case "processing":
+      case "pending":
         return "bg-yellow-50 text-yellow-700 ring-yellow-600/20";
-      case DocumentStatus.FAILED:
+      case "failed":
         return "bg-red-50 text-red-700 ring-red-600/20";
       default:
         return "bg-gray-50 text-gray-700 ring-gray-600/20";
@@ -56,24 +78,14 @@ const DocumentVersionHistory = ({
     return new Date(date).toLocaleString();
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  const sortedVersions = [...versions].sort(
-    (a, b) => b.versionNumber - a.versionNumber
-  );
+  const sortedVersions = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
 
   return (
-    <Accordion type="single" collapsible className="mt-6">
+    <Accordion type="single" collapsible>
       <AccordionItem value="version-history">
-        <AccordionTrigger className="flex items-center gap-2 px-4">
+        <AccordionTrigger className="flex items-center gap-2">
           <div className="flex flex-1 items-center gap-2">
-            <Clock className="h-4 w-4" />
+            <History className="h-4 w-4" />
             <span>
               {t("document.versions.title")} ({t("document.versions.total", { total: versions.length })})
             </span>
@@ -92,7 +104,7 @@ const DocumentVersionHistory = ({
                     <div className="flex items-center gap-2">
                       <span className="font-medium">
                         {t("document.versions.versionNumber", {
-                          number: version.versionNumber + 1,
+                          number: version.versionNumber + 1
                         })}
                       </span>
                       {version.versionNumber === currentVersion && (
@@ -109,24 +121,35 @@ const DocumentVersionHistory = ({
                       </span>
                     </div>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
+                    <div className="flex items-center gap-2">
+                      {version.versionNumber !== currentVersion && isDocumentCreator && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRevertVersion(version.versionNumber)}
+                          disabled={loading}
+                        >
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {t("document.versions.actions.revert")}
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        {version.versionNumber !== currentVersion && (
-                          <DropdownMenuItem onClick={() => onViewVersion(version.versionNumber)}>
-                            {t("document.versions.actions.view")}
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => onDownloadVersion(version.versionNumber)}>
-                          {t("document.versions.actions.download")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                      )}
+                      {version.versionNumber !== currentVersion && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onViewVersion(version.versionNumber)}
+                        >
+                          {t("document.versions.actions.view")}
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onDownloadVersion(version.versionNumber)}
+                      >
+                        {t("document.versions.actions.download")}
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Version Details */}
@@ -143,19 +166,16 @@ const DocumentVersionHistory = ({
 
                   {/* File Details */}
                   <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    <span>{version.originalFilename}</span>
                     <span>
-                      {version.originalFilename}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <span>
-                      {version.mimeType} • {formatFileSize(version.fileSize)}
+                      {version.mimeType} • {(version.fileSize / 1024).toFixed(2)} KB
                     </span>
                   </div>
 
                   {/* Error Message */}
                   {version.processingError && (
-                    <div className="mt-2 text-sm text-destructive">
+                    <div className="mt-2 flex items-center gap-2 text-sm text-destructive">
+                      <AlertCircle className="h-4 w-4" />
                       {version.processingError}
                     </div>
                   )}

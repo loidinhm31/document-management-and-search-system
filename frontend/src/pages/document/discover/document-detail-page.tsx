@@ -9,7 +9,6 @@ import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { getMasterDataTranslation } from "@/lib/utils";
@@ -209,7 +208,16 @@ export default function DocumentDetailPage() {
               </div>
             </div>
 
-            <Separator />
+            {documentData && (
+              <DocumentVersionHistory
+                versions={documentData.versions}
+                currentVersion={documentData.currentVersion}
+                onViewVersion={handleVersionView}
+                onDownloadVersion={handleVersionDownload}
+                documentCreator={documentData.createdBy}
+                documentId={documentData.id}
+              />
+            )}
 
             {/* Document Information */}
             <div className="grid gap-4">

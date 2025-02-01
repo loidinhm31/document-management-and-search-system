@@ -174,6 +174,17 @@ export default function MyDocumentDetailPage() {
             <CardDescription>{t("document.detail.description")}</CardDescription>
           </CardHeader>
           <CardContent>
+            {documentData && (
+              <DocumentVersionHistory
+                versions={documentData.versions}
+                currentVersion={documentData.currentVersion}
+                onViewVersion={handleVersionView}
+                onDownloadVersion={handleVersionDownload}
+                documentCreator={documentData.createdBy}
+                documentId={documentData.id}
+              />
+            )}
+
             <DocumentForm
               initialValues={{
                 summary: documentData?.summary ? documentData.summary : undefined,
@@ -188,15 +199,6 @@ export default function MyDocumentDetailPage() {
               submitLabel={t("document.detail.buttons.update")}
             />
           </CardContent>
-
-          {documentData && (
-            <DocumentVersionHistory
-              versions={documentData.versions}
-              currentVersion={documentData.currentVersion}
-              onViewVersion={handleVersionView}
-              onDownloadVersion={handleVersionDownload}
-            />
-          )}
         </Card>
 
         {/* Document Preview */}
