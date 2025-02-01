@@ -36,6 +36,7 @@ export interface DocumentInformation {
   createdBy: string;
   updatedBy: string;
   deleted: boolean;
+  processingError: string;
   highlights?: string[];
 
   // Add version-related fields

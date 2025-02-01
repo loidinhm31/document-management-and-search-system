@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { searchService } from "@/services/search.service";
-import { DocumentInformation } from "@/types/document";
+import { DocumentInformation, DocumentStatus } from "@/types/document";
+import { useAppSelector } from "@/store/hook";
+import { selectProcessingItems } from "@/store/slices/processingSlice";
 
 export default function MyDocumentPage() {
   const { t } = useTranslation();
@@ -21,6 +23,11 @@ export default function MyDocumentPage() {
   const [loading, setLoading] = useState(true);
   const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
   const { toast } = useToast();
+
+  const processingItems = useAppSelector(selectProcessingItems);
+  const latestProcessingItem = useMemo(() =>
+      processingItems.length > 0 ? processingItems[processingItems.length - 1] : null
+    , [processingItems]);
 
   const fetchUserDocuments = useCallback(async (page: number = 0, filters: SearchFilters = {}) => {
     setLoading(true);
@@ -72,13 +79,25 @@ export default function MyDocumentPage() {
     fetchUserDocuments(0);
   }, [fetchUserDocuments]);
 
+  useEffect(() => {
+    if (latestProcessingItem?.status === DocumentStatus.COMPLETED) {
+      // Refresh the document list with current filters and page
+      fetchUserDocuments(currentPage, currentFilters);
+    }
+  }, [latestProcessingItem?.status, currentPage, currentFilters, fetchUserDocuments]);
+
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden">
         <CardHeader>
           <div className="space-y-4">
             <CardTitle>{t("document.myDocuments.title")}</CardTitle>
-            <DocumentUploadDialog onUploadSuccess={() => fetchUserDocuments(0, currentFilters)} />
+            <DocumentUploadDialog
+              onUploadSuccess={() => {
+                // Reset to first page when new document is uploaded
+                setCurrentPage(0);
+                fetchUserDocuments(0, currentFilters)
+              }} />
           </div>
         </CardHeader>
         <CardContent>

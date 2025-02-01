@@ -1,14 +1,14 @@
 import React, { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
+
+import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import {
   addProcessingItem,
   removeProcessingItem,
-  updateProcessingItem,
-  selectProcessingItems
-} from "@/store/slices/processingSlice";
+  selectProcessingItems,
+  updateProcessingItem} from "@/store/slices/processingSlice";
 import { DocumentStatus } from "@/types/document";
-import { documentService } from "@/services/document.service";
 
 interface ProcessingItem {
   id: string;
