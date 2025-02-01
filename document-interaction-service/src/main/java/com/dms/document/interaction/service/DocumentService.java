@@ -496,6 +496,7 @@ public class DocumentService {
         document.setThumbnailPath(versionToRevert.getThumbnailPath());
         document.setFileSize(versionToRevert.getFileSize());
         document.setMimeType(versionToRevert.getMimeType());
+        document.setDocumentType(DocumentUtils.determineDocumentType(versionToRevert.getMimeType()));
         document.setLanguage(versionToRevert.getLanguage());
         document.setExtractedMetadata(versionToRevert.getExtractedMetadata());
         document.setUpdatedAt(new Date());
