@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
-import { CategoryPredictions } from "@/components/document/confidence-to-color";
+import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
 import TagInput from "@/components/tag-input";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";

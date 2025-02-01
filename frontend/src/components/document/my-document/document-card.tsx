@@ -61,7 +61,7 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
           className="truncate text-base cursor-pointer hover:text-primary"
           onClick={() => onClick?.()}
         >
-          {documentInformation.originalFilename}
+          {documentInformation.filename}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0">

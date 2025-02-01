@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MasterData } from "@/types/document";
 import { masterDataService, MasterDataType } from "@/services/master-data.service";
 import i18n from "i18next";
-import { CategoryPredictions } from "@/components/document/confidence-to-color";
+import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
 
 const formSchema = z.object({
   summary: z.string()

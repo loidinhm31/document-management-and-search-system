@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
+import DocumentVersionHistory from "@/components/document/document-versions";
 import ShareDocumentDialog from "@/components/document/my-document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
@@ -11,11 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
 import { DocumentInformation } from "@/types/document";
-import { getMasterDataTranslation } from "@/lib/utils";
 
 export default function DocumentDetailPage() {
   const { t } = useTranslation();
@@ -26,7 +27,7 @@ export default function DocumentDetailPage() {
   const dispatch = useAppDispatch();
 
   const [loading, setLoading] = useState(true);
-  const [document, setDocument] = useState<DocumentInformation | null>(null);
+  const [documentData, setDocumentData] = useState<DocumentInformation | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
   const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
@@ -48,7 +49,7 @@ export default function DocumentDetailPage() {
           documentService.isDocumentBookmarked(documentId)
         ]);
 
-        setDocument(docResponse.data);
+        setDocumentData(docResponse.data);
         setIsBookmarked(bookmarkResponse.data);
       } catch (error) {
         toast({
@@ -98,6 +99,42 @@ export default function DocumentDetailPage() {
     }
   };
 
+  const handleVersionView = async (versionNumber: number) => {
+    try {
+      const response = await documentService.getDocumentVersion(documentId, versionNumber);
+      setDocumentData(response.data);
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("document.versions.error.load"),
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleVersionDownload = async (versionNumber: number) => {
+    try {
+      const response = await documentService.downloadDocumentVersion(
+        documentId,
+        versionNumber
+      );
+      const url = URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", documentData.filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("document.versions.error.download"),
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading || masterDataLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -106,7 +143,7 @@ export default function DocumentDetailPage() {
     );
   }
 
-  if (!document) return null;
+  if (!documentData) return null;
 
   return (
     <div className="space-y-6">
@@ -121,10 +158,10 @@ export default function DocumentDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileBox className="h-5 w-5" />
-              {document.originalFilename}
+              {documentData.originalFilename}
             </CardTitle>
             <CardDescription>
-              {document.documentType} - {(document.fileSize / 1024).toFixed(2)} KB
+              {documentData.documentType} - {(documentData.fileSize / 1024).toFixed(2)} KB
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -132,11 +169,11 @@ export default function DocumentDetailPage() {
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4" />
-                {t("document.detail.fields.uploadedBy")}: {document.createdBy}
+                {t("document.detail.fields.uploadedBy")}: {documentData.createdBy}
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                {t("document.detail.fields.uploadDate")}: {formatDate(document.createdAt.toString())}
+                {t("document.detail.fields.uploadDate")}: {formatDate(documentData.createdAt.toString())}
               </div>
 
               {/* Document Actions */}
@@ -160,10 +197,10 @@ export default function DocumentDetailPage() {
                   )}
                 </Button>
 
-                {currentUser?.username === document.createdBy && (
+                {currentUser?.username === documentData.createdBy && (
                   <ShareDocumentDialog
-                    documentId={document.id}
-                    documentName={document.originalFilename}
+                    documentId={documentData.id}
+                    documentName={documentData.originalFilename}
                     isShared={true}
                     onShareToggle={() => {
                     }}
@@ -178,40 +215,40 @@ export default function DocumentDetailPage() {
             <div className="grid gap-4">
               <div className="space-y-2">
                 <Label>{t("document.detail.fields.summary")}</Label>
-                <p className="text-sm text-muted-foreground">{document.summary}</p>
+                <p className="text-sm text-muted-foreground">{documentData.summary}</p>
               </div>
 
               <div className="space-y-2">
                 <Label>{t("document.detail.fields.courseCode")}</Label>
-                <p className="text-sm text-muted-foreground">{document.courseCode}</p>
+                <p className="text-sm text-muted-foreground">{documentData.courseCode}</p>
               </div>
 
               <div className="space-y-2">
                 <Label>{t("document.detail.fields.major")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {getMasterDataTranslation(document.major, "major", { majors })}
+                  {getMasterDataTranslation(documentData.major, "major", { majors })}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label>{t("document.detail.fields.level")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {getMasterDataTranslation(document.courseLevel, "level", { levels })}
+                  {getMasterDataTranslation(documentData.courseLevel, "level", { levels })}
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label>{t("document.detail.fields.category")}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {getMasterDataTranslation(document.category, "category", { categories })}
+                  {getMasterDataTranslation(documentData.category, "category", { categories })}
                 </p>
               </div>
 
-              {document.tags && document.tags.length > 0 && (
+              {documentData.tags && documentData.tags.length > 0 && (
                 <div className="space-y-2">
                   <Label>{t("document.detail.fields.tags")}</Label>
                   <div className="flex flex-wrap gap-2">
-                    {document.tags.map((tag, index) => (
+                    {documentData.tags.map((tag, index) => (
                       <span
                         key={index}
                         className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
@@ -224,22 +261,31 @@ export default function DocumentDetailPage() {
               )}
             </div>
           </CardContent>
+
+          {documentData && (
+            <DocumentVersionHistory
+              versions={documentData.versions}
+              currentVersion={documentData.currentVersion}
+              onViewVersion={handleVersionView}
+              onDownloadVersion={handleVersionDownload}
+            />
+          )}
         </Card>
 
         {/* Document Preview */}
         <Card className="xl:h-[800px]">
           <CardHeader>
-            <CardTitle>{document.originalFilename}</CardTitle>
+            <CardTitle>{documentData.originalFilename}</CardTitle>
             <CardDescription>
-              {document.documentType} - {(document.fileSize / 1024).toFixed(2)} KB
+              {documentData.documentType} - {(documentData.fileSize / 1024).toFixed(2)} KB
             </CardDescription>
           </CardHeader>
           <CardContent className="h-full max-h-[700px]">
             <DocumentViewer
-              documentId={document.id}
-              documentType={document.documentType}
-              mimeType={document.mimeType}
-              fileName={document.filename}
+              documentId={documentData.id}
+              documentType={documentData.documentType}
+              mimeType={documentData.mimeType}
+              fileName={documentData.filename}
             />
           </CardContent>
         </Card>

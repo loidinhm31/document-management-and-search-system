@@ -19,6 +19,7 @@ export interface DocumentInformation {
   filename: string;
   originalFilename: string;
   filePath: string;
+  thumbnailPath?: string;
   fileSize: number;
   mimeType: string;
   documentType: DocumentType;
@@ -37,8 +38,11 @@ export interface DocumentInformation {
   updatedBy: string;
   deleted: boolean;
   highlights?: string[];
-}
 
+  // Add version-related fields
+  currentVersion: number;
+  versions: DocumentVersion[];
+}
 export interface DocumentSearchResponse {
   content: DocumentInformation[];
   totalElements: number;
@@ -78,4 +82,25 @@ export interface MasterData {
 export interface CategoryPrediction {
   category: string;
   confidence: number;
+}
+
+export interface DocumentVersion {
+  versionNumber: number;
+  filePath: string;
+  thumbnailPath?: string;
+  originalFilename: string;
+  fileSize: number;
+  mimeType: string;
+  status: DocumentStatus;
+  language?: string;
+  extractedMetadata?: Record<string, string>;
+  processingError?: string;
+  createdBy: string;
+  createdAt: Date;
+}
+
+export interface VersionHistoryResponse {
+  versions: DocumentVersion[];
+  currentVersion: number;
+  totalVersions: number;
 }

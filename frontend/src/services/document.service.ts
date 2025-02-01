@@ -94,6 +94,29 @@ class DocumentService extends BaseService {
       axiosInstance.get(`/document-interaction/api/v1/bookmarks/documents/${id}/status`)
     );
   }
+
+  getDocumentVersion(documentId: string, versionNumber: number) {
+    return this.handleApiResponse(
+      axiosInstance.get(
+        `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}`
+      )
+    );
+  }
+
+  downloadDocumentVersion(documentId: string, versionNumber: number) {
+    return this.handleApiResponse(
+      axiosInstance.get(
+        `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/download`,
+        { responseType: "blob" }
+      )
+    );
+  }
+
+  getVersionHistory(documentId: string) {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/versions`)
+    );
+  }
 }
 
 export const documentService = new DocumentService();

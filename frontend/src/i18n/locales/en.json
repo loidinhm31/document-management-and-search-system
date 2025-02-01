@@ -491,6 +491,33 @@
       "apply": "Search",
       "tagLabel":"Tags",
       "tagsPlaceholder": "Search tags to select..."
+    },
+    "versions": {
+      "title": "Version History",
+      "total": "{{total}} versions",
+      "current": "Current",
+      "versionNumber": "Version {{number}}",
+      "headers": {
+        "version": "Version",
+        "uploadedBy": "Uploaded By",
+        "date": "Date",
+        "size": "Size",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "view": "View",
+        "download": "Download"
+      },
+      "error": {
+        "load": "Failed to load version",
+        "download": "Failed to download version"
+      },
+      "status": {
+        "completed": "Processed",
+        "processing": "Pending process",
+        "failed": "Failed"
+      }
     }
   }
 }
