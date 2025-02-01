@@ -108,7 +108,9 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      formData.append("summary", data.summary);
+      if (data.summary) {
+        formData.append("summary", data.summary);
+      }
       formData.append("courseCode", data.courseCode);
       formData.append("major", data.major);
       formData.append("level", data.level);

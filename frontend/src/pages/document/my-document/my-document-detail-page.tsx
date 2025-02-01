@@ -56,7 +56,9 @@ export default function MyDocumentDetailPage() {
         // Send both metadata and file in single request
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("summary", data.summary);
+        if (data.summary) {
+          formData.append("summary", data.summary);
+        }
         formData.append("courseCode", data.courseCode);
         formData.append("major", data.major);
         formData.append("level", data.level);
