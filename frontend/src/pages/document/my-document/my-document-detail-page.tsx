@@ -115,42 +115,6 @@ export default function MyDocumentDetailPage() {
     }
   };
 
-  const handleVersionView = async (versionNumber: number) => {
-    try {
-      const response = await documentService.getDocumentVersion(documentId, versionNumber);
-      setDocumentData(response.data);
-    } catch (error) {
-      toast({
-        title: t("common.error"),
-        description: t("document.versions.error.load"),
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleVersionDownload = async (versionNumber: number, filename: string) => {
-    try {
-      const response = await documentService.downloadDocumentVersion(
-        documentId,
-        versionNumber
-      );
-      const url = URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      toast({
-        title: t("common.error"),
-        description: t("document.versions.error.download"),
-        variant: "destructive"
-      });
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -178,8 +142,6 @@ export default function MyDocumentDetailPage() {
               <DocumentVersionHistory
                 versions={documentData.versions}
                 currentVersion={documentData.currentVersion}
-                onViewVersion={handleVersionView}
-                onDownloadVersion={handleVersionDownload}
                 documentCreator={documentData.createdBy}
                 documentId={documentData.id}
               />

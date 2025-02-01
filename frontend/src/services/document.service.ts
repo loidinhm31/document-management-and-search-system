@@ -95,14 +95,6 @@ class DocumentService extends BaseService {
     );
   }
 
-  getDocumentVersion(documentId: string, versionNumber: number) {
-    return this.handleApiResponse(
-      axiosInstance.get(
-        `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}`
-      )
-    );
-  }
-
   downloadDocumentVersion(documentId: string, versionNumber: number) {
     return this.handleApiResponse(
       axiosInstance.get(

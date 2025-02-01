@@ -14,8 +14,6 @@ import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 interface VersionHistoryProps {
   versions: DocumentVersion[];
   currentVersion: number;
-  onViewVersion: (version: number) => void;
-  onDownloadVersion: (version: number, filename: string) => void;
   documentCreator?: string;
   documentId?: string;
 }
@@ -23,7 +21,6 @@ interface VersionHistoryProps {
 const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                                                                  versions,
                                                                  currentVersion,
-                                                                 onDownloadVersion,
                                                                  documentCreator,
                                                                  documentId
                                                                }) => {
@@ -33,8 +30,31 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
   const isDocumentCreator = currentUser?.username === documentCreator;
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
 
-  const handleOpenVersion = (version: DocumentVersion) => {
+  const handleOpenViewVersion = (version: DocumentVersion) => {
     setSelectedVersion(version);
+  };
+
+  const handleVersionDownload = async (versionNumber: number, filename: string) => {
+    try {
+      const response = await documentService.downloadDocumentVersion(
+        documentId,
+        versionNumber
+      );
+      const url = URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("document.versions.error.download"),
+        variant: "destructive"
+      });
+    }
   };
 
   const handleRevertVersion = async (versionNumber: number) => {
@@ -138,7 +158,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleOpenVersion(version)}
+                            onClick={() => handleOpenViewVersion(version)}
                           >
                             {t("document.versions.actions.view")}
                           </Button>
@@ -146,7 +166,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onDownloadVersion(version.versionNumber, version.filename)}
+                          onClick={() => handleVersionDownload(version.versionNumber, version.filename)}
                         >
                           {t("document.versions.actions.download")}
                         </Button>
