@@ -201,8 +201,6 @@ export default function DocumentDetailPage() {
                     documentId={documentData.id}
                     documentName={documentData.filename}
                     isShared={true}
-                    onShareToggle={() => {
-                    }}
                   />
                 )}
               </div>

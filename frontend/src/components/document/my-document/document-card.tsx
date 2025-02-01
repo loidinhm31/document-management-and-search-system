@@ -10,6 +10,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
+import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 
 interface DocumentCardProps {
   documentInformation: any;
@@ -120,26 +121,15 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
         </div>
       </CardFooter>
 
-      <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent
-          className="max-w-4xl h-[80vh]"
-        >
-          <DialogHeader>
-            <DialogTitle>{documentInformation.filename}</DialogTitle>
-            <DialogDescription>
-              {documentInformation.mimeType} - {(documentInformation.fileSize / 1024).toFixed(2)} KB
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 overflow-auto">
-            <DocumentViewer
-              documentId={documentInformation.id}
-              documentType={documentInformation.documentType}
-              mimeType={documentInformation.mimeType}
-              fileName={documentInformation.filename}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      {showPreview && (
+        <DocumentViewerDialog
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          documentData={documentInformation}
+          documentId={documentInformation.id}
+          isVersion={false}
+        />
+      )}
     </Card>
   );
 });

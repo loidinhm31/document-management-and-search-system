@@ -163,7 +163,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
       const document = response.data;
 
       // Add to processing queue
-      addProcessingItem(document.id, document.originalFilename);
+      addProcessingItem(document.id, document.filename);
 
       // Close dialog or continue with your existing flow
       onUploadSuccess?.();

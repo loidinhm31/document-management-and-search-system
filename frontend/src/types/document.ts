@@ -17,7 +17,6 @@ export interface DocumentInformation {
   id: string;
   status: DocumentStatus;
   filename: string;
-  originalFilename: string;
   filePath: string;
   thumbnailPath?: string;
   fileSize: number;
@@ -88,7 +87,7 @@ export interface DocumentVersion {
   versionNumber: number;
   filePath: string;
   thumbnailPath?: string;
-  originalFilename: string;
+  filename: string;
   fileSize: number;
   mimeType: string;
   status: DocumentStatus;

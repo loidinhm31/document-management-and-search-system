@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import JSZip from "jszip";
 import { Loader2 } from "lucide-react";
 import mammoth from "mammoth";
 import Papa from "papaparse";
@@ -23,6 +23,7 @@ interface DocumentViewerProps {
   mimeType: string;
   documentType: DocumentType;
   fileName: string;
+  versionNumber?: number;
 }
 
 export interface ExcelSheet {
@@ -30,7 +31,13 @@ export interface ExcelSheet {
   data: Array<Array<string | number | boolean | Date | null>>;
 }
 
-export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }: DocumentViewerProps) => {
+export const DocumentViewer = ({
+                                 documentId,
+                                 mimeType,
+                                 documentType,
+                                 fileName,
+                                 versionNumber
+                               }: DocumentViewerProps) => {
   const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
@@ -59,7 +66,9 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
     setError(null);
 
     try {
-      const response = await documentService.downloadDocument(documentId);
+      const response = versionNumber !== undefined
+        ? await documentService.downloadDocumentVersion(documentId, versionNumber)
+        : await documentService.downloadDocument(documentId);
       const blob = new Blob([response.data], { type: mimeType });
 
       switch (documentType) {
@@ -83,7 +92,7 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
           const workbook = XLSX.read(arrayBuffer, {
             type: "array",
             cellDates: true,
-            cellStyles: true,
+            cellStyles: true
           });
 
           const sheets: ExcelSheet[] = workbook.SheetNames.map(sheetName => {
@@ -107,20 +116,20 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
               const typedData = results.data.map(row =>
                 (row as unknown[]).map(cell => {
                   if (cell instanceof Date) return cell;
-                  if (typeof cell === 'number') return cell;
-                  if (typeof cell === 'boolean') return cell;
+                  if (typeof cell === "number") return cell;
+                  if (typeof cell === "boolean") return cell;
                   return String(cell);
                 })
               ) as Array<Array<string | number | boolean | Date>>;
               setCsvContent(typedData);
             },
             error: (error) => {
-              console.error('Error parsing CSV:', error);
-              setError('Failed to parse CSV file');
+              console.error("Error parsing CSV:", error);
+              setError("Failed to parse CSV file");
             },
             delimiter: ",", // auto-detect delimiter
             dynamicTyping: true, // convert numbers and booleans
-            skipEmptyLines: true,
+            skipEmptyLines: true
           });
           break;
         }
@@ -182,7 +191,9 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
 
   const handleDownload = async () => {
     try {
-      const response = await documentService.downloadDocument(documentId);
+      const response = versionNumber !== undefined
+        ? await documentService.downloadDocumentVersion(documentId, versionNumber)
+        : await documentService.downloadDocument(documentId);
       const blob = new Blob([response.data], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -255,9 +266,10 @@ export const DocumentViewer = ({ documentId, mimeType, documentType, fileName }:
     case DocumentType.CSV:
       return csvContent.length > 0 && (
         <SpreadsheetViewer
-          sheets={[{ name: 'Sheet1', data: csvContent }]}
+          sheets={[{ name: "Sheet1", data: csvContent }]}
           activeSheet={0}
-          onSheetChange={() => {}}
+          onSheetChange={() => {
+          }}
           onDownload={handleDownload}
         />
       );

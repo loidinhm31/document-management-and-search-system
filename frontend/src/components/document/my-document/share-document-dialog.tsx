@@ -26,8 +26,8 @@ interface ShareDocumentDialogProps {
   documentId: string;
   documentName: string;
   isShared: boolean;
-  onShareToggle: (isShared: boolean) => void;
-  iconOnly: boolean;
+  onShareToggle?: (isShared: boolean) => void;
+  iconOnly?: boolean;
 }
 
 export default function ShareDocumentDialog({
