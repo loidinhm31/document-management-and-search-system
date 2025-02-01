@@ -104,7 +104,7 @@ public class DocumentService {
         // Create document with PENDING status
         DocumentInformation document = DocumentInformation.builder()
                 .status(DocumentStatus.PENDING)
-                .filename(file.getOriginalFilename())
+                .filename(originalFilename)
                 .filePath(fullPath.toString())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
@@ -294,8 +294,9 @@ public class DocumentService {
         DocumentInformation document = getDocumentDetails(documentId, username);
 
         // Save new file
-        String fileExtension = getFileExtension(file.getOriginalFilename());
-        String uniqueFilename = UUID.randomUUID() + fileExtension;
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = getFileExtension(originalFilename);
+        String uniqueFilename = originalFilename + "_" + Instant.now().toEpochMilli() + fileExtension;
         String relativePath = createStoragePath(uniqueFilename);
         Path fullPath = Path.of(storageBasePath, relativePath);
 
@@ -310,7 +311,7 @@ public class DocumentService {
         DocumentVersion newVersion = DocumentVersion.builder()
                 .versionNumber(nextVersion)
                 .filePath(fullPath.toString())
-                .originalFilename(file.getOriginalFilename())
+                .originalFilename(originalFilename)
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .status(DocumentStatus.PENDING)
@@ -320,6 +321,7 @@ public class DocumentService {
 
         // Update document information
         document.setStatus(DocumentStatus.PENDING); // Reset to pending for reprocessing
+        document.setFilename(originalFilename);
         document.setFilePath(fullPath.toString());
         document.setThumbnailPath(null); // Reset thumbnail - will be generated for new version
         document.setFileSize(file.getSize());

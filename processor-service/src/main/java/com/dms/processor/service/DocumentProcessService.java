@@ -39,7 +39,9 @@ public class DocumentProcessService {
     public void processDocument(DocumentInformation document, EventType eventType) {
         try {
             // Update status to PROCESSING
-            updateDocumentStatus(document, DocumentStatus.PROCESSING);
+            document.setStatus(DocumentStatus.PROCESSING);
+            document.setProcessingError(null);
+            documentRepository.save(document);
 
             switch (eventType) {
                 case SYNC_EVENT, UPDATE_EVENT_WITH_FILE -> processFullDocument(document);
@@ -69,7 +71,9 @@ public class DocumentProcessService {
     }
 
     private void processMetadataUpdate(DocumentInformation document) {
-        updateDocumentStatus(document, DocumentStatus.COMPLETED);
+        document.setStatus(DocumentStatus.COMPLETED);
+        documentRepository.save(document);
+
         indexDocument(document);
     }
 
@@ -119,11 +123,6 @@ public class DocumentProcessService {
         DocumentIndex documentIndex = documentIndexMapper.toDocumentIndex(document);
         documentIndexRepository.save(documentIndex);
         log.info("Successfully indexed document: {}", document.getId());
-    }
-
-    private void updateDocumentStatus(DocumentInformation document, DocumentStatus status) {
-        document.setStatus(status);
-        documentRepository.save(document);
     }
 
     private void handleProcessingError(DocumentInformation document, Exception e) {
