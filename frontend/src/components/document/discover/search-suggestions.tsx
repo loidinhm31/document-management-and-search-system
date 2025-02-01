@@ -94,6 +94,11 @@ const SearchSuggestions = ({
     onSearch();
   };
 
+  const cleanSuggestion = (suggestion: string) => {
+    // Replace newlines and tabs with a single space and trim any excess whitespace
+    return suggestion.replace(/[\n\t]+/g, " ").trim();
+  };
+
   // Reset suggestions visibility when search term changes to empty
   useEffect(() => {
     if (!searchTerm.trim()) {
@@ -148,7 +153,7 @@ const SearchSuggestions = ({
                   index === selectedIndex && "bg-accent text-accent-foreground"
                 )}
                 onClick={() => handleSuggestionSelect(suggestion)}
-                dangerouslySetInnerHTML={{ __html: `...${suggestion}...` }}
+                dangerouslySetInnerHTML={{ __html: `...${cleanSuggestion(suggestion)}...` }}
               />
             ))}
           </div>
