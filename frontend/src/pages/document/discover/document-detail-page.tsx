@@ -98,6 +98,10 @@ export default function DocumentDetailPage() {
     }
   };
 
+  const handleVersionUpdate = (updatedDocument: DocumentInformation) => {
+    setDocumentData(updatedDocument);
+  };
+
   if (loading || masterDataLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -176,6 +180,7 @@ export default function DocumentDetailPage() {
                 currentVersion={documentData.currentVersion}
                 documentCreator={documentData.createdBy}
                 documentId={documentData.id}
+                onVersionUpdate={handleVersionUpdate}
               />
             )}
 

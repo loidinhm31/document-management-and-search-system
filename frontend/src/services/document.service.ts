@@ -112,7 +112,7 @@ class DocumentService extends BaseService {
 
   revertToVersion(documentId: string, versionNumber: number) {
     return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/revert`)
+      axiosInstance.post<DocumentInformation>(`/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/revert`)
     );
   }
 

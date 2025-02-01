@@ -12,6 +12,7 @@ import { useProcessing } from "@/context/processing-provider";
 import { RoutePaths } from "@/core/route-config";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
+import { DocumentInformation } from "@/types/document";
 
 export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
@@ -115,6 +116,10 @@ export default function MyDocumentDetailPage() {
     }
   };
 
+  const handleVersionUpdate = (updatedDocument: DocumentInformation) => {
+    setDocumentData(updatedDocument);
+  };
+
   if (loading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -144,6 +149,7 @@ export default function MyDocumentDetailPage() {
                 currentVersion={documentData.currentVersion}
                 documentCreator={documentData.createdBy}
                 documentId={documentData.id}
+                onVersionUpdate={handleVersionUpdate}
               />
             )}
 

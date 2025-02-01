@@ -2,27 +2,29 @@ import { AlertCircle, Clock, History, Loader2, User } from "lucide-react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { DocumentVersion } from "@/types/document";
-import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
+import { DocumentInformation, DocumentVersion } from "@/types/document";
 
 interface VersionHistoryProps {
   versions: DocumentVersion[];
   currentVersion: number;
   documentCreator?: string;
   documentId?: string;
+  onVersionUpdate?: (updatedDocument: DocumentInformation) => void;
 }
 
 const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                                                                  versions,
                                                                  currentVersion,
                                                                  documentCreator,
-                                                                 documentId
+                                                                 documentId,
+                                                                 onVersionUpdate
                                                                }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -62,13 +64,18 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
 
     setLoading(true);
     try {
-      await documentService.revertToVersion(documentId, versionNumber);
+      const response = await documentService.revertToVersion(documentId, versionNumber);
+
+      // Call the callback with updated document
+      if (onVersionUpdate) {
+        onVersionUpdate(response.data);
+      }
+
       toast({
         title: t("common.success"),
         description: t("document.versions.revertSuccess"),
         variant: "success"
       });
-      window.location.reload(); // TODO avoid Refresh to show changes
     } catch (error) {
       toast({
         title: t("common.error"),
