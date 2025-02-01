@@ -6,6 +6,7 @@ import com.dms.document.interaction.dto.ShareSettings;
 import com.dms.document.interaction.dto.ThumbnailResponse;
 import com.dms.document.interaction.dto.UpdateShareSettingsRequest;
 import com.dms.document.interaction.model.DocumentInformation;
+import com.dms.document.interaction.model.DocumentVersion;
 import com.dms.document.interaction.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -66,7 +66,7 @@ public class DocumentController {
 
         // For non-placeholder (actual) thumbnails, use normal caching
         if (!thumbnailResponse.isPlaceholder()) {
-            // Generate ETag considering both document update time and file content
+            // Generate ETag considering both document update time and version info
             String eTag = generateETag(document);
 
             // Check if client's cached version is still valid
@@ -78,8 +78,11 @@ public class DocumentController {
 
             headers.setETag(eTag);
             headers.setCacheControl(CacheControl.maxAge(7, TimeUnit.DAYS)
-                    .mustRevalidate()
+                    .mustRevalidate() // Force revalidation
                     .noTransform());
+
+            // Add version header for cache busting
+            headers.set("X-Document-Version", String.valueOf(document.getCurrentVersion()));
         } else {
             // For placeholders, prevent caching
             headers.setCacheControl(CacheControl.noCache());
@@ -97,14 +100,17 @@ public class DocumentController {
     }
 
     private String generateETag(DocumentInformation document) {
-        // Include all relevant information that should trigger a cache invalidation
-        String contentKey = String.format("%s_%s_%s_%s_%s",
+        // Include the current version number and specific version's thumbnail path
+        String contentKey = String.format("%s_%s_%s_%s_%s_%s",
                 document.getId(),
                 document.getUpdatedAt().getTime(),
+                document.getCurrentVersion(),
                 document.getFileSize(),
                 document.getFilename(),
-                // Include thumbnail path or "none" if not yet generated
-                Optional.ofNullable(document.getThumbnailPath()).orElse("none")
+                // Include version-specific thumbnail path or "none"
+                document.getLatestVersion()
+                        .map(DocumentVersion::getThumbnailPath)
+                        .orElse("none")
         );
 
         return String.format("\"%s\"", DigestUtils.md5DigestAsHex(contentKey.getBytes()));
