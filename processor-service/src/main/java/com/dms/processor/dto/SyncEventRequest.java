@@ -12,4 +12,5 @@ import lombok.experimental.SuperBuilder;
 @Setter
 public class SyncEventRequest extends EventRequest {
     private String documentId;
+    private Integer versionNumber;
 }

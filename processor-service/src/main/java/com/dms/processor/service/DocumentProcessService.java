@@ -1,6 +1,6 @@
 package com.dms.processor.service;
 
-import com.dms.processor.dto.DocumentContent;
+import com.dms.processor.dto.DocumentExtractContent;
 import com.dms.processor.elasticsearch.DocumentIndex;
 import com.dms.processor.elasticsearch.repository.DocumentIndexRepository;
 import com.dms.processor.enums.DocumentStatus;
@@ -8,9 +8,11 @@ import com.dms.processor.enums.EventType;
 import com.dms.processor.exception.DocumentProcessingException;
 import com.dms.processor.mapper.DocumentIndexMapper;
 import com.dms.processor.model.DocumentInformation;
+import com.dms.processor.model.DocumentVersion;
 import com.dms.processor.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,8 @@ public class DocumentProcessService {
     private final LanguageDetectionService languageDetectionService;
     private final ThumbnailService thumbnailService;
     private final DocumentIndexMapper documentIndexMapper;
+    private final DocumentContentService documentContentService;
+
 
     @Transactional
     public void processDocument(DocumentInformation document, EventType eventType) {
@@ -48,8 +53,18 @@ public class DocumentProcessService {
     }
 
     private void processFullDocument(DocumentInformation document) {
-        DocumentContent extractedContent = extractAndProcessContent(document);
-        updateDocumentWithContent(document, extractedContent);
+        Integer versionNumber = document.getCurrentVersion();
+        if (Objects.isNull(versionNumber)) {
+            throw new DocumentProcessingException("No version number provided");
+        }
+
+        DocumentVersion documentVersion = document.getVersion(versionNumber)
+                .orElseThrow(() -> new DocumentProcessingException("Version not found"));
+
+        DocumentExtractContent extractedContent = extractAndProcessContent(documentVersion);
+        updateDocumentWithContent(document, documentVersion, extractedContent);
+        // Generate thumbnail if needed (base on extracted content)
+        handleThumbnail(document);
         indexDocument(document);
     }
 
@@ -58,27 +73,49 @@ public class DocumentProcessService {
         indexDocument(document);
     }
 
-    private DocumentContent extractAndProcessContent(DocumentInformation document) {
-        DocumentContent extractedContent = contentExtractorService.extractContent(Path.of(document.getFilePath()));
+    private DocumentExtractContent extractAndProcessContent(DocumentVersion documentVersion) {
+        Path filePath = Path.of(documentVersion.getFilePath());
+        DocumentExtractContent extractedContent = contentExtractorService.extractContent(filePath);
+
         if (extractedContent.content().isEmpty()) {
             throw new DocumentProcessingException("No content could be extracted");
         }
         return extractedContent;
     }
 
-    private void updateDocumentWithContent(DocumentInformation document, DocumentContent content) {
-        document.setContent(content.content().trim());
-        document.setExtractedMetadata(content.metadata());
-        languageDetectionService.detectLanguage(content.content())
-                .ifPresent(document::setLanguage);
+    private void updateDocumentWithContent(DocumentInformation document,
+                                           DocumentVersion documentVersion,
+                                           DocumentExtractContent documentExtractContent) {
+        // Update document's current content
+        document.setContent(documentExtractContent.content().trim());
+        document.setExtractedMetadata(documentExtractContent.metadata());
+
+        // Detect language if not already set
+        if (StringUtils.isEmpty(documentVersion.getLanguage())) {
+            languageDetectionService.detectLanguage(documentExtractContent.content())
+                    .ifPresent(lang -> {
+                        documentVersion.setLanguage(lang);
+                        document.setLanguage(lang);
+                    });
+        }
+
+        // Update version status
+        documentVersion.setStatus(DocumentStatus.COMPLETED);
         document.setStatus(DocumentStatus.COMPLETED);
-        document.setProcessingError(null);
+
+        // Update timestamps
         document.setUpdatedAt(new Date());
         documentRepository.save(document);
+
+        documentContentService.saveVersionContent(
+                document.getId(),
+                documentVersion.getVersionNumber(),
+                documentExtractContent.content(),
+                documentExtractContent.metadata()
+        );
     }
 
     private void indexDocument(DocumentInformation document) {
-        documentIndexRepository.deleteById(document.getId());
         DocumentIndex documentIndex = documentIndexMapper.toDocumentIndex(document);
         documentIndexRepository.save(documentIndex);
         log.info("Successfully indexed document: {}", document.getId());
@@ -91,9 +128,22 @@ public class DocumentProcessService {
 
     private void handleProcessingError(DocumentInformation document, Exception e) {
         log.error("Error processing document: {}", document.getId(), e);
+
+        // Get current version
+        DocumentVersion currentVersion = document.getVersion(document.getCurrentVersion())
+                .orElse(null);
+
+        if (currentVersion != null) {
+            // Update version status
+            currentVersion.setStatus(DocumentStatus.FAILED);
+            currentVersion.setProcessingError(e.getMessage());
+        }
+
+        // Update document status
         document.setStatus(DocumentStatus.FAILED);
         document.setProcessingError(e.getMessage());
         document.setUpdatedAt(new Date());
+
         documentRepository.save(document);
     }
 
@@ -132,24 +182,10 @@ public class DocumentProcessService {
         Path thumbnailDir = Path.of(document.getFilePath()).getParent().resolve("thumbnails");
         Files.createDirectories(thumbnailDir);
 
-        String thumbnailFilename = document.getId() + "_thumb.png";
+        String thumbnailFilename = String.format("%s_v%d_thumb.png", document.getId(), document.getCurrentVersion());
         Path thumbnailPath = thumbnailDir.resolve(thumbnailFilename);
         Files.write(thumbnailPath, thumbnailData);
         return thumbnailPath;
-    }
-
-    public void cleanThumbnail(DocumentInformation document) {
-        String oldThumbnailPath = document.getThumbnailPath();
-        document.setThumbnailPath(null);
-
-        if (oldThumbnailPath != null) {
-            try {
-                Files.deleteIfExists(Path.of(oldThumbnailPath));
-            } catch (IOException e) {
-                log.error("Error deleting thumbnail for document: {}", document.getId(), e);
-                throw new DocumentProcessingException("Failed to clean thumbnail", e);
-            }
-        }
     }
 
 }

@@ -9,7 +9,7 @@ public class DocumentIndexMapper {
     public DocumentIndex toDocumentIndex(DocumentInformation doc) {
         return DocumentIndex.builder()
                 .id(doc.getId())
-                .filename(doc.getOriginalFilename())
+                .filename(doc.getFilename())
                 .content(doc.getContent())
                 .userId(doc.getUserId())
                 .mimeType(doc.getMimeType())

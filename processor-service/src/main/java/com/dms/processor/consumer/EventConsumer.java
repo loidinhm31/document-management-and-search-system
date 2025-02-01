@@ -23,16 +23,16 @@ public class EventConsumer {
 
     @RabbitListener(queues = "${rabbitmq.queues.document-sync}")
     public void consumeSyncEvent(SyncEventRequest syncEventRequest) {
-        log.info("Consumed event: [ID: {}, Type: {}]",
+        log.info("Consumed event: [ID: {}, Type: {}, Version: {}]",
                 syncEventRequest.getEventId(),
-                syncEventRequest.getSubject());
+                syncEventRequest.getSubject(),
+                syncEventRequest.getVersionNumber());
 
         try {
             EventType eventType = EventType.valueOf(syncEventRequest.getSubject());
             switch (eventType) {
                 case DELETE_EVENT -> handleDeleteEvent(syncEventRequest);
-                case UPDATE_EVENT -> handleUpdateEvent(syncEventRequest, eventType);
-                case UPDATE_EVENT_WITH_FILE -> handleUpdateEvent(syncEventRequest, eventType);
+                case UPDATE_EVENT, UPDATE_EVENT_WITH_FILE -> handleUpdateEvent(syncEventRequest, eventType);
                 case SYNC_EVENT -> handleSyncEvent(syncEventRequest, eventType);
                 default -> log.warn("Unhandled event type: {}", eventType);
             }
@@ -48,8 +48,6 @@ public class EventConsumer {
         DocumentInformation document = documentRepository.findById(request.getDocumentId()).orElse(null);
         if (Objects.nonNull(document) &&
                 StringUtils.isNotEmpty(document.getThumbnailPath())) {
-            documentProcessService.cleanThumbnail(document);
-
             documentProcessService.deleteDocumentFromIndex(document.getId());
         }
     }
@@ -72,30 +70,10 @@ public class EventConsumer {
 
         documentOpt.ifPresentOrElse(
                 document -> {
-                    if (document.isDeleted()) {
-                        log.info("Document {} is marked as deleted, removing from index", document.getId());
-                        if (StringUtils.isNotEmpty(document.getThumbnailPath())) {
-                            documentProcessService.cleanThumbnail(document);
+                    log.info("Processing document: {}", document.getId());
 
-                            documentProcessService.deleteDocumentFromIndex(document.getId());
-                        }
-                    } else {
-                        log.info("Processing document: {}", document.getId());
-
-                        // Index document
-                        documentProcessService.processDocument(document, eventType);
-
-                        // Generate thumbnail if needed (base on extracted content)
-                        if (eventType == EventType.SYNC_EVENT || eventType == EventType.UPDATE_EVENT_WITH_FILE) {
-                            try {
-                                documentProcessService.cleanThumbnail(document);
-
-                                documentProcessService.handleThumbnail(document);
-                            } catch (Exception e) {
-                                log.error("Error generating thumbnail for document: {}", document.getId(), e);
-                            }
-                        }
-                    }
+                    // Index document
+                    documentProcessService.processDocument(document, eventType);
                 },
                 () -> log.warn("Document not found: {}", request.getDocumentId())
         );

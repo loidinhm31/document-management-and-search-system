@@ -9,6 +9,7 @@ import com.dms.document.interaction.enums.SharingType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.exception.UnsupportedDocumentTypeException;
 import com.dms.document.interaction.model.DocumentInformation;
+import com.dms.document.interaction.model.DocumentVersion;
 import com.dms.document.interaction.repository.DocumentRepository;
 import com.dms.document.interaction.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -40,7 +41,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
-    private final PublishEventService publishEventService;
     @Value("${app.document.storage.path}")
     private String storageBasePath;
 
@@ -53,8 +53,7 @@ public class DocumentService {
     @Value("${app.document.placeholder.error}")
     private Resource errorPlaceholder;
 
-    private final MongoTemplate mongoTemplate;
-
+    private final PublishEventService publishEventService;
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
 
@@ -77,7 +76,7 @@ public class DocumentService {
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
         String fileExtension = getFileExtension(originalFilename);
-        String uniqueFilename = UUID.randomUUID() + fileExtension;
+        String uniqueFilename = originalFilename + "_" + Instant.now().toEpochMilli() + fileExtension;
 
         // Create storage path
         String relativePath = createStoragePath(uniqueFilename);
@@ -89,11 +88,23 @@ public class DocumentService {
         // Save file to disk
         Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
+        // Create new version metadata
+        int nextVersion = 0;
+        DocumentVersion newVersion = DocumentVersion.builder()
+                .versionNumber(nextVersion)
+                .filePath(fullPath.toString())
+                .originalFilename(file.getOriginalFilename())
+                .fileSize(file.getSize())
+                .mimeType(file.getContentType())
+                .status(DocumentStatus.PENDING)
+                .createdBy(username)
+                .createdAt(new Date())
+                .build();
+
         // Create document with PENDING status
         DocumentInformation document = DocumentInformation.builder()
                 .status(DocumentStatus.PENDING)
-                .filename(uniqueFilename)
-                .originalFilename(originalFilename)
+                .filename(file.getOriginalFilename())
                 .filePath(fullPath.toString())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
@@ -108,13 +119,15 @@ public class DocumentService {
                 .sharingType(SharingType.PRIVATE)
                 .sharedWith(new HashSet<>())
                 .deleted(false)
+                .currentVersion(nextVersion)
+                .versions(List.of(newVersion))
                 .createdAt(new Date())
                 .createdBy(username)
                 .updatedAt(new Date())
                 .updatedBy(username)
                 .build();
 
-        // Save to MongoDB
+        // Save data
         DocumentInformation savedDocument = documentRepository.save(document);
         log.info("Saved document: {}", savedDocument.getFilename());
 
@@ -280,14 +293,6 @@ public class DocumentService {
         // Get existing document
         DocumentInformation document = getDocumentDetails(documentId, username);
 
-        // Delete old file
-        try {
-            Path oldFilePath = Path.of(document.getFilePath());
-            Files.deleteIfExists(oldFilePath);
-        } catch (IOException e) {
-            log.error("Error deleting old file for document: {}", documentId, e);
-        }
-
         // Save new file
         String fileExtension = getFileExtension(file.getOriginalFilename());
         String uniqueFilename = UUID.randomUUID() + fileExtension;
@@ -300,11 +305,23 @@ public class DocumentService {
         // Save new file to disk
         Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
 
+        // Create new version metadata
+        int nextVersion = (document.getCurrentVersion() != null ? document.getCurrentVersion() : 0) + 1;
+        DocumentVersion newVersion = DocumentVersion.builder()
+                .versionNumber(nextVersion)
+                .filePath(fullPath.toString())
+                .originalFilename(file.getOriginalFilename())
+                .fileSize(file.getSize())
+                .mimeType(file.getContentType())
+                .status(DocumentStatus.PENDING)
+                .createdBy(username)
+                .createdAt(new Date())
+                .build();
+
         // Update document information
         document.setStatus(DocumentStatus.PENDING); // Reset to pending for reprocessing
-        document.setFilename(uniqueFilename);
-        document.setOriginalFilename(file.getOriginalFilename());
         document.setFilePath(fullPath.toString());
+        document.setThumbnailPath(null); // Reset thumbnail - will be generated for new version
         document.setFileSize(file.getSize());
         document.setMimeType(file.getContentType());
         document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
@@ -316,6 +333,16 @@ public class DocumentService {
         document.setCourseLevel(documentUpdateRequest.level());
         document.setCategory(documentUpdateRequest.category());
         document.setTags(documentUpdateRequest.tags());
+        document.setUpdatedAt(new Date());
+        document.setUpdatedBy(username);
+
+        document.setCurrentVersion(nextVersion);
+        // Add new version to versions list
+        List<DocumentVersion> versions = new ArrayList<>(
+                CollectionUtils.isNotEmpty(document.getVersions()) ? document.getVersions() : CollectionUtils.emptyCollection());
+        versions.add(newVersion);
+        document.setVersions(versions);
+
         document.setUpdatedAt(new Date());
         document.setUpdatedBy(username);
 
@@ -346,21 +373,13 @@ public class DocumentService {
         DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
-        // Delete the physical file
-        try {
-            Path filePath = Path.of(document.getFilePath());
-            Files.deleteIfExists(filePath);
-        } catch (IOException e) {
-            log.error("Error deleting file for document: {}", documentId, e);
-        }
-
         // Soft delete in database
         document.setDeleted(true);
         document.setUpdatedAt(new Date());
         document.setUpdatedBy(username);
         documentRepository.save(document);
 
-        // Send sync event for elasticsearch deletion
+        // Send delete event
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()
                         .eventId(UUID.randomUUID().toString())
@@ -418,6 +437,78 @@ public class DocumentService {
         return documentRepository.findAllTags().stream()
                 .flatMap(doc -> doc.getTags().stream())
                 .collect(Collectors.toSet());
+    }
+
+    public DocumentInformation getDocumentVersion(String documentId, Integer versionNumber, String username) {
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
+
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+
+        // Find the specific version
+        Optional<DocumentVersion> version = document.getVersion(versionNumber);
+        if (version.isEmpty()) {
+            throw new InvalidDocumentException("Version not found");
+        }
+
+        // Create a copy of the document with version-specific information
+        DocumentVersion targetVersion = version.get();
+        document.setStatus(targetVersion.getStatus());
+        document.setFilePath(targetVersion.getFilePath());
+        document.setThumbnailPath(targetVersion.getThumbnailPath());
+        document.setFileSize(targetVersion.getFileSize());
+        document.setMimeType(targetVersion.getMimeType());
+        document.setLanguage(targetVersion.getLanguage());
+        document.setExtractedMetadata(targetVersion.getExtractedMetadata());
+        document.setProcessingError(targetVersion.getProcessingError());
+
+        return document;
+    }
+
+    public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username) throws IOException {
+        DocumentInformation document = getDocumentVersion(documentId, versionNumber, username);
+
+        // Read and return the file content
+        try (InputStream in = Files.newInputStream(Path.of(document.getFilePath()))) {
+            return in.readAllBytes();
+        }
+    }
+
+    public DocumentVersionResponse getVersionHistory(String documentId, String username) {
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
+
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+
+        List<DocumentVersionDetail> versionDetails = document.getVersions().stream()
+                .map(version -> DocumentVersionDetail.builder()
+                        .versionNumber(version.getVersionNumber())
+                        .filePath(version.getFilePath())
+                        .originalFilename(version.getOriginalFilename())
+                        .fileSize(version.getFileSize())
+                        .mimeType(version.getMimeType())
+                        .status(version.getStatus())
+                        .language(version.getLanguage())
+                        .extractedMetadata(version.getExtractedMetadata())
+                        .processingError(version.getProcessingError())
+                        .createdBy(version.getCreatedBy())
+                        .createdAt(version.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        return DocumentVersionResponse.builder()
+                .versions(versionDetails)
+                .currentVersion(document.getCurrentVersion())
+                .totalVersions(document.getVersions().size())
+                .build();
     }
 
     private void validateDocument(MultipartFile file) {

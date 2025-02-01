@@ -5,14 +5,13 @@ import com.dms.document.interaction.enums.DocumentType;
 import com.dms.document.interaction.enums.SharingType;
 import lombok.Builder;
 import lombok.Data;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Data
 @Builder
@@ -21,29 +20,11 @@ public class DocumentInformation {
     @Id
     private String id;
 
-    @Field("filename")
-    private String filename;
-
-    @Field("content")
-    private String content;
+    @Field("status")
+    private DocumentStatus status;
 
     @Field("summary")
     private String summary;
-
-    @Field("original_filename")
-    private String originalFilename;
-
-    @Field("file_path")
-    private String filePath;
-
-    @Field("thumbnail_path")
-    private String thumbnailPath;
-
-    @Field("file_size")
-    private Long fileSize;
-
-    @Field("mime_type")
-    private String mimeType;
 
     @Indexed
     @Field("document_type")
@@ -69,9 +50,6 @@ public class DocumentInformation {
     @Field("tags")
     private Set<String> tags;
 
-    @Field("extracted_metadata")
-    private Map<String, String> extractedMetadata;
-
     @Field("user_id")
     private String userId;
 
@@ -84,15 +62,42 @@ public class DocumentInformation {
     @Field("deleted")
     private boolean deleted;
 
-    @Field("status")
-    private DocumentStatus status;
+    @Field("current_version")
+    private Integer currentVersion;
 
+    @Field("versions")
+    @Indexed
+    private List<DocumentVersion> versions;
+
+    // Version fields
     @Field("processing_error")
     private String processingError;
+
+    @Field("filename")
+    private String filename;
+
+    @Field("file_path")
+    private String filePath;
+
+    @Field("thumbnail_path")
+    private String thumbnailPath;
+
+    @Field("file_size")
+    private Long fileSize;
+
+    @Field("mime_type")
+    private String mimeType;
+
+    @Field("extracted_metadata")
+    private Map<String, String> extractedMetadata;
+
+    @Field("content")
+    private String content;
 
     @Field("language")
     private String language;
 
+    // Audit fields
     @Field("created_at")
     private Date createdAt;
 
@@ -104,4 +109,21 @@ public class DocumentInformation {
 
     @Field("updated_by")
     private String updatedBy;
+
+    public Optional<DocumentVersion> getLatestVersion() {
+        if (CollectionUtils.isEmpty(versions)) {
+            return Optional.empty();
+        }
+        return versions.stream()
+                .max(Comparator.comparing(DocumentVersion::getVersionNumber));
+    }
+
+    public Optional<DocumentVersion> getVersion(Integer versionNumber) {
+        if (CollectionUtils.isEmpty(versions)) {
+            return Optional.empty();
+        }
+        return versions.stream()
+                .filter(v -> v.getVersionNumber().equals(versionNumber))
+                .findFirst();
+    }
 }

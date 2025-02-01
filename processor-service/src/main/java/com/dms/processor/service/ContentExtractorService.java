@@ -1,6 +1,6 @@
 package com.dms.processor.service;
 
-import com.dms.processor.dto.DocumentContent;
+import com.dms.processor.dto.DocumentExtractContent;
 import com.dms.processor.dto.ExtractedText;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -60,12 +60,12 @@ public class ContentExtractorService {
         this.largeFileProcessor = largeFileProcessor;
     }
 
-    public DocumentContent extractContent(Path filePath) {
+    public DocumentExtractContent extractContent(Path filePath) {
         try {
             String mimeType = Files.probeContentType(filePath);
             if (mimeType == null) {
                 log.warn("Could not determine mime type for file: {}", filePath);
-                return new DocumentContent("", new HashMap<>());
+                return new DocumentExtractContent("", new HashMap<>());
             }
 
             // Initialize metadata map
@@ -74,13 +74,13 @@ public class ContentExtractorService {
             String extractedText;
             if ("application/pdf".equals(mimeType)) {
                 extractedText = handlePdfExtraction(filePath, metadata);
-                return new DocumentContent(extractedText, metadata);
+                return new DocumentExtractContent(extractedText, metadata);
             } else {
                 if (Files.size(filePath) > maxSizeThreshold.toBytes()) {
                     // Use new large file handler for non-PDF large files
                     CompletableFuture<String> future = largeFileProcessor.processLargeFile(filePath);
                     String content = future.get(30, TimeUnit.MINUTES);
-                    return new DocumentContent(content, metadata);
+                    return new DocumentExtractContent(content, metadata);
                 } else {
                     // Handle other file types with existing logic
                     CompletableFuture<String> contentFuture = CompletableFuture.supplyAsync(() ->
@@ -89,17 +89,17 @@ public class ContentExtractorService {
                     try {
                         // Wait for the result with a timeout
                         String result = contentFuture.get(5, TimeUnit.MINUTES); // Add appropriate timeout
-                        return new DocumentContent(result, metadata);
+                        return new DocumentExtractContent(result, metadata);
                     } catch (InterruptedException | ExecutionException | TimeoutException e) {
                         log.error("Error extracting content from file: {}", filePath, e);
-                        return new DocumentContent("", metadata);
+                        return new DocumentExtractContent("", metadata);
                     }
                 }
 
             }
         } catch (Exception e) {
             log.error("Error extracting content from file: {}", filePath, e);
-            return new DocumentContent("", new HashMap<>());
+            return new DocumentExtractContent("", new HashMap<>());
         }
     }
 

@@ -5,14 +5,13 @@ import com.dms.processor.enums.DocumentType;
 import com.dms.processor.enums.SharingType;
 import lombok.Builder;
 import lombok.Data;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Data
 @Builder
@@ -23,15 +22,6 @@ public class DocumentInformation {
 
     @Field("filename")
     private String filename;
-
-    @Field("content")
-    private String content;
-
-    @Field("summary")
-    private String summary;
-
-    @Field("original_filename")
-    private String originalFilename;
 
     @Field("file_path")
     private String filePath;
@@ -44,6 +34,18 @@ public class DocumentInformation {
 
     @Field("mime_type")
     private String mimeType;
+
+    @Field("status")
+    private DocumentStatus status;
+
+    @Field("content")
+    private String content;
+
+    @Field("language")
+    private String language;
+
+    @Field("summary")
+    private String summary;
 
     @Indexed
     @Field("document_type")
@@ -84,14 +86,15 @@ public class DocumentInformation {
     @Field("deleted")
     private boolean deleted;
 
-    @Field("status")
-    private DocumentStatus status;
-
     @Field("processing_error")
     private String processingError;
 
-    @Field("language")
-    private String language;
+    @Field("current_version")
+    private Integer currentVersion;
+
+    @Field("versions")
+    @Indexed
+    private List<DocumentVersion> versions;
 
     @Field("created_at")
     private Date createdAt;
@@ -104,4 +107,21 @@ public class DocumentInformation {
 
     @Field("updated_by")
     private String updatedBy;
+
+    public Optional<DocumentVersion> getLatestVersion() {
+        if (CollectionUtils.isEmpty(versions)) {
+            return Optional.empty();
+        }
+        return versions.stream()
+                .max(Comparator.comparing(DocumentVersion::getVersionNumber));
+    }
+
+    public Optional<DocumentVersion> getVersion(Integer versionNumber) {
+        if (CollectionUtils.isEmpty(versions)) {
+            return Optional.empty();
+        }
+        return versions.stream()
+                .filter(v -> v.getVersionNumber().equals(versionNumber))
+                .findFirst();
+    }
 }
