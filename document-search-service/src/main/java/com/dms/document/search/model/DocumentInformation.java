@@ -24,15 +24,6 @@ public class DocumentInformation {
     @Field("filename")
     private String filename;
 
-    @Field("content")
-    private String content;
-
-    @Field("summary")
-    private String summary;
-
-    @Field("original_filename")
-    private String originalFilename;
-
     @Field("file_path")
     private String filePath;
 
@@ -44,6 +35,18 @@ public class DocumentInformation {
 
     @Field("mime_type")
     private String mimeType;
+
+    @Field("status")
+    private DocumentStatus status;
+
+    @Field("content")
+    private String content;
+
+    @Field("language")
+    private String language;
+
+    @Field("summary")
+    private String summary;
 
     @Indexed
     @Field("document_type")
@@ -84,14 +87,11 @@ public class DocumentInformation {
     @Field("deleted")
     private boolean deleted;
 
-    @Field("status")
-    private DocumentStatus status;
-
     @Field("processing_error")
     private String processingError;
 
-    @Field("language")
-    private String language;
+    @Field("current_version")
+    private Integer currentVersion;
 
     @Field("created_at")
     private Date createdAt;

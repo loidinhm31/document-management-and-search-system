@@ -93,7 +93,7 @@ public class DocumentService {
         DocumentVersion newVersion = DocumentVersion.builder()
                 .versionNumber(nextVersion)
                 .filePath(fullPath.toString())
-                .originalFilename(file.getOriginalFilename())
+                .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .status(DocumentStatus.PENDING)
@@ -311,7 +311,7 @@ public class DocumentService {
         DocumentVersion newVersion = DocumentVersion.builder()
                 .versionNumber(nextVersion)
                 .filePath(fullPath.toString())
-                .originalFilename(originalFilename)
+                .filename(originalFilename)
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .status(DocumentStatus.PENDING)
@@ -479,7 +479,7 @@ public class DocumentService {
                 .versionNumber(nextVersion)
                 .filePath(versionToRevert.getFilePath())          // Reuse existing file path
                 .thumbnailPath(versionToRevert.getThumbnailPath()) // Reuse existing thumbnail
-                .originalFilename(versionToRevert.getOriginalFilename())
+                .filename(versionToRevert.getFilename())
                 .fileSize(versionToRevert.getFileSize())
                 .mimeType(versionToRevert.getMimeType())
                 .status(DocumentStatus.COMPLETED)
@@ -491,7 +491,7 @@ public class DocumentService {
 
         // Update document information - reuse existing data
         document.setStatus(DocumentStatus.PENDING); // Pending for indexing
-        document.setFilename(versionToRevert.getOriginalFilename());
+        document.setFilename(versionToRevert.getFilename());
         document.setFilePath(versionToRevert.getFilePath());
         document.setThumbnailPath(versionToRevert.getThumbnailPath());
         document.setFileSize(versionToRevert.getFileSize());

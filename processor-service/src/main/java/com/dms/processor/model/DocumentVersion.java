@@ -21,8 +21,8 @@ public class DocumentVersion {
     @Field("thumbnail_path")
     private String thumbnailPath;
 
-    @Field("original_filename")
-    private String originalFilename;
+    @Field("filename")
+    private String filename;
 
     @Field("file_size")
     private Long fileSize;
