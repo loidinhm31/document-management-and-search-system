@@ -1,8 +1,10 @@
-import React, { useEffect } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Timer, X } from "lucide-react";
+import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { documentService } from "@/services/document.service";
+
 import { useProcessing } from "@/context/processing-provider";
+import { documentService } from "@/services/document.service";
+import { DocumentStatus } from "@/types/document";
 
 export function ProcessingStatus() {
   const { t } = useTranslation();
@@ -12,7 +14,7 @@ export function ProcessingStatus() {
   useEffect(() => {
     const checkStatuses = async () => {
       const pendingItems = items.filter(
-        item => item.status === "PENDING" || item.status === "PROCESSING"
+        item => item.status === DocumentStatus.PENDING || item.status === DocumentStatus.PROCESSING
       );
 
       for (const item of pendingItems) {
@@ -32,7 +34,7 @@ export function ProcessingStatus() {
   // Auto-remove completed items after 5 seconds
   useEffect(() => {
     const completedItems = items.filter(
-      item => item.status === "COMPLETED" || item.status === "FAILED"
+      item => item.status === DocumentStatus.COMPLETED || item.status === DocumentStatus.FAILED
     );
 
     completedItems.forEach(item => {
@@ -61,10 +63,10 @@ export function ProcessingStatus() {
           <div className="flex items-start gap-3">
             {/* Status Icon */}
             <div className="mt-1">
-              {item.status === "PENDING" && <Timer className="h-5 w-5 text-muted-foreground" />}
-              {item.status === "PROCESSING" && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
-              {item.status === "COMPLETED" && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-              {item.status === "FAILED" && <AlertCircle className="h-5 w-5 text-destructive" />}
+              {item.status === DocumentStatus.PENDING && <Timer className="h-5 w-5 text-muted-foreground" />}
+              {item.status === DocumentStatus.PROCESSING && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+              {item.status === DocumentStatus.COMPLETED && <CheckCircle2 className="h-5 w-5 text-green-500" />}
+              {item.status === DocumentStatus.FAILED && <AlertCircle className="h-5 w-5 text-destructive" />}
             </div>
 
             {/* Content */}

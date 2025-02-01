@@ -29,7 +29,7 @@ class DocumentService extends BaseService {
   }
 
   getDocumentDetails(id: string) {
-    return axiosInstance.get(`/document-interaction/api/v1/documents/${id}`);
+    return axiosInstance.get<DocumentInformation>(`/document-interaction/api/v1/documents/${id}`);
   }
 
   updateDocument(id: string, data: DocumentMetadataUpdate) {

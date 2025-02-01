@@ -1,5 +1,5 @@
 import { AlertCircle, Clock, History, Loader2, User } from "lucide-react";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
@@ -9,7 +9,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { DocumentInformation, DocumentVersion } from "@/types/document";
+import { useAppSelector } from "@/store/hook";
+import { selectProcessingItemByDocumentId } from "@/store/slices/processingSlice";
+import { DocumentInformation, DocumentStatus, DocumentVersion } from "@/types/document";
 
 interface VersionHistoryProps {
   versions: DocumentVersion[];
@@ -31,6 +33,35 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
   const { currentUser } = useAuth();
   const isDocumentCreator = currentUser?.username === documentCreator;
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
+
+  const documentProcessingStatus = useAppSelector(
+    selectProcessingItemByDocumentId(documentId)
+  );
+
+  const fetchDocumentDetails = useCallback(async () => {
+    if (!documentId) return;
+
+    setLoading(true);
+    try {
+      const response = await documentService.getDocumentDetails(documentId);
+
+      // Update parent component with new document data
+      if (onVersionUpdate) {
+        onVersionUpdate(response.data);
+      }
+
+    } catch (error) {
+      console.error("Error fetching document details:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [documentId, onVersionUpdate, t, toast]);
+
+  useEffect(() => {
+    if (documentProcessingStatus?.status === DocumentStatus.COMPLETED) {
+      fetchDocumentDetails();
+    }
+  }, [documentProcessingStatus?.status]);
 
   const handleOpenViewVersion = (version: DocumentVersion) => {
     setSelectedVersion(version);

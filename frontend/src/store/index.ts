@@ -1,8 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { createLogger } from "redux-logger";
 
-import masterDataReducer from "./slices/masterDataSlice";
-import searchReducer from "./slices/searchSlice";
+import masterDataReducer from "@/store/slices/masterDataSlice";
+import searchReducer from "@/store/slices/searchSlice";
+import processingReducer from "@/store/slices/processingSlice";
 
 const logger = createLogger({
   collapsed: true, // Collapse logs by default
@@ -14,7 +15,8 @@ const logger = createLogger({
 export const store = configureStore({
   reducer: {
     search: searchReducer,
-    masterData: masterDataReducer
+    masterData: masterDataReducer,
+    processing: processingReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
