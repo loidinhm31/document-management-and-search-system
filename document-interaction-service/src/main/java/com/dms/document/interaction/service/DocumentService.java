@@ -76,7 +76,7 @@ public class DocumentService {
         // Generate unique filename
         String originalFilename = file.getOriginalFilename();
         String fileExtension = getFileExtension(originalFilename);
-        String uniqueFilename = originalFilename + "_" + Instant.now().toEpochMilli() + fileExtension;
+        String uniqueFilename = getFileName(originalFilename) + "_" + Instant.now().toEpochMilli() + fileExtension;
 
         // Create storage path
         String relativePath = createStoragePath(uniqueFilename);
@@ -236,7 +236,7 @@ public class DocumentService {
         }
         UserDto userDto = response.getBody();
 
-        DocumentInformation documentInformation = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
         documentInformation.setContent(null);
         return documentInformation;
@@ -296,7 +296,7 @@ public class DocumentService {
         // Save new file
         String originalFilename = file.getOriginalFilename();
         String fileExtension = getFileExtension(originalFilename);
-        String uniqueFilename = originalFilename + "_" + Instant.now().toEpochMilli() + fileExtension;
+        String uniqueFilename = getFileName(originalFilename) + "_" + Instant.now().toEpochMilli() + fileExtension;
         String relativePath = createStoragePath(uniqueFilename);
         Path fullPath = Path.of(storageBasePath, relativePath);
 
@@ -441,76 +441,24 @@ public class DocumentService {
                 .collect(Collectors.toSet());
     }
 
-    public DocumentInformation getDocumentVersion(String documentId, Integer versionNumber, String username) {
+    public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username) throws IOException {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserDto userDto = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userDto.getUserId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Find the specific version
-        Optional<DocumentVersion> version = document.getVersion(versionNumber);
-        if (version.isEmpty()) {
-            throw new InvalidDocumentException("Version not found");
-        }
-
-        // Create a copy of the document with version-specific information
-        DocumentVersion targetVersion = version.get();
-        document.setStatus(targetVersion.getStatus());
-        document.setFilePath(targetVersion.getFilePath());
-        document.setThumbnailPath(targetVersion.getThumbnailPath());
-        document.setFileSize(targetVersion.getFileSize());
-        document.setMimeType(targetVersion.getMimeType());
-        document.setLanguage(targetVersion.getLanguage());
-        document.setExtractedMetadata(targetVersion.getExtractedMetadata());
-        document.setProcessingError(targetVersion.getProcessingError());
-
-        return document;
-    }
-
-    public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username) throws IOException {
-        DocumentInformation document = getDocumentVersion(documentId, versionNumber, username);
+        DocumentVersion targetVersion = document.getVersion(versionNumber)
+                .orElseThrow(() -> new InvalidDocumentException("Version not found"));
 
         // Read and return the file content
-        try (InputStream in = Files.newInputStream(Path.of(document.getFilePath()))) {
+        try (InputStream in = Files.newInputStream(Path.of(targetVersion.getFilePath()))) {
             return in.readAllBytes();
         }
-    }
-
-    public DocumentVersionResponse getVersionHistory(String documentId, String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
-        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
-            throw new InvalidDataAccessResourceUsageException("User not found");
-        }
-        UserDto userDto = response.getBody();
-
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
-                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
-
-        List<DocumentVersionDetail> versionDetails = document.getVersions().stream()
-                .map(version -> DocumentVersionDetail.builder()
-                        .versionNumber(version.getVersionNumber())
-                        .filePath(version.getFilePath())
-                        .originalFilename(version.getOriginalFilename())
-                        .fileSize(version.getFileSize())
-                        .mimeType(version.getMimeType())
-                        .status(version.getStatus())
-                        .language(version.getLanguage())
-                        .extractedMetadata(version.getExtractedMetadata())
-                        .processingError(version.getProcessingError())
-                        .createdBy(version.getCreatedBy())
-                        .createdAt(version.getCreatedAt())
-                        .build())
-                .collect(Collectors.toList());
-
-        return DocumentVersionResponse.builder()
-                .versions(versionDetails)
-                .currentVersion(document.getCurrentVersion())
-                .totalVersions(document.getVersions().size())
-                .build();
     }
 
     public DocumentInformation revertToVersion(String documentId, Integer versionNumber, String username) {
@@ -534,7 +482,7 @@ public class DocumentService {
                 .originalFilename(versionToRevert.getOriginalFilename())
                 .fileSize(versionToRevert.getFileSize())
                 .mimeType(versionToRevert.getMimeType())
-                .status(DocumentStatus.COMPLETED)                  // Mark as COMPLETED since we're reusing processed content
+                .status(DocumentStatus.COMPLETED)
                 .language(versionToRevert.getLanguage())          // Reuse language detection
                 .extractedMetadata(versionToRevert.getExtractedMetadata()) // Reuse extracted metadata
                 .createdBy(username)
@@ -542,7 +490,7 @@ public class DocumentService {
                 .build();
 
         // Update document information - reuse existing data
-        document.setStatus(DocumentStatus.COMPLETED);
+        document.setStatus(DocumentStatus.PENDING); // Pending for indexing
         document.setFilename(versionToRevert.getOriginalFilename());
         document.setFilePath(versionToRevert.getFilePath());
         document.setThumbnailPath(versionToRevert.getThumbnailPath());
@@ -560,7 +508,21 @@ public class DocumentService {
         document.setVersions(versions);
 
         // Save changes
-        return documentRepository.save(document);
+        DocumentInformation savedDocument = documentRepository.save(document);
+
+        // Send sync event for Elasticsearch indexing
+        publishEventService.sendSyncEvent(
+                SyncEventRequest.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .userId(document.getUserId())
+                        .documentId(documentId)
+                        .versionNumber(versionToRevert.getVersionNumber())
+                        .subject(EventType.REVERT_EVENT.name())
+                        .triggerAt(LocalDateTime.now())
+                        .build()
+        );
+
+        return savedDocument;
     }
 
     private void validateDocument(MultipartFile file) {
@@ -619,6 +581,13 @@ public class DocumentService {
         return Optional.ofNullable(filename)
                 .filter(f -> f.contains("."))
                 .map(f -> f.substring(f.lastIndexOf(".")))
+                .orElse("");
+    }
+
+    private String getFileName(String filename) {
+        return Optional.ofNullable(filename)
+                .filter(f -> f.contains("."))
+                .map(f -> f.substring(0, f.lastIndexOf(".")))
                 .orElse("");
     }
 

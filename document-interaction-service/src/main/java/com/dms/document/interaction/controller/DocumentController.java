@@ -1,10 +1,7 @@
 package com.dms.document.interaction.controller;
 
 
-import com.dms.document.interaction.dto.DocumentUpdateRequest;
-import com.dms.document.interaction.dto.ShareSettings;
-import com.dms.document.interaction.dto.ThumbnailResponse;
-import com.dms.document.interaction.dto.UpdateShareSettingsRequest;
+import com.dms.document.interaction.dto.*;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentVersion;
 import com.dms.document.interaction.service.DocumentService;
@@ -188,6 +185,28 @@ public class DocumentController {
     public ResponseEntity<Set<String>> getTagSuggestions(
             @RequestParam(required = false) String prefix) {
         return ResponseEntity.ok(documentService.getPopularTags(prefix));
+    }
+
+    @GetMapping("/{documentId}/versions/{versionNumber}/download")
+    public ResponseEntity<byte[]> downloadDocumentVersion(
+            @PathVariable String documentId,
+            @PathVariable Integer versionNumber,
+            @AuthenticationPrincipal Jwt jwt) throws IOException {
+        String username = jwt.getSubject();
+        byte[] content = documentService.getDocumentVersionContent(documentId, versionNumber, username);
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"document\"")
+                .body(content);
+    }
+
+    @PostMapping("/{documentId}/versions/{versionNumber}/revert")
+    public ResponseEntity<DocumentInformation> revertToVersion(
+            @PathVariable String documentId,
+            @PathVariable Integer versionNumber,
+            @AuthenticationPrincipal Jwt jwt) {
+        String username = jwt.getSubject();
+        DocumentInformation document = documentService.revertToVersion(documentId, versionNumber, username);
+        return ResponseEntity.ok(document);
     }
 
 }

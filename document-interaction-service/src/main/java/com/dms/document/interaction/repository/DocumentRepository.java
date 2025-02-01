@@ -19,4 +19,14 @@ public interface DocumentRepository extends MongoRepository<DocumentInformation,
 
     @Query(value = "{'tags': {'$exists': true}, 'deleted': {'$ne': true}}", fields = "{'_id': 0, 'tags': 1}")
     List<TagsResponse> findAllTags();
+
+    @Query("{ '_id': ?0, '$or': [ " +
+            "{ 'user_id': ?1 }, " +
+            "{ 'sharing_type': 'PUBLIC' }, " +
+            "{ '$and': [ " +
+            "    { 'sharing_type': 'SPECIFIC' }, " +
+            "    { 'shared_with': ?1 } " +
+            "  ] } " +
+            "] }")
+    Optional<DocumentInformation> findAccessibleDocumentByIdAndUserId(String id, String userId);
 }

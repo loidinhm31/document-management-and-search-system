@@ -34,6 +34,7 @@ public class EventConsumer {
                 case DELETE_EVENT -> handleDeleteEvent(syncEventRequest);
                 case UPDATE_EVENT, UPDATE_EVENT_WITH_FILE -> handleUpdateEvent(syncEventRequest, eventType);
                 case SYNC_EVENT -> handleSyncEvent(syncEventRequest, eventType);
+                case REVERT_EVENT -> handleRevertEvent(syncEventRequest, eventType);
                 default -> log.warn("Unhandled event type: {}", eventType);
             }
         } catch (IllegalArgumentException e) {
@@ -41,6 +42,11 @@ public class EventConsumer {
         } catch (Exception e) {
             log.error("Error processing event: {}", syncEventRequest.getEventId(), e);
         }
+    }
+
+    private void handleRevertEvent(SyncEventRequest request, EventType eventType) {
+        log.info("Processing revert event for document: {}", request.getDocumentId());
+        findAndProcessDocument(request, eventType);
     }
 
     private void handleDeleteEvent(SyncEventRequest request) {
@@ -73,7 +79,7 @@ public class EventConsumer {
                     log.info("Processing document: {}", document.getId());
 
                     // Index document
-                    documentProcessService.processDocument(document, eventType);
+                    documentProcessService.processDocument(document, request.getVersionNumber(), eventType);
                 },
                 () -> log.warn("Document not found: {}", request.getDocumentId())
         );

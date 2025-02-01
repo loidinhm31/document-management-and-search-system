@@ -6,4 +6,5 @@ public enum EventType {
     UPDATE_EVENT,
     UPDATE_EVENT_WITH_FILE,
     DELETE_EVENT,
+    REVERT_EVENT,
 }

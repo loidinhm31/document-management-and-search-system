@@ -7,6 +7,7 @@ import com.dms.processor.enums.DocumentStatus;
 import com.dms.processor.enums.EventType;
 import com.dms.processor.exception.DocumentProcessingException;
 import com.dms.processor.mapper.DocumentIndexMapper;
+import com.dms.processor.model.DocumentContent;
 import com.dms.processor.model.DocumentInformation;
 import com.dms.processor.model.DocumentVersion;
 import com.dms.processor.repository.DocumentRepository;
@@ -36,7 +37,7 @@ public class DocumentProcessService {
 
 
     @Transactional
-    public void processDocument(DocumentInformation document, EventType eventType) {
+    public void processDocument(DocumentInformation document, Integer versionNumber, EventType eventType) {
         try {
             // Update status to PROCESSING
             document.setStatus(DocumentStatus.PROCESSING);
@@ -46,12 +47,48 @@ public class DocumentProcessService {
             switch (eventType) {
                 case SYNC_EVENT, UPDATE_EVENT_WITH_FILE -> processFullDocument(document);
                 case UPDATE_EVENT -> processMetadataUpdate(document);
+                case REVERT_EVENT -> processRevertContent(document, versionNumber);
                 default -> throw new IllegalArgumentException("Unsupported event type: " + eventType);
             }
         } catch (Exception e) {
             handleProcessingError(document, e);
             throw new DocumentProcessingException("Failed to process document", e);
         }
+    }
+
+    private void processRevertContent(DocumentInformation document, Integer revertToVersionNumber) {
+        // Get the document content for the version we want to revert to
+        DocumentContent documentContent = documentContentService.getVersionContent(
+                document.getId(),
+                revertToVersionNumber
+        ).orElseThrow(() -> new DocumentProcessingException(
+                "Content not found for document: " + document.getId() +
+                        " version: " + document.getCurrentVersion()
+        ));
+
+        // Get current saved version
+        DocumentVersion documentVersion = document.getVersion(document.getCurrentVersion())
+                .orElseThrow(() -> new DocumentProcessingException("Version not found"));
+
+        // Save content
+        documentContentService.saveVersionContent(
+                document.getId(),
+                documentVersion.getVersionNumber(),
+                documentContent.getContent(),
+                documentContent.getExtractedMetadata()
+        );
+
+        // Update document with content and metadata from the content collection
+        document.setContent(documentContent.getContent());
+        document.setExtractedMetadata(documentContent.getExtractedMetadata());
+        document.setStatus(DocumentStatus.COMPLETED);
+        document.setUpdatedAt(new Date());
+        documentRepository.save(document);
+
+        // Index the document
+        indexDocument(document);
+
+        log.info("Successfully processed reverted document: {}", document.getId());
     }
 
     private void processFullDocument(DocumentInformation document) {
