@@ -517,7 +517,7 @@
       },
       "status": {
         "completed": "Processed",
-        "processing": "Pending process",
+        "pending": "Pending process",
         "failed": "Failed"
       }
     }

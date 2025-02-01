@@ -1,32 +1,33 @@
-import React, { useEffect, useState } from "react";
+import { Separator } from "@radix-ui/react-separator";
 import { Loader2, Search, Share2, Users } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { userService } from "@/services/user.service";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
 import { UserSearchResponse } from "@/types/user";
-import { Separator } from "@radix-ui/react-separator";
 
 interface ShareDocumentDialogProps {
   documentId: string;
   documentName: string;
   isShared: boolean;
   onShareToggle: (isShared: boolean) => void;
+  iconOnly: boolean;
 }
 
 export default function ShareDocumentDialog({
@@ -34,6 +35,7 @@ export default function ShareDocumentDialog({
                                               documentName,
                                               isShared,
                                               onShareToggle,
+                                              iconOnly
                                             }: ShareDocumentDialogProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -185,7 +187,7 @@ export default function ShareDocumentDialog({
           className="flex items-center gap-2 px-4"
         >
           <Share2 className="h-4 w-4" />
-          {t("document.actions.share")}
+          {!iconOnly && (t("document.actions.share"))}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">

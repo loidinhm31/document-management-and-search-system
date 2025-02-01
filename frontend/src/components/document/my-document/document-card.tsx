@@ -97,16 +97,15 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
           </Button>
 
           {/* Share Dialog */}
-          <div>
-            <ShareDocumentDialog
-              documentId={documentInformation.id}
-              documentName={documentInformation.originalFilename}
-              isShared={documentInformation.isShared}
-              onShareToggle={(isShared) => {
-                documentInformation.isShared = isShared;
-              }}
-            />
-          </div>
+          <ShareDocumentDialog
+            documentId={documentInformation.id}
+            documentName={documentInformation.originalFilename}
+            isShared={documentInformation.isShared}
+            onShareToggle={(isShared) => {
+              documentInformation.isShared = isShared;
+            }}
+            iconOnly={true}
+          />
 
           {onDelete && (
             <Button

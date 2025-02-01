@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
-import DocumentVersionHistory from "@/components/document/document-versions";
+import DocumentVersionHistory from "@/components/document/document-versions-history";
 import ShareDocumentDialog from "@/components/document/my-document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
@@ -111,7 +111,7 @@ export default function DocumentDetailPage() {
     }
   };
 
-  const handleVersionDownload = async (versionNumber: number) => {
+  const handleVersionDownload = async (versionNumber: number, filename: string) => {
     try {
       const response = await documentService.downloadDocumentVersion(
         documentId,
@@ -120,7 +120,7 @@ export default function DocumentDetailPage() {
       const url = URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", documentData.filename);
+      link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -157,7 +157,7 @@ export default function DocumentDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileBox className="h-5 w-5" />
-              {documentData.originalFilename}
+              {documentData.filename}
             </CardTitle>
             <CardDescription>
               {documentData.documentType} - {(documentData.fileSize / 1024).toFixed(2)} KB
@@ -199,7 +199,7 @@ export default function DocumentDetailPage() {
                 {currentUser?.username === documentData.createdBy && (
                   <ShareDocumentDialog
                     documentId={documentData.id}
-                    documentName={documentData.originalFilename}
+                    documentName={documentData.filename}
                     isShared={true}
                     onShareToggle={() => {
                     }}
@@ -283,7 +283,7 @@ export default function DocumentDetailPage() {
         {/* Document Preview */}
         <Card className="xl:h-[800px]">
           <CardHeader>
-            <CardTitle>{documentData.originalFilename}</CardTitle>
+            <CardTitle>{documentData.filename}</CardTitle>
             <CardDescription>
               {documentData.documentType} - {(documentData.fileSize / 1024).toFixed(2)} KB
             </CardDescription>

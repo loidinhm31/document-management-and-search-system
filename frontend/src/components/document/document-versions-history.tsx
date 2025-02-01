@@ -1,25 +1,20 @@
-import { AlertCircle, ChevronDown, ChevronUp, Clock, Download, History, Loader2, User, X } from "lucide-react";
+import { AlertCircle, Clock, History, Loader2, User } from "lucide-react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
-import { documentService } from "@/services/document.service";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from "@/components/ui/accordion";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/context/auth-context";
+import { toast } from "@/hooks/use-toast";
+import { documentService } from "@/services/document.service";
 import { DocumentVersion } from "@/types/document";
 
 interface VersionHistoryProps {
   versions: DocumentVersion[];
   currentVersion: number;
   onViewVersion: (version: number) => void;
-  onDownloadVersion: (version: number) => void;
+  onDownloadVersion: (version: number, filename: string) => void;
   documentCreator?: string;
   documentId?: string;
 }
@@ -48,7 +43,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
         description: t("document.versions.revertSuccess"),
         variant: "success"
       });
-      window.location.reload(); // Refresh to show changes
+      window.location.reload(); // TODO avoid Refresh to show changes
     } catch (error) {
       toast({
         title: t("common.error"),
@@ -145,7 +140,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onDownloadVersion(version.versionNumber)}
+                        onClick={() => onDownloadVersion(version.versionNumber, version.originalFilename)}
                       >
                         {t("document.versions.actions.download")}
                       </Button>
