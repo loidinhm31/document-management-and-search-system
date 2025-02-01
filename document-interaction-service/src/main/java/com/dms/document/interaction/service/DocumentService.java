@@ -513,6 +513,56 @@ public class DocumentService {
                 .build();
     }
 
+    public DocumentInformation revertToVersion(String documentId, Integer versionNumber, String username) {
+        // Get existing document and validate ownership
+        DocumentInformation document = getDocumentDetails(documentId, username);
+        if (!StringUtils.equals(document.getCreatedBy(), username)) {
+            throw new InvalidDocumentException("Only document creator can revert versions");
+        }
+
+        // Find the specific version
+        DocumentVersion versionToRevert = document.getVersion(versionNumber)
+                .orElseThrow(() -> new InvalidDocumentException("Version not found"));
+
+        int nextVersion = document.getCurrentVersion() + 1;
+
+        // Create new version metadata - reuse existing file and content
+        DocumentVersion newVersion = DocumentVersion.builder()
+                .versionNumber(nextVersion)
+                .filePath(versionToRevert.getFilePath())          // Reuse existing file path
+                .thumbnailPath(versionToRevert.getThumbnailPath()) // Reuse existing thumbnail
+                .originalFilename(versionToRevert.getOriginalFilename())
+                .fileSize(versionToRevert.getFileSize())
+                .mimeType(versionToRevert.getMimeType())
+                .status(DocumentStatus.COMPLETED)                  // Mark as COMPLETED since we're reusing processed content
+                .language(versionToRevert.getLanguage())          // Reuse language detection
+                .extractedMetadata(versionToRevert.getExtractedMetadata()) // Reuse extracted metadata
+                .createdBy(username)
+                .createdAt(new Date())
+                .build();
+
+        // Update document information - reuse existing data
+        document.setStatus(DocumentStatus.COMPLETED);
+        document.setFilename(versionToRevert.getOriginalFilename());
+        document.setFilePath(versionToRevert.getFilePath());
+        document.setThumbnailPath(versionToRevert.getThumbnailPath());
+        document.setFileSize(versionToRevert.getFileSize());
+        document.setMimeType(versionToRevert.getMimeType());
+        document.setLanguage(versionToRevert.getLanguage());
+        document.setExtractedMetadata(versionToRevert.getExtractedMetadata());
+        document.setUpdatedAt(new Date());
+        document.setUpdatedBy(username);
+        document.setCurrentVersion(nextVersion);
+
+        // Add new version to versions list
+        List<DocumentVersion> versions = new ArrayList<>(document.getVersions());
+        versions.add(newVersion);
+        document.setVersions(versions);
+
+        // Save changes
+        return documentRepository.save(document);
+    }
+
     private void validateDocument(MultipartFile file) {
         // Check if file is empty
         if (file.isEmpty()) {

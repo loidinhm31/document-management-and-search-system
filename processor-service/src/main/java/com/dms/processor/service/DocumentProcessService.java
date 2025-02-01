@@ -66,7 +66,7 @@ public class DocumentProcessService {
         DocumentExtractContent extractedContent = extractAndProcessContent(documentVersion);
         updateDocumentWithContent(document, documentVersion, extractedContent);
         // Generate thumbnail if needed (base on extracted content)
-        handleThumbnail(document);
+        handleThumbnail(document, documentVersion);
         indexDocument(document);
     }
 
@@ -156,16 +156,16 @@ public class DocumentProcessService {
         }
     }
 
-    public void handleThumbnail(DocumentInformation document) {
+    public void handleThumbnail(DocumentInformation document, DocumentVersion documentVersion) {
         try {
-            generateAndSaveThumbnail(document);
+            generateAndSaveThumbnail(document, documentVersion);
         } catch (IOException e) {
             log.error("Error handling thumbnail for document: {}", document.getId(), e);
             throw new DocumentProcessingException("Failed to handle thumbnail", e);
         }
     }
 
-    private void generateAndSaveThumbnail(DocumentInformation document) throws IOException {
+    private void generateAndSaveThumbnail(DocumentInformation document, DocumentVersion documentVersion) throws IOException {
         byte[] thumbnailData = thumbnailService.generateThumbnail(
                 Path.of(document.getFilePath()),
                 document.getDocumentType(),
@@ -174,6 +174,8 @@ public class DocumentProcessService {
 
         Path thumbnailPath = saveThumbnailToFile(document, thumbnailData);
         document.setThumbnailPath(thumbnailPath.toString());
+        documentVersion.setThumbnailPath(thumbnailPath.toString());
+
         documentRepository.save(document);
     }
 

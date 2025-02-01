@@ -47,4 +47,14 @@ public class DocumentVersionController {
         DocumentVersionResponse response = documentService.getVersionHistory(documentId, username);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{versionNumber}/revert")
+    public ResponseEntity<DocumentInformation> revertToVersion(
+            @PathVariable String documentId,
+            @PathVariable Integer versionNumber,
+            @AuthenticationPrincipal Jwt jwt) {
+        String username = jwt.getSubject();
+        DocumentInformation document = documentService.revertToVersion(documentId, versionNumber, username);
+        return ResponseEntity.ok(document);
+    }
 }
