@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { DocumentInformation, DocumentStatus, DocumentType } from "@/types/document";
 
-
 interface LazyThumbnailProps {
   documentInformation: DocumentInformation;
 }
@@ -16,6 +15,9 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // Create a unique cache key that includes both document ID and update timestamp
+  const cacheKey = `${documentInformation.id}_${documentInformation.currentVersion}_${new Date(documentInformation.updatedAt).getTime()}`;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -35,13 +37,13 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
     return () => observer.disconnect();
   }, []);
 
+  // Cleanup old thumbnail URL when document information changes
   useEffect(() => {
-    // Cleanup old thumbnail URL when document information changes
     if (thumbnailUrl) {
       URL.revokeObjectURL(thumbnailUrl);
       setThumbnailUrl("");
     }
-  }, [documentInformation.updatedAt]); // Re-run when document is updated
+  }, [cacheKey]); // Changed from document to cacheKey
 
   useEffect(() => {
     if (!isVisible) return;
@@ -51,8 +53,8 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
         setLoading(true);
         setError(false);
 
-        // Create a unique cache key that includes updatedAt to bust cache on updates
-        const cacheKeyUrl = `document/api/v1/documents/thumbnails/${documentInformation.id}?v=${new Date(documentInformation.updatedAt).getTime()}`;
+        // Create a unique cache key URL that includes the version info
+        const cacheKeyUrl = `document/api/v1/documents/thumbnails/${documentInformation.id}?v=${cacheKey}`;
 
         // Try to get from cache first
         const cache = await caches.open("document-thumbnails");
@@ -66,7 +68,10 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
         }
 
         // If not in cache, fetch from server
-        const response = await documentService.getDocumentThumbnail(documentInformation.id);
+        const response = await documentService.getDocumentThumbnail(
+          documentInformation.id,
+          `v=${documentInformation.currentVersion}_${new Date(documentInformation.updatedAt).getTime()}`
+        );
 
         // Convert Axios headers to Headers object
         const headers = new Headers();
@@ -96,7 +101,7 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
     };
 
     loadThumbnail();
-  }, [isVisible, documentInformation.id, documentInformation.updatedAt]); // Add updatedAt to dependencies
+  }, [isVisible, cacheKey]); // Changed from documentInformation.id to cacheKey
 
   // Cleanup URLs on unmount
   useEffect(() => {

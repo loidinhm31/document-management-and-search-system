@@ -9,7 +9,7 @@ interface ProcessingItem {
   filename: string;
   status: DocumentStatus;
   error?: string;
-  addedAt: Date;
+  addedAt: number;
 }
 
 export interface ProcessingState {

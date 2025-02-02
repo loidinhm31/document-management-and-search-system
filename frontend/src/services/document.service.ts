@@ -21,10 +21,18 @@ class DocumentService extends BaseService {
     );
   }
 
-  getDocumentThumbnail(id: string) {
+  getDocumentThumbnail(id: string, versionInfo: string) {
     return this.handleApiResponse(
       axiosInstance.get(`/document-interaction/api/v1/documents/thumbnails/${id}`, {
-        responseType: "blob"
+        responseType: "blob",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        },
+        params: {
+          [versionInfo]: ""  // Add version info as URL parameter
+        }
       }));
   }
 
