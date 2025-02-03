@@ -10,15 +10,13 @@ import com.dms.document.search.dto.*;
 import com.dms.document.search.elasticsearch.DocumentIndex;
 import com.dms.document.search.enums.QueryType;
 import com.dms.document.search.enums.SharingType;
+import com.dms.document.search.exception.InvalidDocumentException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -141,6 +139,134 @@ public class DiscoverDocumentSearchService {
             log.error("Error getting suggestions: {}", e.getMessage());
             return Collections.emptyList();
         }
+    }
+
+    public Page<DocumentResponseDto> findRelatedDocuments(String documentId, String userId, Pageable pageable) {
+        // Get the source document
+        DocumentIndex sourceDoc = elasticsearchOperations.get(documentId, DocumentIndex.class);
+        if (sourceDoc == null) {
+            throw new InvalidDocumentException("Document not found");
+        }
+
+        // Build the query for related documents
+        BoolQuery.Builder queryBuilder = new BoolQuery.Builder();
+
+        // Add sharing access filter (reuse existing method)
+        addSharingAccessFilter(queryBuilder, userId);
+
+        // Exclude the source document
+        queryBuilder.mustNot(mustNot -> mustNot
+                .term(t -> t
+                        .field("_id")
+                        .value(documentId)));
+
+        // Build should clauses for different similarity criteria
+        queryBuilder.must(must -> must
+                .bool(b -> {
+                    // Content similarity using more-like-this query
+                    b.should(should -> should
+                            .moreLikeThis(mlt -> mlt
+                                    .fields("content")
+                                    .like(l -> l.text(sourceDoc.getContent()))
+                                    .minTermFreq(2)
+                                    .minDocFreq(1)
+                                    .maxQueryTerms(25)
+                                    .minimumShouldMatch("30%")
+                                    .boost(10.0f)));
+
+                    // Title similarity
+                    b.should(should -> should
+                            .moreLikeThis(mlt -> mlt
+                                    .fields("filename.analyzed")
+                                    .like(l -> l.text(sourceDoc.getFilename()))
+                                    .minTermFreq(1)
+                                    .minDocFreq(1)
+                                    .maxQueryTerms(10)
+                                    .boost(5.0f)));
+
+                    // Same major and level
+                    if (sourceDoc.getMajor() != null && sourceDoc.getCourseLevel() != null) {
+                        b.should(should -> should
+                                .bool(bb -> bb
+                                        .must(m -> m
+                                                .term(t -> t
+                                                        .field("major")
+                                                        .value(sourceDoc.getMajor())))
+                                        .must(m -> m
+                                                .term(t -> t
+                                                        .field("course_level")
+                                                        .value(sourceDoc.getCourseLevel())))
+                                        .boost(3.0f)));
+                    }
+
+                    // Same category
+                    if (sourceDoc.getCategory() != null) {
+                        b.should(should -> should
+                                .term(t -> t
+                                        .field("category")
+                                        .value(sourceDoc.getCategory())
+                                        .boost(2.0f)));
+                    }
+
+                    // Course code similarity using fuzzy matching
+                    if (sourceDoc.getCourseCode() != null) {
+                        String courseCode = sourceDoc.getCourseCode();
+                        b.should(should -> should
+                                .bool(bb -> {
+                                    // Exact match gets highest boost
+                                    bb.should(s -> s
+                                            .term(t -> t
+                                                    .field("course_code")
+                                                    .value(courseCode)
+                                                    .boost(8.0f)));
+
+                                    // Fuzzy match for similar course codes
+                                    bb.should(s -> s
+                                            .match(m -> m
+                                                    .field("course_code")
+                                                    .query(courseCode)
+                                                    .fuzziness("2")
+                                                    .prefixLength(3) // Preserve first 3 chars
+                                                    .boost(6.0f)));
+
+                                    return bb;
+                                }));
+                    }
+
+                    // Common tags with high boost as they are explicit keywords
+                    if (!CollectionUtils.isEmpty(sourceDoc.getTags())) {
+                        b.should(should -> should
+                                .terms(t -> t
+                                        .field("tags")
+                                        .terms(tt -> tt
+                                                .value(sourceDoc.getTags().stream()
+                                                        .map(FieldValue::of)
+                                                        .collect(Collectors.toList())))
+                                        .boost(4.0f)));
+                    }
+
+                    return b.minimumShouldMatch("1");
+                }));
+
+        // Create the search query
+        NativeQuery searchQuery = NativeQuery.builder()
+                .withQuery(queryBuilder.build()._toQuery())
+                .withPageable(PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Sort.by(Sort.Order.desc("_score")) // Sort by score in descending order
+                ))
+                .withTrackScores(true)
+                .build();
+
+        // Execute search
+        SearchHits<DocumentIndex> searchHits = elasticsearchOperations.search(
+                searchQuery,
+                DocumentIndex.class
+        );
+
+        // Process results
+        return processSearchResults(searchHits, pageable);
     }
 
     private Query buildSearchQuery(DocumentSearchRequest request, SearchContext context, String userId) {

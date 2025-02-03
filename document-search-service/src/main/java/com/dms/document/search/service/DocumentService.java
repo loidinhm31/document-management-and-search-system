@@ -1,9 +1,12 @@
 package com.dms.document.search.service;
 
 import com.dms.document.search.client.UserClient;
+import com.dms.document.search.dto.DocumentResponseDto;
 import com.dms.document.search.dto.DocumentSearchCriteria;
 import com.dms.document.search.dto.UserDto;
+import com.dms.document.search.exception.InvalidDocumentException;
 import com.dms.document.search.model.DocumentInformation;
+import com.dms.document.search.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -24,8 +27,9 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class DocumentService {
     private final MongoTemplate mongoTemplate;
-
     private final UserClient userClient;
+    private final DocumentRepository documentRepository;
+    private final DiscoverDocumentSearchService discoverDocumentSearchService;
 
     public Page<DocumentInformation> getUserDocuments(String username, DocumentSearchCriteria criteria, int page, int size) {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
@@ -80,6 +84,26 @@ public class DocumentService {
                         .toList(),
                 pageable,
                 total
+        );
+    }
+
+    public Page<DocumentResponseDto> getRelatedDocuments(String documentId, String username, Pageable pageable) {
+        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserDto userDto = response.getBody();
+
+        // First check if user has access to the source document
+        DocumentInformation sourceDoc = documentRepository.findAccessibleDocumentByIdAndUserId(
+                documentId,
+                userDto.getUserId().toString()
+        ).orElseThrow(() -> new InvalidDocumentException("Document not found"));
+
+        return discoverDocumentSearchService.findRelatedDocuments(
+                documentId,
+                userDto.getUserId().toString(),
+                pageable
         );
     }
 }
