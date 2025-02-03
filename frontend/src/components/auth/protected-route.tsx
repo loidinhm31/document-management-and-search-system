@@ -5,19 +5,19 @@ import { useAuth } from "@/context/auth-context";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  adminRequired?: boolean;
+  permission?: string[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminRequired }) => {
-  const { token, isAdmin } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, permission }) => {
+  const { token, role } = useAuth();
 
-  //navigate to login page to an unauthenticated
+  // Navigate to login page to an unauthenticated
   if (!token) {
     return <Navigate to="/login" />;
   }
 
-  //navigate to access-denied page if a user try to access the admin page
-  if (token && adminRequired && !isAdmin) {
+  // Navigate to access-denied page if a user try to access the admin page
+  if (token && permission.includes(role)) {
     return <Navigate to="/access-denied" />;
   }
 

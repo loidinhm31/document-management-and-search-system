@@ -16,7 +16,7 @@ import { JwtPayload, TokenResponse } from "@/types/auth";
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { token, setAuthData, setIsAdmin } = useAuth();
+  const { token, setAuthData, setRole } = useAuth();
   const { toast } = useToast();
 
   const [step, setStep] = useState(1);
@@ -44,17 +44,17 @@ export default function LoginPage() {
   const handleSuccessfulLogin = (token: TokenResponse, decodedToken: JwtPayload) => {
     const user = {
       username: decodedToken.sub,
-      roles: decodedToken.roles.split(","),
+      roles: decodedToken.roles.split(",")
     };
 
     // Update auth context
     setAuthData(token);
-    setIsAdmin(user.roles.includes("ROLE_ADMIN"));
+    setRole(user.roles[0]);
 
     toast({
       title: t("common.success"),
       description: t("auth.login.success"),
-      variant: "success",
+      variant: "success"
     });
   };
 

@@ -5,12 +5,12 @@ import { useTranslation } from "react-i18next";
 import { LazyThumbnail } from "@/components/document/my-document/lazy-thumbnail";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { documentService } from "@/services/document.service";
 import { useToast } from "@/hooks/use-toast";
-import { DocumentInformation } from "@/types/document";
+import { getMasterDataTranslation } from "@/lib/utils";
+import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
 import { selectMasterData } from "@/store/slices/masterDataSlice";
-import { getMasterDataTranslation } from "@/lib/utils";
+import { DocumentInformation } from "@/types/document";
 
 interface RelatedDocumentsProps {
   documentId: string;

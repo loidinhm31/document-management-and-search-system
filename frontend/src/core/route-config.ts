@@ -1,7 +1,5 @@
 import React, { lazy } from "react";
 
-import DocumentDetailPage from "@/pages/document/discover/document-detail-page";
-
 const Login = lazy(() => import("@/pages/login-page"));
 const Register = lazy(() => import("@/pages/register-page"));
 const ForgotPassword = lazy(() => import("@/pages/forgot-password-page"));
@@ -23,7 +21,6 @@ export interface Route {
   isSecure: boolean;
   permission?: string[];
   subPages?: Route[];
-  adminRequired?: boolean;
 }
 
 export const RoutePaths = {
@@ -87,14 +84,13 @@ export const routes: Route[] = [
     path: RoutePaths.MY_DOCUMENT_DETAIL,
     pageTitle: "pages.my-document.detail",
     component: MyDocumentDetail,
-    isSecure: false,
-    permission: [],
+    isSecure: true,
   },
   {
     path: RoutePaths.DOCUMENT_DETAIL,
     pageTitle: "pages.document.detail",
     component: DocumentDetail,
-    isSecure: false,
+    isSecure: true,
   },
   // Admin Routes
   {
@@ -102,15 +98,13 @@ export const routes: Route[] = [
     pageTitle: "pages.admin.users",
     component: UserList,
     isSecure: true,
-    adminRequired: true,
-    permission: [],
+    permission: ['ADMIN'],
   },
   {
     path: RoutePaths.ADMIN.USER_DETAILS,
     pageTitle: "pages.admin.userDetail",
     component: UserDetails,
     isSecure: true,
-    adminRequired: true,
     permission: [],
   },
 ];

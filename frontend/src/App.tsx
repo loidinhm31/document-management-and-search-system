@@ -64,10 +64,8 @@ export default function App() {
                       path={route.path}
                       element={
                         route.isSecure ? (
-                          <ProtectedRoute>
-                            <AuthenticatedLayout>
-                              <Component />
-                            </AuthenticatedLayout>
+                          <ProtectedRoute permission={route.permission}>
+                            <AuthenticatedLayout children={<Component />} />
                           </ProtectedRoute>
                         ) : (
                           <Component />

@@ -24,7 +24,7 @@ import { useAuth } from "@/context/auth-context";
 import { RoutePaths } from "@/core/route-config";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { isAdmin } = useAuth();
+  const { role } = useAuth();
   const location = useLocation();
   const { t } = useTranslation();
   const { state } = useSidebar();
@@ -96,7 +96,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
 
         {/* Admin Navigation */}
-        {isAdmin && (
+        {role === "ROLE_ADMIN" && (
           <SidebarGroup>
             <SidebarGroupLabel>{t("navigation.admin.title")}</SidebarGroupLabel>
             <SidebarMenu>
