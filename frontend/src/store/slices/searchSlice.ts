@@ -98,7 +98,6 @@ export const fetchDocuments = createAsyncThunk(
 
       const selectSortParts = selectedSort.split(",");
 
-      console.log("sortp", selectSortParts);
       const filters = {
         search: searchTerm,
         major: selectedMajor === "all" ? undefined : selectedMajor,

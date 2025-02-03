@@ -36,8 +36,8 @@ export const RoutePaths = {
   DOCUMENT_DETAIL: "/document/:documentId",
   ADMIN: {
     USERS: "/admin/users",
-    USER_DETAILS: "/admin/users/:userId",
-  },
+    USER_DETAILS: "/admin/users/:userId"
+  }
 } as const;
 
 export const routes: Route[] = [
@@ -45,52 +45,54 @@ export const routes: Route[] = [
     path: RoutePaths.LOGIN,
     pageTitle: "Login",
     component: Login,
-    isSecure: false,
+    isSecure: false
   },
   {
     path: RoutePaths.REGISTER,
     pageTitle: "Sign Up",
     component: Register,
-    isSecure: false,
+    isSecure: false
   },
   {
     path: RoutePaths.FORGOT_PASSWORD,
     pageTitle: "Forgot Password",
     component: ForgotPassword,
-    isSecure: false,
+    isSecure: false
   },
   {
     path: RoutePaths.HOME,
     pageTitle: "pages.home",
     component: Home,
     isSecure: true,
-    permission: [],
+    permission: []
   },
   {
     path: RoutePaths.PROFILE,
     pageTitle: "pages.profile",
     component: Profile,
     isSecure: true,
-    permission: [],
+    permission: []
   },
   {
     path: RoutePaths.MY_DOCUMENT,
     pageTitle: "pages.my-document",
     component: MyDocument,
     isSecure: true,
-    permission: [],
+    permission: []
   },
   {
     path: RoutePaths.MY_DOCUMENT_DETAIL,
     pageTitle: "pages.my-document.detail",
     component: MyDocumentDetail,
     isSecure: true,
+    permission: []
   },
   {
     path: RoutePaths.DOCUMENT_DETAIL,
     pageTitle: "pages.document.detail",
     component: DocumentDetail,
     isSecure: true,
+    permission: []
   },
   // Admin Routes
   {
@@ -98,15 +100,15 @@ export const routes: Route[] = [
     pageTitle: "pages.admin.users",
     component: UserList,
     isSecure: true,
-    permission: ['ADMIN'],
+    permission: ["ROLE_ADMIN"]
   },
   {
     path: RoutePaths.ADMIN.USER_DETAILS,
     pageTitle: "pages.admin.userDetail",
     component: UserDetails,
     isSecure: true,
-    permission: [],
-  },
+    permission: ["ROLE_ADMIN"]
+  }
 ];
 
 export const getRoutes = (initRoutes = routes): Route[] => {

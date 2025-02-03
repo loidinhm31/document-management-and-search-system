@@ -1,15 +1,4 @@
-import {
-  ArrowLeft,
-  ArrowRight,
-  Calendar,
-  Download,
-  Eye,
-  Filter,
-  Loader2,
-  MoreHorizontal,
-  SortAsc,
-  SortDesc
-} from "lucide-react";
+import { ArrowDown, ArrowUp, Calendar, Download, Eye, Filter, Loader2, MoreHorizontal } from "lucide-react";
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -20,16 +9,17 @@ import DocumentFilter from "@/components/document/my-document/document-filter";
 import { DocumentViewer } from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { getMasterDataTranslation } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
@@ -46,15 +36,12 @@ import {
   setSort,
   setTags
 } from "@/store/slices/searchSlice";
-import { getMasterDataTranslation } from "@/lib/utils";
 
-const sortOptions = [
-  { label: "Created Date (Newest)", value: "created_at,desc" },
-  { label: "Created Date (Oldest)", value: "created_at,asc" },
-  { label: "Name (A-Z)", value: "filename,asc" },
-  { label: "Name (Z-A)", value: "filename,desc" }
-];
-
+interface SortableColumn {
+  field: string;
+  label: string;
+  sortable: boolean;
+}
 
 export const DocumentList = () => {
   const { t } = useTranslation();
@@ -78,6 +65,48 @@ export const DocumentList = () => {
 
   const [selectedDoc, setSelectedDoc] = React.useState(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
+
+  const columns: SortableColumn[] = [
+    { field: "filename", label: t("document.discover.headers.name"), sortable: true },
+    { field: "courseCode", label: t("document.discover.headers.course"), sortable: true },
+    { field: "major", label: t("document.discover.headers.major"), sortable: true },
+    { field: "courseLevel", label: t("document.discover.headers.level"), sortable: true },
+    { field: "category", label: t("document.discover.headers.category"), sortable: true },
+    { field: "tags", label: t("document.discover.headers.tags"), sortable: false },
+    { field: "highlights", label: t("document.discover.headers.matches"), sortable: false },
+    { field: "createdAt", label: t("document.discover.headers.created"), sortable: true },
+    { field: "actions", label: t("document.discover.headers.actions"), sortable: false }
+  ];
+
+  // Extract current sort field and direction from selectedSort
+  const getCurrentSort = () => {
+    if (!selectedSort) return { field: "", direction: "" };
+    const [field, direction] = selectedSort.split(",");
+    return { field, direction };
+  };
+
+  const handleSort = (field: string) => {
+    const currentSort = getCurrentSort();
+    let newDirection = "asc";
+
+    if (currentSort.field === field) {
+      newDirection = currentSort.direction === "asc" ? "desc" : "asc";
+    }
+
+    dispatch(setSort(`${field},${newDirection}`));
+    dispatch(fetchDocuments());
+  };
+
+  const renderSortIcon = (field: string) => {
+    const { field: currentField, direction } = getCurrentSort();
+    if (field !== currentField) return null;
+
+    return direction === "asc" ? (
+      <ArrowUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4" />
+    );
+  };
 
   // Initial fetch
   useEffect(() => {
@@ -160,28 +189,8 @@ export const DocumentList = () => {
               </Button>
             </div>
 
-            {/* Sort, Filter, and Reset Buttons */}
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Select value={selectedSort} onValueChange={(value) => dispatch(setSort(value))}>
-                <SelectTrigger className="w-full sm:w-[200px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <span className="flex items-center gap-2">
-                        {option.value.endsWith("desc") ? (
-                          <SortDesc className="h-4 w-4" />
-                        ) : (
-                          <SortAsc className="h-4 w-4" />
-                        )}
-                        {option.label}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
+            {/* Filter and Reset Buttons */}
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={() => setShowAdvanced(!showAdvanced)}
@@ -190,8 +199,7 @@ export const DocumentList = () => {
                 <Filter className="h-4 w-4" />
                 <span className="hidden sm:inline">{t("document.commonSearch.filters")}</span>
                 {getActiveFilterCount() > 0 && (
-                  <span
-                    className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                  <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                     {getActiveFilterCount()}
                   </span>
                 )}
@@ -227,240 +235,121 @@ export const DocumentList = () => {
               <span className="ml-2">{t("document.search.loading")}</span>
             </div>
           ) : (
-            <>
-              <div className="space-y-4 lg:hidden">
-                {documents.map((doc) => (
-                  <Card key={doc.id} className="overflow-hidden">
-                    <CardHeader className="p-4">
-                      <CardTitle className="text-base">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {columns.map((column) => (
+                      <TableHead
+                        key={column.field}
+                        className={cn(
+                          column.sortable && "cursor-pointer select-none",
+                          column.field === "actions" && "text-right"
+                        )}
+                        onClick={() => column.sortable && handleSort(column.field)}
+                      >
+                        <div className="flex items-center">
+                          {column.label}
+                          {column.sortable && renderSortIcon(column.field)}
+                        </div>
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {documents.map((doc) => (
+                    <TableRow key={doc.id}>
+                      <TableCell className="font-medium truncate">
                         <Button
                           variant="link"
-                          className="h-auto p-0 text-left"
+                          className="font-medium truncate p-0 h-auto"
                           onClick={() => navigate(`/document/${doc.id}`)}
                         >
                           {doc.filename}
                         </Button>
-                      </CardTitle>
-                      <CardDescription>
+                      </TableCell>
+                      <TableCell className="truncate">{doc.courseCode}</TableCell>
+                      <TableCell className="truncate">
+                        {getMasterDataTranslation(doc.major, "major", { majors })}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {getMasterDataTranslation(doc.courseLevel, "level", { levels })}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {getMasterDataTranslation(doc.category, "category", { categories })}
+                      </TableCell>
+                      <TableCell className="hidden xl:table-cell">
+                        <div className="flex flex-wrap gap-1">
+                          {doc.tags?.map((tag, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <HighlightCell highlights={doc.highlights} />
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
                           {formatDate(doc.createdAt)}
                         </div>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{t("document.discover.headers.course")}:</span>
-                          <span className="text-sm">{doc.courseCode}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{t("document.discover.headers.major")}:</span>
-                          <span className="text-sm">{doc.major}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{t("document.discover.headers.level")}:</span>
-                          <span className="text-sm">{doc.courseLevel}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{t("document.discover.headers.category")}:</span>
-                          <span className="text-sm">{doc.category}</span>
-                        </div>
-                        {doc.highlights && doc.highlights.length > 0 && (
-                          <div className="mt-2">
-                            <HighlightCell highlights={doc.highlights} />
-                          </div>
-                        )}
-                        <div className="flex justify-end gap-2 pt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedDoc(doc)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownload(doc.id, doc.filename)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setSelectedDoc(doc)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              {t("document.actions.view")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDownload(doc.id, doc.filename)}>
+                              <Download className="mr-2 h-4 w-4" />
+                              {t("document.actions.download")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
 
-              {/* Desktop Table View */}
-              <div className="hidden lg:block">
-                <div className="rounded-md border">
-                  {/* Results Table */}
-                  {loading ? (
-                    <div className="flex justify-center p-4">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <span className="ml-2">{t("document.search.loading")}</span>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="relative overflow-hidden rounded-md border">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>{t("document.discover.headers.name")}</TableHead>
-                              <TableHead>{t("document.discover.headers.course")}</TableHead>
-                              <TableHead className="w-[10%]">{t("document.discover.headers.major")}</TableHead>
-                              <TableHead
-                                className="hidden md:table-cell w-[10%]">{t("document.discover.headers.level")}</TableHead>
-                              <TableHead
-                                className="hidden lg:table-cell w-[10%]">{t("document.discover.headers.category")}</TableHead>
-                              <TableHead
-                                className="hidden xl:table-cell w-[10%]">{t("document.discover.headers.tags")}</TableHead>
-                              <TableHead className="w-[30%]">{t("document.discover.headers.matches")}</TableHead>
-                              <TableHead className="w-[8%]">{t("document.discover.headers.created")}</TableHead>
-                              <TableHead
-                                className="w-[5%] text-right">{t("document.discover.headers.actions")}</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {documents.map((doc) => (
-                              <TableRow key={doc.id}>
-                                <TableCell className="font-medium truncate">
-                                  <Button
-                                    variant="link"
-                                    className="font-medium truncate p-0 h-auto"
-                                    onClick={() => navigate(`/document/${doc.id}`)}
-                                  >
-                                    {doc.filename}
-                                  </Button>
-                                </TableCell>
-                                <TableCell className="truncate">{doc.courseCode}</TableCell>
-                                <TableCell
-                                  className="truncate">{getMasterDataTranslation(doc.major, "major", {
-                                  majors
-                                })}</TableCell>
-                                <TableCell
-                                  className="hidden md:table-cell"> {getMasterDataTranslation(doc.courseLevel, "level", {
-                                  levels
-                                })}</TableCell>
-                                <TableCell
-                                  className="hidden lg:table-cell">{getMasterDataTranslation(doc.category, "category", {
-                                  categories
-                                })}</TableCell>
-                                <TableCell className="hidden xl:table-cell">
-                                  <div className="flex flex-wrap gap-1">
-                                    {doc.tags?.map((tag, index) => (
-                                      <span
-                                        key={index}
-                                        className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20"
-                                      >
-                                {tag}
-                              </span>
-                                    ))}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <HighlightCell highlights={doc.highlights} />
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    {formatDate(doc.createdAt)}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                        <span className="sr-only">Actions</span>
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => setSelectedDoc(doc)}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        {t("document.actions.view")}
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleDownload(doc.id, doc.filename)}>
-                                        <Download className="mr-2 h-4 w-4" />
-                                        {t("document.actions.download")}
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-
-                      {/* Pagination */}
-                      {totalPages > 1 && (
-                        <div className="mt-4 flex justify-center gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 0 || loading}
-                          >
-                            {t("document.discover.pagination.previous")}
-                          </Button>
-                          <span className="flex items-center px-4">
-                    {t("document.discover.pagination.pageInfo", {
-                      current: currentPage + 1,
-                      total: totalPages
-                    })}
-                  </span>
-                          <Button
-                            variant="outline"
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages - 1 || loading}
-                          >
-                            {t("document.discover.pagination.next")}
-                          </Button>
-                        </div>)
-                      }
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Simplified Pagination */}
-              {totalPages > 1 && (
-                <div className="mt-4 flex justify-center gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 0 || loading}
-                    className="gap-2"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline">
-                      {t("document.discover.pagination.previous")}
-                    </span>
-                  </Button>
-
-                  <span className="hidden items-center px-4 sm:flex">
-                    {t("document.discover.pagination.pageInfo", {
-                      current: currentPage + 1,
-                      total: totalPages
-                    })}
-                  </span>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages - 1 || loading}
-                    className="gap-2"
-                  >
-                    <span className="hidden sm:inline">
-                      {t("document.discover.pagination.next")}
-                    </span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex justify-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 0}
+              >
+                {t("document.discover.pagination.previous")}
+              </Button>
+              <span className="flex items-center px-4">
+                {t("document.discover.pagination.pageInfo", {
+                  current: currentPage + 1,
+                  total: totalPages
+                })}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages - 1}
+              >
+                {t("document.discover.pagination.next")}
+              </Button>
+            </div>
           )}
 
           {/* Document Preview Dialog */}
@@ -469,9 +358,6 @@ export const DocumentList = () => {
               <DialogContent className="max-w-4xl h-[80vh]">
                 <DialogHeader>
                   <DialogTitle>{selectedDoc?.filename}</DialogTitle>
-                  <DialogDescription>
-                    {selectedDoc?.mimeType} - {(selectedDoc?.fileSize / 1024).toFixed(2)} KB
-                  </DialogDescription>
                 </DialogHeader>
                 <div className="flex-1 overflow-auto">
                   <DocumentViewer

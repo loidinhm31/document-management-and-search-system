@@ -130,7 +130,6 @@ const SearchSuggestions = ({
             onFocus={() => {
               // Show suggestions on focus if there's a search term
               if (searchTerm.trim()) {
-                setShowSuggestions(true);
                 debouncedFetchSuggestions(searchTerm);
               }
             }}
