@@ -129,7 +129,7 @@ export default function MyDocumentDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-6 space-y-6">
       <Button variant="ghost" onClick={() => navigate(RoutePaths.MY_DOCUMENT)} className="mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
         {t("document.detail.backToList")}

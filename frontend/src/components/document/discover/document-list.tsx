@@ -49,8 +49,8 @@ import {
 import { getMasterDataTranslation } from "@/lib/utils";
 
 const sortOptions = [
-  { label: "Created Date (Newest)", value: "createdDate,desc" },
-  { label: "Created Date (Oldest)", value: "createdDate,asc" },
+  { label: "Created Date (Newest)", value: "created_at,desc" },
+  { label: "Created Date (Oldest)", value: "created_at,asc" },
   { label: "Name (A-Z)", value: "filename,asc" },
   { label: "Name (Z-A)", value: "filename,desc" }
 ];

@@ -1,6 +1,7 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
+import { PageResponse } from "@/types/user";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
@@ -124,6 +125,16 @@ class DocumentService extends BaseService {
     );
   }
 
+  getRelatedDocuments(documentId: string, size: number = 6, page: number = 0) {
+    return this.handleApiResponse(
+      axiosInstance.get(
+        `/document-search/api/v1/documents/${documentId}/related`,
+        {
+          params: { size, page }
+        }
+      )
+    );
+  }
 }
 
 export const documentService = new DocumentService();
