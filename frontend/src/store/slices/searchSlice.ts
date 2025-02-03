@@ -38,7 +38,7 @@ interface SearchState {
 
 const initialState: SearchState = {
   searchTerm: "",
-  selectedSort: "createdDate,desc",
+  selectedSort: "created_at,desc",
   selectedMajor: "all",
   selectedLevel: "all",
   selectedCategory: "all",
@@ -96,13 +96,17 @@ export const fetchDocuments = createAsyncThunk(
         advancedFilters
       } = state.search;
 
+      const selectSortParts = selectedSort.split(",");
+
+      console.log("sortp", selectSortParts);
       const filters = {
         search: searchTerm,
         major: selectedMajor === "all" ? undefined : selectedMajor,
         level: selectedLevel === "all" ? undefined : selectedLevel,
         category: selectedCategory === "all" ? undefined : selectedCategory,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
-        sort: selectedSort,
+        sortField: selectSortParts.length > 0 ? selectSortParts[0] : undefined,
+        sortDirection: selectSortParts.length > 1 ? selectSortParts[1] : undefined,
         ...advancedFilters
       };
 

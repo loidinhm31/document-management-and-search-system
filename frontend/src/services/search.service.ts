@@ -23,7 +23,7 @@ class SearchService extends BaseService {
     );
   }
 
-  suggestions(query: string, filters?: Omit<SearchFilters, 'search' | 'sort'>) {
+  suggestions(query: string, filters?: Omit<SearchFilters, "search" | "sort">) {
     return this.handleApiResponse<string[]>(
       axiosInstance.post(`/document-search/api/v1/search/suggestions`, {
         query,
@@ -41,8 +41,8 @@ class SearchService extends BaseService {
       tags: filters.tags,
       page,
       size,
-      sortField: filters.sort?.split(',')[0] || 'createdAt',
-      sortDirection: filters.sort?.split(',')[1] || 'desc'
+      sortField: filters.sort?.split(",")[0] || "createdAt",
+      sortDirection: filters.sort?.split(",")[1] || "desc"
     };
 
     return this.handleApiResponse<PageResponse<DocumentInformation>>(
