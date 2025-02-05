@@ -29,8 +29,9 @@ public class DocumentCommentController {
     @GetMapping("/documents/{documentId}")
     public ResponseEntity<Page<CommentResponse>> getDocumentComments(
             @PathVariable String documentId,
-            Pageable pageable) {
-        Page<CommentResponse> comments = commentService.getDocumentComments(documentId, pageable);
+            Pageable pageable,
+            @AuthenticationPrincipal Jwt jwt) {
+        Page<CommentResponse> comments = commentService.getDocumentComments(documentId, pageable, jwt.getSubject());
         return ResponseEntity.ok(comments);
     }
 

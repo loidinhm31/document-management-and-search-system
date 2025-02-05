@@ -2,6 +2,7 @@ package com.dms.document.interaction.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -15,6 +16,11 @@ import java.util.UUID;
 @Data
 public class DocumentComment {
     @Id
+    @GeneratedValue(generator = "comment-id-generator")
+    @GenericGenerator(
+            name = "comment-id-generator",
+            type = com.dms.document.interaction.utils.CommentIdGenerator.class
+    )
     private Long id;
 
     @Column(name = "document_id", nullable = false)
@@ -43,11 +49,9 @@ public class DocumentComment {
     @Column(name = "deleted")
     private boolean deleted;
 
-    // For optimistic locking
     @Version
     private Long version;
 
-    // Transient fields for building the comment tree
     @Transient
     private List<DocumentComment> replies = new ArrayList<>();
 }

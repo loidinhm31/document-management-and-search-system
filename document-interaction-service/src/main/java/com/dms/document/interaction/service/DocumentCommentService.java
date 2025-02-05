@@ -4,8 +4,11 @@ import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.CommentRequest;
 import com.dms.document.interaction.dto.CommentResponse;
 import com.dms.document.interaction.dto.UserResponse;
+import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentComment;
+import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.repository.DocumentCommentRepository;
+import com.dms.document.interaction.repository.DocumentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,20 +29,26 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class DocumentCommentService {
-    private final DocumentCommentRepository commentRepository;
     private final UserClient userClient;
+    private final DocumentCommentRepository documentCommentRepository;
+    private final DocumentRepository documentRepository;
 
     @Transactional(readOnly = true)
-    public Page<CommentResponse> getDocumentComments(String documentId, Pageable pageable) {
+    public Page<CommentResponse> getDocumentComments(String documentId, Pageable pageable, String username) {
+        UserResponse userResponse = getUserByUsername(username);
+
+        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+
         // Get all comments with their replies using recursive query
-        List<DocumentComment> allComments = commentRepository.findCommentsWithReplies(
-                documentId,
+        List<DocumentComment> allComments = documentCommentRepository.findCommentsWithReplies(
+                documentInformation.getId(),
                 pageable.getPageSize(),
                 (int) pageable.getOffset()
         );
 
         // Count total top-level comments for pagination
-        long totalComments = commentRepository.countTopLevelComments(documentId);
+        long totalComments = documentCommentRepository.countTopLevelComments(documentId);
 
         // Get all unique user IDs from all comments
         Set<UUID> userIds = allComments.stream()
@@ -57,30 +66,33 @@ public class DocumentCommentService {
 
     @Transactional
     public CommentResponse createComment(String documentId, CommentRequest request, String username) {
-        UserResponse userDto = getUserByUsername(username);
+        UserResponse userResponse = getUserByUsername(username);
+
+        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
+                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         DocumentComment comment = new DocumentComment();
-        comment.setDocumentId(documentId);
-        comment.setUserId(userDto.userId());
+        comment.setDocumentId(documentInformation.getId());
+        comment.setUserId(userResponse.userId());
         comment.setContent(request.content());
         comment.setParentId(request.parentId());
 
-        DocumentComment savedComment = commentRepository.save(comment);
+        DocumentComment savedComment = documentCommentRepository.save(comment);
 
         // Initialize empty replies list for new comment
         savedComment.setReplies(new ArrayList<>());
 
-        return mapToCommentResponse(savedComment, Collections.singletonMap(userDto.userId(), userDto));
+        return mapToCommentResponse(savedComment, Collections.singletonMap(userResponse.userId(), userResponse));
     }
 
     @Transactional
     public CommentResponse updateComment(Long commentId, CommentRequest request, String username) {
-        UserResponse userDto = getUserByUsername(username);
+        UserResponse userResponse = getUserByUsername(username);
 
-        DocumentComment comment = commentRepository.findById(commentId)
+        DocumentComment comment = documentCommentRepository.findById(commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        if (!comment.getUserId().equals(userDto.userId())) {
+        if (!comment.getUserId().equals(userResponse.userId())) {
             throw new IllegalStateException("Not authorized to edit this comment");
         }
 
@@ -88,24 +100,26 @@ public class DocumentCommentService {
         comment.setEdited(true);
         comment.setUpdatedAt(LocalDateTime.now());
 
-        DocumentComment updatedComment = commentRepository.save(comment);
-        return mapToCommentResponse(updatedComment, Collections.singletonMap(userDto.userId(), userDto));
+        DocumentComment updatedComment = documentCommentRepository.save(comment);
+        return mapToCommentResponse(updatedComment, Collections.singletonMap(userResponse.userId(), userResponse));
     }
 
     @Transactional
     public void deleteComment(Long commentId, String username) {
-        UserResponse userDto = getUserByUsername(username);
+        UserResponse userResponse = getUserByUsername(username);
 
-        DocumentComment comment = commentRepository.findById(commentId)
+        DocumentComment comment = documentCommentRepository.findById(commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        if (!comment.getUserId().equals(userDto.userId())) {
+        if (!comment.getUserId().equals(userResponse.userId())) {
             throw new IllegalStateException("Not authorized to delete this comment");
         }
 
-        comment.setDeleted(true);
-        comment.setContent("[deleted]");
-        commentRepository.save(comment);
+        // Fetch all descendant comments in a single query using recursive CTE
+        List<Long> descendantIds = documentCommentRepository.findAllDescendantIds(commentId);
+
+        // Bulk update all affected comments in a single transaction
+        documentCommentRepository.markCommentsAsDeleted(descendantIds);
     }
 
     private Map<UUID, UserResponse> batchFetchUsers(Set<UUID> userIds) {
