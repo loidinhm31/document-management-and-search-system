@@ -15,7 +15,6 @@ import java.util.UUID;
 @Data
 public class DocumentComment {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "document_id", nullable = false)

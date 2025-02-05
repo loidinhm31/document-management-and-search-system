@@ -3,12 +3,12 @@ package com.dms.document.interaction.service;
 import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.CommentRequest;
 import com.dms.document.interaction.dto.CommentResponse;
-import com.dms.document.interaction.dto.CommentTreeDTO;
 import com.dms.document.interaction.dto.UserDto;
 import com.dms.document.interaction.model.DocumentComment;
 import com.dms.document.interaction.repository.DocumentCommentRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DocumentCommentService {
     private final DocumentCommentRepository commentRepository;
     private final UserClient userClient;
@@ -46,7 +47,7 @@ public class DocumentCommentService {
                 .collect(Collectors.toSet());
 
         // Batch fetch user data
-        Map<UUID, UserDto> userMap = getUserMap(userIds);
+        Map<UUID, UserDto> userMap = batchFetchUsers(userIds);
 
         // Build comment tree structure
         List<CommentResponse> commentTree = buildCommentTree(allComments, userMap);
@@ -107,55 +108,42 @@ public class DocumentCommentService {
         commentRepository.save(comment);
     }
 
-    private Map<UUID, UserDto> getUserMap(Set<UUID> userIds) {
-        ResponseEntity<List<UserDto>> response = userClient.getUsersByIds(new ArrayList<>(userIds));
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new InvalidDataAccessResourceUsageException("Failed to fetch user data");
+    private Map<UUID, UserDto> batchFetchUsers(Set<UUID> userIds) {
+        try {
+            ResponseEntity<List<UserDto>> response = userClient.getUsersByIds(new ArrayList<>(userIds));
+            if (response.getBody() != null) {
+                return response.getBody().stream()
+                        .collect(Collectors.toMap(
+                                UserDto::getUserId,
+                                Function.identity(),
+                                (existing, replacement) -> existing
+                        ));
+            }
+        } catch (Exception e) {
+            log.error("Error fetching user data", e);
         }
-
-        return response.getBody().stream()
-                .collect(Collectors.toMap(
-                        UserDto::getUserId,
-                        Function.identity()
-                ));
+        return new HashMap<>();
     }
 
     private List<CommentResponse> buildCommentTree(List<DocumentComment> comments, Map<UUID, UserDto> userMap) {
-        // Create a map of comments by their ID for quick lookup
-        Map<Long, CommentTreeDTO> commentMap = new HashMap<>();
-
-        // First pass: create CommentTreeDTO objects for all comments
-        for (DocumentComment comment : comments) {
-            UserDto user = userMap.get(comment.getUserId());
-            if (user == null) continue;
-
-            CommentTreeDTO dto = new CommentTreeDTO(
-                    CommentResponse.builder()
-                            .id(comment.getId())
-                            .content(comment.getContent())
-                            .username(user.getUsername())
-                            .createdAt(comment.getCreatedAt())
-                            .updatedAt(comment.getUpdatedAt())
-                            .edited(comment.isEdited())
-                            .build()
-            );
-            commentMap.put(comment.getId(), dto);
-        }
-
-        // Second pass: build the tree structure
+        // Use LinkedHashMap to maintain order
+        Map<Long, CommentResponse> responseMap = new LinkedHashMap<>();
         List<CommentResponse> rootComments = new ArrayList<>();
+
+        // Single pass comment tree building
         for (DocumentComment comment : comments) {
-            CommentTreeDTO dto = commentMap.get(comment.getId());
-            if (dto == null) continue;
+            CommentResponse response = mapToCommentResponse(comment, userMap);
+            responseMap.put(comment.getId(), response);
 
             if (comment.getParentId() == null) {
-                // This is a root comment
-                rootComments.add(dto.getComment());
+                rootComments.add(response);
             } else {
-                // This is a reply
-                CommentTreeDTO parentDto = commentMap.get(comment.getParentId());
-                if (parentDto != null) {
-                    parentDto.addReply(dto.getComment());
+                CommentResponse parentResponse = responseMap.get(comment.getParentId());
+                if (parentResponse != null) {
+                    if (parentResponse.getReplies() == null) {
+                        parentResponse.setReplies(new ArrayList<>());
+                    }
+                    parentResponse.getReplies().add(response);
                 }
             }
         }
@@ -183,24 +171,17 @@ public class DocumentCommentService {
                 ));
     }
 
-    private CommentResponse mapToCommentResponse(DocumentComment comment, Map<UUID, UserDto> userMap) {
+    private CommentResponse mapToCommentResponse(
+            DocumentComment comment,
+            Map<UUID, UserDto> userMap) {
         UserDto user = userMap.get(comment.getUserId());
-        if (user == null) {
-            throw new InvalidDataAccessResourceUsageException("User not found for comment: " + comment.getId());
-        }
-
-        List<CommentResponse> replies = comment.getReplies().stream()
-                .map(reply -> mapToCommentResponse(reply, userMap))
-                .collect(Collectors.toList());
-
         return CommentResponse.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
-                .username(user.getUsername())
+                .username(user != null ? user.getUsername() : "N/A")
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .edited(comment.isEdited())
-                .replies(replies)
                 .build();
     }
 }

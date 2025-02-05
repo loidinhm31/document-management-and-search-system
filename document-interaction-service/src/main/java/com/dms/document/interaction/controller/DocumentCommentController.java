@@ -12,12 +12,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/documents/{documentId}/comments")
+@RequestMapping("/api/v1/comments")
 @RequiredArgsConstructor
 public class DocumentCommentController {
     private final DocumentCommentService commentService;
 
-    @PostMapping
+    @PostMapping("documents/{documentId}")
     public ResponseEntity<CommentResponse> createComment(
             @PathVariable String documentId,
             @RequestBody CommentRequest request,
@@ -26,7 +26,7 @@ public class DocumentCommentController {
         return ResponseEntity.ok(comment);
     }
 
-    @GetMapping
+    @GetMapping("/documents/{documentId}")
     public ResponseEntity<Page<CommentResponse>> getDocumentComments(
             @PathVariable String documentId,
             Pageable pageable) {
@@ -36,7 +36,6 @@ public class DocumentCommentController {
 
     @PutMapping("/{commentId}")
     public ResponseEntity<CommentResponse> updateComment(
-            @PathVariable String documentId,
             @PathVariable Long commentId,
             @RequestBody CommentRequest request,
             @AuthenticationPrincipal Jwt jwt) {
@@ -46,7 +45,6 @@ public class DocumentCommentController {
 
     @DeleteMapping("/{commentId}")
     public ResponseEntity<Void> deleteComment(
-            @PathVariable String documentId,
             @PathVariable Long commentId,
             @AuthenticationPrincipal Jwt jwt) {
         commentService.deleteComment(commentId, jwt.getSubject());

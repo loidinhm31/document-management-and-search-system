@@ -13,8 +13,9 @@ public interface DocumentCommentRepository extends JpaRepository<DocumentComment
     // Get all comments for a document (both top-level and replies)
     @Query(value = """
         WITH RECURSIVE CommentHierarchy AS (
-            -- Base case: get top-level comments
-            SELECT c.*, 0 as level
+            -- Base case: get top-level comments with index hint
+            SELECT /*+ INDEX(c document_comments_doc_id_idx) */ 
+                   c.*, 0 as level, c.created_at as thread_order
             FROM document_comments c
             WHERE c.document_id = :documentId 
             AND c.parent_id IS NULL 
@@ -22,21 +23,18 @@ public interface DocumentCommentRepository extends JpaRepository<DocumentComment
             
             UNION ALL
             
-            -- Recursive case: get replies
-            SELECT c.*, ch.level + 1
+            -- Recursive case: get replies maintaining thread order
+            SELECT c.*, 
+                   ch.level + 1,
+                   ch.thread_order
             FROM document_comments c
             INNER JOIN CommentHierarchy ch ON c.parent_id = ch.id
             WHERE c.deleted = false
         )
-        SELECT *
-        FROM CommentHierarchy
-        ORDER BY 
-            CASE WHEN parent_id IS NULL THEN id ELSE parent_id END DESC,
-            level ASC,
-            created_at ASC
+        SELECT * FROM CommentHierarchy
+        ORDER BY thread_order DESC, level ASC, created_at ASC
         LIMIT :limit OFFSET :offset
-        """,
-            nativeQuery = true)
+        """, nativeQuery = true)
     List<DocumentComment> findCommentsWithReplies(String documentId, int limit, int offset);
 
     // Count total top-level comments for pagination
