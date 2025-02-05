@@ -19,7 +19,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { userService } from "@/services/user.service";
 import { UserSearchResponse } from "@/types/user";
 
 interface ShareDocumentDialogProps {
@@ -77,7 +76,7 @@ export default function ShareDocumentDialog({
         setLoading(true);
         try {
           // Fetch user details for shared users
-          const userDetailsResponse = await userService.getUsersByIds(sharedWith);
+          const userDetailsResponse = await documentService.getShareableUsersByIds(sharedWith);
           setUsers(userDetailsResponse.data);
         } finally {
           setLoading(false);
@@ -93,7 +92,7 @@ export default function ShareDocumentDialog({
       // If search is cleared, show the selected users again
       if (selectedUsers.length > 0) {
         try {
-          const userDetailsResponse = await userService.getUsersByIds(selectedUsers);
+          const userDetailsResponse = await documentService.getShareableUsersByIds(selectedUsers);
           setUsers(userDetailsResponse.data);
         } catch (error) {
           console.error("Error fetching selected users:", error);
@@ -106,7 +105,7 @@ export default function ShareDocumentDialog({
 
     setLoading(true);
     try {
-      const response = await userService.searchUsers(searchQuery);
+      const response = await documentService.searchShareableUsers(searchQuery);
       setUsers(response.data);
     } catch (error) {
       console.error("Error searching users:", error);

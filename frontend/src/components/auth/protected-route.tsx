@@ -15,9 +15,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, permission })
   if (!token) {
     return <Navigate to="/login" />;
   }
-  console.log("permission", permission);
-  console.log("role", role);
-  console.log("permission", permission.includes(role));
 
   // Navigate to access-denied page if a user try to access the admin page
   if (token && permission.length > 0 && !permission?.includes(role)) {

@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CommentSection } from "@/components/document/discover/comment-section";
 import { RelatedDocuments } from "@/components/document/discover/related-document";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
-import ShareDocumentDialog from "@/components/document/my-document/share-document-dialog";
+import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

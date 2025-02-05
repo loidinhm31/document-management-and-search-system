@@ -3,14 +3,12 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { LazyThumbnail } from "@/components/document/my-document/lazy-thumbnail";
-import ShareDocumentDialog from "@/components/document/my-document/share-document-dialog";
-import { DocumentViewer } from "@/components/document/viewers/document-viewer";
+import ShareDocumentDialog from "@/components/document/share-document-dialog";
+import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 
 interface DocumentCardProps {
   documentInformation: any;

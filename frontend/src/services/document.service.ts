@@ -1,6 +1,7 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
+import { UserSearchResponse } from "@/types/user";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
@@ -72,7 +73,7 @@ class DocumentService extends BaseService {
 
   getShareSettings(documentId: string) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/share`)
+      axiosInstance.get(`/document-interaction/api/v1/shares/documents/${documentId}`)
     );
   }
 
@@ -81,7 +82,21 @@ class DocumentService extends BaseService {
     sharedWith: string[];
   }) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/share`, settings)
+      axiosInstance.put(`/document-interaction/api/v1/shares/documents/${documentId}`, settings)
+    );
+  }
+
+  searchShareableUsers(query: string) {
+    return this.handleApiResponse<UserSearchResponse[]>(
+      axiosInstance.get(`/document-interaction/api/v1/shares/users`, {
+        params: { query }
+      })
+    );
+  }
+
+  getShareableUsersByIds(userIds: string[]) {
+    return this.handleApiResponse<UserSearchResponse[]>(
+      axiosInstance.post(`/document-interaction/api/v1/shares/users/details`, userIds)
     );
   }
 
