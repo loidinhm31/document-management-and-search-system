@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { documentService } from "@/services/document.service";
 import { useToast } from "@/hooks/use-toast";
-import TagInput from "@/components/tag-input";
+import TagInput from "@/components/common/tag-input";
 import { useProcessing } from "@/context/processing-provider";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
 import { Textarea } from "@/components/ui/textarea";

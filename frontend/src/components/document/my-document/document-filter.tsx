@@ -2,7 +2,7 @@ import { Label } from "@radix-ui/react-menu";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import TagInput from "@/components/tag-input";
+import TagInput from "@/components/common/tag-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MasterData } from "@/types/document";
 import { masterDataService, MasterDataType } from "@/services/master-data.service";

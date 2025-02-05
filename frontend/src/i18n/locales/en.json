@@ -6,7 +6,11 @@
     "info": "Information",
     "and": "and",
     "delete": "Delete",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "confirmDelete": {
+      "title": "Confirm Delete",
+      "description": "Are you sure you want to delete this item? This action cannot be undone."
+    }
   },
   "navigation": {
     "main": {

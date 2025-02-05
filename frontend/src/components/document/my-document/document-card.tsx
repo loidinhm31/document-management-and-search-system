@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { DeleteDialog } from "./delete-dialog";
+import { DeleteDialog } from "../../common/delete-dialog";
 
 interface DocumentCardProps {
   documentInformation: any;

@@ -3,10 +3,10 @@ import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
-import LanguageSwitcher from "@/components/language-switcher";
-import { LogoHeader } from "@/components/logo-header";
-import { NavUser } from "@/components/nav-user";
-import { ThemeToggle } from "@/components/theme-toggle";
+import LanguageSwitcher from "@/components/common/language-switcher";
+import { LogoHeader } from "@/components/common/logo-header";
+import { NavUser } from "@/components/common/nav-user";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import {
   Sidebar,
   SidebarContent,

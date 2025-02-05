@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 
 import { LoginForm } from "@/components/auth/login-form";
 import { TwoFactorForm } from "@/components/auth/two-factor-form";
-import LanguageSwitcher from "@/components/language-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
+import LanguageSwitcher from "@/components/common/language-switcher";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/auth-context";
