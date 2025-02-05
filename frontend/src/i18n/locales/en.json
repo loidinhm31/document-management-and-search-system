@@ -4,7 +4,9 @@
     "success": "Success",
     "warning": "Warning",
     "info": "Information",
-    "and": "and"
+    "and": "and",
+    "delete": "Delete",
+    "cancel": "Cancel"
   },
   "navigation": {
     "main": {
@@ -469,7 +471,8 @@
       },
       "delete": {
         "deleteSuccess": "Document deleted successfully",
-        "deleteError": "Failed to delete document"
+        "deleteError": "Failed to delete document",
+        "confirmMessage": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
       },
       "search": {
         "advancedSearch": {
