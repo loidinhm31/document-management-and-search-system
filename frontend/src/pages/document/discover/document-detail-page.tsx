@@ -1,6 +1,7 @@
-import { ArrowLeft, Bookmark, BookmarkPlus, Calendar, FileBox, Loader2, User } from "lucide-react";
+import { ArrowLeft, Calendar, FileBox, Loader2, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MdOutlineFavorite, MdOutlineFavoriteBorder } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { CommentSection } from "@/components/document/discover/comment-section";
@@ -29,7 +30,7 @@ export default function DocumentDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [documentData, setDocumentData] = useState<DocumentInformation | null>(null);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
 
   const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
@@ -37,31 +38,31 @@ export default function DocumentDetailPage() {
     return new Date(dateString).toLocaleString();
   };
 
-  const handleBookmark = async () => {
+  const handleFavorite = async () => {
     if (!documentId) return;
 
     try {
-      if (isBookmarked) {
-        await documentService.unbookmarkDocument(documentId);
-        setIsBookmarked(false);
+      if (isFavorited) {
+        await documentService.unfavoriteDocument(documentId);
+        setIsFavorited(false);
         toast({
           title: t("common.success"),
-          description: t("document.bookmark.removeSuccess"),
+          description: t("document.favorite.removeSuccess"),
           variant: "success"
         });
       } else {
-        await documentService.bookmarkDocument(documentId);
-        setIsBookmarked(true);
+        await documentService.favoriteDocument(documentId);
+        setIsFavorited(true);
         toast({
           title: t("common.success"),
-          description: t("document.bookmark.addSuccess"),
+          description: t("document.favorite.addSuccess"),
           variant: "success"
         });
       }
     } catch (error) {
       toast({
         title: t("common.error"),
-        description: t("document.bookmark.error"),
+        description: t("document.favorite.error"),
         variant: "destructive"
       });
     }
@@ -82,13 +83,13 @@ export default function DocumentDetailPage() {
       if (!documentId) return;
 
       try {
-        const [docResponse, bookmarkResponse] = await Promise.all([
+        const [docResponse, favoriteResponse] = await Promise.all([
           documentService.getDocumentDetails(documentId),
-          documentService.isDocumentBookmarked(documentId)
+          documentService.isDocumentFavorited(documentId)
         ]);
 
         setDocumentData(docResponse.data);
-        setIsBookmarked(bookmarkResponse.data);
+        setIsFavorited(favoriteResponse.data);
       } catch (error) {
         toast({
           title: t("common.error"),
@@ -173,17 +174,17 @@ export default function DocumentDetailPage() {
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  onClick={handleBookmark}
+                  onClick={handleFavorite}
                 >
-                  {isBookmarked ? (
+                  {isFavorited ? (
                     <>
-                      <Bookmark className="h-4 w-4 fill-current" />
-                      {t("document.actions.bookmarked")}
+                      <MdOutlineFavorite className="h-4 w-4 fill-current" />
+                      {t("document.actions.favorited")}
                     </>
                   ) : (
                     <>
-                      <BookmarkPlus className="h-4 w-4" />
-                      {t("document.actions.bookmark")}
+                      <MdOutlineFavoriteBorder className="h-4 w-4" />
+                      {t("document.actions.favorite")}
                     </>
                   )}
                 </Button>

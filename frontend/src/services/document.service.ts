@@ -100,21 +100,21 @@ class DocumentService extends BaseService {
     );
   }
 
-  bookmarkDocument(id: string) {
+  favoriteDocument(id: string) {
     return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/bookmarks/documents/${id}`)
+      axiosInstance.post(`/document-interaction/api/v1/favorites/documents/${id}`)
     );
   }
 
-  unbookmarkDocument(id: string) {
+  unfavoriteDocument(id: string) {
     return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/bookmarks/documents/${id}`)
+      axiosInstance.delete(`/document-interaction/api/v1/favorites/documents/${id}`)
     );
   }
 
-  isDocumentBookmarked(id: string) {
+  isDocumentFavorited(id: string) {
     return this.handleApiResponse<boolean>(
-      axiosInstance.get(`/document-interaction/api/v1/bookmarks/documents/${id}/status`)
+      axiosInstance.get(`/document-interaction/api/v1/favorites/documents/${id}/status`)
     );
   }
 

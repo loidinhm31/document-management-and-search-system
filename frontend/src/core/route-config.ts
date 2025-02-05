@@ -31,9 +31,9 @@ export const RoutePaths = {
   FORGOT_PASSWORD: "/forgot-password",
   EMPTY: "/empty",
   PROFILE: "/profile",
-  MY_DOCUMENT: "/document/me",
-  MY_DOCUMENT_DETAIL: "/document/me/:documentId",
-  DOCUMENT_DETAIL: "/document/:documentId",
+  MY_DOCUMENT: "/documents/me",
+  MY_DOCUMENT_DETAIL: "/documents/me/:documentId",
+  DOCUMENT_DETAIL: "/documents/:documentId",
   ADMIN: {
     USERS: "/admin/users",
     USER_DETAILS: "/admin/users/:userId"

@@ -117,7 +117,7 @@ export default function MyDocumentPage() {
                   onPageChange={handlePageChange}
                   onDelete={handleDelete}
                   loading={loading}
-                  onCardClick={(doc) => navigate(`/document/me/${doc.id}`)}
+                  onCardClick={(doc) => navigate(`/documents/me/${doc.id}`)}
                   className="pt-4"
                 />
               )}

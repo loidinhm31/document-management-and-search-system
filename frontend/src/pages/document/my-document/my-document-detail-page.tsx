@@ -39,7 +39,7 @@ export default function MyDocumentDetailPage() {
           description: t("document.detail.fetchError"),
           variant: "destructive"
         });
-        navigate("/document");
+        navigate("/documents");
       } finally {
         setLoading(false);
       }

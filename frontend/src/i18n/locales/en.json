@@ -365,8 +365,8 @@
       "download": "Download",
       "delete": "Delete",
       "share": "Share",
-      "bookmark": "Bookmark",
-      "bookmarked": "Bookmarked"
+      "favorite": "Favorite",
+      "favorited": "Favorited"
     },
     "viewer": {
       "loading": "Loading document...",
@@ -441,10 +441,10 @@
       "updateError": "Failed to update document",
       "fetchError": "Failed to fetch document details"
     },
-    "bookmark": {
-      "addSuccess": "Document bookmarked successfully",
-      "removeSuccess": "Document removed from bookmarks",
-      "error": "Failed to update bookmark"
+    "favorite": {
+      "addSuccess": "Document favorited successfully",
+      "removeSuccess": "Document removed from favorites",
+      "error": "Failed to update favorite"
     },
     "myDocuments": {
       "title": "My Documents",

@@ -263,7 +263,7 @@ export const DocumentList = () => {
                         <Button
                           variant="link"
                           className="font-medium truncate p-0 h-auto"
-                          onClick={() => navigate(`/document/${doc.id}`)}
+                          onClick={() => navigate(`/documents/${doc.id}`)}
                         >
                           {doc.filename}
                         </Button>
