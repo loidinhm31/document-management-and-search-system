@@ -637,30 +637,28 @@ public class DiscoverDocumentSearchService {
 
         // Add sharing access filters
         queryBuilder.filter(f -> f
-                .bool(b -> {
-                    return b.should(s -> s
-                                    // Owner access
-                                    .term(t -> t
-                                            .field("user_id")
-                                            .value(userId)))
-                            .should(s -> s
-                                    // Public access
-                                    .term(t -> t
-                                            .field("sharing_type")
-                                            .value(SharingType.PUBLIC.name())))
-                            .should(s -> s
-                                    // Specific users access
-                                    .bool(sb -> sb
-                                            .must(m -> m
-                                                    .term(t -> t
-                                                            .field("sharing_type")
-                                                            .value(SharingType.SPECIFIC.name())))
-                                            .must(m -> m
-                                                    .terms(t -> t
-                                                            .field("shared_with")
-                                                            .terms(tt -> tt
-                                                                    .value(Collections.singletonList(FieldValue.of(userId))))))))
-                            .minimumShouldMatch("1");
-                }));
+                .bool(b -> b.should(s -> s
+                                // Owner access
+                                .term(t -> t
+                                        .field("user_id")
+                                        .value(userId)))
+                        .should(s -> s
+                                // Public access
+                                .term(t -> t
+                                        .field("sharing_type")
+                                        .value(SharingType.PUBLIC.name())))
+                        .should(s -> s
+                                // Specific users access
+                                .bool(sb -> sb
+                                        .must(m -> m
+                                                .term(t -> t
+                                                        .field("sharing_type")
+                                                        .value(SharingType.SPECIFIC.name())))
+                                        .must(m -> m
+                                                .terms(t -> t
+                                                        .field("shared_with")
+                                                        .terms(tt -> tt
+                                                                .value(Collections.singletonList(FieldValue.of(userId))))))))
+                        .minimumShouldMatch("1")));
     }
 }
