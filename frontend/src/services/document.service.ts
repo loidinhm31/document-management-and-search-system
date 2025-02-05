@@ -16,7 +16,7 @@ class DocumentService extends BaseService {
 
   downloadDocument(id: string) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/downloads/${id}`, {
+      axiosInstance.get(`/document-interaction/api/v1/documents/${id}/downloads`, {
         responseType: "blob"
       })
     );
@@ -24,7 +24,7 @@ class DocumentService extends BaseService {
 
   getDocumentThumbnail(id: string, versionInfo: string) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/thumbnails/${id}`, {
+      axiosInstance.get(`/document-interaction/api/v1/documents/${id}/thumbnails`, {
         responseType: "blob",
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
