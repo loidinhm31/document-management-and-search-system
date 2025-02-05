@@ -288,8 +288,8 @@ export default function DocumentDetailPage() {
         {/* Comments Section */}
         <Card>
           <CardHeader>
-            <CardTitle>{t("document.comments.sectionTitle")}</CardTitle>
-            <CardDescription>{t("document.comments.sectionDescription")}</CardDescription>
+            <CardTitle>{t("document.comments.title")}</CardTitle>
+            <CardDescription>{t("document.comments.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <CommentSection documentId={documentId} />

@@ -525,16 +525,15 @@
       "title": "Related Documents"
     },
     "comments": {
-      "sectionTitle": "Comments",
-      "sectionDescription": "Join the discussion about this document",
       "title": "Comments",
+      "description": "Join the discussion about this document",
       "placeholder": "Write a comment...",
       "submit": "Post Comment",
       "reply": "Reply",
       "delete": "Delete",
       "edit": "Edit",
       "edited": "edited",
-      "replyingTo": "Replying to @{username}",
+      "replyingTo": "Replying to @{{username}}",
       "cancelReply": "Cancel Reply",
       "previous": "Previous",
       "next": "Next",

@@ -131,25 +131,25 @@ class DocumentService extends BaseService {
 
   getDocumentComments(documentId, params = {}) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/comments`, { params })
+      axiosInstance.get(`/document-interaction/api/v1/comments/documents/${documentId}`, { params })
     );
   }
 
   createComment(documentId, data) {
     return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/comments`, data)
+      axiosInstance.post(`/document-interaction/api/v1/comments/documents/${documentId}`, data)
     );
   }
 
-  updateComment(documentId, commentId, data) {
+  updateComment(commentId, data) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`, data)
+      axiosInstance.put(`/document-interaction/api/v1/comments/${commentId}`, data)
     );
   }
 
-  deleteComment(documentId, commentId) {
+  deleteComment(commentId) {
     return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`)
+      axiosInstance.delete(`/document-interaction/api/v1/comments/${commentId}`)
     );
   }
 }

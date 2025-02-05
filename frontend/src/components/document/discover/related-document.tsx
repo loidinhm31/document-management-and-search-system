@@ -11,6 +11,7 @@ import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
 import { selectMasterData } from "@/store/slices/masterDataSlice";
 import { DocumentInformation } from "@/types/document";
+import { Label } from "@radix-ui/react-label";
 
 interface RelatedDocumentsProps {
   documentId: string;
@@ -122,14 +123,15 @@ export function RelatedDocuments({
 
   if (!documents.length && !loading) return null;
 
-  const visibleDocuments = documents.slice(currentIndex, currentIndex + VISIBLE_ITEMS);
   const showLeftButton = currentIndex > 0;
   const showRightButton = currentIndex + VISIBLE_ITEMS < documents.length || hasMore;
 
   return (
     <div className="relative w-full">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium">{t("document.related.title")}</h3>
+        <div className="px-6">
+          <Label className="text-2xl font-semibold">{t("document.related.title")}</Label>
+        </div>
       </div>
 
       <div className="relative">

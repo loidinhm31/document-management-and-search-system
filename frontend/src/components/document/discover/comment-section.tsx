@@ -172,8 +172,6 @@ export const CommentSection = ({ documentId }) => {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <Label>{t("document.comments.title")}</Label>
-
         {/* Comment input */}
         <div className="space-y-2">
           <Textarea
