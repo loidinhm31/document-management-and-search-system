@@ -152,7 +152,7 @@ public class DocumentService {
         }
         UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
+        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // If document is still being processed, return processing placeholder
@@ -221,7 +221,7 @@ public class DocumentService {
         }
         UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
+        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
         try (InputStream in = Files.newInputStream(Path.of(document.getFilePath()))) {
