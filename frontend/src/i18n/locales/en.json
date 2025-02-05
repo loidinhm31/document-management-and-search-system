@@ -522,7 +522,8 @@
       }
     },
     "related": {
-      "title": "Related Documents"
+      "title": "Related Documents",
+      "error": "Cannot fetch related documents"
     },
     "comments": {
       "title": "Comments",
