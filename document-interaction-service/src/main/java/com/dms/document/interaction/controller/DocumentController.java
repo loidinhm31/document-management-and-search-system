@@ -38,7 +38,7 @@ public class DocumentController {
                 file, summary, courseCode, major, level, category, tags, jwt.getSubject()));
     }
 
-    @GetMapping("/downloads/{id}")
+    @GetMapping("/{id}/downloads")
     public ResponseEntity<byte[]> getDocument(
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
@@ -49,7 +49,7 @@ public class DocumentController {
                 .body(content);
     }
 
-    @GetMapping("/thumbnails/{id}")
+    @GetMapping("/{id}/thumbnails")
     public ResponseEntity<byte[]> getDocumentThumbnail(
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt,
