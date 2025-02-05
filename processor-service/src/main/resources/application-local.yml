@@ -15,11 +15,6 @@ app:
     min-text-density: 0.01
   email:
     batch-size: 50  # Number of emails per batch
-    retry:
-      max-attempts: 3
-      initial-interval: 1000
-      multiplier: 2.0
-      max-interval: 10000
 
 spring:
   data:
