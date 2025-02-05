@@ -125,7 +125,7 @@ public class DiscoverDocumentSearchService {
             NativeQuery nativeQuery = NativeQuery.builder()
                     .withQuery(query)
                     .withHighlightQuery(new HighlightQuery(highlight, DocumentIndex.class))
-                    .withPageable(PageRequest.of(0, MAX_SUGGESTIONS))
+                    .withPageable(PageRequest.of(0, MAX_SUGGESTIONS, Sort.by(Sort.Order.desc("_score"))))
                     .withTrackScores(true)
                     .build();
 

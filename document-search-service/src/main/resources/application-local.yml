@@ -1,6 +1,8 @@
 app:
   eureka:
     url: http://localhost:8081
+  auth-service:
+    api-key: ${AUTH_SERVICE_API_KEY:document-search-api-key}
 
 spring:
   security:
