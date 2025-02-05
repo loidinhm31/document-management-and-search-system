@@ -61,10 +61,6 @@ export const CommentSection = ({ documentId }) => {
     }
   };
 
-  useEffect(() => {
-    fetchComments();
-  }, [documentId, currentPage]);
-
   const handleSubmitComment = async () => {
     const commentTrim = commentText.trim();
     if (!commentTrim || loading) return;
@@ -160,6 +156,18 @@ export const CommentSection = ({ documentId }) => {
       throw error;
     }
   };
+
+  useEffect(() => {
+    // Reset to first page when documentId changes
+    setCurrentPage(0);
+    fetchComments();
+  }, [documentId]);
+
+  useEffect(() => {
+    if (documentId) {
+      fetchComments();
+    }
+  }, [currentPage]);
 
   return (
     <div className="space-y-6">
