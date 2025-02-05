@@ -17,15 +17,13 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
                                                                      onOpenChange,
                                                                      documentData,
                                                                      documentId,
-                                                                     isVersion = false
+                                                                     isVersion = false,
                                                                    }) => {
   if (!documentData) return null;
 
   const getFileSize = () => {
     const size = documentData.fileSize / 1024;
-    return size >= 1024
-      ? `${(size / 1024).toFixed(2)} MB`
-      : `${size.toFixed(2)} KB`;
+    return size >= 1024 ? `${(size / 1024).toFixed(2)} MB` : `${size.toFixed(2)} KB`;
   };
 
   const getDocumentType = (mimeType: string): DocumentType => {
@@ -60,7 +58,6 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
         if (mimeType.includes("excel")) return DocumentType.EXCEL;
         if (mimeType.includes("powerpoint")) return DocumentType.POWERPOINT;
         if (mimeType.includes("text/plain")) return DocumentType.TEXT_PLAIN;
-
         console.warn(`Unrecognized MIME type: ${mimeType}`);
         return DocumentType.TEXT_PLAIN; // Fallback to text viewer
     }
@@ -68,24 +65,26 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[80vh]">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="flex max-w-4xl flex-col gap-0 p-0">
+        <DialogHeader className="px-6 py-4">
+          <DialogTitle className="pr-8">
             {documentData?.filename}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {isVersion && `Version ${(documentData as DocumentVersion).versionNumber + 1} - `}
             {documentData.mimeType} - {getFileSize()}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-auto">
-          <DocumentViewer
-            documentId={documentId}
-            documentType={getDocumentType(documentData.mimeType)}
-            mimeType={documentData.mimeType}
-            fileName={isVersion ? documentData.filename : documentData.filename}
-            versionNumber={isVersion ? (documentData as DocumentVersion).versionNumber : undefined}
-          />
+        <div className="flex-1 overflow-hidden rounded-b-lg">
+          <div className="h-[calc(80vh-6rem)]">
+            <DocumentViewer
+              documentId={documentId}
+              documentType={getDocumentType(documentData.mimeType)}
+              mimeType={documentData.mimeType}
+              fileName={isVersion ? documentData.filename : documentData.filename}
+              versionNumber={isVersion ? (documentData as DocumentVersion).versionNumber : undefined}
+            />
+          </div>
         </div>
       </DialogContent>
     </Dialog>
