@@ -15,6 +15,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CommentItem } from "@/components/document/discover/comment-item";
+
+const CommentSkeleton = () => (
+  <div className="space-y-4">
+    <div className="flex items-start gap-4">
+      <Skeleton className="h-8 w-8 rounded-full" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-16 w-full" />
+      </div>
+    </div>
+  </div>
+);
 
 export const CommentSection = ({ documentId }) => {
   const { t } = useTranslation();
@@ -48,170 +61,48 @@ export const CommentSection = ({ documentId }) => {
     }
   };
 
-  const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit }) => {
-    const { t } = useTranslation();
-    const { toast } = useToast();
-    const isAuthor = currentUser?.username === comment.username;
-    const [isEditing, setIsEditing] = useState(false);
-    const [editedContent, setEditedContent] = useState(comment.content);
-
-    const formatDate = (date) => {
-      return new Date(date).toLocaleString();
-    };
-
-    const handleEditSubmit = async () => {
-      if (!editedContent.trim()) return;
-
-      try {
-        await onEdit(comment.id, { content: editedContent });
-        setIsEditing(false);
-        toast({
-          title: t("common.success"),
-          description: t("document.comments.editSuccess"),
-          variant: "success"
-        });
-      } catch (error) {
-        toast({
-          title: t("common.error"),
-          description: t("document.comments.editError"),
-          variant: "destructive"
-        });
-      }
-    };
-
-    const handleCancelEdit = () => {
-      setEditedContent(comment.content);
-      setIsEditing(false);
-    };
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-start gap-4">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{comment.username[0].toUpperCase()}</AvatarFallback>
-          </Avatar>
-
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{comment.username}</span>
-              <span className="text-sm text-muted-foreground">
-              {formatDate(comment.createdAt)}
-            </span>
-              {comment.edited && (
-                <span className="text-xs text-muted-foreground">
-                ({t("document.comments.edited")})
-              </span>
-              )}
-            </div>
-
-            {isEditing ? (
-              <div className="space-y-2">
-                <Textarea
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  className="min-h-[100px]"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleEditSubmit}
-                    disabled={!editedContent.trim() || editedContent === comment.content}
-                  >
-                    <Check className="mr-2 h-4 w-4" />
-                    {t("document.comments.save")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCancelEdit}
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    {t("document.comments.cancel")}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm">{comment.content}</p>
-            )}
-
-            {!isEditing && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8"
-                  onClick={() => onReply(comment)}
-                >
-                  <Reply className="mr-2 h-4 w-4" />
-                  {t("document.comments.reply")}
-                </Button>
-
-                {isAuthor && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                        <Edit2 className="mr-2 h-4 w-4" />
-                        {t("document.comments.edit")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onDelete(comment.id)}>
-                        <Trash className="mr-2 h-4 w-4" />
-                        {t("document.comments.delete")}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Replies */}
-        {comment.replies?.length > 0 && (
-          <div className="ml-12 space-y-4">
-            {comment.replies.map((reply) => (
-              <CommentItem
-                key={reply.id}
-                comment={reply}
-                currentUser={currentUser}
-                onDelete={onDelete}
-                onReply={onReply}
-                onEdit={onEdit}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   useEffect(() => {
     fetchComments();
   }, [documentId, currentPage]);
 
   const handleSubmitComment = async () => {
-    if (!commentText.trim()) return;
+    const commentTrim = commentText.trim();
+    if (!commentTrim || loading) return;
 
+    setLoading(true);
     try {
       const response = await documentService.createComment(documentId, {
-        content: commentText,
+        content: commentTrim,
         parentId: replyTo?.id || null
       });
 
-      // Add new comment to the list
       if (replyTo) {
-        setComments(comments.map(comment =>
-          comment.id === replyTo.id
-            ? { ...comment, replies: [...comment.replies, response.data] }
-            : comment
-        ));
+        // Helper function to update nested comments
+        const updateCommentsWithReply = (commentsList) => {
+          return commentsList.map(comment => {
+            if (comment.id === replyTo.id) {
+              // Found the parent comment, add the reply
+              return {
+                ...comment,
+                replies: [...(comment.replies || []), response.data]
+              };
+            }
+            // If this comment has replies, recursively search them
+            if (comment.replies?.length > 0) {
+              return {
+                ...comment,
+                replies: updateCommentsWithReply(comment.replies)
+              };
+            }
+            return comment;
+          });
+        };
+
+        // Update the comments state with the new reply
+        setComments(prevComments => updateCommentsWithReply(prevComments));
       } else {
-        setComments([response.data, ...comments]);
+        // For top-level comments, just add to the start of the list
+        setComments(prevComments => [response.data, ...prevComments]);
       }
 
       // Clear form
@@ -229,12 +120,14 @@ export const CommentSection = ({ documentId }) => {
         description: t("document.comments.createError"),
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDeleteComment = async (commentId) => {
     try {
-      await documentService.deleteComment(documentId, commentId);
+      await documentService.deleteComment(commentId);
 
       // Remove comment from the list
       setComments(comments.filter(c => c.id !== commentId));
@@ -255,33 +148,16 @@ export const CommentSection = ({ documentId }) => {
 
   const handleEditComment = async (commentId, { content }) => {
     try {
-      const response = await documentService.updateComment(documentId, commentId, {
-        content
-      });
-
-      // Update the comment in the tree
-      setComments(comments.map(comment => {
-        if (comment.id === commentId) {
-          return response.data;
-        }
-        if (comment.replies) {
-          return {
-            ...comment,
-            replies: comment.replies.map(reply =>
-              reply.id === commentId ? response.data : reply
-            )
-          };
-        }
-        return comment;
-      }));
-
+      await documentService.updateComment(commentId, { content });
+      fetchComments(); // Refresh comments after edit
+      return true;
     } catch (error) {
       toast({
         title: t("common.error"),
         description: t("document.comments.editError"),
         variant: "destructive"
       });
-      throw error; // Re-throw to handle in the CommentItem component
+      throw error;
     }
   };
 
@@ -319,16 +195,24 @@ export const CommentSection = ({ documentId }) => {
 
         {/* Comments list */}
         <div className="space-y-4">
-          {comments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              currentUser={currentUser}
-              onDelete={handleDeleteComment}
-              onReply={setReplyTo}
-              onEdit={handleEditComment}
-            />
-          ))}
+          {loading ? (
+            <>
+              <CommentSkeleton />
+              <CommentSkeleton />
+              <CommentSkeleton />
+            </>
+          ) : (
+            comments.map((comment) => (
+              <CommentItem
+                key={comment.id}
+                comment={comment}
+                currentUser={currentUser}
+                onDelete={handleDeleteComment}
+                onReply={setReplyTo}
+                onEdit={handleEditComment}
+              />
+            ))
+          )}
         </div>
 
         {/* Pagination */}
