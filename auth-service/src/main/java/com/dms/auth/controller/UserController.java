@@ -12,12 +12,12 @@ import com.dms.auth.security.response.UserInfoResponse;
 import com.dms.auth.service.UserService;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +30,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
+    @PreAuthorize("@userSecurity.isCurrentUsername()")
     public ResponseEntity<UserDto> getUserByUsername(@RequestParam String username) {
         return ResponseEntity.ok(userService.getUserByUsername(username));
     }
@@ -129,8 +130,8 @@ public class UserController {
     }
 
     @PostMapping("/details")
-    //    @PreAuthorize("hasAnyRole('USER', 'MENTOR')")
-    public ResponseEntity<List<UserSearchResponse>> getUsersByIds(@RequestBody List<UUID> userIds) {
+    @PreAuthorize("hasRole('SERVICE')")
+    public ResponseEntity<List<UserSearchResponse>> getUsersByIds(@RequestBody @Valid @Size(max = 100) List<UUID> userIds) {
         return ResponseEntity.ok(userService.getUsersByIds(userIds));
     }
 }
