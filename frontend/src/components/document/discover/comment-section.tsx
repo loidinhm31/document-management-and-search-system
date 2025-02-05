@@ -121,12 +121,28 @@ export const CommentSection = ({ documentId }) => {
     }
   };
 
+  const removeCommentFromList = (comments, commentId) => {
+    return comments.filter(comment => {
+      // If this comment matches the ID, remove it
+      if (comment.id === commentId) {
+        return false;
+      }
+
+      // If this comment has replies, recursively filter them
+      if (comment.replies?.length > 0) {
+        comment.replies = removeCommentFromList(comment.replies, commentId);
+      }
+
+      return true;
+    });
+  };
+
   const handleDeleteComment = async (commentId) => {
     try {
       await documentService.deleteComment(commentId);
 
-      // Remove comment from the list
-      setComments(comments.filter(c => c.id !== commentId));
+      // Update state with the filtered comments
+      setComments(prevComments => removeCommentFromList(prevComments, commentId));
 
       toast({
         title: t("common.success"),
