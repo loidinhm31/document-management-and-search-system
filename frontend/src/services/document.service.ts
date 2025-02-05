@@ -1,7 +1,6 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
-import { PageResponse } from "@/types/user";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
@@ -113,12 +112,6 @@ class DocumentService extends BaseService {
     );
   }
 
-  getVersionHistory(documentId: string) {
-    return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/versions`)
-    );
-  }
-
   revertToVersion(documentId: string, versionNumber: number) {
     return this.handleApiResponse(
       axiosInstance.post<DocumentInformation>(`/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/revert`)
@@ -133,6 +126,30 @@ class DocumentService extends BaseService {
           params: { size, page }
         }
       )
+    );
+  }
+
+  getDocumentComments(documentId, params = {}) {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/comments`, { params })
+    );
+  }
+
+  createComment(documentId, data) {
+    return this.handleApiResponse(
+      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/comments`, data)
+    );
+  }
+
+  updateComment(documentId, commentId, data) {
+    return this.handleApiResponse(
+      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`, data)
+    );
+  }
+
+  deleteComment(documentId, commentId) {
+    return this.handleApiResponse(
+      axiosInstance.delete(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`)
     );
   }
 }

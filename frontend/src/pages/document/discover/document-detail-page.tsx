@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { CommentSection } from "@/components/document/discover/comment-section";
 import { RelatedDocuments } from "@/components/document/discover/related-document";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
 import ShareDocumentDialog from "@/components/document/my-document/share-document-dialog";
@@ -283,6 +284,17 @@ export default function DocumentDetailPage() {
           documentId={documentId}
           onDocumentClick={(doc) => navigate(`/document/${doc.id}`)}
         />
+
+        {/* Comments Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("document.comments.sectionTitle")}</CardTitle>
+            <CardDescription>{t("document.comments.sectionDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <CommentSection documentId={documentId} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

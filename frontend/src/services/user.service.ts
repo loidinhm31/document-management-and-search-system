@@ -69,7 +69,6 @@ class UserService extends BaseService {
     );
   }
 
-
   getUsersByIds(userIds: string[]) {
     return this.handleApiResponse<UserSearchResponse[]>(
       axiosInstance.post(`/auth/api/v1/users/details`, userIds)
