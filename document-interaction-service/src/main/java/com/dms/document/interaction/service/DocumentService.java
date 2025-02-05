@@ -65,12 +65,12 @@ public class DocumentService {
                                               String category,
                                               Set<String> tags,
                                               String username) throws IOException {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
 
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
         validateDocument(file);
 
         // Generate unique filename
@@ -115,7 +115,7 @@ public class DocumentService {
                 .courseLevel(level)
                 .category(category)
                 .tags(tags != null ? tags : new HashSet<>())
-                .userId(userDto.getUserId().toString())
+                .userId(userResponse.userId().toString())
                 .sharingType(SharingType.PRIVATE)
                 .sharedWith(new HashSet<>())
                 .deleted(false)
@@ -135,7 +135,7 @@ public class DocumentService {
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()
                         .eventId(UUID.randomUUID().toString())
-                        .userId(userDto.getUserId().toString())
+                        .userId(userResponse.userId().toString())
                         .documentId(savedDocument.getId())
                         .subject(EventType.SYNC_EVENT.name())
                         .triggerAt(LocalDateTime.now())
@@ -146,13 +146,13 @@ public class DocumentService {
     }
 
     public ThumbnailResponse getDocumentThumbnail(String documentId, String username) throws IOException {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // If document is still being processed, return processing placeholder
@@ -215,13 +215,13 @@ public class DocumentService {
     }
 
     public byte[] getDocumentContent(String documentId, String username) throws IOException {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
         try (InputStream in = Files.newInputStream(Path.of(document.getFilePath()))) {
@@ -230,13 +230,13 @@ public class DocumentService {
     }
 
     public DocumentInformation getDocumentDetails(String documentId, String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
         documentInformation.setContent(null);
         return documentInformation;
@@ -247,13 +247,13 @@ public class DocumentService {
             DocumentUpdateRequest documentUpdateRequest,
             String username) {
 
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Update fields if provided
@@ -274,7 +274,7 @@ public class DocumentService {
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()
                         .eventId(UUID.randomUUID().toString())
-                        .userId(userDto.getUserId().toString())
+                        .userId(userResponse.userId().toString())
                         .documentId(documentId)
                         .subject(EventType.UPDATE_EVENT.name())
                         .triggerAt(LocalDateTime.now())
@@ -366,13 +366,13 @@ public class DocumentService {
     }
 
     public void deleteDocument(String documentId, String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Soft delete in database
@@ -385,47 +385,12 @@ public class DocumentService {
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()
                         .eventId(UUID.randomUUID().toString())
-                        .userId(userDto.getUserId().toString())
+                        .userId(userResponse.userId().toString())
                         .documentId(documentId)
                         .subject(EventType.DELETE_EVENT.name())
                         .triggerAt(LocalDateTime.now())
                         .build()
         ));
-    }
-
-    public ShareSettings getShareSettings(String documentId, String username) {
-        DocumentInformation doc = getDocumentDetails(documentId, username);
-        return new ShareSettings(
-                doc.getSharingType() == SharingType.PUBLIC,
-                doc.getSharedWith()
-        );
-    }
-
-    public DocumentInformation updateShareSettings(
-            String documentId,
-            UpdateShareSettingsRequest request,
-            String username) {
-
-        DocumentInformation doc = getDocumentDetails(documentId, username);
-
-        doc.setSharingType(request.isPublic() ? SharingType.PUBLIC :
-                CollectionUtils.isEmpty(request.sharedWith()) ? SharingType.PRIVATE : SharingType.SPECIFIC);
-        doc.setSharedWith(request.sharedWith());
-        doc.setUpdatedAt(new Date());
-        doc.setUpdatedBy(username);
-
-        // Send sync event to update Elasticsearch
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(doc.getUserId())
-                        .documentId(documentId)
-                        .subject(EventType.UPDATE_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
-
-        return documentRepository.save(doc);
     }
 
     public Set<String> getPopularTags(String prefix) {
@@ -442,13 +407,13 @@ public class DocumentService {
     }
 
     public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username) throws IOException {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Find the specific version

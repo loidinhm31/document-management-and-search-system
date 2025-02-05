@@ -121,7 +121,7 @@ public class UserController {
     }
 
     @GetMapping("/search")
-//    @PreAuthorize("hasAnyRole('USER', 'MENTOR')")
+    @PreAuthorize("hasAnyRole('SERVICE')")
     public ResponseEntity<List<UserSearchResponse>> searchUsers(
             @RequestParam String query) {
 

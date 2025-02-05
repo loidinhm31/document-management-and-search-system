@@ -162,25 +162,6 @@ public class DocumentController {
         return ResponseEntity.ok(document);
     }
 
-    @GetMapping("/{id}/share")
-    public ResponseEntity<ShareSettings> getShareSettings(
-            @PathVariable String id,
-            @AuthenticationPrincipal Jwt jwt) {
-        String username = jwt.getSubject();
-        ShareSettings settings = documentService.getShareSettings(id, username);
-        return ResponseEntity.ok(settings);
-    }
-
-    @PutMapping("/{id}/share")
-    public ResponseEntity<DocumentInformation> updateShareSettings(
-            @PathVariable String id,
-            @RequestBody UpdateShareSettingsRequest request,
-            @AuthenticationPrincipal Jwt jwt) {
-        String username = jwt.getSubject();
-        DocumentInformation document = documentService.updateShareSettings(id, request, username);
-        return ResponseEntity.ok(document);
-    }
-
     @GetMapping("/tags/suggestions")
     public ResponseEntity<Set<String>> getTagSuggestions(
             @RequestParam(required = false) String prefix) {

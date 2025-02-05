@@ -1,7 +1,7 @@
 package com.dms.document.interaction.service;
 
 import com.dms.document.interaction.client.UserClient;
-import com.dms.document.interaction.dto.UserDto;
+import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.exception.DuplicateBookmarkException;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentBookmark;
@@ -31,55 +31,55 @@ public class DocumentBookmarkService {
     private final UserClient userClient;
 
     public void bookmarkDocument(String documentId, String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
         // Check if document exists
         documentRepository.findById(documentId)
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Check for existing bookmark
-        if (bookmarkRepository.existsByUserIdAndDocumentId(userDto.getUserId(), documentId)) {
+        if (bookmarkRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId)) {
             throw new DuplicateBookmarkException("Document already bookmarked");
         }
 
         DocumentBookmark bookmark = new DocumentBookmark();
-        bookmark.setUserId(userDto.getUserId());
+        bookmark.setUserId(userResponse.userId());
         bookmark.setDocumentId(documentId);
         bookmarkRepository.save(bookmark);
     }
 
     public void unbookmarkDocument(String documentId, String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
-        bookmarkRepository.deleteByUserIdAndDocumentId(userDto.getUserId(), documentId);
+        UserResponse userResponse = response.getBody();
+        bookmarkRepository.deleteByUserIdAndDocumentId(userResponse.userId(), documentId);
     }
 
     public boolean isDocumentBookmarked(String documentId, String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        return bookmarkRepository.existsByUserIdAndDocumentId(userDto.getUserId(), documentId);
+        return bookmarkRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId);
     }
 
     public Page<DocumentInformation> getBookmarkedDocuments(Pageable pageable, String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
         // Get bookmarks from PostgreSQL
-        Page<DocumentBookmark> bookmarks = bookmarkRepository.findByUserId(userDto.getUserId(), pageable);
+        Page<DocumentBookmark> bookmarks = bookmarkRepository.findByUserId(userResponse.userId(), pageable);
 
         // Get document IDs
         List<String> documentIds = bookmarks.getContent().stream()

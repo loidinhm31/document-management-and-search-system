@@ -3,7 +3,7 @@ package com.dms.document.interaction.service;
 import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.CommentRequest;
 import com.dms.document.interaction.dto.CommentResponse;
-import com.dms.document.interaction.dto.UserDto;
+import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.model.DocumentComment;
 import com.dms.document.interaction.repository.DocumentCommentRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -47,7 +47,7 @@ public class DocumentCommentService {
                 .collect(Collectors.toSet());
 
         // Batch fetch user data
-        Map<UUID, UserDto> userMap = batchFetchUsers(userIds);
+        Map<UUID, UserResponse> userMap = batchFetchUsers(userIds);
 
         // Build comment tree structure
         List<CommentResponse> commentTree = buildCommentTree(allComments, userMap);
@@ -57,11 +57,11 @@ public class DocumentCommentService {
 
     @Transactional
     public CommentResponse createComment(String documentId, CommentRequest request, String username) {
-        UserDto userDto = getUserByUsername(username);
+        UserResponse userDto = getUserByUsername(username);
 
         DocumentComment comment = new DocumentComment();
         comment.setDocumentId(documentId);
-        comment.setUserId(userDto.getUserId());
+        comment.setUserId(userDto.userId());
         comment.setContent(request.content());
         comment.setParentId(request.parentId());
 
@@ -70,17 +70,17 @@ public class DocumentCommentService {
         // Initialize empty replies list for new comment
         savedComment.setReplies(new ArrayList<>());
 
-        return mapToCommentResponse(savedComment, Collections.singletonMap(userDto.getUserId(), userDto));
+        return mapToCommentResponse(savedComment, Collections.singletonMap(userDto.userId(), userDto));
     }
 
     @Transactional
     public CommentResponse updateComment(Long commentId, CommentRequest request, String username) {
-        UserDto userDto = getUserByUsername(username);
+        UserResponse userDto = getUserByUsername(username);
 
         DocumentComment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        if (!comment.getUserId().equals(userDto.getUserId())) {
+        if (!comment.getUserId().equals(userDto.userId())) {
             throw new IllegalStateException("Not authorized to edit this comment");
         }
 
@@ -89,17 +89,17 @@ public class DocumentCommentService {
         comment.setUpdatedAt(LocalDateTime.now());
 
         DocumentComment updatedComment = commentRepository.save(comment);
-        return mapToCommentResponse(updatedComment, Collections.singletonMap(userDto.getUserId(), userDto));
+        return mapToCommentResponse(updatedComment, Collections.singletonMap(userDto.userId(), userDto));
     }
 
     @Transactional
     public void deleteComment(Long commentId, String username) {
-        UserDto userDto = getUserByUsername(username);
+        UserResponse userDto = getUserByUsername(username);
 
         DocumentComment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        if (!comment.getUserId().equals(userDto.getUserId())) {
+        if (!comment.getUserId().equals(userDto.userId())) {
             throw new IllegalStateException("Not authorized to delete this comment");
         }
 
@@ -108,13 +108,13 @@ public class DocumentCommentService {
         commentRepository.save(comment);
     }
 
-    private Map<UUID, UserDto> batchFetchUsers(Set<UUID> userIds) {
+    private Map<UUID, UserResponse> batchFetchUsers(Set<UUID> userIds) {
         try {
-            ResponseEntity<List<UserDto>> response = userClient.getUsersByIds(new ArrayList<>(userIds));
+            ResponseEntity<List<UserResponse>> response = userClient.getUsersByIds(new ArrayList<>(userIds));
             if (response.getBody() != null) {
                 return response.getBody().stream()
                         .collect(Collectors.toMap(
-                                UserDto::getUserId,
+                                UserResponse::userId,
                                 Function.identity(),
                                 (existing, replacement) -> existing
                         ));
@@ -125,7 +125,7 @@ public class DocumentCommentService {
         return new HashMap<>();
     }
 
-    private List<CommentResponse> buildCommentTree(List<DocumentComment> comments, Map<UUID, UserDto> userMap) {
+    private List<CommentResponse> buildCommentTree(List<DocumentComment> comments, Map<UUID, UserResponse> userMap) {
         // Use LinkedHashMap to maintain order
         Map<Long, CommentResponse> responseMap = new LinkedHashMap<>();
         List<CommentResponse> rootComments = new ArrayList<>();
@@ -151,34 +151,22 @@ public class DocumentCommentService {
         return rootComments;
     }
 
-    private UserDto getUserByUsername(String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+    private UserResponse getUserByUsername(String username) {
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         return response.getBody();
     }
 
-    private Map<UUID, UserDto> fetchUserMap(List<UUID> userIds) {
-        ResponseEntity<List<UserDto>> response = userClient.getUsersByIds(userIds);
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new InvalidDataAccessResourceUsageException("Failed to fetch user data");
-        }
-        return response.getBody().stream()
-                .collect(Collectors.toMap(
-                        UserDto::getUserId,
-                        Function.identity()
-                ));
-    }
-
     private CommentResponse mapToCommentResponse(
             DocumentComment comment,
-            Map<UUID, UserDto> userMap) {
-        UserDto user = userMap.get(comment.getUserId());
+            Map<UUID, UserResponse> userMap) {
+        UserResponse user = userMap.get(comment.getUserId());
         return CommentResponse.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
-                .username(user != null ? user.getUsername() : "N/A")
+                .username(user != null ? user.username() : "N/A")
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .edited(comment.isEdited())

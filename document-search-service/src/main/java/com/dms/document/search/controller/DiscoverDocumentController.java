@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/search")
-public class SearchController {
+public class DiscoverDocumentController {
     private final DiscoverDocumentSearchService discoverDocumentSearchService;
 
     @PostMapping
