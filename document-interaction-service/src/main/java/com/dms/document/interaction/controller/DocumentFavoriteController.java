@@ -1,7 +1,7 @@
 package com.dms.document.interaction.controller;
 
 import com.dms.document.interaction.model.DocumentInformation;
-import com.dms.document.interaction.service.DocumentBookmarkService;
+import com.dms.document.interaction.service.DocumentFavoriteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,41 +11,41 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/bookmarks")
+@RequestMapping("/api/v1/favorites")
 @RequiredArgsConstructor
-public class DocumentBookmarkController {
-    private final DocumentBookmarkService documentBookmarkService;
+public class DocumentFavoriteController {
+    private final DocumentFavoriteService documentFavoriteService;
 
     @PostMapping("/documents/{documentId}")
-    public ResponseEntity<Void> bookmarkDocument(
+    public ResponseEntity<Void> favoriteDocument(
             @PathVariable String documentId,
             @AuthenticationPrincipal Jwt jwt) {
-        documentBookmarkService.bookmarkDocument(documentId, jwt.getSubject());
+        documentFavoriteService.favoriteDocument(documentId, jwt.getSubject());
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/documents/{documentId}")
-    public ResponseEntity<Void> unbookmarkDocument(
+    public ResponseEntity<Void> unfavoriteDocument(
             @PathVariable String documentId,
             @AuthenticationPrincipal Jwt jwt) {
-        documentBookmarkService.unbookmarkDocument(documentId, jwt.getSubject());
+        documentFavoriteService.unfavoriteDocument(documentId, jwt.getSubject());
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/documents/{documentId}/status")
-    public ResponseEntity<Boolean> isDocumentBookmarked(
+    public ResponseEntity<Boolean> isDocumentFavorited(
             @PathVariable String documentId,
             @AuthenticationPrincipal Jwt jwt) {
-        boolean isBookmarked = documentBookmarkService.isDocumentBookmarked(documentId, jwt.getSubject());
-        return ResponseEntity.ok(isBookmarked);
+        boolean isFavorited = documentFavoriteService.isDocumentFavorited(documentId, jwt.getSubject());
+        return ResponseEntity.ok(isFavorited);
     }
 
     @GetMapping("/documents")
-    public ResponseEntity<Page<DocumentInformation>> getBookmarkedDocuments(
+    public ResponseEntity<Page<DocumentInformation>> getFavoritedDocuments(
             Pageable pageable,
             @AuthenticationPrincipal Jwt jwt) {
-        Page<DocumentInformation> bookmarkedDocuments =
-                documentBookmarkService.getBookmarkedDocuments(pageable, jwt.getSubject());
-        return ResponseEntity.ok(bookmarkedDocuments);
+        Page<DocumentInformation> favoritedDocuments =
+                documentFavoriteService.getFavoritedDocuments(pageable, jwt.getSubject());
+        return ResponseEntity.ok(favoritedDocuments);
     }
 }

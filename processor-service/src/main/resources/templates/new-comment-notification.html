@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>New Comment Notification</title>
+</head>
+<body>
+<p>Hello <span th:text="${recipientName}">User</span>,</p>
+<p>
+    <strong th:text="${triggerUser}">User</strong> has
+    commented on the document: <strong th:text="${documentTitle}">Document</strong>
+</p>
+<p>
+    <a th:href="@{${baseUrl} + '/documents/' + ${documentId}}">Click here</a> to view the document and its comments.
+</p>
+<p>
+    Best regards,<br/>
+    DMS Team
+</p>
+</body>
+</html>

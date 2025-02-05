@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>New Version Notification</title>
+</head>
+<body>
+<p>Hello <span th:text="${recipientName}">User</span>,</p>
+<p>
+    <strong th:text="${triggerUser}">User</strong> has
+    uploaded a new version (v<span th:text="${versionNumber}">1</span>)
+    of the document: <strong th:text="${documentTitle}">Document</strong>
+</p>
+<p>
+    <a th:href="@{${baseUrl} + '/documents/' + ${documentId}}">Click here</a> to view the new version.
+</p>
+<p>
+    Best regards,<br/>
+    DMS Team
+</p>
+</body>
+</html>

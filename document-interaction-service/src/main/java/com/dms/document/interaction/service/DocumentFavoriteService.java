@@ -2,11 +2,11 @@ package com.dms.document.interaction.service;
 
 import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.UserResponse;
-import com.dms.document.interaction.exception.DuplicateBookmarkException;
+import com.dms.document.interaction.exception.DuplicateFavoriteException;
 import com.dms.document.interaction.exception.InvalidDocumentException;
-import com.dms.document.interaction.model.DocumentBookmark;
+import com.dms.document.interaction.model.DocumentFavorite;
 import com.dms.document.interaction.model.DocumentInformation;
-import com.dms.document.interaction.repository.DocumentBookmarkRepository;
+import com.dms.document.interaction.repository.DocumentFavoriteRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
@@ -25,12 +25,12 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class DocumentBookmarkService {
-    private final DocumentBookmarkRepository bookmarkRepository;
+public class DocumentFavoriteService {
+    private final DocumentFavoriteRepository documentFavoriteRepository;
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
 
-    public void bookmarkDocument(String documentId, String username) {
+    public void favoriteDocument(String documentId, String username) {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
@@ -41,55 +41,55 @@ public class DocumentBookmarkService {
         documentRepository.findById(documentId)
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
-        // Check for existing bookmark
-        if (bookmarkRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId)) {
-            throw new DuplicateBookmarkException("Document already bookmarked");
+        // Check for existing favorite
+        if (documentFavoriteRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId)) {
+            throw new DuplicateFavoriteException("Document already favorited");
         }
 
-        DocumentBookmark bookmark = new DocumentBookmark();
-        bookmark.setUserId(userResponse.userId());
-        bookmark.setDocumentId(documentId);
-        bookmarkRepository.save(bookmark);
+        DocumentFavorite favorite = new DocumentFavorite();
+        favorite.setUserId(userResponse.userId());
+        favorite.setDocumentId(documentId);
+        documentFavoriteRepository.save(favorite);
     }
 
-    public void unbookmarkDocument(String documentId, String username) {
+    public void unfavoriteDocument(String documentId, String username) {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserResponse userResponse = response.getBody();
-        bookmarkRepository.deleteByUserIdAndDocumentId(userResponse.userId(), documentId);
+        documentFavoriteRepository.deleteByUserIdAndDocumentId(userResponse.userId(), documentId);
     }
 
-    public boolean isDocumentBookmarked(String documentId, String username) {
-        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
-        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
-            throw new InvalidDataAccessResourceUsageException("User not found");
-        }
-        UserResponse userResponse = response.getBody();
-
-        return bookmarkRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId);
-    }
-
-    public Page<DocumentInformation> getBookmarkedDocuments(Pageable pageable, String username) {
+    public boolean isDocumentFavorited(String documentId, String username) {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserResponse userResponse = response.getBody();
 
-        // Get bookmarks from PostgreSQL
-        Page<DocumentBookmark> bookmarks = bookmarkRepository.findByUserId(userResponse.userId(), pageable);
+        return documentFavoriteRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId);
+    }
+
+    public Page<DocumentInformation> getFavoritedDocuments(Pageable pageable, String username) {
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserResponse userResponse = response.getBody();
+
+        // Get favorites from database
+        Page<DocumentFavorite> favorites = documentFavoriteRepository.findByUserId(userResponse.userId(), pageable);
 
         // Get document IDs
-        List<String> documentIds = bookmarks.getContent().stream()
-                .map(DocumentBookmark::getDocumentId)
+        List<String> documentIds = favorites.getContent().stream()
+                .map(DocumentFavorite::getDocumentId)
                 .collect(Collectors.toList());
 
         // Fetch documents
         List<DocumentInformation> documents = documentRepository.findByIdIn(documentIds);
 
-        // Maintain order from bookmarks
+        // Maintain order from favorites
         Map<String, DocumentInformation> documentMap = documents.stream()
                 .collect(Collectors.toMap(DocumentInformation::getId, d -> d));
 
@@ -98,6 +98,6 @@ public class DocumentBookmarkService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        return new PageImpl<>(orderedDocuments, pageable, bookmarks.getTotalElements());
+        return new PageImpl<>(orderedDocuments, pageable, favorites.getTotalElements());
     }
 }

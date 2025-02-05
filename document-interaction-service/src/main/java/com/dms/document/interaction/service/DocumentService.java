@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
+    private final DocumentNotificationService documentNotificationService;
     @Value("${app.document.storage.path}")
     private String storageBasePath;
 
@@ -352,15 +353,23 @@ public class DocumentService {
         DocumentInformation updatedDocument = documentRepository.save(document);
 
         // Send sync event for reprocessing
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(document.getUserId())
-                        .documentId(documentId)
-                        .subject(EventType.UPDATE_EVENT_WITH_FILE.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
+        CompletableFuture.runAsync(() -> {
+            publishEventService.sendSyncEvent(
+                    SyncEventRequest.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .userId(document.getUserId())
+                            .documentId(documentId)
+                            .subject(EventType.UPDATE_EVENT_WITH_FILE.name())
+                            .triggerAt(LocalDateTime.now())
+                            .build());
+
+            // Notify about new file version
+            documentNotificationService.handleFileVersionNotification(
+                    updatedDocument,
+                    username,
+                    updatedDocument.getCurrentVersion()
+            );
+        });
 
         return updatedDocument;
     }
@@ -476,17 +485,26 @@ public class DocumentService {
         // Save changes
         DocumentInformation savedDocument = documentRepository.save(document);
 
-        // Send sync event for Elasticsearch indexing
-        publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(document.getUserId())
-                        .documentId(documentId)
-                        .versionNumber(versionToRevert.getVersionNumber())
-                        .subject(EventType.REVERT_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        );
+        CompletableFuture.runAsync(() -> {
+            // Send sync event for indexing document
+            publishEventService.sendSyncEvent(
+                    SyncEventRequest.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .userId(document.getUserId())
+                            .documentId(documentId)
+                            .versionNumber(versionToRevert.getVersionNumber())
+                            .subject(EventType.REVERT_EVENT.name())
+                            .triggerAt(LocalDateTime.now())
+                            .build()
+            );
+
+            // Notify about document reversion
+            documentNotificationService.handleRevertNotification(
+                    savedDocument,
+                    username,
+                    versionNumber
+            );
+        });
 
         return savedDocument;
     }

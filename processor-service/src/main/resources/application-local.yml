@@ -1,7 +1,7 @@
 app:
+  base-url: http://localhost:3000
   document:
     max-size-threshold-mb: 25MB
-
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
@@ -13,6 +13,13 @@ app:
   pdf:
     quality-threshold: 0.8
     min-text-density: 0.01
+  email:
+    batch-size: 50  # Number of emails per batch
+    retry:
+      max-attempts: 3
+      initial-interval: 1000
+      multiplier: 2.0
+      max-interval: 10000
 
 spring:
   data:
@@ -23,6 +30,15 @@ spring:
       database: dms
       port: 27017
       host: 127.0.0.1
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
+    username: postgres
+    password: postgrespw
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
   rabbitmq:
     listener:
       simple:
@@ -34,6 +50,17 @@ spring:
           multiplier: 2.0
     publisher-confirm-type: correlated
     publisher-returns: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 elasticsearch:
   host: 127.0.0.1
@@ -46,9 +73,13 @@ rabbitmq:
   exchanges:
     internal: internal.exchange
     dlx: dead.letter.exchange
+    notification: notification.exchange
   queues:
     document-sync: document-sync.queue
     document-sync-dlq: document-sync.dlq
+    notification: notification.queue
+    notification-dlq: notification.dlq
   routing-keys:
     internal-document-sync: internal.document-sync.routing-key
+    notification: notification.email.routing-key
     dlq: dead.letter.routing-key

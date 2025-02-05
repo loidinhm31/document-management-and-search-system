@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -32,6 +33,7 @@ public class DocumentCommentService {
     private final UserClient userClient;
     private final DocumentCommentRepository documentCommentRepository;
     private final DocumentRepository documentRepository;
+    private final DocumentNotificationService documentNotificationService;
 
     @Transactional(readOnly = true)
     public Page<CommentResponse> getDocumentComments(String documentId, Pageable pageable, String username) {
@@ -82,6 +84,15 @@ public class DocumentCommentService {
         // Initialize empty replies list for new comment
         savedComment.setReplies(new ArrayList<>());
 
+        CompletableFuture.runAsync(() -> {
+            // Only notify if this is a new commenter
+            documentNotificationService.handleCommentNotification(
+                    documentId,
+                    username,
+                    userResponse.userId(),
+                    savedComment.getId()
+            );
+        });
         return mapToCommentResponse(savedComment, Collections.singletonMap(userResponse.userId(), userResponse));
     }
 

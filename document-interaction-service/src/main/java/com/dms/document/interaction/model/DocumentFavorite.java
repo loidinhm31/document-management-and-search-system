@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "document_bookmarks")
+@Table(name = "document_favorites")
 @Data
-public class DocumentBookmark {
+public class DocumentFavorite {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
