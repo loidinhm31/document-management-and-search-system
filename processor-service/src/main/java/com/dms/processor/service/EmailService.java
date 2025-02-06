@@ -1,5 +1,6 @@
 package com.dms.processor.service;
 
+import com.dms.processor.model.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -37,10 +39,7 @@ public class EmailService {
             return;
         }
 
-        // Prepare the email content once
-        Context context = new Context();
-        context.setVariables(templateVars);
-        String htmlContent = templateEngine.process(templateName, context);
+        Map<String, User> recipientMap = (Map<String, User>) templateVars.get("recipientMap");
 
         // Split recipients into batches
         List<List<String>> batches = toEmails.stream()
@@ -53,7 +52,7 @@ public class EmailService {
         // Process each batch asynchronously
         List<CompletableFuture<Void>> futures = batches.stream()
                 .map(batch -> CompletableFuture.runAsync(() ->
-                        sendBatch(batch, subject, htmlContent)))
+                        sendBatch(batch, subject, templateName, templateVars, recipientMap)))
                 .toList();
 
         // Wait for all batches to complete
@@ -68,10 +67,21 @@ public class EmailService {
                 });
     }
 
-    private void sendBatch(List<String> batchEmails, String subject, String htmlContent) {
+    private void sendBatch(List<String> batchEmails, String subject, String templateName,
+                           Map<String, Object> templateVars, Map<String, User> recipientMap) {
         try {
             for (String email : batchEmails) {
                 try {
+                    // Create a copy of template vars for this specific recipient
+                    Map<String, Object> personalizedVars = new HashMap<>(templateVars);
+                    User recipient = recipientMap.get(email);
+                    personalizedVars.put("recipientName", recipient.getUsername());
+
+                    // Prepare email content
+                    Context context = new Context();
+                    context.setVariables(personalizedVars);
+                    String htmlContent = templateEngine.process(templateName, context);
+
                     MimeMessage message = mailSender.createMimeMessage();
                     MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 

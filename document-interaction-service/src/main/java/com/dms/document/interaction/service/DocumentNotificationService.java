@@ -11,6 +11,7 @@ import com.dms.document.interaction.repository.DocumentFavoriteRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -44,7 +45,7 @@ public class DocumentNotificationService {
                     .filter(favUserId -> !favUserId.equals(userId))
                     .collect(Collectors.toSet());
 
-            if (!favoritedUsers.isEmpty()) {
+            if (CollectionUtils.isNotEmpty(favoritedUsers)) {
                 sendNotification(
                         document,
                         username,
