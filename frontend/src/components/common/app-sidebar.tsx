@@ -1,4 +1,4 @@
-import { BookOpen, FileText, Shield, Users } from "lucide-react";
+import { BookOpen, FileText, Settings2Icon, Shield, Users } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -42,6 +42,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: FileText,
       href: RoutePaths.MY_DOCUMENT,
       isActive: location.pathname === RoutePaths.MY_DOCUMENT
+    },
+    {
+      title: t("navigation.main.preferences"),
+      icon: Settings2Icon,
+      href: RoutePaths.DOCUMENT_PREFERENCE,
+      isActive: location.pathname === RoutePaths.DOCUMENT_PREFERENCE
     }
   ];
 

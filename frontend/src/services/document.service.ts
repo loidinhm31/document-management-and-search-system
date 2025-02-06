@@ -2,6 +2,7 @@ import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
 import { UserSearchResponse } from "@/types/user";
+import { InteractionType, UpdatePreferencesRequest } from "@/types/document-preference";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
@@ -166,6 +167,42 @@ class DocumentService extends BaseService {
     return this.handleApiResponse(
       axiosInstance.delete(`/document-interaction/api/v1/comments/${commentId}`)
     );
+  }
+
+  getDocumentPreferences() {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/preferences`)
+    );
+  }
+
+  getDocumentContentWeights() {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/preferences/content-weights`)
+    );
+  }
+
+  updateDocumentPreferences(preferences: UpdatePreferencesRequest) {
+    return this.handleApiResponse(
+      axiosInstance.put(`/document-interaction/api/v1/preferences`, preferences)
+    );
+  }
+
+  getInteractionStatistics() {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/preferences/statistics`)
+    );
+  }
+
+  getRecommendedTags() {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/preferences/tags`)
+    );
+  }
+
+  recordInteraction(documentId: string, type: InteractionType) {
+    return axiosInstance.get(`/document-interaction/api/v1/preferences/interactions/${documentId}`, {
+      params: { type }
+    });
   }
 }
 

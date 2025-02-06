@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { documentService } from "@/services/document.service";
 import { useToast } from "@/hooks/use-toast";
-import TagInput from "@/components/common/tag-input";
+import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { useProcessing } from "@/context/processing-provider";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
 import { Textarea } from "@/components/ui/textarea";
@@ -361,7 +361,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
               <FormItem>
                 <FormLabel>{t("document.upload.form.tags.label")}</FormLabel>
                 <FormControl>
-                  <TagInput
+                  <TagInputDebounce
                     value={field.value || []}
                     onChange={field.onChange}
                     placeholder={t("document.upload.form.tags.placeholder")}

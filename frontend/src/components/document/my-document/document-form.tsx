@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
 import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
-import TagInput from "@/components/common/tag-input";
+import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -268,7 +268,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
               <FormItem>
                 <FormLabel>{t("document.detail.form.tags.label")}</FormLabel>
                 <FormControl>
-                  <TagInput
+                  <TagInputDebounce
                     value={field.value || []}
                     onChange={field.onChange}
                     placeholder={t("document.detail.form.tags.placeholder")}

@@ -6,12 +6,11 @@ const ForgotPassword = lazy(() => import("@/pages/forgot-password-page"));
 const Home = lazy(() => import("@/pages/home-page"));
 const Profile = lazy(() => import("@/pages/profile-page"));
 const UserList = lazy(() => import("@/pages/admin/user-list-page"));
-const UserDetails = lazy(() => import("@/pages/admin/user-detail-page"));
-
+const UserDetails = lazy(() => import("@/pages/admin/user-detail-page"))
 const MyDocument = lazy(() => import("@/pages/document/my-document/my-document-page"));
 const MyDocumentDetail = lazy(() => import("@/pages/document/my-document/my-document-detail-page"));
-
 const DocumentDetail = lazy(() => import("@/pages/document/discover/document-detail-page"));
+const DocumentPreference = lazy(() => import("@/pages/document/document-preferences-page"));
 
 
 export interface Route {
@@ -34,6 +33,7 @@ export const RoutePaths = {
   MY_DOCUMENT: "/documents/me",
   MY_DOCUMENT_DETAIL: "/documents/me/:documentId",
   DOCUMENT_DETAIL: "/documents/:documentId",
+  DOCUMENT_PREFERENCE: "/documents/preferences",
   ADMIN: {
     USERS: "/admin/users",
     USER_DETAILS: "/admin/users/:userId"
@@ -91,6 +91,13 @@ export const routes: Route[] = [
     path: RoutePaths.DOCUMENT_DETAIL,
     pageTitle: "pages.document.detail",
     component: DocumentDetail,
+    isSecure: true,
+    permission: []
+  },
+  {
+    path: RoutePaths.DOCUMENT_PREFERENCE,
+    pageTitle: "pages.my-document.detail",
+    component: DocumentPreference,
     isSecure: true,
     permission: []
   },

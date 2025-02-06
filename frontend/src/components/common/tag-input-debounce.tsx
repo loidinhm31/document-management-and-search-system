@@ -15,7 +15,7 @@ interface TagInputProps {
   className?: string;
 }
 
-const TagInput = ({
+const TagInputDebounce = ({
                     value,
                     onChange,
                     placeholder = "Enter tags...",
@@ -43,11 +43,11 @@ const TagInput = ({
   };
 
   useEffect(() => {
-    window.addEventListener('scroll', updateDropdownPosition);
-    window.addEventListener('resize', updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition);
+    window.addEventListener("resize", updateDropdownPosition);
     return () => {
-      window.removeEventListener('scroll', updateDropdownPosition);
-      window.removeEventListener('resize', updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition);
+      window.removeEventListener("resize", updateDropdownPosition);
     };
   }, []);
 
@@ -130,7 +130,6 @@ const TagInput = ({
     updateDropdownPosition();
 
     // Only fetch initial suggestions on first focus
-    console.log("fetch inital, ", hasFetchedInitialSuggestions);
     if (!hasFetchedInitialSuggestions) {
       fetchTags();
       setHasFetchedInitialSuggestions(true);
@@ -143,7 +142,7 @@ const TagInput = ({
     return createPortal(
       <div
         style={{
-          position: 'absolute',
+          position: "absolute",
           top: `${dropdownStyle.top}px`,
           left: `${dropdownStyle.left}px`,
           width: `${dropdownStyle.width}px`,
@@ -222,4 +221,4 @@ const TagInput = ({
   );
 };
 
-export default TagInput;
+export default TagInputDebounce;
