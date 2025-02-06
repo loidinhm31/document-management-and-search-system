@@ -1,3 +1,4 @@
+import i18n from "i18next";
 import { Loader2, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -27,6 +28,21 @@ export default function DocumentPreferencesManager() {
   const [weights, setWeights] = useState<PreferenceCategory[]>([]);
   const [stats, setStats] = useState<InteractionStats | null>(null);
   const [recommendedTags, setRecommendedTags] = useState<string[]>([]);
+
+  // Get display value for a tag (translated if it's a master data code)
+  const getTagDisplay = (tag: string) => {
+    // Check in each master data type
+    const majorItem = majors.find(m => m.code === tag);
+    if (majorItem) return majorItem.translations[i18n.language] || majorItem.translations.en;
+
+    const levelItem = levels.find(l => l.code === tag);
+    if (levelItem) return levelItem.translations[i18n.language] || levelItem.translations.en;
+
+    const categoryItem = categories.find(c => c.code === tag);
+    if (categoryItem) return categoryItem.translations[i18n.language] || categoryItem.translations.en;
+
+    return tag;
+  };
 
   useEffect(() => {
     if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
@@ -149,6 +165,7 @@ export default function DocumentPreferencesManager() {
                     preferredMajors: new Set(majors)
                   }))}
                   recommendedTags={majors.map(major => major.code)}
+                  getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.majorPlaceholder")}
                 />
               </div>
@@ -163,6 +180,7 @@ export default function DocumentPreferencesManager() {
                     preferredLevels: new Set(levels)
                   }))}
                   recommendedTags={levels.map(level => level.code)}
+                  getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.levelPlaceholder")}
                 />
               </div>
@@ -177,6 +195,7 @@ export default function DocumentPreferencesManager() {
                     preferredCategories: new Set(categories)
                   }))}
                   recommendedTags={categories.map(category => category.code)}
+                  getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.categoryPlaceholder")}
                 />
               </div>

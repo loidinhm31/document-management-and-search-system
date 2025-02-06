@@ -3,7 +3,6 @@ import { X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +15,7 @@ interface TagInputHybridProps {
   disabled?: boolean;
   error?: boolean;
   className?: string;
+  getTagDisplay?: (tag: string) => string; // New prop for custom tag display
 }
 
 const TagInputHybrid = ({
@@ -26,7 +26,8 @@ const TagInputHybrid = ({
                           placeholder = "Enter tags...",
                           disabled = false,
                           error = false,
-                          className = ""
+                          className = "",
+                          getTagDisplay = (tag) => tag
                         }: TagInputHybridProps) => {
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -61,7 +62,7 @@ const TagInputHybrid = ({
     try {
       setLoading(true);
       const results = await onSearch(prefix || "");
-      setSuggestions(results);
+      setSuggestions(results.filter(tag => !value.includes(tag)));
     } catch (error) {
       console.error("Error fetching tag suggestions:", error);
       setSuggestions([]);
@@ -165,10 +166,7 @@ const TagInputHybrid = ({
                   className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accent hover:text-accent-foreground flex items-center gap-2"
                   onClick={() => addTag(tag)}
                 >
-                  {tag}
-                  <Badge variant="secondary" className="ml-auto text-xs">
-                    Recommended
-                  </Badge>
+                  {getTagDisplay(tag)}
                 </button>
               ))}
               {filteredSuggestions.length > 0 && filteredRecommendedTags.length > 0 && (
@@ -180,7 +178,7 @@ const TagInputHybrid = ({
                   className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accent hover:text-accent-foreground"
                   onClick={() => addTag(suggestion)}
                 >
-                  {suggestion}
+                  {getTagDisplay(suggestion)}
                 </button>
               ))}
             </>
@@ -206,7 +204,7 @@ const TagInputHybrid = ({
             key={tag}
             className="inline-flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-md text-sm font-medium"
           >
-            {tag}
+            {getTagDisplay(tag)}
             {!disabled && (
               <button
                 type="button"
