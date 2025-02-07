@@ -18,13 +18,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { getMasterDataTranslation } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { cn, getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
 import {
-  fetchDocuments,
+  fetchRecommendedDocuments,
+  fetchSearchDocuments,
   resetFilters,
   selectSearchLoading,
   selectSearchResults,
@@ -51,6 +51,7 @@ export const DocumentList = () => {
 
   const loading = useAppSelector(selectSearchLoading);
   const documents = useAppSelector(selectSearchResults);
+
   const {
     selectedSort,
     selectedMajor,
@@ -62,6 +63,8 @@ export const DocumentList = () => {
   } = useAppSelector(selectSearchState);
 
   const { majors, levels, categories } = useAppSelector(selectMasterData);
+  const { searchTerm } = useAppSelector(selectSearchState);
+  const { isSearchMode } = useAppSelector(selectSearchState);
 
   const [selectedDoc, setSelectedDoc] = React.useState(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
@@ -73,7 +76,8 @@ export const DocumentList = () => {
     { field: "courseLevel", label: t("document.discover.headers.level"), sortable: true },
     { field: "category", label: t("document.discover.headers.category"), sortable: true },
     { field: "tags", label: t("document.discover.headers.tags"), sortable: false },
-    { field: "highlights", label: t("document.discover.headers.matches"), sortable: false },
+    // Only show matches column in search mode
+    ...(isSearchMode ? [{ field: "highlights", label: t("document.discover.headers.matches"), sortable: false }] : []),
     { field: "createdAt", label: t("document.discover.headers.created"), sortable: true },
     { field: "actions", label: t("document.discover.headers.actions"), sortable: false }
   ];
@@ -94,7 +98,7 @@ export const DocumentList = () => {
     }
 
     dispatch(setSort(`${field},${newDirection}`));
-    dispatch(fetchDocuments());
+    dispatch(fetchSearchDocuments());
   };
 
   const renderSortIcon = (field: string) => {
@@ -108,18 +112,38 @@ export const DocumentList = () => {
     );
   };
 
-  // Initial fetch
+  // Initial fetch master data
   useEffect(() => {
-    dispatch(fetchDocuments());
     // Only fetch master data if not already loaded
     if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
       dispatch(fetchMasterData());
     }
   }, [dispatch, majors.length, levels.length, categories.length]);
 
+  // Initial fetch
+  useEffect(() => {
+    if (searchTerm ||
+      selectedMajor !== "all" ||
+      selectedLevel !== "all" ||
+      selectedCategory !== "all" ||
+      selectedTags.length > 0) {
+      dispatch(fetchSearchDocuments());
+    } else {
+      dispatch(fetchRecommendedDocuments());
+    }
+  }, []);
+
   const handleSearch = () => {
-    dispatch(setPage(0)); // Reset to first page when searching
-    dispatch(fetchDocuments());
+    if (!searchTerm.trim() &&
+      selectedMajor === "all" &&
+      selectedLevel === "all" &&
+      selectedCategory === "all" &&
+      selectedTags.length === 0) {
+      dispatch(fetchRecommendedDocuments());
+    } else {
+      dispatch(setPage(0));
+      dispatch(fetchSearchDocuments());
+    }
   };
 
   const handleDownload = async (id: string, filename: string) => {
@@ -143,12 +167,12 @@ export const DocumentList = () => {
 
   const handleReset = () => {
     dispatch(resetFilters());
-    dispatch(fetchDocuments());
+    dispatch(fetchRecommendedDocuments());
   };
 
   const handlePageChange = (newPage: number) => {
     dispatch(setPage(newPage));
-    dispatch(fetchDocuments());
+    dispatch(fetchSearchDocuments());
   };
 
   const formatDate = (dateString: string | Date) => {
@@ -199,7 +223,8 @@ export const DocumentList = () => {
                 <Filter className="h-4 w-4" />
                 <span className="hidden sm:inline">{t("document.commonSearch.filters")}</span>
                 {getActiveFilterCount() > 0 && (
-                  <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                  <span
+                    className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                     {getActiveFilterCount()}
                   </span>
                 )}

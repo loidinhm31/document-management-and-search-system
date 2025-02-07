@@ -41,7 +41,7 @@ export function RelatedDocuments({
 
     setLoading(true);
     try {
-      const response = await documentService.getRelatedDocuments(documentId, ITEMS_PER_PAGE, 0);
+      const response = await documentService.getRecommendationDocuments(documentId, ITEMS_PER_PAGE, 0);
       const newDocs = response.data.content;
 
       setDocuments(newDocs);
@@ -63,7 +63,7 @@ export function RelatedDocuments({
 
     setLoading(true);
     try {
-      const response = await documentService.getRelatedDocuments(documentId, ITEMS_PER_PAGE, currentPage);
+      const response = await documentService.getRecommendationDocuments(documentId, ITEMS_PER_PAGE, currentPage);
       const newDocs = response.data.content;
 
       if (!newDocs.length) {

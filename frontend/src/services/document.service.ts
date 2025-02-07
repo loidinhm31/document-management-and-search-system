@@ -134,12 +134,12 @@ class DocumentService extends BaseService {
     );
   }
 
-  getRelatedDocuments(documentId: string, size: number = 6, page: number = 0) {
+  getRecommendationDocuments(documentId: string, size: number = 6, page: number = 0) {
     return this.handleApiResponse(
       axiosInstance.get(
-        `/document-search/api/v1/documents/${documentId}/related`,
+        `/document-search/api/v1/documents/recommendation`,
         {
-          params: { size, page }
+          params: { documentId, size, page }
         }
       )
     );

@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+import { documentService } from "@/services/document.service";
 import { searchService } from "@/services/search.service";
 import { RootState } from "@/store";
 import { DocumentInformation } from "@/types/document";
@@ -34,9 +35,12 @@ interface SearchState {
     fileTypes?: string[];
     confidence?: number;
   };
+
+  isSearchMode: boolean;
 }
 
 const initialState: SearchState = {
+  isSearchMode: false,
   searchTerm: "",
   selectedSort: "created_at,desc",
   selectedMajor: "all",
@@ -54,6 +58,18 @@ const initialState: SearchState = {
   error: null,
   advancedFilters: {}
 };
+
+export const fetchRecommendedDocuments = createAsyncThunk(
+  'search/fetchRecommendedDocuments',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await documentService.getRecommendationDocuments(undefined, 10);
+      return response.data.content;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 // Async thunk for search suggestions
 export const fetchSuggestions = createAsyncThunk(
@@ -79,8 +95,8 @@ export const fetchSuggestions = createAsyncThunk(
 );
 
 // Async thunk for fetching documents
-export const fetchDocuments = createAsyncThunk(
-  "search/fetchDocuments",
+export const fetchSearchDocuments = createAsyncThunk(
+  "search/fetchSearchDocuments",
   async (_, { getState, rejectWithValue }) => {
     try {
       const state = getState() as RootState;
@@ -163,7 +179,8 @@ const searchSlice = createSlice({
       return {
         ...initialState,
         documents: state.documents, // Preserve current documents until new search
-        suggestions: state.suggestions // Preserve suggestions
+        suggestions: state.suggestions, // Preserve suggestions
+        isSearchMode: false,
       };
     }
   },
@@ -182,22 +199,35 @@ const searchSlice = createSlice({
         state.suggestions = [];
       })
       // Handle fetchDocuments
-      .addCase(fetchDocuments.pending, (state) => {
+      .addCase(fetchSearchDocuments.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchDocuments.fulfilled, (state, action) => {
+      .addCase(fetchSearchDocuments.fulfilled, (state, action) => {
         state.loading = false;
         state.documents = action.payload.content;
         state.totalPages = action.payload.totalPages;
         state.totalElements = action.payload.totalElements;
+        state.isSearchMode = true;
       })
-      .addCase(fetchDocuments.rejected, (state, action) => {
+      .addCase(fetchSearchDocuments.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
         state.documents = [];
         state.totalPages = 0;
         state.totalElements = 0;
+      })
+      .addCase(fetchRecommendedDocuments.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchRecommendedDocuments.fulfilled, (state, action) => {
+        state.loading = false;
+        state.documents = action.payload;
+        state.isSearchMode = false;
+      })
+      .addCase(fetchRecommendedDocuments.rejected, (state) => {
+        state.loading = false;
+        state.documents = [];
       });
   }
 });
