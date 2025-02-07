@@ -10,6 +10,7 @@ CREATE TABLE document_comments
     edited      BOOLEAN                  DEFAULT FALSE,
     deleted     BOOLEAN                  DEFAULT FALSE,
     version     BIGINT                   DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users (user_id),
     CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users (user_id),
     CONSTRAINT fk_comments_parent FOREIGN KEY (parent_id) REFERENCES document_comments (id)
 );
