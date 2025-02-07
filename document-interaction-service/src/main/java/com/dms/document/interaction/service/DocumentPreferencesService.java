@@ -202,14 +202,14 @@ public class DocumentPreferencesService {
                 // Calculate weights based on interaction counts
                 Map<String, DocumentInteraction.InteractionStats> stats = interaction.getInteractions();
 
-                weights.merge("VIEW",
-                        getInteractionCount(stats, "VIEW") * VIEW_WEIGHT, Double::sum);
-                weights.merge("DOWNLOAD",
-                        getInteractionCount(stats, "DOWNLOAD") * DOWNLOAD_WEIGHT, Double::sum);
-                weights.merge("COMMENT",
-                        getInteractionCount(stats, "COMMENT") * COMMENT_WEIGHT, Double::sum);
-                weights.merge("SHARE",
-                        getInteractionCount(stats, "SHARE") * FAVORITE_WEIGHT, Double::sum);
+                weights.merge(InteractionType.VIEW.name(),
+                        getInteractionCount(stats, InteractionType.VIEW.name()) * VIEW_WEIGHT, Double::sum);
+                weights.merge(InteractionType.DOWNLOAD.name(),
+                        getInteractionCount(stats, InteractionType.DOWNLOAD.name()) * DOWNLOAD_WEIGHT, Double::sum);
+                weights.merge(InteractionType.COMMENT.name(),
+                        getInteractionCount(stats, InteractionType.COMMENT.name()) * COMMENT_WEIGHT, Double::sum);
+                weights.merge(InteractionType.SHARE.name(),
+                        getInteractionCount(stats, InteractionType.SHARE.name()) * FAVORITE_WEIGHT, Double::sum);
             }
         }
 
