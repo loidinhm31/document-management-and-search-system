@@ -145,14 +145,6 @@ public class DocumentPreferencesService {
     }
 
     private void updateInteractionCounts(DocumentPreferences preferences, DocumentInformation document) {
-        // Update category counts
-        Map<String, Integer> categoryCounts = preferences.getCategoryInteractionCounts();
-        if (categoryCounts == null) {
-            categoryCounts = new HashMap<>();
-        }
-        categoryCounts.merge(document.getCategory(), 1, Integer::sum);
-        preferences.setCategoryInteractionCounts(categoryCounts);
-
         // Update major counts
         Map<String, Integer> majorCounts = preferences.getMajorInteractionCounts();
         if (majorCounts == null) {
@@ -160,6 +152,22 @@ public class DocumentPreferencesService {
         }
         majorCounts.merge(document.getMajor(), 1, Integer::sum);
         preferences.setMajorInteractionCounts(majorCounts);
+
+        // Update level counts
+        Map<String, Integer> levelCounts = preferences.getLevelInteractionCounts();
+        if (levelCounts == null) {
+            levelCounts = new HashMap<>();
+        }
+        levelCounts.merge(document.getCourseLevel(), 1, Integer::sum);
+        preferences.setLevelInteractionCounts(levelCounts);
+
+        // Update category counts
+        Map<String, Integer> categoryCounts = preferences.getCategoryInteractionCounts();
+        if (categoryCounts == null) {
+            categoryCounts = new HashMap<>();
+        }
+        categoryCounts.merge(document.getCategory(), 1, Integer::sum);
+        preferences.setCategoryInteractionCounts(categoryCounts);
 
         // Update tag counts
         Map<String, Integer> tagCounts = preferences.getTagInteractionCounts();

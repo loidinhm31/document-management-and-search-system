@@ -40,14 +40,17 @@ public class DocumentPreferences {
     private Map<String, Double> contentTypeWeights;
 
     // Interaction history aggregates
+    @Field("major_interaction_counts")
+    private Map<String, Integer> majorInteractionCounts;
+
+    @Field("level_interaction_counts")
+    private Map<String, Integer> levelInteractionCounts;
+
     @Field("category_interaction_counts")
     private Map<String, Integer> categoryInteractionCounts;
 
     @Field("tag_interaction_counts")
     private Map<String, Integer> tagInteractionCounts;
-
-    @Field("major_interaction_counts")
-    private Map<String, Integer> majorInteractionCounts;
 
     @Field("recent_viewed_documents")
     private Set<String> recentViewedDocuments;
