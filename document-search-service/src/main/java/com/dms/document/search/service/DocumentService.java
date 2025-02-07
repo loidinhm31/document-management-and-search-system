@@ -39,8 +39,21 @@ public class DocumentService {
         UserDto userDto = response.getBody();
 
         // Build the query criteria
-        Criteria queryCriteria = Criteria.where("userId").is(userDto.getUserId().toString())
-                .and("deleted").ne(true);
+        Criteria baseCriteria = Criteria.where("deleted").ne(true);
+
+        // Build access criteria combining owned and shared documents
+        Criteria accessCriteria = new Criteria().orOperator(
+                // Documents owned by user
+                Criteria.where("userId").is(userDto.getUserId().toString()),
+
+                // Documents specifically shared with user
+                new Criteria().andOperator(
+                        Criteria.where("sharingType").is("SPECIFIC"),
+                        Criteria.where("sharedWith").in(userDto.getUserId().toString())
+                )
+        );
+
+        Criteria queryCriteria = new Criteria().andOperator(baseCriteria, accessCriteria);
 
         // Add search criteria if provided
         if (StringUtils.isNotBlank(criteria.getSearch())) {
