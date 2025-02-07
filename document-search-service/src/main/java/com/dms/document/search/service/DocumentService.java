@@ -99,24 +99,4 @@ public class DocumentService {
                 total
         );
     }
-
-    public Page<DocumentResponseDto> getRelatedDocuments(String documentId, String username, Pageable pageable) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
-        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
-            throw new InvalidDataAccessResourceUsageException("User not found");
-        }
-        UserDto userDto = response.getBody();
-
-        // First check if user has access to the source document
-        DocumentInformation sourceDoc = documentRepository.findAccessibleDocumentByIdAndUserId(
-                documentId,
-                userDto.getUserId().toString()
-        ).orElseThrow(() -> new InvalidDocumentException("Document not found"));
-
-        return discoverDocumentSearchService.findRelatedDocuments(
-                documentId,
-                userDto.getUserId().toString(),
-                pageable
-        );
-    }
 }

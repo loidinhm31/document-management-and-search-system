@@ -11,6 +11,7 @@ import com.dms.document.search.elasticsearch.DocumentIndex;
 import com.dms.document.search.enums.QueryType;
 import com.dms.document.search.enums.SharingType;
 import com.dms.document.search.exception.InvalidDocumentException;
+import com.dms.document.search.model.DocumentPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class DiscoverDocumentSearchService {
+public class DiscoverDocumentSearchService extends ElasticSearchBaseService {
     private final ElasticsearchOperations elasticsearchOperations;
     private final UserClient userClient;
 
@@ -139,134 +140,6 @@ public class DiscoverDocumentSearchService {
             log.error("Error getting suggestions: {}", e.getMessage());
             return Collections.emptyList();
         }
-    }
-
-    public Page<DocumentResponseDto> findRelatedDocuments(String documentId, String userId, Pageable pageable) {
-        // Get the source document
-        DocumentIndex sourceDoc = elasticsearchOperations.get(documentId, DocumentIndex.class);
-        if (sourceDoc == null) {
-            throw new InvalidDocumentException("Document not found");
-        }
-
-        // Build the query for related documents
-        BoolQuery.Builder queryBuilder = new BoolQuery.Builder();
-
-        // Add sharing access filter (reuse existing method)
-        addSharingAccessFilter(queryBuilder, userId);
-
-        // Exclude the source document
-        queryBuilder.mustNot(mustNot -> mustNot
-                .term(t -> t
-                        .field("_id")
-                        .value(documentId)));
-
-        // Build should clauses for different similarity criteria
-        queryBuilder.must(must -> must
-                .bool(b -> {
-                    // Content similarity using more-like-this query
-                    b.should(should -> should
-                            .moreLikeThis(mlt -> mlt
-                                    .fields("content")
-                                    .like(l -> l.text(sourceDoc.getContent()))
-                                    .minTermFreq(2)
-                                    .minDocFreq(1)
-                                    .maxQueryTerms(25)
-                                    .minimumShouldMatch("30%")
-                                    .boost(10.0f)));
-
-                    // Title similarity
-                    b.should(should -> should
-                            .moreLikeThis(mlt -> mlt
-                                    .fields("filename.analyzed")
-                                    .like(l -> l.text(sourceDoc.getFilename()))
-                                    .minTermFreq(1)
-                                    .minDocFreq(1)
-                                    .maxQueryTerms(10)
-                                    .boost(5.0f)));
-
-                    // Same major and level
-                    if (sourceDoc.getMajor() != null && sourceDoc.getCourseLevel() != null) {
-                        b.should(should -> should
-                                .bool(bb -> bb
-                                        .must(m -> m
-                                                .term(t -> t
-                                                        .field("major")
-                                                        .value(sourceDoc.getMajor())))
-                                        .must(m -> m
-                                                .term(t -> t
-                                                        .field("course_level")
-                                                        .value(sourceDoc.getCourseLevel())))
-                                        .boost(3.0f)));
-                    }
-
-                    // Same category
-                    if (sourceDoc.getCategory() != null) {
-                        b.should(should -> should
-                                .term(t -> t
-                                        .field("category")
-                                        .value(sourceDoc.getCategory())
-                                        .boost(2.0f)));
-                    }
-
-                    // Course code similarity using fuzzy matching
-                    if (sourceDoc.getCourseCode() != null) {
-                        String courseCode = sourceDoc.getCourseCode();
-                        b.should(should -> should
-                                .bool(bb -> {
-                                    // Exact match gets highest boost
-                                    bb.should(s -> s
-                                            .term(t -> t
-                                                    .field("course_code")
-                                                    .value(courseCode)
-                                                    .boost(8.0f)));
-
-                                    // Fuzzy match for similar course codes
-                                    bb.should(s -> s
-                                            .match(m -> m
-                                                    .field("course_code")
-                                                    .query(courseCode)
-                                                    .fuzziness("2")
-                                                    .prefixLength(3) // Preserve first 3 chars
-                                                    .boost(6.0f)));
-
-                                    return bb;
-                                }));
-                    }
-
-                    // Common tags with high boost as they are explicit keywords
-                    if (!CollectionUtils.isEmpty(sourceDoc.getTags())) {
-                        b.should(should -> should
-                                .terms(t -> t
-                                        .field("tags")
-                                        .terms(tt -> tt
-                                                .value(sourceDoc.getTags().stream()
-                                                        .map(FieldValue::of)
-                                                        .collect(Collectors.toList())))
-                                        .boost(4.0f)));
-                    }
-
-                    return b.minimumShouldMatch("1");
-                }));
-
-        // Create the search query
-        NativeQuery searchQuery = NativeQuery.builder()
-                .withQuery(queryBuilder.build()._toQuery())
-                .withPageable(PageRequest.of(
-                        pageable.getPageNumber(),
-                        pageable.getPageSize(),
-                        Sort.by(Sort.Order.desc("_score")) // Sort by score in descending order
-                ))
-                .withTrackScores(true)
-                .build();
-
-        // Execute search
-        SearchHits<DocumentIndex> searchHits = elasticsearchOperations.search(
-                searchQuery,
-                DocumentIndex.class
-        );
-
-        // Process results
-        return processSearchResults(searchHits, pageable);
     }
 
     private Query buildSearchQuery(DocumentSearchRequest request, SearchContext context, String userId) {
@@ -551,47 +424,6 @@ public class DiscoverDocumentSearchService {
         return highlightFields;
     }
 
-    private Page<DocumentResponseDto> processSearchResults(SearchHits<DocumentIndex> searchHits, Pageable pageable) {
-        List<DocumentResponseDto> documentResponses = searchHits.getSearchHits().stream()
-                .map(hit -> {
-                    DocumentIndex doc = hit.getContent();
-                    List<String> highlights = new ArrayList<>();
-
-                    // Collect all highlights
-                    Map<String, List<String>> highlightFields = hit.getHighlightFields();
-                    // First add filename highlights if they exist
-                    addHighlightsFromField(highlightFields, "filename.analyzed", highlights);
-                    addHighlightsFromField(highlightFields, "filename.search", highlights);
-
-                    // Then add content highlights
-                    addHighlightsFromField(highlightFields, "content", highlights);
-
-                    // Build the response DTO
-                    return DocumentResponseDto.builder()
-                            .id(doc.getId())
-                            .filename(doc.getFilename())
-                            .documentType(doc.getDocumentType())
-                            .major(doc.getMajor())
-                            .courseCode(doc.getCourseCode())
-                            .courseLevel(doc.getCourseLevel())
-                            .category(doc.getCategory())
-                            .tags(doc.getTags())
-                            .fileSize(doc.getFileSize())
-                            .mimeType(doc.getMimeType())
-                            .userId(doc.getUserId())
-                            .createdAt(doc.getCreatedAt())
-                            .highlights(highlights)
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(
-                documentResponses,
-                pageable,
-                searchHits.getTotalHits()
-        );
-    }
-
     private List<String> processSuggestionResults(SearchHits<DocumentIndex> searchHits) {
         return searchHits.getSearchHits().stream()
                 .map(hit -> {
@@ -621,44 +453,4 @@ public class DiscoverDocumentSearchService {
                 .collect(Collectors.toList());
     }
 
-    private void addHighlightsFromField(Map<String, List<String>> highlightFields, String fieldName, List<String> highlights) {
-        List<String> fieldHighlights = highlightFields.get(fieldName);
-        if (fieldHighlights != null && !fieldHighlights.isEmpty()) {
-            highlights.addAll(fieldHighlights);
-        }
-    }
-
-    private void addSharingAccessFilter(BoolQuery.Builder queryBuilder, String userId) {
-        // Exclude deleted documents
-        queryBuilder.filter(f -> f
-                .term(t -> t
-                        .field("deleted")
-                        .value(false)));
-
-        // Add sharing access filters
-        queryBuilder.filter(f -> f
-                .bool(b -> b.should(s -> s
-                                // Owner access
-                                .term(t -> t
-                                        .field("user_id")
-                                        .value(userId)))
-                        .should(s -> s
-                                // Public access
-                                .term(t -> t
-                                        .field("sharing_type")
-                                        .value(SharingType.PUBLIC.name())))
-                        .should(s -> s
-                                // Specific users access
-                                .bool(sb -> sb
-                                        .must(m -> m
-                                                .term(t -> t
-                                                        .field("sharing_type")
-                                                        .value(SharingType.SPECIFIC.name())))
-                                        .must(m -> m
-                                                .terms(t -> t
-                                                        .field("shared_with")
-                                                        .terms(tt -> tt
-                                                                .value(Collections.singletonList(FieldValue.of(userId))))))))
-                        .minimumShouldMatch("1")));
-    }
 }
