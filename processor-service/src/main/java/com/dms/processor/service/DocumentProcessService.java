@@ -80,6 +80,7 @@ public class DocumentProcessService {
 
         // Update document with content and metadata from the content collection
         document.setContent(documentContent.getContent());
+        document.setLanguage(documentVersion.getLanguage());
         document.setExtractedMetadata(documentContent.getExtractedMetadata());
         document.setStatus(DocumentStatus.COMPLETED);
         document.setUpdatedAt(new Date());
