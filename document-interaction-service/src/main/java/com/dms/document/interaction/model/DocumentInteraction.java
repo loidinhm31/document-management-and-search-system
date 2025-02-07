@@ -1,13 +1,14 @@
 package com.dms.document.interaction.model;
 
-import com.dms.document.interaction.enums.InteractionType;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Date;
+import java.util.Map;
 
 @Data
 @Document(collection = "document_interactions")
@@ -15,21 +16,28 @@ public class DocumentInteraction {
     @Id
     private String id;
 
-    @Indexed
     @Field("user_id")
+    @Indexed
     private String userId;
 
-    @Indexed
     @Field("document_id")
+    @Indexed
     private String documentId;
 
-    @Field("interaction_type")
-    private InteractionType interactionType;
+    @Field("interactions")
+    private Map<String, InteractionStats> interactions;
 
-    @Field("duration_seconds")
-    private Long durationSeconds;
+    @Field("first_interaction_date")
+    private Date firstInteractionDate;
 
-    @Field("created_at")
-    private Date createdAt;
+    @Field("last_interaction_date")
+    @Indexed
+    private Date lastInteractionDate;
 
+    @Data
+    @NoArgsConstructor
+    public static class InteractionStats {
+        private int count;
+        private Date lastUpdate;
+    }
 }

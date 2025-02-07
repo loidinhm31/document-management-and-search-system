@@ -2,6 +2,7 @@ package com.dms.document.interaction.service;
 
 import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.UserResponse;
+import com.dms.document.interaction.enums.InteractionType;
 import com.dms.document.interaction.exception.DuplicateFavoriteException;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentFavorite;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +31,7 @@ public class DocumentFavoriteService {
     private final DocumentFavoriteRepository documentFavoriteRepository;
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
+    private final DocumentPreferencesService documentPreferencesService;
 
     public void favoriteDocument(String documentId, String username) {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
@@ -50,6 +53,8 @@ public class DocumentFavoriteService {
         favorite.setUserId(userResponse.userId());
         favorite.setDocumentId(documentId);
         documentFavoriteRepository.save(favorite);
+
+        CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.FAVORITE));
     }
 
     public void unfavoriteDocument(String documentId, String username) {

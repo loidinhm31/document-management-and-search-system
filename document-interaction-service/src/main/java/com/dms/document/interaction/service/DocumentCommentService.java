@@ -4,6 +4,7 @@ import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.CommentRequest;
 import com.dms.document.interaction.dto.CommentResponse;
 import com.dms.document.interaction.dto.UserResponse;
+import com.dms.document.interaction.enums.InteractionType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentComment;
 import com.dms.document.interaction.model.DocumentInformation;
@@ -34,6 +35,7 @@ public class DocumentCommentService {
     private final DocumentCommentRepository documentCommentRepository;
     private final DocumentRepository documentRepository;
     private final DocumentNotificationService documentNotificationService;
+    private final DocumentPreferencesService documentPreferencesService;
 
     @Transactional(readOnly = true)
     public Page<CommentResponse> getDocumentComments(String documentId, Pageable pageable, String username) {
@@ -92,6 +94,8 @@ public class DocumentCommentService {
                     userResponse.userId(),
                     savedComment.getId()
             );
+
+            documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.COMMENT);
         });
         return mapToCommentResponse(savedComment, Collections.singletonMap(userResponse.userId(), userResponse));
     }

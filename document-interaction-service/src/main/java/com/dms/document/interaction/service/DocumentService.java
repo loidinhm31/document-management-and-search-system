@@ -1,11 +1,11 @@
 package com.dms.document.interaction.service;
 
 import com.dms.document.interaction.client.UserClient;
-import com.dms.document.interaction.dto.*;
-import com.dms.document.interaction.enums.DocumentStatus;
-import com.dms.document.interaction.enums.DocumentType;
-import com.dms.document.interaction.enums.EventType;
-import com.dms.document.interaction.enums.SharingType;
+import com.dms.document.interaction.dto.DocumentUpdateRequest;
+import com.dms.document.interaction.dto.SyncEventRequest;
+import com.dms.document.interaction.dto.ThumbnailResponse;
+import com.dms.document.interaction.dto.UserResponse;
+import com.dms.document.interaction.enums.*;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.exception.UnsupportedDocumentTypeException;
 import com.dms.document.interaction.model.DocumentInformation;
@@ -56,6 +56,7 @@ public class DocumentService {
 
     private final PublishEventService publishEventService;
     private final DocumentRepository documentRepository;
+    private final DocumentPreferencesService documentPreferencesService;
     private final UserClient userClient;
 
     public DocumentInformation uploadDocument(MultipartFile file,
@@ -225,6 +226,8 @@ public class DocumentService {
         DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
+        CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
+
         try (InputStream in = Files.newInputStream(Path.of(document.getFilePath()))) {
             return in.readAllBytes();
         }
@@ -240,6 +243,9 @@ public class DocumentService {
         DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
         documentInformation.setContent(null);
+
+        CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.VIEW));
+
         return documentInformation;
     }
 
@@ -428,6 +434,8 @@ public class DocumentService {
         // Find the specific version
         DocumentVersion targetVersion = document.getVersion(versionNumber)
                 .orElseThrow(() -> new InvalidDocumentException("Version not found"));
+
+        CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
 
         // Read and return the file content
         try (InputStream in = Files.newInputStream(Path.of(targetVersion.getFilePath()))) {

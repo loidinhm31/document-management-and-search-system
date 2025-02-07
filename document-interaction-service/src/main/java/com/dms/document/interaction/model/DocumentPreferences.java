@@ -16,7 +16,7 @@ public class DocumentPreferences {
     @Id
     private String id;
 
-    @Indexed
+    @Indexed(unique = true)
     @Field("user_id")
     private String userId;
 

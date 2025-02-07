@@ -1,11 +1,18 @@
 package com.dms.document.interaction.service;
 
+import com.dms.document.interaction.client.UserClient;
+import com.dms.document.interaction.dto.AggregatedInteractionStats;
 import com.dms.document.interaction.dto.UpdateDocumentPreferencesRequest;
+import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.enums.InteractionType;
-import com.dms.document.interaction.model.*;
+import com.dms.document.interaction.model.DocumentInformation;
+import com.dms.document.interaction.model.DocumentInteraction;
+import com.dms.document.interaction.model.DocumentPreferences;
 import com.dms.document.interaction.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,11 +25,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class DocumentPreferencesService {
-    private final DocumentPreferencesRepository preferencesRepository;
-    private final DocumentInteractionRepository interactionRepository;
+    private final DocumentPreferencesRepository documentPreferencesRepository;
+    private final DocumentInteractionRepository documentInteractionRepository;
     private final DocumentRepository documentRepository;
-    private final DocumentFavoriteRepository documentFavoriteRepository;
-    private final DocumentContentRepository documentContentRepository;
 
     private static final int MAX_RECENT_DOCUMENTS = 50;
     private static final int DAYS_FOR_RECENT_INTERACTIONS = 30;
@@ -30,11 +35,18 @@ public class DocumentPreferencesService {
     private static final double COMMENT_WEIGHT = 2.0;
     private static final double DOWNLOAD_WEIGHT = 2.0;
     private static final double VIEW_WEIGHT = 1.0;
+    private final UserClient userClient;
 
     @Transactional(readOnly = true)
-    public DocumentPreferences getDocumentPreferences(String userId) {
-        return preferencesRepository.findByUserId(userId)
-                .orElseGet(() -> createDefaultPreferences(userId));
+    public DocumentPreferences getDocumentPreferences(String username) {
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserResponse userResponse = response.getBody();
+
+        return documentPreferencesRepository.findByUserId(userResponse.userId().toString())
+                .orElseGet(() -> createDefaultPreferences(userResponse.userId().toString()));
     }
 
     @Transactional
@@ -49,34 +61,52 @@ public class DocumentPreferencesService {
         existing.setLanguagePreferences(request.languagePreferences());
 
         existing.setUpdatedAt(new Date());
-        return preferencesRepository.save(existing);
+        return documentPreferencesRepository.save(existing);
     }
 
     @Transactional
-    public void recordInteraction(String userId, String documentId,
-                                  InteractionType type,
-                                  Long durationSeconds) {
-        // Validate document exists and user has access
-        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Document not found or not accessible"));
+    public void recordInteraction(UUID userId, String documentId, InteractionType type) {
+        // Validate document access
+        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(
+                documentId,
+                userId.toString()
+        ).orElseThrow(() -> new IllegalArgumentException("Document not found or not accessible"));
 
-        // Record the interaction
-        DocumentInteraction interaction = new DocumentInteraction();
-        interaction.setUserId(userId);
-        interaction.setDocumentId(documentId);
-        interaction.setInteractionType(type);
-        interaction.setCreatedAt(new Date());
+        // Find or create interaction document
+        DocumentInteraction interaction = documentInteractionRepository
+                .findByUserIdAndDocumentId(userId.toString(), documentId)
+                .orElseGet(() -> {
+                    DocumentInteraction newInteraction = new DocumentInteraction();
+                    newInteraction.setUserId(userId.toString());
+                    newInteraction.setDocumentId(documentId);
+                    newInteraction.setInteractions(new HashMap<>());
+                    newInteraction.setFirstInteractionDate(new Date());
+                    return newInteraction;
+                });
 
-        interactionRepository.save(interaction);
+        // Update interaction stats
+        Map<String, DocumentInteraction.InteractionStats> stats = interaction.getInteractions();
+        DocumentInteraction.InteractionStats typeStats = stats.computeIfAbsent(
+                type.name(),
+                k -> new DocumentInteraction.InteractionStats()
+        );
 
-        // Update document preferences based on interaction
+        typeStats.setCount(typeStats.getCount() + 1);
+        typeStats.setLastUpdate(new Date());
+        interaction.setLastInteractionDate(new Date());
+
+        documentInteractionRepository.save(interaction);
+
+        // Update preferences based on interaction
         updateImplicitPreferences(userId, document, type);
     }
 
+
     @Transactional
-    public void updateImplicitPreferences(String userId, DocumentInformation document,
+    public void updateImplicitPreferences(UUID userId, DocumentInformation document,
                                           InteractionType type) {
-        DocumentPreferences preferences = getDocumentPreferences(userId);
+        DocumentPreferences preferences = documentPreferencesRepository.findByUserId(userId.toString())
+                .orElseGet(() -> createDefaultPreferences(userId.toString()));
 
         // Update recent views for view/download interactions
         if (type == InteractionType.VIEW ||
@@ -92,7 +122,7 @@ public class DocumentPreferencesService {
         preferences.setContentTypeWeights(newWeights);
 
         preferences.setUpdatedAt(new Date());
-        preferencesRepository.save(preferences);
+        documentPreferencesRepository.save(preferences);
     }
 
     private void updateRecentDocuments(DocumentPreferences preferences, String documentId) {
@@ -144,52 +174,47 @@ public class DocumentPreferencesService {
         preferences.setTagInteractionCounts(tagCounts);
     }
 
-    @Transactional(readOnly = true)
-    public Map<String, Double> calculateContentTypeWeights(String userId) {
-        // Get recent interactions
+    public Map<String, Double> getCalculateContentTypeWeights(String username) {
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserResponse userResponse = response.getBody();
+
+        return calculateContentTypeWeights(userResponse.userId());
+    }
+
+    protected Map<String, Double> calculateContentTypeWeights(UUID userId) {
         Date recentDate = Date.from(Instant.now().minus(DAYS_FOR_RECENT_INTERACTIONS, ChronoUnit.DAYS));
         List<DocumentInteraction> recentInteractions =
-                interactionRepository.findByUserIdAndCreatedAtAfter(userId, recentDate);
+                documentInteractionRepository.findRecentInteractions(userId.toString(), recentDate);
 
-        Map<String, Map<String, Integer>> typeInteractions = new HashMap<>();
+        Map<String, Map<String, Double>> typeWeights = new HashMap<>();
 
-        // Count interactions by document type
         for (DocumentInteraction interaction : recentInteractions) {
             DocumentInformation doc = documentRepository.findById(interaction.getDocumentId())
                     .orElse(null);
+
             if (doc != null) {
                 String docType = doc.getDocumentType().name();
-                typeInteractions.computeIfAbsent(docType, k -> new HashMap<>());
+                Map<String, Double> weights = typeWeights.computeIfAbsent(docType, k -> new HashMap<>());
 
-                String intType = interaction.getInteractionType().name();
-                typeInteractions.get(docType).merge(intType, 1, Integer::sum);
+                // Calculate weights based on interaction counts
+                Map<String, DocumentInteraction.InteractionStats> stats = interaction.getInteractions();
+
+                weights.merge("VIEW",
+                        getInteractionCount(stats, "VIEW") * VIEW_WEIGHT, Double::sum);
+                weights.merge("DOWNLOAD",
+                        getInteractionCount(stats, "DOWNLOAD") * DOWNLOAD_WEIGHT, Double::sum);
+                weights.merge("COMMENT",
+                        getInteractionCount(stats, "COMMENT") * COMMENT_WEIGHT, Double::sum);
+                weights.merge("SHARE",
+                        getInteractionCount(stats, "SHARE") * FAVORITE_WEIGHT, Double::sum);
             }
         }
 
-        // Calculate weighted scores
-        Map<String, Double> weightedScores = new HashMap<>();
-
-        typeInteractions.forEach((docType, interactions) -> {
-            double score =
-                    (interactions.getOrDefault("FAVORITE", 0) * FAVORITE_WEIGHT) +
-                            (interactions.getOrDefault("COMMENT", 0) * COMMENT_WEIGHT) +
-                            (interactions.getOrDefault("DOWNLOAD", 0) * DOWNLOAD_WEIGHT) +
-                            (interactions.getOrDefault("VIEW", 0) * VIEW_WEIGHT);
-
-            weightedScores.put(docType, score);
-        });
-
         // Normalize weights
-        double totalWeight = weightedScores.values().stream()
-                .mapToDouble(Double::doubleValue)
-                .sum();
-
-        if (totalWeight > 0) {
-            weightedScores.forEach((type, weight) ->
-                    weightedScores.put(type, weight / totalWeight));
-        }
-
-        return weightedScores;
+        return normalizeWeights(typeWeights);
     }
 
     @Transactional
@@ -219,7 +244,7 @@ public class DocumentPreferencesService {
         preferences.setCreatedAt(new Date());
         preferences.setUpdatedAt(new Date());
 
-        return preferencesRepository.save(preferences);
+        return documentPreferencesRepository.save(preferences);
     }
 
     @Transactional(readOnly = true)
@@ -239,28 +264,86 @@ public class DocumentPreferencesService {
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getInteractionStatistics(String userId) {
-        Map<String, Object> stats = new HashMap<>();
+    public Map<String, Object> getInteractionStatistics(String username) {
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserResponse userResponse = response.getBody();
 
-        // Get all recent interactions
-        List<DocumentInteraction> interactions = interactionRepository.findByUserIdAndCreatedAtAfter(
-                userId,
-                Date.from(Instant.now().minus(DAYS_FOR_RECENT_INTERACTIONS, ChronoUnit.DAYS))
+        Date recentDate = Date.from(Instant.now()
+                .minus(DAYS_FOR_RECENT_INTERACTIONS, ChronoUnit.DAYS));
+
+        AggregatedInteractionStats stats =
+                documentInteractionRepository.getAggregatedStats(userResponse.userId().toString(), recentDate);
+
+        Map<String, Object> result = new HashMap<>();
+        Map<InteractionType, Long> interactionCounts = new EnumMap<>(InteractionType.class);
+
+        interactionCounts.put(InteractionType.VIEW, stats.getTotalViews());
+        interactionCounts.put(InteractionType.DOWNLOAD, stats.getTotalDownloads());
+        interactionCounts.put(InteractionType.COMMENT, stats.getTotalComments());
+        interactionCounts.put(InteractionType.SHARE, stats.getTotalShares());
+
+        result.put("interactionCounts", interactionCounts);
+        result.put("uniqueDocumentsAccessed", stats.getUniqueDocuments());
+
+        return result;
+    }
+
+    private double getInteractionCount(Map<String, DocumentInteraction.InteractionStats> stats,
+                                       String type) {
+        return Optional.ofNullable(stats.get(type))
+                .map(DocumentInteraction.InteractionStats::getCount)
+                .orElse(0);
+    }
+
+    private Map<String, Double> normalizeWeights(Map<String, Map<String, Double>> typeWeights) {
+        Map<String, Double> normalizedWeights = new HashMap<>();
+
+        // First, calculate total weight for each document type
+        typeWeights.forEach((docType, interactionWeights) -> {
+            double totalTypeWeight = interactionWeights.values()
+                    .stream()
+                    .mapToDouble(Double::doubleValue)
+                    .sum();
+            normalizedWeights.put(docType, totalTypeWeight);
+        });
+
+        // Calculate the sum of all weights
+        double totalSum = normalizedWeights.values()
+                .stream()
+                .mapToDouble(Double::doubleValue)
+                .sum();
+
+        // If there are no interactions, return equal weights
+        if (totalSum == 0) {
+            double equalWeight = 1.0 / typeWeights.size();
+            typeWeights.keySet().forEach(type ->
+                    normalizedWeights.put(type, equalWeight)
+            );
+            return normalizedWeights;
+        }
+
+        // Normalize weights to sum to 1.0
+        normalizedWeights.forEach((docType, weight) -> {
+            double normalizedWeight = weight / totalSum;
+            // Apply min threshold to ensure no weight is too small
+            normalizedWeight = Math.max(normalizedWeight, 0.01);
+            normalizedWeights.put(docType, normalizedWeight);
+        });
+
+        // Re-normalize after applying minimum threshold
+        double finalSum = normalizedWeights.values()
+                .stream()
+                .mapToDouble(Double::doubleValue)
+                .sum();
+
+        // Final normalization to ensure sum is exactly 1.0
+        normalizedWeights.forEach((docType, weight) ->
+                normalizedWeights.put(docType, weight / finalSum)
         );
 
-        // Count interactions by type
-        Map<InteractionType, Long> interactionCounts = interactions.stream()
-                .collect(Collectors.groupingBy(
-                        DocumentInteraction::getInteractionType,
-                        Collectors.counting()
-                ));
-
-        stats.put("interactionCounts", interactionCounts);
-        stats.put("uniqueDocumentsAccessed", interactions.stream()
-                .map(DocumentInteraction::getDocumentId)
-                .distinct()
-                .count());
-
-        return stats;
+        return normalizedWeights;
     }
 }

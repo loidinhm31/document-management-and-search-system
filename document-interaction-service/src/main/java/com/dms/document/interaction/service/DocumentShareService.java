@@ -6,6 +6,7 @@ import com.dms.document.interaction.dto.SyncEventRequest;
 import com.dms.document.interaction.dto.UpdateShareSettingsRequest;
 import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.enums.EventType;
+import com.dms.document.interaction.enums.InteractionType;
 import com.dms.document.interaction.enums.SharingType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentInformation;
@@ -27,9 +28,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DocumentShareService {
-    private final DocumentRepository documentRepository;
     private final UserClient userClient;
     private final PublishEventService publishEventService;
+    private final DocumentRepository documentRepository;
+    private final DocumentPreferencesService documentPreferencesService;
 
     public ShareSettings getDocumentShareSettings(String documentId, String username) {
 
@@ -67,17 +69,22 @@ public class DocumentShareService {
 
         // Save changes
         DocumentInformation updatedDoc = documentRepository.save(doc);
+        updatedDoc.setContent(null);
 
         // Send sync event to indexing document
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(doc.getUserId())
-                        .documentId(documentId)
-                        .subject(EventType.UPDATE_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
+        CompletableFuture.runAsync(() -> {
+            publishEventService.sendSyncEvent(
+                    SyncEventRequest.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .userId(doc.getUserId())
+                            .documentId(documentId)
+                            .subject(EventType.UPDATE_EVENT.name())
+                            .triggerAt(LocalDateTime.now())
+                            .build());
+
+            // Record sharing interaction
+            documentPreferencesService.recordInteraction(UUID.fromString(doc.getUserId()), documentId, InteractionType.SHARE);
+        });
 
         return updatedDoc;
     }
