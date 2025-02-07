@@ -315,9 +315,11 @@ export const DocumentList = () => {
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <HighlightCell highlights={doc.highlights} />
-                      </TableCell>
+                      {isSearchMode && (
+                        <TableCell>
+                          <HighlightCell highlights={doc.highlights} />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />

@@ -40,6 +40,7 @@ export interface DocumentInformation {
   highlights?: string[];
   sharingType?: string;
   sharedWith?: string[];
+  language?: string;
 
   // Add version-related fields
   currentVersion: number;

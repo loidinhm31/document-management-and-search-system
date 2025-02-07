@@ -8,13 +8,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
 import { DocumentPreferences, InteractionStats, PreferenceCategory } from "@/types/document-preference";
+
+const SUPPORTED_LANGUAGES = [
+  { code: "en", display: "English" },
+  { code: "vi", display: "Tiếng Việt" }
+];
 
 export default function DocumentPreferencesManager() {
   const { t } = useTranslation();
@@ -31,6 +35,10 @@ export default function DocumentPreferencesManager() {
 
   // Get display value for a tag (translated if it's a master data code)
   const getTagDisplay = (tag: string) => {
+    // First check if it's a language code
+    const language = SUPPORTED_LANGUAGES.find(lang => lang.code === tag);
+    if (language) return language.display;
+
     // Check in each master data type
     const majorItem = majors.find(m => m.code === tag);
     if (majorItem) return majorItem.translations[i18n.language] || majorItem.translations.en;
@@ -53,7 +61,7 @@ export default function DocumentPreferencesManager() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
+        setLoading(true);
         const prefsRes = await documentService.getDocumentPreferences();
         setPreferences(prefsRes.data);
 
@@ -138,21 +146,16 @@ export default function DocumentPreferencesManager() {
               {/* Language Preferences */}
               <div className="space-y-2">
                 <Label>{t("preferences.contentPreferences.language.label")}</Label>
-                <Select
-                  value={Array.from(preferences?.languagePreferences || [])[0]}
-                  onValueChange={(lang) => setPreferences(prev => ({
+                <TagInputHybrid
+                  value={Array.from(preferences?.languagePreferences || [])}
+                  onChange={(languages) => setPreferences(prev => ({
                     ...prev,
-                    languagePreferences: new Set([lang])
+                    languagePreferences: new Set(languages)
                   }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("preferences.contentPreferences.language.placeholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="en">English</SelectItem>
-                    <SelectItem value="vi">Tiếng Việt</SelectItem>
-                  </SelectContent>
-                </Select>
+                  recommendedTags={SUPPORTED_LANGUAGES.map(lang => lang.code)}
+                  getTagDisplay={getTagDisplay}
+                  placeholder={t("preferences.contentPreferences.language.placeholder")}
+                />
               </div>
 
               {/* Preferred Majors */}
