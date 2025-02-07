@@ -147,7 +147,7 @@ export default function MyDocumentDetailPage() {
               <DocumentVersionHistory
                 versions={documentData.versions}
                 currentVersion={documentData.currentVersion}
-                documentCreator={documentData.createdBy}
+                documentCreatorId={documentData.userId}
                 documentId={documentData.id}
                 onVersionUpdate={handleVersionUpdate}
               />

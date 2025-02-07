@@ -16,7 +16,7 @@ import { DocumentInformation, DocumentStatus, DocumentVersion } from "@/types/do
 interface VersionHistoryProps {
   versions: DocumentVersion[];
   currentVersion: number;
-  documentCreator?: string;
+  documentCreatorId?: string;
   documentId?: string;
   onVersionUpdate?: (updatedDocument: DocumentInformation) => void;
 }
@@ -24,14 +24,14 @@ interface VersionHistoryProps {
 const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                                                                  versions,
                                                                  currentVersion,
-                                                                 documentCreator,
+                                                                 documentCreatorId,
                                                                  documentId,
                                                                  onVersionUpdate
                                                                }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const { currentUser } = useAuth();
-  const isDocumentCreator = currentUser?.username === documentCreator;
+  const isDocumentCreator = currentUser?.userId === documentCreatorId;
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
 
   const documentProcessingStatus = useAppSelector(

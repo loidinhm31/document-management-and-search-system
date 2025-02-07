@@ -46,7 +46,7 @@ class SearchService extends BaseService {
     };
 
     return this.handleApiResponse<PageResponse<DocumentInformation>>(
-      axiosInstance.post("/document-search/api/v1/documents/user/search", searchRequest)
+      axiosInstance.post("/document-search/api/v1/documents/me/search", searchRequest)
     );
   }
 }

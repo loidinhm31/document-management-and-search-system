@@ -92,40 +92,42 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, onClick
             </div>
           )}
         </CardContent>
-        <CardFooter>
-          <div className="grid grid-cols-4 w-full gap-2">
+        <CardFooter className="flex justify-center">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="flex items-center justify-center w-10 h-10 p-0"
               onClick={handlePreview}
             >
-              <Eye className="mr-2 h-4 w-4" />
+              <Eye className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="flex items-center justify-center w-10 h-10 p-0"
               onClick={handleDownload}
             >
-              <Download className="mr-2 h-4 w-4" />
+              <Download className="h-4 w-4" />
             </Button>
 
-            <ShareDocumentDialog
-              documentId={documentInformation.id}
-              documentName={documentInformation.originalFilename}
-              isShared={documentInformation.sharingType === "PUBLIC"}
-              iconOnly={true}
-            />
+            {currentUser?.userId === documentInformation.userId && (
+              <ShareDocumentDialog
+                documentId={documentInformation.id}
+                documentName={documentInformation.originalFilename}
+                isShared={documentInformation.sharingType === "PUBLIC"}
+                iconOnly={true}
+              />
+            )}
 
-            {onDelete && (
+            {onDelete && currentUser?.userId === documentInformation.userId && (
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="flex items-center justify-center w-10 h-10 p-0"
                 onClick={handleDeleteClick}
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
           </div>
