@@ -1,22 +1,13 @@
-import { Check, Edit2, MoreHorizontal, Reply, Trash, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CommentItem } from "@/components/document/discover/comment-item";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { Skeleton } from "@/components/ui/skeleton";
-import { CommentItem } from "@/components/document/discover/comment-item";
 
 const CommentSkeleton = () => (
   <div className="space-y-4">

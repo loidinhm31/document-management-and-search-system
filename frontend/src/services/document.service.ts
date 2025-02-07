@@ -1,8 +1,8 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
+import { UpdatePreferencesRequest } from "@/types/document-preference";
 import { UserSearchResponse } from "@/types/user";
-import { InteractionType, UpdatePreferencesRequest } from "@/types/document-preference";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
@@ -197,12 +197,6 @@ class DocumentService extends BaseService {
     return this.handleApiResponse(
       axiosInstance.get(`/document-interaction/api/v1/preferences/tags`)
     );
-  }
-
-  recordInteraction(documentId: string, type: InteractionType) {
-    return axiosInstance.get(`/document-interaction/api/v1/preferences/interactions/${documentId}`, {
-      params: { type }
-    });
   }
 }
 

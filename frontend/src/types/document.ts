@@ -38,6 +38,8 @@ export interface DocumentInformation {
   deleted: boolean;
   processingError: string;
   highlights?: string[];
+  sharingType?: string;
+  sharedWith?: string[];
 
   // Add version-related fields
   currentVersion: number;

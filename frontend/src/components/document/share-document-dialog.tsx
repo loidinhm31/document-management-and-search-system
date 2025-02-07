@@ -24,17 +24,15 @@ import { UserSearchResponse } from "@/types/user";
 interface ShareDocumentDialogProps {
   documentId: string;
   documentName: string;
-  isShared: boolean;
-  onShareToggle?: (isShared: boolean) => void;
   iconOnly?: boolean;
+  isShared: boolean;
 }
 
 export default function ShareDocumentDialog({
                                               documentId,
                                               documentName,
-                                              isShared,
-                                              onShareToggle,
-                                              iconOnly
+                                              iconOnly,
+                                              isShared
                                             }: ShareDocumentDialogProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -122,7 +120,6 @@ export default function ShareDocumentDialog({
         sharedWith: selectedUsers
       });
       setIsPublic(!isPublic);
-      onShareToggle(!isPublic);
       toast({
         title: t("common.success"),
         description: !isPublic
@@ -131,9 +128,10 @@ export default function ShareDocumentDialog({
         variant: "success"
       });
     } catch (error) {
+      console.log("err", error);
       toast({
         title: t("common.error"),
-        description: t("document.share.error"),
+        description: t("document.myDocuments.share.error"),
         variant: "destructive"
       });
     } finally {

@@ -193,7 +193,7 @@ export default function DocumentDetailPage() {
                   <ShareDocumentDialog
                     documentId={documentData.id}
                     documentName={documentData.filename}
-                    isShared={true}
+                    isShared={documentData.sharingType === "PUBLIC"}
                   />
                 )}
               </div>

@@ -1,4 +1,3 @@
-// Update DocumentCard component to include delete confirmation
 import { Download, Eye, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,19 +7,21 @@ import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
+
 import { DeleteDialog } from "../../common/delete-dialog";
 
 interface DocumentCardProps {
   documentInformation: any;
   onDelete?: () => void;
-  isShared?: boolean;
   onClick?: () => void;
 }
 
-export const DocumentCard = React.memo(({ documentInformation, onDelete, isShared, onClick }: DocumentCardProps) => {
+export const DocumentCard = React.memo(({ documentInformation, onDelete, onClick }: DocumentCardProps) => {
   const { t } = useTranslation();
+  const { currentUser } = useAuth();
   const [showPreview, setShowPreview] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -82,7 +83,7 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
           <div className="relative w-full h-40 overflow-hidden rounded-lg">
             <LazyThumbnail documentInformation={documentInformation} />
           </div>
-          {isShared && (
+          {documentInformation.sharedWith.includes(currentUser?.userId) && (
             <div className="mt-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Shared by:</span>
@@ -113,10 +114,7 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, isShare
             <ShareDocumentDialog
               documentId={documentInformation.id}
               documentName={documentInformation.originalFilename}
-              isShared={documentInformation.isShared}
-              onShareToggle={(isShared) => {
-                documentInformation.isShared = isShared;
-              }}
+              isShared={documentInformation.sharingType === "PUBLIC"}
               iconOnly={true}
             />
 

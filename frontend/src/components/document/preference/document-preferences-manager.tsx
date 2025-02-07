@@ -53,15 +53,15 @@ export default function DocumentPreferencesManager() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
-        const [prefsRes, weightsRes, statsRes, tagsRes] = await Promise.all([
-          documentService.getDocumentPreferences(),
+        setLoading(true)
+        const prefsRes = await documentService.getDocumentPreferences();
+        setPreferences(prefsRes.data);
+
+        const [weightsRes, statsRes, tagsRes] = await Promise.all([
           documentService.getDocumentContentWeights(),
           documentService.getInteractionStatistics(),
           documentService.getRecommendedTags()
         ]);
-
-        setPreferences(prefsRes.data);
         setWeights(Object.entries(weightsRes.data).map(([type, weight]) => ({
           type,
           weight: weight as number

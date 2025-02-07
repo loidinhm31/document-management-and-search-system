@@ -13,7 +13,6 @@ interface DocumentGridProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   onDelete?: (id: string) => void;
-  isShared?: boolean;
   loading?: boolean;
   onCardClick?: (doc: DocumentInformation) => void;
   className?: string;
@@ -25,7 +24,6 @@ export const DocumentGrid = React.memo(({
                                           totalPages,
                                           onPageChange,
                                           onDelete,
-                                          isShared = false,
                                           loading = false,
                                           onCardClick,
                                           className
@@ -48,7 +46,6 @@ export const DocumentGrid = React.memo(({
             key={doc.id}
             documentInformation={doc}
             onDelete={onDelete ? () => onDelete(doc.id) : undefined}
-            isShared={isShared}
             onClick={() => onCardClick?.(doc)}
           />
           ))}

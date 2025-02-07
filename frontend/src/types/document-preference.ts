@@ -27,6 +27,7 @@ export interface InteractionStats {
     DOWNLOAD: number;
     FAVORITE: number;
     COMMENT: number;
+    SHARE: number;
   };
   uniqueDocumentsAccessed: number;
 }
@@ -35,5 +36,6 @@ export enum InteractionType {
   VIEW = "VIEW",
   DOWNLOAD = "DOWNLOAD",
   FAVORITE = "FAVORITE",
-  COMMENT = "COMMENT"
+  COMMENT = "COMMENT",
+  SHARE = "SHARE"
 }
