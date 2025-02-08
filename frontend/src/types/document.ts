@@ -70,18 +70,6 @@ export enum DocumentStatus {
   FAILED = "FAILED"
 }
 
-export interface MasterData {
-  id: string;
-  type: string;
-  code: string;
-  translations: {
-    en: string;
-    vi: string;
-  };
-  description?: string;
-  isActive: boolean;
-}
-
 export interface CategoryPrediction {
   category: string;
   confidence: number;

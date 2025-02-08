@@ -6,7 +6,8 @@ import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { predictionService } from "@/services/prediction.service";
-import { CategoryPrediction, MasterData } from "@/types/document";
+import { CategoryPrediction } from "@/types/document";
+import { MasterData } from "@/types/master-data";
 
 const confidenceToColor = (confidence: number) => {
   if (confidence >= 0.9) return "bg-green-50 text-green-700 ring-1 ring-green-600/20";

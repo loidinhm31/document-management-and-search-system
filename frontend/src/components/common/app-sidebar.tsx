@@ -1,4 +1,4 @@
-import { BookOpen, FileText, Settings2Icon, Shield, Users } from "lucide-react";
+import { BookOpen, Database, FileText, Settings2Icon, Shield, Users } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -57,6 +57,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Users,
       href: RoutePaths.ADMIN.USERS,
       isActive: location.pathname.startsWith(RoutePaths.ADMIN.USERS)
+    },
+    {
+      title: t("navigation.admin.masterData"),
+      icon: Database,
+      href: RoutePaths.ADMIN.MASTER_DATA,
+      isActive: location.pathname.startsWith(RoutePaths.ADMIN.MASTER_DATA)
     },
     {
       title: t("navigation.admin.roles"),

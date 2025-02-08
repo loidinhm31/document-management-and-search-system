@@ -6,7 +6,8 @@ const ForgotPassword = lazy(() => import("@/pages/forgot-password-page"));
 const Home = lazy(() => import("@/pages/home-page"));
 const Profile = lazy(() => import("@/pages/profile-page"));
 const UserList = lazy(() => import("@/pages/admin/user-list-page"));
-const UserDetails = lazy(() => import("@/pages/admin/user-detail-page"))
+const UserDetails = lazy(() => import("@/pages/admin/user-detail-page"));
+const MasterData = lazy(() => import("@/pages/admin/master-data-page"));
 const MyDocument = lazy(() => import("@/pages/document/my-document/my-document-page"));
 const MyDocumentDetail = lazy(() => import("@/pages/document/my-document/my-document-detail-page"));
 const DocumentDetail = lazy(() => import("@/pages/document/discover/document-detail-page"));
@@ -36,7 +37,8 @@ export const RoutePaths = {
   DOCUMENT_PREFERENCE: "/documents/preferences",
   ADMIN: {
     USERS: "/admin/users",
-    USER_DETAILS: "/admin/users/:userId"
+    USER_DETAILS: "/admin/users/:userId",
+    MASTER_DATA: "/admin/master-data"
   }
 } as const;
 
@@ -113,6 +115,13 @@ export const routes: Route[] = [
     path: RoutePaths.ADMIN.USER_DETAILS,
     pageTitle: "pages.admin.userDetail",
     component: UserDetails,
+    isSecure: true,
+    permission: ["ROLE_ADMIN"]
+  },
+  {
+    path: RoutePaths.ADMIN.MASTER_DATA,
+    pageTitle: "pages.admin.masterData",
+    component: MasterData,
     isSecure: true,
     permission: ["ROLE_ADMIN"]
   }

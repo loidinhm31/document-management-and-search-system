@@ -16,8 +16,8 @@ import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { useProcessing } from "@/context/processing-provider";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
 import { Textarea } from "@/components/ui/textarea";
-import { MasterData } from "@/types/document";
-import { masterDataService, MasterDataType } from "@/services/master-data.service";
+import { MasterData, MasterDataType } from "@/types/master-data";
+import { masterDataService } from "@/services/master-data.service";
 import i18n from "i18next";
 import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
 
@@ -181,9 +181,9 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
     const fetchMasterData = async () => {
       try {
         const [levelsResponse, majorsResponse, categoriesResponse] = await Promise.all([
-          masterDataService.getByType(MasterDataType.COURSE_LEVEL),
-          masterDataService.getByType(MasterDataType.MAJOR),
-          masterDataService.getByType(MasterDataType.DOCUMENT_CATEGORY)
+          masterDataService.getAllActiveByType(MasterDataType.COURSE_LEVEL),
+          masterDataService.getAllActiveByType(MasterDataType.MAJOR),
+          masterDataService.getAllActiveByType(MasterDataType.DOCUMENT_CATEGORY)
         ]);
 
         setCourseLevels(levelsResponse.data);

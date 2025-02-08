@@ -1,8 +1,8 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-import { masterDataService, MasterDataType } from "@/services/master-data.service";
+import { masterDataService } from "@/services/master-data.service";
 import { RootState } from "@/store";
-import { MasterData } from "@/types/document";
+import { MasterData, MasterDataType } from "@/types/master-data";
 
 export interface MasterDataState {
   majors: MasterData[];
@@ -25,9 +25,9 @@ export const fetchMasterData = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const [majorsResponse, levelsResponse, categoriesResponse] = await Promise.all([
-        masterDataService.getByType(MasterDataType.MAJOR),
-        masterDataService.getByType(MasterDataType.COURSE_LEVEL),
-        masterDataService.getByType(MasterDataType.DOCUMENT_CATEGORY)
+        masterDataService.getAllActiveByType(MasterDataType.MAJOR),
+        masterDataService.getAllActiveByType(MasterDataType.COURSE_LEVEL),
+        masterDataService.getAllActiveByType(MasterDataType.DOCUMENT_CATEGORY)
       ]);
 
       return {

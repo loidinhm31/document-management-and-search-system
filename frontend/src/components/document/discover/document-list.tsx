@@ -25,7 +25,7 @@ import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlic
 import {
   fetchRecommendedDocuments,
   fetchSearchDocuments,
-  resetFilters, selectPagination,
+  resetFilters,
   selectSearchLoading,
   selectSearchResults,
   selectSearchState,
@@ -36,6 +36,7 @@ import {
   setSort,
   setTags
 } from "@/store/slices/searchSlice";
+import { MasterDataType } from "@/types/master-data";
 
 interface SortableColumn {
   field: string;
@@ -299,13 +300,13 @@ export const DocumentList = () => {
                       </TableCell>
                       <TableCell className="truncate">{doc.courseCode}</TableCell>
                       <TableCell className="truncate">
-                        {getMasterDataTranslation(doc.major, "major", { majors })}
+                        {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {getMasterDataTranslation(doc.courseLevel, "level", { levels })}
+                        {getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        {getMasterDataTranslation(doc.category, "category", { categories })}
+                        {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
                       </TableCell>
                       <TableCell className="hidden xl:table-cell">
                         <div className="flex flex-wrap gap-1">

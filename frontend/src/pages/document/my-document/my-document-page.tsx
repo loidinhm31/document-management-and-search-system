@@ -10,9 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { searchService } from "@/services/search.service";
-import { DocumentInformation, DocumentStatus } from "@/types/document";
 import { useAppSelector } from "@/store/hook";
 import { selectProcessingItems } from "@/store/slices/processingSlice";
+import { DocumentInformation, DocumentStatus } from "@/types/document";
 
 export default function MyDocumentPage() {
   const { t } = useTranslation();

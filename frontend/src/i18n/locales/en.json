@@ -21,6 +21,7 @@
     "admin": {
       "title": "Administration",
       "userManagement": "User Management",
+      "masterData": "Master Data",
       "roles": "Roles"
     }
   },
@@ -32,6 +33,7 @@
       "title": "Admin",
       "users": "User Management",
       "userDetail": "User Details",
+      "masterData": "Master Data",
       "roles": "Role Management"
     }
   },
@@ -282,6 +284,61 @@
           "credentialsExpiredDescription": "Force password reset"
         }
       }
+    },
+    "masterData": {
+      "title": "Master Data Management",
+      "description": "Manage system master data such as majors, course levels, and document categories",
+      "selectType": "Select type",
+      "searchPlaceholder": "Search master data...",
+      "search": "Search",
+      "add": "Add New",
+      "headers": {
+        "code": "Code",
+        "nameEn": "English Name",
+        "nameVi": "Vietnamese Name",
+        "type": "Type",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "types": {
+        "major": "Major",
+        "course_level": "Course Level",
+        "document_category": "Document Category"
+      },
+      "dialog": {
+        "createTitle": "Create Master Data",
+        "editTitle": "Edit Master Data",
+        "description": "Fill in the details below to create or update master data.",
+        "fields": {
+          "code": "Code",
+          "nameEn": "English Name",
+          "nameVi": "Vietnamese Name",
+          "description": "Description",
+          "active": "Active Status"
+        },
+        "placeholders": {
+          "code": "Enter code",
+          "nameEn": "Enter English name",
+          "nameVi": "Enter Vietnamese name",
+          "description": "Enter description"
+        }
+      },
+      "delete": {
+        "title": "Delete Master Data",
+        "description": "Are you sure you want to delete {name}? This action cannot be undone."
+      },
+      "createSuccess": "Master data created successfully",
+      "createError": "Failed to create master data",
+      "updateSuccess": "Master data updated successfully",
+      "updateError": "Failed to update master data",
+      "deleteSuccess": "Master data deleted successfully",
+      "deleteError": "Failed to delete master data",
+      "fetchError": "Failed to fetch master data",
+      "searchError": "Failed to search master data"
     }
   },
   "document": {
