@@ -1,4 +1,4 @@
-package com.dms.document.interaction.model;
+package com.dms.document.search.model;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;

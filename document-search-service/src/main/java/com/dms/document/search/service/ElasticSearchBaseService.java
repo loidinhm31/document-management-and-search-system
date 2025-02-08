@@ -78,6 +78,7 @@ public class ElasticSearchBaseService {
                             .tags(doc.getTags())
                             .fileSize(doc.getFileSize())
                             .mimeType(doc.getMimeType())
+                            .language(doc.getLanguage())
                             .userId(doc.getUserId())
                             .createdAt(doc.getCreatedAt())
                             .highlights(highlights)

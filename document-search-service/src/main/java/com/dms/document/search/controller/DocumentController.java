@@ -4,9 +4,8 @@ import com.dms.document.search.dto.DocumentResponseDto;
 import com.dms.document.search.dto.DocumentSearchCriteria;
 import com.dms.document.search.dto.DocumentSearchRequest;
 import com.dms.document.search.model.DocumentInformation;
-import com.dms.document.search.model.DocumentPreferences;
+import com.dms.document.search.service.DocumentRecommendationService;
 import com.dms.document.search.service.DocumentService;
-import com.dms.document.search.service.RecommendationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/documents")
 public class DocumentController {
     private final DocumentService documentService;
-    private final RecommendationService recommendationService;
+    private final DocumentRecommendationService documentRecommendationService;
 
     @PostMapping("/me/search")
     public ResponseEntity<Page<DocumentInformation>> searchUserDocuments(
@@ -70,7 +69,7 @@ public class DocumentController {
         PageRequest pageable = PageRequest.of(page, size);
 
         // Get recommendations
-        Page<DocumentResponseDto> recommendations = recommendationService.getRecommendations(
+        Page<DocumentResponseDto> recommendations = documentRecommendationService.getRecommendations(
                 documentId,
                 username,
                 pageable

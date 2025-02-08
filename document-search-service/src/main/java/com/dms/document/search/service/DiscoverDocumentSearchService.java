@@ -9,15 +9,15 @@ import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.*;
 import com.dms.document.search.elasticsearch.DocumentIndex;
 import com.dms.document.search.enums.QueryType;
-import com.dms.document.search.enums.SharingType;
-import com.dms.document.search.exception.InvalidDocumentException;
-import com.dms.document.search.model.DocumentPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -66,8 +66,7 @@ public class DiscoverDocumentSearchService extends ElasticSearchBaseService {
 
     public Page<DocumentResponseDto> searchDocuments(
             DocumentSearchRequest request,
-            String username,
-            Pageable pageable) {
+            String username) {
         try {
             ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
             if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
@@ -79,17 +78,24 @@ public class DiscoverDocumentSearchService extends ElasticSearchBaseService {
 
             // If search query is too short, only apply filters
             if (StringUtils.isNotEmpty(request.getSearch()) && request.getSearch().length() < MIN_SEARCH_LENGTH) {
-                return Page.empty(pageable);
+                return Page.empty(Pageable.unpaged());
             }
 
             Query query = buildSearchQuery(request, searchContext, userDto.getUserId().toString());
             List<HighlightField> highlightFields = configureHighlightFields(searchContext);
             Highlight highlight = new Highlight(highlightFields);
 
+            // Create a new pageable with combined sort
+            PageRequest pageable = PageRequest.of(
+                    request.getPage(),
+                    request.getSize() > 0 ? request.getSize() : 10
+            );
+            Pageable sortedPageable = createCombinedSort(pageable, request);
+
             NativeQuery nativeQuery = NativeQuery.builder()
                     .withQuery(query)
                     .withHighlightQuery(new HighlightQuery(highlight, DocumentIndex.class))
-                    .withPageable(pageable)
+                    .withPageable(sortedPageable)
                     .withTrackScores(true)
                     .withMinScore(getMinScore(request.getSearch(), searchContext))
                     .build();
@@ -453,4 +459,43 @@ public class DiscoverDocumentSearchService extends ElasticSearchBaseService {
                 .collect(Collectors.toList());
     }
 
+    private Pageable createCombinedSort(Pageable pageable, DocumentSearchRequest request) {
+        List<Sort.Order> orders = new ArrayList<>();
+
+        // Add score sort as highest priority if there's a search query
+        if (StringUtils.isNotEmpty(request.getSearch())) {
+            orders.add(Sort.Order.desc("_score"));
+        }
+
+        // Get sort direction from request, default to DESC if not specified
+        Sort.Direction sortDirection = Sort.Direction.DESC;
+        if (StringUtils.isNotBlank(request.getSortDirection())) {
+            sortDirection = Sort.Direction.fromString(request.getSortDirection().toUpperCase());
+        }
+
+        // Get sort field from request, default to created_at if not specified
+        String sortField = "created_at";
+        if (StringUtils.isNotBlank(request.getSortField())) {
+            sortField = getSortableFieldName(request.getSortField());
+        }
+
+        // Add the user-requested sort
+        orders.add(new Sort.Order(sortDirection, sortField));
+
+        // Create new pageable with combined sort
+        return PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by(orders)
+        );
+    }
+
+    private String getSortableFieldName(String field) {
+        return switch (field) {
+            case "filename" -> "filename.raw";
+            case "content" -> "content.keyword";
+            case "created_at", "createdAt" -> "created_at";
+            default -> field;
+        };
+    }
 }
