@@ -1,12 +1,9 @@
 package com.dms.document.search.service;
 
 import com.dms.document.search.client.UserClient;
-import com.dms.document.search.dto.DocumentResponseDto;
 import com.dms.document.search.dto.DocumentSearchCriteria;
 import com.dms.document.search.dto.UserDto;
-import com.dms.document.search.exception.InvalidDocumentException;
 import com.dms.document.search.model.DocumentInformation;
-import com.dms.document.search.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -28,8 +25,6 @@ import java.util.Objects;
 public class DocumentService {
     private final MongoTemplate mongoTemplate;
     private final UserClient userClient;
-    private final DocumentRepository documentRepository;
-    private final DiscoverDocumentSearchService discoverDocumentSearchService;
 
     public Page<DocumentInformation> getUserDocuments(String username, DocumentSearchCriteria criteria, int page, int size) {
         ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
@@ -87,8 +82,11 @@ public class DocumentService {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         // Execute query
-        Query query = new Query(queryCriteria).with(pageable);
-        long total = mongoTemplate.count(query, DocumentInformation.class);
+        Query countQuery = new Query(queryCriteria);
+        long total = mongoTemplate.count(countQuery, DocumentInformation.class);
+
+        Query query = new Query(queryCriteria)
+                .with(pageable);
         List<DocumentInformation> documents = mongoTemplate.find(query, DocumentInformation.class);
 
         return new PageImpl<>(
