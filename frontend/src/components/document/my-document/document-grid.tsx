@@ -48,33 +48,31 @@ export const DocumentGrid = React.memo(({
             onDelete={onDelete ? () => onDelete(doc.id) : undefined}
             onClick={() => onCardClick?.(doc)}
           />
-          ))}
+        ))}
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-6 flex justify-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 0}
-          >
-            {t("document.discover.pagination.previous")}
-          </Button>
-          <span className="flex items-center px-4">
+      <div className="mt-6 flex justify-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+        >
+          {t("document.discover.pagination.previous")}
+        </Button>
+        <span className="flex items-center px-4">
             {t("document.discover.pagination.pageInfo", {
               current: currentPage + 1,
               total: totalPages
             })}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages - 1}
-          >
-            {t("document.discover.pagination.next")}
-          </Button>
-        </div>
-      )}
+        </span>
+        <Button
+          variant="outline"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages - 1}
+        >
+          {t("document.discover.pagination.next")}
+        </Button>
+      </div>
     </div>
   );
 });

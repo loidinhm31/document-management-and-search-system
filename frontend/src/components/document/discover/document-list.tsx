@@ -25,7 +25,7 @@ import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlic
 import {
   fetchRecommendedDocuments,
   fetchSearchDocuments,
-  resetFilters,
+  resetFilters, selectPagination,
   selectSearchLoading,
   selectSearchResults,
   selectSearchState,
@@ -58,8 +58,8 @@ export const DocumentList = () => {
     selectedLevel,
     selectedCategory,
     selectedTags,
-    currentPage,
-    totalPages
+    totalPages,
+    currentPage
   } = useAppSelector(selectSearchState);
 
   const { majors, levels, categories } = useAppSelector(selectMasterData);
@@ -70,15 +70,15 @@ export const DocumentList = () => {
   const [showAdvanced, setShowAdvanced] = React.useState(false);
 
   const columns: SortableColumn[] = [
-    { field: "filename", label: t("document.discover.headers.name"), sortable: true },
-    { field: "courseCode", label: t("document.discover.headers.course"), sortable: true },
-    { field: "major", label: t("document.discover.headers.major"), sortable: true },
-    { field: "courseLevel", label: t("document.discover.headers.level"), sortable: true },
-    { field: "category", label: t("document.discover.headers.category"), sortable: true },
+    { field: "filename", label: t("document.discover.headers.name"), sortable: !!isSearchMode },
+    { field: "courseCode", label: t("document.discover.headers.course"), sortable: !!isSearchMode },
+    { field: "major", label: t("document.discover.headers.major"), sortable: !!isSearchMode },
+    { field: "courseLevel", label: t("document.discover.headers.level"), sortable: !!isSearchMode },
+    { field: "category", label: t("document.discover.headers.category"), sortable: !!isSearchMode },
     { field: "tags", label: t("document.discover.headers.tags"), sortable: false },
     // Only show matches column in search mode
     ...(isSearchMode ? [{ field: "highlights", label: t("document.discover.headers.matches"), sortable: false }] : []),
-    { field: "createdAt", label: t("document.discover.headers.created"), sortable: true },
+    { field: "createdAt", label: t("document.discover.headers.created"), sortable: !!isSearchMode },
     { field: "actions", label: t("document.discover.headers.actions"), sortable: false }
   ];
 
@@ -172,7 +172,11 @@ export const DocumentList = () => {
 
   const handlePageChange = (newPage: number) => {
     dispatch(setPage(newPage));
-    dispatch(fetchSearchDocuments());
+    if (isSearchMode) {
+      dispatch(fetchSearchDocuments());
+    } else {
+      dispatch(fetchRecommendedDocuments());
+    }
   };
 
   const formatDate = (dateString: string | Date) => {
@@ -354,30 +358,28 @@ export const DocumentList = () => {
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-4 flex justify-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 0}
-              >
-                {t("document.discover.pagination.previous")}
-              </Button>
-              <span className="flex items-center px-4">
+          <div className="mt-4 flex justify-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 0}
+            >
+              {t("document.discover.pagination.previous")}
+            </Button>
+            <span className="flex items-center px-4">
                 {t("document.discover.pagination.pageInfo", {
-                  current: currentPage + 1,
+                  current: documents ? currentPage + 1 : 0,
                   total: totalPages
                 })}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages - 1}
-              >
-                {t("document.discover.pagination.next")}
-              </Button>
-            </div>
-          )}
+            </span>
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages - 1}
+            >
+              {t("document.discover.pagination.next")}
+            </Button>
+          </div>
 
           {/* Document Preview Dialog */}
           {selectedDoc && (

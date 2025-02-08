@@ -26,8 +26,7 @@ export default function MyDocumentPage() {
 
   const processingItems = useAppSelector(selectProcessingItems);
   const latestProcessingItem = useMemo(() =>
-      processingItems.length > 0 ? processingItems[processingItems.length - 1] : null
-    , [processingItems]);
+      processingItems.length > 0 ? processingItems[processingItems.length - 1] : null, [processingItems]);
 
   const fetchUserDocuments = useCallback(async (page: number = 0, filters: SearchFilters = {}) => {
     setLoading(true);
@@ -45,7 +44,7 @@ export default function MyDocumentPage() {
     } finally {
       setLoading(false);
     }
-  }, [t, toast]);
+  }, []);
 
   const handleSearch = (filters: SearchFilters) => {
     setCurrentFilters(filters);

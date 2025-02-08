@@ -60,11 +60,16 @@ const initialState: SearchState = {
 };
 
 export const fetchRecommendedDocuments = createAsyncThunk(
-  'search/fetchRecommendedDocuments',
-  async (_, { rejectWithValue }) => {
+  "search/fetchRecommendedDocuments",
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const response = await documentService.getRecommendationDocuments(undefined, 10);
-      return response.data.content;
+      const state = getState() as RootState;
+      const {
+        currentPage,
+        pageSize,
+      } = state.search;
+      const response = await documentService.getRecommendationDocuments(undefined, pageSize, currentPage);
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -180,7 +185,7 @@ const searchSlice = createSlice({
         ...initialState,
         documents: state.documents, // Preserve current documents until new search
         suggestions: state.suggestions, // Preserve suggestions
-        isSearchMode: false,
+        isSearchMode: false
       };
     }
   },
@@ -207,7 +212,9 @@ const searchSlice = createSlice({
         state.loading = false;
         state.documents = action.payload.content;
         state.totalPages = action.payload.totalPages;
+        state.currentPage = action.payload.number;
         state.totalElements = action.payload.totalElements;
+        state.pageSize = action.payload.size;
         state.isSearchMode = true;
       })
       .addCase(fetchSearchDocuments.rejected, (state, action) => {
@@ -222,7 +229,11 @@ const searchSlice = createSlice({
       })
       .addCase(fetchRecommendedDocuments.fulfilled, (state, action) => {
         state.loading = false;
-        state.documents = action.payload;
+        state.documents = action.payload.content;
+        state.totalPages = action.payload.totalPages;
+        state.currentPage = action.payload.number;
+        state.totalElements = action.payload.totalElements;
+        state.pageSize = action.payload.size;
         state.isSearchMode = false;
       })
       .addCase(fetchRecommendedDocuments.rejected, (state) => {
