@@ -16,7 +16,8 @@
     "main": {
       "title": "Application",
       "home": "Discover",
-      "document": "My Document"
+      "document": "My Document",
+      "preferences": "Document Preferences"
     },
     "admin": {
       "title": "Administration",
@@ -29,6 +30,7 @@
     "home": "Discover",
     "profile": "Profile",
     "my-document": "My Documents",
+    "document-preferences": "Document Preferences",
     "admin": {
       "title": "Admin",
       "users": "User Management",
@@ -588,6 +590,61 @@
     "related": {
       "title": "Related Documents",
       "error": "Cannot fetch related documents"
+    },
+    "preferences": {
+      "fetchError": "Failed to fetch preferences",
+      "tabs": {
+        "preferences": "Preferences",
+        "analytics": "Analytics"
+      },
+      "contentPreferences": {
+        "title": "Content Preferences",
+        "description": "Customize your document preferences to personalize your experience",
+        "language": {
+          "label": "Language Preferences",
+          "placeholder": "Select preferred languages"
+        },
+        "majors": {
+          "label": "Preferred Majors",
+          "placeholder": "Select preferred majors"
+        },
+        "levels": {
+          "label": "Preferred Course Levels",
+          "placeholder": "Select preferred course levels"
+        },
+        "categories": {
+          "label": "Preferred Categories",
+          "placeholder": "Select preferred categories"
+        },
+        "tags": {
+          "label": "Tags of Interest",
+          "placeholder": "Add tags you're interested in"
+        }
+      },
+      "analytics": {
+        "title": "Analytics & Statistics",
+        "description": "View your document interaction statistics and content type weights",
+        "weights": {
+          "label": "Content Type Weights"
+        },
+        "stats": {
+          "label": "Interaction Statistics",
+          "comments": "Total Comments",
+          "uniqueDocuments": "Unique Documents Accessed"
+        }
+      },
+      "contentType": {
+        "view": "Document views",
+        "download": "Document downloads",
+        "favorite": "Document favorites",
+        "comment": "Document comments",
+        "share": "Document shares"
+      },
+      "actions": {
+        "save": "Save Preferences"
+      },
+      "updateSuccess": "Preferences updated successfully",
+      "updateError": "Failed to update preferences"
     },
     "comments": {
       "title": "Comments",

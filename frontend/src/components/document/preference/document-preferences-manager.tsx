@@ -79,7 +79,7 @@ export default function DocumentPreferencesManager() {
       } catch (error) {
         toast({
           title: t("common.error"),
-          description: t("preferences.fetchError"),
+          description: t("document.preferences.fetchError"),
           variant: "destructive"
         });
       } finally {
@@ -104,13 +104,13 @@ export default function DocumentPreferencesManager() {
       });
       toast({
         title: t("common.success"),
-        description: t("preferences.updateSuccess"),
+        description: t("document.preferences.updateSuccess"),
         variant: "success"
       });
     } catch (error) {
       toast({
         title: t("common.error"),
-        description: t("preferences.updateError"),
+        description: t("document.preferences.updateError"),
         variant: "destructive"
       });
     } finally {
@@ -130,22 +130,22 @@ export default function DocumentPreferencesManager() {
     <div className="space-y-6">
       <Tabs defaultValue="preferences" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="preferences">{t("preferences.tabs.preferences")}</TabsTrigger>
-          <TabsTrigger value="analytics">{t("preferences.tabs.analytics")}</TabsTrigger>
+          <TabsTrigger value="preferences">{t("document.preferences.tabs.preferences")}</TabsTrigger>
+          <TabsTrigger value="analytics">{t("document.preferences.tabs.analytics")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="preferences">
           <Card>
             <CardHeader>
-              <CardTitle>{t("preferences.contentPreferences.title")}</CardTitle>
+              <CardTitle>{t("document.preferences.contentPreferences.title")}</CardTitle>
               <CardDescription>
-                {t("preferences.contentPreferences.description")}
+                {t("document.preferences.contentPreferences.description")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Language Preferences */}
               <div className="space-y-2">
-                <Label>{t("preferences.contentPreferences.language.label")}</Label>
+                <Label>{t("document.preferences.contentPreferences.language.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.languagePreferences || [])}
                   onChange={(languages) => setPreferences(prev => ({
@@ -154,13 +154,13 @@ export default function DocumentPreferencesManager() {
                   }))}
                   recommendedTags={SUPPORTED_LANGUAGES.map(lang => lang.code)}
                   getTagDisplay={getTagDisplay}
-                  placeholder={t("preferences.contentPreferences.language.placeholder")}
+                  placeholder={t("document.preferences.contentPreferences.language.placeholder")}
                 />
               </div>
 
               {/* Preferred Majors */}
               <div className="space-y-2">
-                <Label>{t("preferences.contentPreferences.majors.label")}</Label>
+                <Label>{t("document.preferences.contentPreferences.majors.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.preferredMajors || [])}
                   onChange={(majors) => setPreferences(prev => ({
@@ -175,7 +175,7 @@ export default function DocumentPreferencesManager() {
 
               {/* Preferred Levels */}
               <div className="space-y-2">
-                <Label>{t("preferences.contentPreferences.levels.label")}</Label>
+                <Label>{t("document.preferences.contentPreferences.levels.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.preferredLevels || [])}
                   onChange={(levels) => setPreferences(prev => ({
@@ -190,7 +190,7 @@ export default function DocumentPreferencesManager() {
 
               {/* Preferred Categories */}
               <div className="space-y-2">
-                <Label>{t("preferences.contentPreferences.categories.label")}</Label>
+                <Label>{t("document.preferences.contentPreferences.categories.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.preferredCategories || [])}
                   onChange={(categories) => setPreferences(prev => ({
@@ -205,7 +205,7 @@ export default function DocumentPreferencesManager() {
 
               {/* Preferred Tags */}
               <div className="space-y-2">
-                <Label>{t("preferences.contentPreferences.tags.label")}</Label>
+                <Label>{t("document.preferences.contentPreferences.tags.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.preferredTags || [])}
                   onChange={(tags) => setPreferences(prev => ({
@@ -233,7 +233,7 @@ export default function DocumentPreferencesManager() {
               >
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="mr-2 h-4 w-4" />
-                {t("preferences.actions.save")}
+                {t("document.preferences.actions.save")}
               </Button>
             </CardContent>
           </Card>
@@ -242,15 +242,15 @@ export default function DocumentPreferencesManager() {
         <TabsContent value="analytics">
           <Card>
             <CardHeader>
-              <CardTitle>{t("preferences.analytics.title")}</CardTitle>
+              <CardTitle>{t("document.preferences.analytics.title")}</CardTitle>
               <CardDescription>
-                {t("preferences.analytics.description")}
+                {t("document.preferences.analytics.description")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Content Type Weights */}
               <div className="space-y-4">
-                <Label>{t("preferences.analytics.weights.label")}</Label>
+                <Label>{t("document.preferences.analytics.weights.label")}</Label>
                 <ScrollArea className="h-72 rounded-md border p-4">
                   <div className="space-y-2">
                     {weights.map(({ type, weight }) => (
@@ -275,11 +275,11 @@ export default function DocumentPreferencesManager() {
               {/* Interaction Statistics */}
               {stats && (
                 <div className="space-y-4">
-                  <Label>{t("preferences.analytics.stats.label")}</Label>
+                  <Label>{t("document.preferences.analytics.stats.label")}</Label>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-lg border p-3">
                       <div className="text-sm font-medium text-muted-foreground">
-                        {t("preferences.analytics.stats.comments")}
+                        {t("document.preferences.analytics.stats.comments")}
                       </div>
                       <div className="text-2xl font-bold">
                         {stats.interactionCounts.COMMENT || 0}
@@ -287,7 +287,7 @@ export default function DocumentPreferencesManager() {
                     </div>
                     <div className="rounded-lg border p-3">
                       <div className="text-sm font-medium text-muted-foreground">
-                        {t("preferences.analytics.stats.uniqueDocuments")}
+                        {t("document.preferences.analytics.stats.uniqueDocuments")}
                       </div>
                       <div className="text-2xl font-bold">
                         {stats.uniqueDocumentsAccessed}

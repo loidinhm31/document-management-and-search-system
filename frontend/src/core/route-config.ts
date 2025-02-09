@@ -98,7 +98,7 @@ export const routes: Route[] = [
   },
   {
     path: RoutePaths.DOCUMENT_PREFERENCE,
-    pageTitle: "pages.my-document.detail",
+    pageTitle: "pages.document-preferences",
     component: DocumentPreference,
     isSecure: true,
     permission: []
