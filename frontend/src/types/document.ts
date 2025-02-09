@@ -7,10 +7,10 @@ export enum DocumentType {
   POWERPOINT = "POWERPOINT",
   POWERPOINT_PPTX = "POWERPOINT_PPTX",
   TEXT_PLAIN = "TEXT_PLAIN",
-  RTF = "RTF",
   CSV = "CSV",
   XML = "XML",
-  JSON = "JSON"
+  JSON = "JSON",
+  MARKDOWN = "MARKDOWN",
 }
 
 export interface DocumentInformation {

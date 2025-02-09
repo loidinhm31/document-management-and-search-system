@@ -17,6 +17,8 @@ import { SpreadsheetViewer } from "./spreadsheet-viewer";
 import { TextViewer } from "./text-viewer";
 import { UnsupportedViewer } from "./unsupported-viewer";
 import { WordViewer } from "./word-viewer";
+import { JsonViewer } from "@/components/document/viewers/json-viewer";
+import { XmlViewer } from "@/components/document/viewers/xml-viewer";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -171,6 +173,18 @@ export const DocumentViewer = ({
           break;
         }
 
+        case DocumentType.JSON: {
+          const text = await blob.text();
+          setTextContent(text);
+          break;
+        }
+
+        case DocumentType.XML: {
+          const text = await blob.text();
+          setTextContent(text);
+          break;
+        }
+
         default: {
           setError(t("document.viewer.error.unsupported", { type: documentType }));
           break;
@@ -286,6 +300,22 @@ export const DocumentViewer = ({
     case DocumentType.TEXT_PLAIN:
       return textContent && (
         <TextViewer
+          content={textContent}
+          onDownload={handleDownload}
+        />
+      );
+
+    case DocumentType.JSON:
+      return textContent && (
+        <JsonViewer
+          content={textContent}
+          onDownload={handleDownload}
+        />
+      );
+
+    case DocumentType.XML:
+      return textContent && (
+        <XmlViewer
           content={textContent}
           onDownload={handleDownload}
         />
