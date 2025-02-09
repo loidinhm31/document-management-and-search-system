@@ -41,6 +41,8 @@ public class ThumbnailService {
             case EXCEL, EXCEL_XLSX -> new SpreadsheetThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case CSV -> new CsvThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case POWERPOINT, POWERPOINT_PPTX -> new PowerPointThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
+            case JSON -> new JsonThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
+            case XML -> new XmlThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             default -> new PlaceholderThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(documentType);
         };
     }

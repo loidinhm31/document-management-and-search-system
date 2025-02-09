@@ -530,7 +530,7 @@ public class DocumentService {
 
         // Check MIME type
         String mimeType = file.getContentType();
-        if (mimeType == null || !DocumentType.isSupportedMimeType(mimeType)) {
+        if (!DocumentType.isSupportedMimeType(mimeType)) {
             throw new UnsupportedDocumentTypeException("Unsupported document type: " + mimeType);
         }
 
@@ -538,26 +538,32 @@ public class DocumentService {
         String originalFilename = file.getOriginalFilename();
         if (originalFilename != null) {
             String extension = getFileExtension(originalFilename).toLowerCase();
-            boolean isValidExtension = switch (mimeType) {
-                case "application/pdf" -> extension.equals(".pdf");
-                case "application/msword" -> extension.equals(".doc");
-                case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ->
-                        extension.equals(".docx");
-                case "application/vnd.ms-excel" -> extension.equals(".xls");
-                case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> extension.equals(".xlsx");
-                case "application/vnd.ms-powerpoint" -> extension.equals(".ppt");
-                case "application/vnd.openxmlformats-officedocument.presentationml.presentation" ->
-                        extension.equals(".pptx");
-                case "text/plain" -> extension.equals(".txt");
-                case "application/rtf" -> extension.equals(".rtf");
-                case "text/csv" -> extension.equals(".csv");
-                case "application/xml" -> extension.equals(".xml");
-                case "application/json" -> extension.equals(".json");
-                default -> false;
+            DocumentType documentType;
+            try {
+                documentType = DocumentType.fromMimeType(mimeType);
+            } catch (UnsupportedDocumentTypeException e) {
+                throw new InvalidDocumentException("Invalid MIME type: " + mimeType);
+            }
+
+            boolean isValidExtension = switch (documentType) {
+                case PDF -> extension.equals(".pdf");
+                case WORD -> extension.equals(".doc");
+                case WORD_DOCX -> extension.equals(".docx");
+                case EXCEL -> extension.equals(".xls");
+                case EXCEL_XLSX -> extension.equals(".xlsx");
+                case POWERPOINT -> extension.equals(".ppt");
+                case POWERPOINT_PPTX -> extension.equals(".pptx");
+                case TEXT_PLAIN -> extension.equals(".txt");
+                case CSV -> extension.equals(".csv");
+                case XML -> extension.equals(".xml");
+                case JSON -> extension.equals(".json");
             };
 
             if (!isValidExtension) {
-                throw new InvalidDocumentException("File extension does not match the content type");
+                throw new InvalidDocumentException(
+                        String.format("File extension '%s' does not match the expected type '%s'",
+                                extension, documentType.getDisplayName())
+                );
             }
         }
     }
