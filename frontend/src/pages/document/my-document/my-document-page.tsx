@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { searchService } from "@/services/search.service";
 import { useAppSelector } from "@/store/hook";
-import { selectProcessingItems } from "@/store/slices/processingSlice";
+import { selectProcessingItems } from "@/store/slices/processing-slice";
 import { DocumentInformation, DocumentStatus } from "@/types/document";
 
 export default function MyDocumentPage() {

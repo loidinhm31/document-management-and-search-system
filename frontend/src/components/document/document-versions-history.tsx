@@ -10,7 +10,7 @@ import { useAuth } from "@/context/auth-context";
 import { toast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
-import { selectProcessingItemByDocumentId } from "@/store/slices/processingSlice";
+import { selectProcessingItemByDocumentId } from "@/store/slices/processing-slice";
 import { DocumentInformation, DocumentStatus, DocumentVersion } from "@/types/document";
 
 interface VersionHistoryProps {

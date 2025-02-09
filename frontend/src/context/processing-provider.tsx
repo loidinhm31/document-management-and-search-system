@@ -7,7 +7,7 @@ import {
   addProcessingItem,
   removeProcessingItem,
   selectProcessingItems,
-  updateProcessingItem} from "@/store/slices/processingSlice";
+  updateProcessingItem} from "@/store/slices/processing-slice";
 import { DocumentStatus } from "@/types/document";
 
 interface ProcessingItem {

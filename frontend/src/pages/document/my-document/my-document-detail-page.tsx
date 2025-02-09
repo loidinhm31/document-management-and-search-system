@@ -12,10 +12,13 @@ import { useProcessing } from "@/context/processing-provider";
 import { RoutePaths } from "@/core/route-config";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
+import { useAppDispatch } from "@/store/hook";
+import { setCurrentDocument } from "@/store/slices/document-slice";
 import { DocumentInformation } from "@/types/document";
 
 export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { documentId } = useParams<{ documentId: string }>();
 
@@ -33,6 +36,7 @@ export default function MyDocumentDetailPage() {
       try {
         const response = await documentService.getDocumentDetails(documentId);
         setDocumentData(response.data);
+        dispatch(setCurrentDocument(response.data));
       } catch (error) {
         toast({
           title: t("common.error"),
@@ -46,7 +50,11 @@ export default function MyDocumentDetailPage() {
     };
 
     fetchDocument();
-  }, [documentId, navigate, t, toast]);
+
+    return () => {
+      dispatch(setCurrentDocument(null));
+    };
+  }, [documentId]);
 
   const handleSubmit = async (data: DocumentFormValues, file?: File) => {
     if (!documentId) return;

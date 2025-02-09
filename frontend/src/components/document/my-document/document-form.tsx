@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
+import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 
 
 const documentSchema = z.object({

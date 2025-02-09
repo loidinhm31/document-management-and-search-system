@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn, getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
+import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import {
   fetchRecommendedDocuments,
   fetchSearchDocuments,
@@ -35,7 +35,7 @@ import {
   setPage,
   setSort,
   setTags
-} from "@/store/slices/searchSlice";
+} from "@/store/slices/search-slice";
 import { MasterDataType } from "@/types/master-data";
 
 interface SortableColumn {
@@ -265,97 +265,169 @@ export const DocumentList = () => {
               <span className="ml-2">{t("document.search.loading")}</span>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {columns.map((column) => (
-                      <TableHead
-                        key={column.field}
-                        className={cn(
-                          column.sortable && "cursor-pointer select-none",
-                          column.field === "actions" && "text-right"
-                        )}
-                        onClick={() => column.sortable && handleSort(column.field)}
-                      >
-                        <div className="flex items-center">
-                          {column.label}
-                          {column.sortable && renderSortIcon(column.field)}
-                        </div>
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {documents.map((doc) => (
-                    <TableRow key={doc.id}>
-                      <TableCell className="font-medium truncate">
+            <>
+              <div className="space-y-4 lg:hidden">
+                {documents.map((doc) => (
+                  <Card key={doc.id} className="overflow-hidden">
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-base">
                         <Button
                           variant="link"
-                          className="font-medium truncate p-0 h-auto"
-                          onClick={() => navigate(`/documents/${doc.id}`)}
+                          className="h-auto p-0 text-left"
+                          onClick={() => navigate(`/discover/${doc.id}`)}
                         >
                           {doc.filename}
                         </Button>
-                      </TableCell>
-                      <TableCell className="truncate">{doc.courseCode}</TableCell>
-                      <TableCell className="truncate">
-                        {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
-                      </TableCell>
-                      <TableCell className="hidden xl:table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          {doc.tags?.map((tag, index) => (
-                            <span
-                              key={index}
-                              className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </TableCell>
-                      {isSearchMode && (
-                        <TableCell>
-                          <HighlightCell highlights={doc.highlights} />
-                        </TableCell>
-                      )}
-                      <TableCell>
+                      </CardTitle>
+                      <CardDescription>
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <Calendar className="h-4 w-4" />
                           {formatDate(doc.createdAt)}
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Actions</span>
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{t("document.discover.headers.course")}:</span>
+                          <span className="text-sm">{doc.courseCode}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{t("document.discover.headers.major")}:</span>
+                          <span
+                            className="text-sm">{getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{t("document.discover.headers.level")}:</span>
+                          <span
+                            className="text-sm">{getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{t("document.discover.headers.category")}:</span>
+                          <span
+                            className="text-sm">{getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}</span>
+                        </div>
+                        {doc.highlights && doc.highlights.length > 0 && (
+                          <div className="mt-2">
+                            <HighlightCell highlights={doc.highlights} />
+                          </div>
+                        )}
+                        <div className="flex justify-end gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedDoc(doc)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(doc.id, doc.filename)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {columns.map((column) => (
+                          <TableHead
+                            key={column.field}
+                            className={cn(
+                              column.sortable && "cursor-pointer select-none",
+                              column.field === "actions" && "text-right"
+                            )}
+                            onClick={() => column.sortable && handleSort(column.field)}
+                          >
+                            <div className="flex items-center">
+                              {column.label}
+                              {column.sortable && renderSortIcon(column.field)}
+                            </div>
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {documents.map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell className="font-medium truncate">
+                            <Button
+                              variant="link"
+                              className="font-medium truncate p-0 h-auto"
+                              onClick={() => navigate(`/discover/${doc.id}`)}
+                            >
+                              {doc.filename}
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setSelectedDoc(doc)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              {t("document.actions.view")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownload(doc.id, doc.filename)}>
-                              <Download className="mr-2 h-4 w-4" />
-                              {t("document.actions.download")}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                          </TableCell>
+                          <TableCell className="truncate">{doc.courseCode}</TableCell>
+                          <TableCell className="truncate">
+                            {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
+                          </TableCell>
+                          <TableCell className="hidden xl:table-cell">
+                            <div className="flex flex-wrap gap-1">
+                              {doc.tags?.map((tag, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20"
+                                >
+                              {tag}
+                            </span>
+                              ))}
+                            </div>
+                          </TableCell>
+                          {isSearchMode && (
+                            <TableCell>
+                              <HighlightCell highlights={doc.highlights} />
+                            </TableCell>
+                          )}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              {formatDate(doc.createdAt)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Actions</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setSelectedDoc(doc)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  {t("document.actions.view")}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDownload(doc.id, doc.filename)}>
+                                  <Download className="mr-2 h-4 w-4" />
+                                  {t("document.actions.download")}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Pagination */}

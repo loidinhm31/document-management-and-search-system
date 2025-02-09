@@ -17,8 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 import { getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
+import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
+import { setCurrentDocument } from "@/store/slices/document-slice";
+import { MasterDataType } from "@/types/master-data";
 
 export default function DocumentDetailPage() {
   const { t } = useTranslation();
@@ -90,6 +92,7 @@ export default function DocumentDetailPage() {
 
         setDocumentData(docResponse.data);
         setIsFavorited(favoriteResponse.data);
+        dispatch(setCurrentDocument(docResponse.data));
       } catch (error) {
         toast({
           title: t("common.error"),
@@ -102,6 +105,10 @@ export default function DocumentDetailPage() {
     };
 
     fetchDocument();
+
+    return () => {
+      dispatch(setCurrentDocument(null));
+    };
   }, [documentId]);
 
   if (loading || masterDataLoading) {
@@ -229,14 +236,14 @@ export default function DocumentDetailPage() {
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.major")}</Label>
                       <p className="text-sm text-muted-foreground">
-                        {getMasterDataTranslation(documentData.major, "major", { majors })}
+                        {getMasterDataTranslation(documentData.major, MasterDataType.MAJOR, { majors })}
                       </p>
                     </div>
 
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.level")}</Label>
                       <p className="text-sm text-muted-foreground">
-                        {getMasterDataTranslation(documentData.courseLevel, "level", { levels })}
+                        {getMasterDataTranslation(documentData.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
                       </p>
                     </div>
                   </div>
@@ -244,7 +251,7 @@ export default function DocumentDetailPage() {
                   <div className="space-y-2">
                     <Label>{t("document.detail.fields.category")}</Label>
                     <p className="text-sm text-muted-foreground">
-                      {getMasterDataTranslation(documentData.category, "category", { categories })}
+                      {getMasterDataTranslation(documentData.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
                     </p>
                   </div>
 

@@ -9,7 +9,7 @@ import {
   fetchSuggestions,
   selectSuggestions,
   setSearchTerm
-} from "@/store/slices/searchSlice";
+} from "@/store/slices/search-slice";
 
 interface SearchSuggestionsProps {
   onSearch: () => void;

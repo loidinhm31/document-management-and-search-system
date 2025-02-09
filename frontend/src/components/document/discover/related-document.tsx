@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
-import { selectMasterData } from "@/store/slices/masterDataSlice";
+import { selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
 import { Label } from "@radix-ui/react-label";
 

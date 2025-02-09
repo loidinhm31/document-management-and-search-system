@@ -1,22 +1,24 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { createLogger } from "redux-logger";
 
-import masterDataReducer from "@/store/slices/masterDataSlice";
-import searchReducer from "@/store/slices/searchSlice";
-import processingReducer from "@/store/slices/processingSlice";
+import documentReducer from "@/store/slices/document-slice";
+import masterDataReducer from "@/store/slices/master-data-slice";
+import processingReducer from "@/store/slices/processing-slice";
+import searchReducer from "@/store/slices/search-slice";
 
 const logger = createLogger({
   collapsed: true, // Collapse logs by default
   duration: true, // Print the duration of each action
   timestamp: true,
-  predicate: (getState, action) => process.env.NODE_ENV === "development"
+  predicate: (_getState, _action) => process.env.NODE_ENV === "development"
 });
 
 export const store = configureStore({
   reducer: {
     search: searchReducer,
     masterData: masterDataReducer,
-    processing: processingReducer
+    processing: processingReducer,
+    document: documentReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

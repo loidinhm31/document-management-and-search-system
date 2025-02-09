@@ -33,8 +33,8 @@ export const RoutePaths = {
   PROFILE: "/profile",
   MY_DOCUMENT: "/documents/me",
   MY_DOCUMENT_DETAIL: "/documents/me/:documentId",
-  DOCUMENT_DETAIL: "/documents/:documentId",
-  DOCUMENT_PREFERENCE: "/documents/preferences",
+  DOCUMENT_DETAIL: "/discover/:documentId",
+  DOCUMENT_PREFERENCE: "/document-prefs",
   ADMIN: {
     USERS: "/admin/users",
     USER_DETAILS: "/admin/users/:userId",
@@ -91,7 +91,7 @@ export const routes: Route[] = [
   },
   {
     path: RoutePaths.DOCUMENT_DETAIL,
-    pageTitle: "pages.document.detail",
+    pageTitle: "pages.document-discover.detail",
     component: DocumentDetail,
     isSecure: true,
     permission: []

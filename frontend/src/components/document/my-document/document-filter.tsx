@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import i18n from "i18next";
-import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
+import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 
 export const courseTypes = [
