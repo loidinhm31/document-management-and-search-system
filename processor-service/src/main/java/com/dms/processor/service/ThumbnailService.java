@@ -43,6 +43,7 @@ public class ThumbnailService {
             case POWERPOINT, POWERPOINT_PPTX -> new PowerPointThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case JSON -> new JsonThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case XML -> new XmlThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
+            case MARKDOWN -> new MarkdownThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             default -> new PlaceholderThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(documentType);
         };
     }

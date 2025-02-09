@@ -100,7 +100,17 @@ public enum DocumentType {
                     "application/x-json".equals(mimeType) ||
                     "text/json".equals(mimeType);
         }
-    };
+    },
+
+    MARKDOWN("Markdown Document") {
+        @Override
+        protected boolean matchesMimeType(String mimeType) {
+            return "text/markdown".equals(mimeType) ||
+                    "text/x-markdown".equals(mimeType) ||
+                    "application/markdown".equals(mimeType);
+        }
+    }
+    ;
 
     private final String displayName;
 

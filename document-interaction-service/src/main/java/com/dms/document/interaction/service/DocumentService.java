@@ -557,6 +557,7 @@ public class DocumentService {
                 case CSV -> extension.equals(".csv");
                 case XML -> extension.equals(".xml");
                 case JSON -> extension.equals(".json");
+                case MARKDOWN -> extension.equals(".md");
             };
 
             if (!isValidExtension) {
