@@ -1,25 +1,25 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import i18n from "i18next";
+import { Loader2, Upload } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Loader2, Upload } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { useTranslation } from "react-i18next";
+import * as z from "zod";
 
+import TagInputDebounce from "@/components/common/tag-input-debounce";
+import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { documentService } from "@/services/document.service";
-import { useToast } from "@/hooks/use-toast";
-import TagInputDebounce from "@/components/common/tag-input-debounce";
+import { Textarea } from "@/components/ui/textarea";
 import { useProcessing } from "@/context/processing-provider";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
-import { Textarea } from "@/components/ui/textarea";
-import { MasterData, MasterDataType } from "@/types/master-data";
+import { useToast } from "@/hooks/use-toast";
+import { documentService } from "@/services/document.service";
 import { masterDataService } from "@/services/master-data.service";
-import i18n from "i18next";
-import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
+import { MasterData, MasterDataType } from "@/types/master-data";
 
 const formSchema = z.object({
   summary: z.string()
@@ -82,15 +82,38 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
     maxFiles: 1,
     accept: {
       "application/pdf": [".pdf"],
+      "application/x-pdf": [".pdf"],
       "application/msword": [".doc"],
+      "application/vnd.ms-word": [".doc"],
+      "application/x-msword": [".doc"],
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+      "application/vnd.ms-word.document.macroenabled.12": [".docx"],
       "application/vnd.ms-excel": [".xls"],
+      "application/msexcel": [".xls"],
+      "application/x-msexcel": [".xls"],
+      "application/x-ms-excel": [".xls"],
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+      "application/vnd.ms-excel.sheet.macroenabled.12": [".xlsx"],
+      "application/vnd.ms-powerpoint": [".ppt"],
+      "application/mspowerpoint": [".ppt"],
+      "application/x-mspowerpoint": [".ppt"],
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+      "application/vnd.ms-powerpoint.presentation.macroenabled.12": [".pptx"],
       "text/plain": [".txt"],
+      "text/x-log": [".txt"],
+      "text/x-java-source": [".txt"],
       "text/csv": [".csv"],
-      "application/json": [".json"],
+      "text/x-csv": [".csv"],
+      "application/csv": [".csv"],
+      "application/x-csv": [".csv"],
       "application/xml": [".xml"],
-      "application/vnd.ms-powerpoint": [".pptx"]
+      "text/xml": [".xml"],
+      "application/json": [".json"],
+      "application/x-json": [".json"],
+      "text/json": [".json"],
+      "text/markdown": [".md"],
+      "text/x-markdown": [".md"],
+      "application/markdown": [".md"],
     }
   });
 
@@ -223,7 +246,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
           <div className="space-y-2">
             <p>{t("document.upload.dropzone.info")}</p>
             <p className="text-sm text-muted-foreground">
-              {t("document.upload.dropzone.supportedFormats")} PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON, XML
+              {t("document.upload.dropzone.supportedFormats")} PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON,
+              XML, MARKDOWN
             </p>
           </div>
         )}

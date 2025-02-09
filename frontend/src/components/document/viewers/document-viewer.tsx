@@ -6,6 +6,9 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 
+import { JsonViewer } from "@/components/document/viewers/json-viewer";
+import { MarkdownViewer } from "@/components/document/viewers/markdown-viewer";
+import { XmlViewer } from "@/components/document/viewers/xml-viewer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
@@ -17,8 +20,6 @@ import { SpreadsheetViewer } from "./spreadsheet-viewer";
 import { TextViewer } from "./text-viewer";
 import { UnsupportedViewer } from "./unsupported-viewer";
 import { WordViewer } from "./word-viewer";
-import { JsonViewer } from "@/components/document/viewers/json-viewer";
-import { XmlViewer } from "@/components/document/viewers/xml-viewer";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -185,6 +186,12 @@ export const DocumentViewer = ({
           break;
         }
 
+        case DocumentType.MARKDOWN: {
+          const text = await blob.text();
+          setTextContent(text);
+          break;
+        }
+
         default: {
           setError(t("document.viewer.error.unsupported", { type: documentType }));
           break;
@@ -316,6 +323,14 @@ export const DocumentViewer = ({
     case DocumentType.XML:
       return textContent && (
         <XmlViewer
+          content={textContent}
+          onDownload={handleDownload}
+        />
+      );
+
+    case DocumentType.MARKDOWN:
+      return textContent && (
+        <MarkdownViewer
           content={textContent}
           onDownload={handleDownload}
         />
