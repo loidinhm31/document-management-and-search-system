@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class DocumentService {
     private final DocumentNotificationService documentNotificationService;
+    private final S3Service s3Service;
     @Value("${app.document.storage.path}")
     private String storageBasePath;
 
@@ -75,26 +76,14 @@ public class DocumentService {
         UserResponse userResponse = response.getBody();
         validateDocument(file);
 
-        // Generate unique filename
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = getFileExtension(originalFilename);
-        String uniqueFilename = getFileName(originalFilename) + "_" + Instant.now().toEpochMilli() + fileExtension;
-
-        // Create storage path
-        String relativePath = createStoragePath(uniqueFilename);
-        Path fullPath = Path.of(storageBasePath, relativePath);
-
-        // Create directories if they don't exist
-        Files.createDirectories(fullPath.getParent());
-
-        // Save file to disk
-        Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
+        // Upload new file to S3
+        String s3Key = s3Service.uploadFile(file, "documents");
 
         // Create new version metadata
         int nextVersion = 0;
         DocumentVersion newVersion = DocumentVersion.builder()
                 .versionNumber(nextVersion)
-                .filePath(fullPath.toString())
+                .filePath(s3Key)
                 .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
@@ -106,8 +95,8 @@ public class DocumentService {
         // Create document with PENDING status
         DocumentInformation document = DocumentInformation.builder()
                 .status(DocumentStatus.PENDING)
-                .filename(originalFilename)
-                .filePath(fullPath.toString())
+                .filename(file.getOriginalFilename())
+                .filePath(s3Key)
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .documentType(DocumentUtils.determineDocumentType(file.getContentType()))
@@ -189,25 +178,14 @@ public class DocumentService {
         }
 
         try {
-            // Try to read the thumbnail file
-            Path thumbnailPath = Path.of(document.getThumbnailPath());
-            if (Files.exists(thumbnailPath)) {
-                byte[] thumbnailData = Files.readAllBytes(thumbnailPath);
-                return ThumbnailResponse.builder()
-                        .data(thumbnailData)
-                        .status(HttpStatus.OK)
-                        .isPlaceholder(false)
-                        .build();
-            } else {
-                log.warn("Thumbnail file not found at path: {}", document.getThumbnailPath());
-                return ThumbnailResponse.builder()
-                        .data(getErrorPlaceholder())
-                        .status(HttpStatus.NOT_FOUND)
-                        .isPlaceholder(true)
-                        .build();
-            }
-        } catch (IOException e) {
-            log.error("Error reading thumbnail for document: {}", documentId, e);
+            byte[] thumbnailData = s3Service.downloadFile(document.getThumbnailPath());
+            return ThumbnailResponse.builder()
+                    .data(thumbnailData)
+                    .status(HttpStatus.OK)
+                    .isPlaceholder(false)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error getting thumbnail from S3: {}", e.getMessage());
             return ThumbnailResponse.builder()
                     .data(getErrorPlaceholder())
                     .status(HttpStatus.NOT_FOUND)
@@ -228,9 +206,7 @@ public class DocumentService {
 
         CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
 
-        try (InputStream in = Files.newInputStream(Path.of(document.getFilePath()))) {
-            return in.readAllBytes();
-        }
+        return s3Service.downloadFile(document.getFilePath());
     }
 
     public DocumentInformation getDocumentDetails(String documentId, String username) {
@@ -300,25 +276,17 @@ public class DocumentService {
         // Get existing document
         DocumentInformation document = getDocumentDetails(documentId, username);
 
-        // Save new file
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = getFileExtension(originalFilename);
-        String uniqueFilename = getFileName(originalFilename) + "_" + Instant.now().toEpochMilli() + fileExtension;
-        String relativePath = createStoragePath(uniqueFilename);
-        Path fullPath = Path.of(storageBasePath, relativePath);
+        validateDocument(file);
 
-        // Create directories if they don't exist
-        Files.createDirectories(fullPath.getParent());
-
-        // Save new file to disk
-        Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
+        // Upload new file to S3
+        String s3Key = s3Service.uploadFile(file, "documents");
 
         // Create new version metadata
         int nextVersion = (document.getCurrentVersion() != null ? document.getCurrentVersion() : 0) + 1;
         DocumentVersion newVersion = DocumentVersion.builder()
                 .versionNumber(nextVersion)
-                .filePath(fullPath.toString())
-                .filename(originalFilename)
+                .filePath(s3Key)
+                .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .status(DocumentStatus.PENDING)
@@ -328,8 +296,8 @@ public class DocumentService {
 
         // Update document information
         document.setStatus(DocumentStatus.PENDING); // Reset to pending for reprocessing
-        document.setFilename(originalFilename);
-        document.setFilePath(fullPath.toString());
+        document.setFilename(file.getOriginalFilename());
+        document.setFilePath(s3Key);
         document.setThumbnailPath(null); // Reset thumbnail - will be generated for new version
         document.setFileSize(file.getSize());
         document.setMimeType(file.getContentType());

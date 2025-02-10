@@ -36,15 +36,19 @@ public class ThumbnailService {
     private BufferedImage generateThumbnailByType(Path filePath, DocumentType documentType, String content) throws IOException {
         return switch (documentType) {
             case PDF -> generatePdfThumbnail(filePath);
-            case WORD, WORD_DOCX -> new WordThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
+            case WORD, WORD_DOCX ->
+                    new WordThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case TEXT_PLAIN -> new TextThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
-            case EXCEL, EXCEL_XLSX -> new SpreadsheetThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
+            case EXCEL, EXCEL_XLSX ->
+                    new SpreadsheetThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case CSV -> new CsvThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
-            case POWERPOINT, POWERPOINT_PPTX -> new PowerPointThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
+            case POWERPOINT, POWERPOINT_PPTX ->
+                    new PowerPointThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case JSON -> new JsonThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case XML -> new XmlThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case MARKDOWN -> new MarkdownThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
-            default -> new PlaceholderThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(documentType);
+            default ->
+                    new PlaceholderThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(documentType);
         };
     }
 

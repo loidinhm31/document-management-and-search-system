@@ -13,12 +13,7 @@ spring:
           jwk-set-uri: http://localhost:8082/.well-known/jwks.json
   data:
     mongodb:
-      authentication-database: admin
-      username: mongodb
-      password: mongodbpw
-      database: dms
-      port: 27017
-      host: 127.0.0.1
+      uri: mongodb://mongodb:mongodbpw@localhost:27017/
   rabbitmq:
     addresses: localhost:5672
 

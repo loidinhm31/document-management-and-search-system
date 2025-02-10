@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -76,22 +78,24 @@ public class ElasticsearchIndexService {
     }
 
     private void verifyField(Map<String, Object> properties, String fieldName) {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> field = (Map<String, Object>) properties.get(fieldName);
-        if (field != null) {
-            log.info("Field '{}' configuration:", fieldName);
-            log.info("Type: {}", field.get("type"));
-
+        if (MapUtils.isNotEmpty(properties)) {
             @SuppressWarnings("unchecked")
-            Map<String, Object> fields = (Map<String, Object>) field.get("fields");
-            if (fields != null) {
-                log.info("Multi-fields:");
-                fields.forEach((subFieldName, config) -> {
-                    log.info("  - {}: {}", subFieldName, config);
-                });
+            Map<String, Object> field = (Map<String, Object>) properties.get(fieldName);
+            if (field != null) {
+                log.info("Field '{}' configuration:", fieldName);
+                log.info("Type: {}", field.get("type"));
+
+                @SuppressWarnings("unchecked")
+                Map<String, Object> fields = (Map<String, Object>) field.get("fields");
+                if (fields != null) {
+                    log.info("Multi-fields:");
+                    fields.forEach((subFieldName, config) -> {
+                        log.info("  - {}: {}", subFieldName, config);
+                    });
+                }
+            } else {
+                log.warn("Field '{}' not found in mapping", fieldName);
             }
-        } else {
-            log.warn("Field '{}' not found in mapping", fieldName);
         }
     }
 

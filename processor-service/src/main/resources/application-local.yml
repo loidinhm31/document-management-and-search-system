@@ -19,12 +19,7 @@ app:
 spring:
   data:
     mongodb:
-      authentication-database: admin
-      username: mongodb
-      password: mongodbpw
-      database: dms
-      port: 27017
-      host: 127.0.0.1
+      uri: mongodb://mongodb:mongodbpw@localhost:27017/
   # Database Configuration
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
@@ -78,3 +73,11 @@ rabbitmq:
     internal-document-sync: internal.document-sync.routing-key
     notification: notification.email.routing-key
     dlq: dead.letter.routing-key
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME}
+    region: ${AWS_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+    temp-dir: ${java.io.tmpdir}/dms-processor

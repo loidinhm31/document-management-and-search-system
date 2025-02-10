@@ -38,12 +38,7 @@ spring:
     show-sql: true
   data:
     mongodb:
-      authentication-database: admin
-      username: mongodb
-      password: mongodbpw
-      database: dms
-      port: 27017
-      host: 127.0.0.1
+      uri: mongodb://mongodb:mongodbpw@localhost:27017/
   rabbitmq:
     addresses: localhost:5672
 
@@ -81,3 +76,10 @@ resilience4j:
         waitDuration: 1s
         enableExponentialBackoff: true
         exponentialBackoffMultiplier: 2
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME}
+    region: ${AWS_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
