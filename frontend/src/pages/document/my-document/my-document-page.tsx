@@ -108,18 +108,16 @@ export default function MyDocumentPage() {
             </div>
           ) : (
             <>
-              {documents.length > 0 && (
-                <DocumentGrid
-                  documents={documents}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                  onDelete={handleDelete}
-                  loading={loading}
-                  onCardClick={(doc) => navigate(`/documents/me/${doc.id}`)}
-                  className="pt-4"
-                />
-              )}
+              <DocumentGrid
+                documents={documents}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                onDelete={handleDelete}
+                loading={loading}
+                onCardClick={(doc) => navigate(`/documents/me/${doc.id}`)}
+                className="pt-4"
+              />
             </>
           )}
         </CardContent>

@@ -7,8 +7,8 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
-import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
 import TagInputDebounce from "@/components/common/tag-input-debounce";
+import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
+import { ACCEPT_TYPE_MAP } from "@/types/document";
 
 
 const documentSchema = z.object({
@@ -46,7 +47,7 @@ interface DocumentFormProps {
   submitLabel?: string;
 }
 
-export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }: DocumentFormProps) {
+export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", loading }: DocumentFormProps) {
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { detectLanguage, detectedLanguage, detectingLanguage } = useLanguageDetection();
@@ -92,26 +93,13 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
       }
     },
     maxFiles: 1,
-    accept: {
-      "application/pdf": [".pdf"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-      "text/plain": [".txt"],
-      "text/csv": [".csv"],
-      "application/json": [".json"],
-      "application/xml": [".xml"],
-      "application/vnd.ms-powerpoint": [".pptx"]
-    }
+    accept: ACCEPT_TYPE_MAP
   });
 
   const handleSubmit = async (data: DocumentFormValues) => {
     await onSubmit(data, selectedFile || undefined);
-    if (!initialValues) {
-      form.reset();
-      setSelectedFile(null);
-    }
+    form.reset();
+    setSelectedFile(null);
   };
 
   return (
@@ -280,8 +268,8 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
             )}
           />
 
-          <Button type="submit" disabled={masterDataLoading || (!initialValues && !selectedFile)} className="w-full">
-            {masterDataLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" disabled={masterDataLoading || loading ||  (!initialValues && !selectedFile)} className="w-full">
+            {masterDataLoading || loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {submitLabel}
           </Button>
         </div>

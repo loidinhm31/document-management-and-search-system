@@ -90,8 +90,38 @@ export interface DocumentVersion {
   createdAt: Date;
 }
 
-export interface VersionHistoryResponse {
-  versions: DocumentVersion[];
-  currentVersion: number;
-  totalVersions: number;
+export const ACCEPT_TYPE_MAP = {
+  "application/pdf": [".pdf"],
+  "application/x-pdf": [".pdf"],
+  "application/msword": [".doc"],
+  "application/vnd.ms-word": [".doc"],
+  "application/x-msword": [".doc"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+  "application/vnd.ms-word.document.macroenabled.12": [".docx"],
+  "application/vnd.ms-excel": [".xls"],
+  "application/msexcel": [".xls"],
+  "application/x-msexcel": [".xls"],
+  "application/x-ms-excel": [".xls"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+  "application/vnd.ms-excel.sheet.macroenabled.12": [".xlsx"],
+  "application/vnd.ms-powerpoint": [".ppt"],
+  "application/mspowerpoint": [".ppt"],
+  "application/x-mspowerpoint": [".ppt"],
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+  "application/vnd.ms-powerpoint.presentation.macroenabled.12": [".pptx"],
+  "text/plain": [".txt"],
+  "text/x-log": [".txt"],
+  "text/x-java-source": [".txt"],
+  "text/csv": [".csv"],
+  "text/x-csv": [".csv"],
+  "application/csv": [".csv"],
+  "application/x-csv": [".csv"],
+  "application/xml": [".xml"],
+  "text/xml": [".xml"],
+  "application/json": [".json"],
+  "application/x-json": [".json"],
+  "text/json": [".json"],
+  "text/markdown": [".md"],
+  "text/x-markdown": [".md"],
+  "application/markdown": [".md"],
 }

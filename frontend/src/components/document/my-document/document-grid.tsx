@@ -61,7 +61,7 @@ export const DocumentGrid = React.memo(({
         </Button>
         <span className="flex items-center px-4">
             {t("document.discover.pagination.pageInfo", {
-              current: currentPage + 1,
+              current: documents.length > 0 ? currentPage + 1 : 0,
               total: totalPages
             })}
         </span>

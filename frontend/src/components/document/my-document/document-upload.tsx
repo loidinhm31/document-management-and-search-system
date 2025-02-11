@@ -19,6 +19,7 @@ import { useLanguageDetection } from "@/hooks/use-language-detection";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { masterDataService } from "@/services/master-data.service";
+import { ACCEPT_TYPE_MAP } from "@/types/document";
 import { MasterData, MasterDataType } from "@/types/master-data";
 
 const formSchema = z.object({
@@ -80,41 +81,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles: 1,
-    accept: {
-      "application/pdf": [".pdf"],
-      "application/x-pdf": [".pdf"],
-      "application/msword": [".doc"],
-      "application/vnd.ms-word": [".doc"],
-      "application/x-msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-      "application/vnd.ms-word.document.macroenabled.12": [".docx"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/msexcel": [".xls"],
-      "application/x-msexcel": [".xls"],
-      "application/x-ms-excel": [".xls"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-      "application/vnd.ms-excel.sheet.macroenabled.12": [".xlsx"],
-      "application/vnd.ms-powerpoint": [".ppt"],
-      "application/mspowerpoint": [".ppt"],
-      "application/x-mspowerpoint": [".ppt"],
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
-      "application/vnd.ms-powerpoint.presentation.macroenabled.12": [".pptx"],
-      "text/plain": [".txt"],
-      "text/x-log": [".txt"],
-      "text/x-java-source": [".txt"],
-      "text/csv": [".csv"],
-      "text/x-csv": [".csv"],
-      "application/csv": [".csv"],
-      "application/x-csv": [".csv"],
-      "application/xml": [".xml"],
-      "text/xml": [".xml"],
-      "application/json": [".json"],
-      "application/x-json": [".json"],
-      "text/json": [".json"],
-      "text/markdown": [".md"],
-      "text/x-markdown": [".md"],
-      "application/markdown": [".md"],
-    }
+    accept: ACCEPT_TYPE_MAP
   });
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
