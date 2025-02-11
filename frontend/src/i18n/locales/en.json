@@ -435,11 +435,13 @@
         "download": "Failed to download file",
         "unsupported": "Preview not available for {{type}}"
       },
+
       "buttons": {
         "download": "Download",
         "downloadInstead": "Download Instead",
         "previous": "Previous",
         "next": "Next",
+        "pageInfo": "Page {{current}} of {{total}}",
         "slideInfo": "Slide {{current}} of {{total}}"
       },
       "preview": {
