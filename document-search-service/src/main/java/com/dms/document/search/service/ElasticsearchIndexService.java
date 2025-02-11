@@ -33,6 +33,9 @@ public class ElasticsearchIndexService {
                 // Create index with settings and mapping
                 elasticsearchOperations.indexOps(DocumentIndex.class).create();
 
+                // Apply mapping explicitly if not applied during creation
+                elasticsearchOperations.indexOps(DocumentIndex.class).putMapping();
+
                 // Refresh the index
                 elasticsearchOperations.indexOps(DocumentIndex.class).refresh();
 
