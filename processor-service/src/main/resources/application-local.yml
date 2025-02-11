@@ -53,10 +53,10 @@ spring:
             enable: true
 
 elasticsearch:
-  host: 127.0.0.1
-  port: 9200
-  username: elastic  # Default username for Elasticsearch 8.x
-  password: "NX9DYn+_4WSXRmHwymTo"
+  host: ${ELASTICSEARCH_HOST:127.0.0.1}
+  port: ${ELASTICSEARCH_PORT:9200}
+  username: ${ELASTICSEARCH_USERNAME:elastic}
+  password: ${ELASTICSEARCH_PASSWORD:NX9DYn+_4WSXRmHwymTo}
 
 # RabbitMQ
 rabbitmq:
