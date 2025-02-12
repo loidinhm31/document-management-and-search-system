@@ -14,8 +14,6 @@ spring:
   data:
     mongodb:
       uri: mongodb://mongodb:mongodbpw@localhost:27017/
-  rabbitmq:
-    addresses: localhost:5672
 
 # Eureka Client
 eureka:
@@ -31,9 +29,10 @@ eureka:
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10
 
-# Elasticsearch
-elasticsearch:
-  host: ${ELASTICSEARCH_HOST:127.0.0.1}
-  port: ${ELASTICSEARCH_PORT:9200}
-  username: ${ELASTICSEARCH_USERNAME:elastic}
-  password: ${ELASTICSEARCH_PASSWORD:NX9DYn+_4WSXRmHwymTo}
+opensearch:
+  host: localhost
+  port: 9200
+  username: admin
+  password: admin
+  scheme: http
+  aws: false

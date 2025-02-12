@@ -31,7 +31,11 @@ spring:
       port: 27017
       host: 127.0.0.1
   rabbitmq:
-    addresses: localhost:5672
+    addresses: amqps://b-09dd10fb-6d5f-44c0-96c7-a5c62b072499.mq.ap-southeast-1.amazonaws.com:5671
+    host: amqps://b-09dd10fb-6d5f-44c0-96c7-a5c62b072499.mq.ap-southeast-1.amazonaws.com
+    port: 5671
+    username: dms_master
+    password: "!MpKTCTDYsenPByuUHzN5Ju6PeTr#1a3KyvdQx"
 
 # Eureka Client
 eureka:
@@ -46,10 +50,3 @@ eureka:
     hostname: localhost
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10
-
-# Elasticsearch
-elasticsearch:
-  host: 127.0.0.1
-  port: 9200
-  username: elastic  # Default username for Elasticsearch 8.x
-  password: "NX9DYn+_4WSXRmHwymTo"

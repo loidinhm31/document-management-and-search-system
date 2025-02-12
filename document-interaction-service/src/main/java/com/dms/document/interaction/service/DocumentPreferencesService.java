@@ -286,16 +286,18 @@ public class DocumentPreferencesService {
                 documentInteractionRepository.getAggregatedStats(userResponse.userId().toString(), recentDate);
 
         Map<String, Object> result = new HashMap<>();
-        Map<InteractionType, Long> interactionCounts = new EnumMap<>(InteractionType.class);
+        if (Objects.nonNull(stats)) {
+            Map<InteractionType, Long> interactionCounts = new EnumMap<>(InteractionType.class);
 
-        interactionCounts.put(InteractionType.VIEW, stats.getTotalViews());
-        interactionCounts.put(InteractionType.DOWNLOAD, stats.getTotalDownloads());
-        interactionCounts.put(InteractionType.COMMENT, stats.getTotalComments());
-        interactionCounts.put(InteractionType.SHARE, stats.getTotalShares());
+            interactionCounts.put(InteractionType.VIEW, stats.getTotalViews());
+            interactionCounts.put(InteractionType.DOWNLOAD, stats.getTotalDownloads());
+            interactionCounts.put(InteractionType.COMMENT, stats.getTotalComments());
+            interactionCounts.put(InteractionType.SHARE, stats.getTotalShares());
 
-        result.put("interactionCounts", interactionCounts);
-        result.put("uniqueDocumentsAccessed", stats.getUniqueDocuments());
+            result.put("interactionCounts", interactionCounts);
+            result.put("uniqueDocumentsAccessed", stats.getUniqueDocuments());
 
+        }
         return result;
     }
 

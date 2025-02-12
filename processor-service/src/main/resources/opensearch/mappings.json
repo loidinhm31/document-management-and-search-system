@@ -30,13 +30,13 @@
         }
       }
     },
-    "file_size": {
+    "fileSize": {
       "type": "long"
     },
-    "mime_type": {
+    "mimeType": {
       "type": "keyword"
     },
-    "document_type": {
+    "documentType": {
       "type": "keyword"
     },
     "summary": {
@@ -53,10 +53,10 @@
     "major": {
       "type": "keyword"
     },
-    "course_code": {
+    "courseCode": {
       "type": "keyword"
     },
-    "course_level": {
+    "courseLevel": {
       "type": "keyword"
     },
     "category": {
@@ -65,17 +65,17 @@
     "tags": {
       "type": "keyword"
     },
-    "extracted_metadata": {
+    "extractedMetadata": {
       "type": "object",
       "enabled": true
     },
-    "user_id": {
+    "userId": {
       "type": "keyword"
     },
-    "sharing_type": {
+    "sharingType": {
       "type": "keyword"
     },
-    "shared_with": {
+    "sharedWith": {
       "type": "keyword"
     },
     "deleted": {
@@ -84,7 +84,10 @@
     "status": {
       "type": "keyword"
     },
-    "created_at": {
+    "language": {
+      "type": "keyword"
+    },
+    "createdAt": {
       "type": "date"
     }
   }

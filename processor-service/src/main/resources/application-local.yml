@@ -30,6 +30,10 @@ spring:
       ddl-auto: none
     show-sql: true
   rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
     listener:
       simple:
         retry:
@@ -40,6 +44,7 @@ spring:
           multiplier: 2.0
     publisher-confirm-type: correlated
     publisher-returns: true
+
   mail:
     host: smtp.gmail.com
     port: 587
@@ -52,11 +57,13 @@ spring:
           starttls:
             enable: true
 
-elasticsearch:
-  host: ${ELASTICSEARCH_HOST:127.0.0.1}
-  port: ${ELASTICSEARCH_PORT:9200}
-  username: ${ELASTICSEARCH_USERNAME:elastic}
-  password: ${ELASTICSEARCH_PASSWORD:NX9DYn+_4WSXRmHwymTo}
+opensearch:
+  host: localhost
+  port: 9200
+  username: admin
+  password: admin
+  scheme: http
+  aws: false
 
 # RabbitMQ
 rabbitmq:

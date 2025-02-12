@@ -40,7 +40,10 @@ spring:
     mongodb:
       uri: mongodb://mongodb:mongodbpw@localhost:27017/
   rabbitmq:
-    addresses: localhost:5672
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 # Eureka Client
 eureka:

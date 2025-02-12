@@ -72,13 +72,11 @@ public class RabbitMQConfig {
         return new TopicExchange(this.deadLetterExchange);
     }
 
-    // New notification exchange
     @Bean
     public TopicExchange notificationExchange() {
         return new TopicExchange(this.notificationExchange);
     }
 
-    // Existing queues
     @Bean
     public Queue documentSyncQueue() {
         Map<String, Object> args = new HashMap<>();
