@@ -282,7 +282,7 @@ export default function DocumentPreferencesManager() {
                         {t("document.preferences.analytics.stats.comments")}
                       </div>
                       <div className="text-2xl font-bold">
-                        {stats.interactionCounts.COMMENT || 0}
+                        {stats.interactionCounts?.COMMENT || 0}
                       </div>
                     </div>
                     <div className="rounded-lg border p-3">
@@ -290,7 +290,7 @@ export default function DocumentPreferencesManager() {
                         {t("document.preferences.analytics.stats.uniqueDocuments")}
                       </div>
                       <div className="text-2xl font-bold">
-                        {stats.uniqueDocumentsAccessed}
+                        {stats.uniqueDocumentsAccessed || 0}
                       </div>
                     </div>
                   </div>
