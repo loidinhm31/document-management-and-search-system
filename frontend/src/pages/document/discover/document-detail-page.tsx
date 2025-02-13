@@ -129,51 +129,30 @@ export default function DocumentDetailPage() {
       </Button>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* Document Header for Mobile */}
-        <div className="lg:hidden">
-          <Card>
-            <CardHeader className="space-y-2">
-              <CardTitle className="text-xl break-words">
-                {documentData.filename}
-              </CardTitle>
-              <CardDescription>
-                <div className="flex flex-wrap gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <FileBox className="h-4 w-4" />
-                    <span>{documentData.documentType}</span>
-                  </div>
-                  <span>•</span>
-                  <span>{(documentData.fileSize / 1024).toFixed(2)} KB</span>
-                </div>
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-
         {/* Main Content Grid */}
-        <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
           {/* Preview Section */}
-          <Card className="order-2 lg:order-1">
-            <CardHeader className="hidden lg:block">
-              <CardTitle>{documentData.filename}</CardTitle>
+          <Card className="xl:h-[800px] xl:col-span-8">
+            <CardHeader>
+              <CardTitle>{documentData?.filename}</CardTitle>
               <CardDescription>
-                {documentData.documentType} - {(documentData.fileSize / 1024).toFixed(2)} KB
+                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(2)} KB
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-0 lg:p-6">
-              <div className="h-[500px] lg:h-[700px]">
+            <CardContent className="h-full max-h-[700px]">
+              {documentData && (
                 <DocumentViewer
                   documentId={documentData.id}
                   documentType={documentData.documentType}
                   mimeType={documentData.mimeType}
                   fileName={documentData.filename}
                 />
-              </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Document Info Section */}
-          <Card className="order-1 lg:order-2">
+          <Card className="xl:col-span-4">
             <CardContent className="p-4 lg:p-6 space-y-6">
               {/* Document Actions */}
               <div className="flex flex-wrap gap-2">
@@ -290,7 +269,7 @@ export default function DocumentDetailPage() {
         {/* Related Documents Section */}
         <RelatedDocuments
           documentId={documentId}
-          onDocumentClick={(doc) => navigate(`/document/${doc.id}`)}
+          onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)}
         />
 
         {/* Comments Section */}

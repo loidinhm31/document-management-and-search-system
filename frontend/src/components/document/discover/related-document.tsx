@@ -1,3 +1,4 @@
+import { Label } from "@radix-ui/react-label";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,7 +12,7 @@ import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
 import { selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
-import { Label } from "@radix-ui/react-label";
+import { MasterDataType } from "@/types/master-data";
 
 interface RelatedDocumentsProps {
   documentId: string;
@@ -182,8 +183,8 @@ export function RelatedDocuments({
                       {doc.filename}
                     </h4>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {getMasterDataTranslation(doc.major, "major", { majors })} -{" "}
-                      {getMasterDataTranslation(doc.category, "category", { categories })}
+                      {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })} -{" "}
+                      {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
                     </p>
                   </div>
                 </div>
