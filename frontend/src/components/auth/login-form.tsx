@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/services/auth.service";
 import { LoginRequest, TokenResponse } from "@/types/auth";
+import { APP_API_URL, OAUTH_GOOGLE_REDIRECT_URL } from "@/env";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -66,7 +67,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid gap-6">
           <Link
-            to={`http://localhost:8080/oauth2/authorization/google`}
+            to={`${OAUTH_GOOGLE_REDIRECT_URL}/oauth2/authorization/google`}
             className="flex items-center justify-center gap-1 rounded-md border p-2 shadow-sm shadow-slate-200 transition-all duration-300 hover:bg-slate-300"
           >
             <span>
