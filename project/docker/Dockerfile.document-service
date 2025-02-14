@@ -1,0 +1,70 @@
+# Stage 1: Download and prepare tessdata
+FROM alpine:3.18 as tessdata
+
+# Install wget to download language data
+RUN apk add --no-cache wget
+
+# Create tessdata directory
+RUN mkdir -p /usr/share/tessdata
+
+# Download specific versions of language training data and osd
+RUN wget -O /usr/share/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata && \
+    wget -O /usr/share/tessdata/vie.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/vie.traineddata && \
+    wget -O /usr/share/tessdata/osd.traineddata https://github.com/tesseract-ocr/tessdata/raw/main/osd.traineddata
+
+# Stage 2: Build stage
+FROM ghcr.io/graalvm/graalvm-community:17-muslib AS builder
+
+# Copy your application's jar
+COPY target/*.jar app.jar
+
+# Stage 3: Final stage
+FROM alpine:3.18
+
+# Install required dependencies
+RUN apk add --no-cache \
+    tesseract-ocr=5.3.1-r0 \
+    tesseract-ocr-data-eng=5.3.1-r0 \
+    tesseract-ocr-data-vie=5.3.1-r0 \
+    fontconfig \
+    ttf-dejavu \
+    graphicsmagick
+
+# Copy GraalVM runtime from builder stage
+COPY --from=builder /lib/libz.so.1 /lib/
+COPY --from=builder /lib/ld-linux-x86-64.so.2 /lib/
+COPY --from=builder /lib64/libstdc++.so.6 /lib64/
+COPY --from=builder /lib64/libgcc_s.so.1 /lib64/
+COPY --from=builder /opt/graalvm-community-openjdk-17* /opt/graalvm
+COPY --from=builder /opt/java/openjdk /opt/java/openjdk
+
+# Copy tessdata from first stage
+COPY --from=tessdata /usr/share/tessdata /usr/share/tessdata
+
+# Copy application
+COPY --from=builder app.jar app.jar
+
+# Set environment variables
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+ENV TESSDATA_PREFIX=/usr/share/tessdata
+ENV SPRING_PROFILES_ACTIVE=prod
+ENV APP_OCR_DATA_PATH=/usr/share/tessdata
+ENV LC_ALL=C
+
+# Create directory for temporary files
+RUN mkdir -p /tmp/tesseract && \
+    chmod 777 /tmp/tesseract
+
+EXPOSE 8083
+
+# Create non-root user
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
+
+# Set the entry point
+ENTRYPOINT ["java", \
+            "-XX:+UseContainerSupport", \
+            "-XX:MaxRAMPercentage=75.0", \
+            "-jar", \
+            "app.jar"]

@@ -1,0 +1,36 @@
+services:
+  eureka-discovery-server:
+    build:
+      context: ../../eureka-discovery-server
+      dockerfile: src/main/docker/Dockerfile
+    image: ${DOCKER_HUB_USERNAME}/dms-eureka:latest
+
+  api-gateway:
+    build:
+      context: ../../api-gateway
+      dockerfile: src/main/docker/Dockerfile
+    image: ${DOCKER_HUB_USERNAME}/dms-gateway:latest
+
+  auth-service:
+    build:
+      context: ../../auth-service
+      dockerfile: src/main/docker/Dockerfile
+    image: ${DOCKER_HUB_USERNAME}/dms-auth:latest
+
+  document-interaction-service:
+    build:
+      context: ../../document-interaction-service
+      dockerfile: src/main/docker/Dockerfile
+    image: ${DOCKER_HUB_USERNAME}/dms-interaction:latest
+
+  document-search-service:
+    build:
+      context: ../../document-search-service
+      dockerfile: src/main/docker/Dockerfile
+    image: ${DOCKER_HUB_USERNAME}/dms-search:latest
+
+  document-processor-service:
+    build:
+      context: ../../processor-service
+      dockerfile: src/main/docker/Dockerfile
+    image: ${DOCKER_HUB_USERNAME}/dms-processor:latest
