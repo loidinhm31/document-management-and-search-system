@@ -1,6 +1,6 @@
 app:
   eureka:
-    url: http://localhost:8081
+    url: http://10.0.3.23:8081
   auth-service:
     api-key: ${AUTH_SERVICE_API_KEY:document-search-api-key}
 
@@ -9,11 +9,11 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8082
-          jwk-set-uri: http://localhost:8082/.well-known/jwks.json
+          issuer-uri: http://10.0.3.23:8082
+          jwk-set-uri: http://10.0.3.23:8082/.well-known/jwks.json
   data:
     mongodb:
-      uri: mongodb://mongodb:mongodbpw@localhost:27017/dms?authSource=admin
+      uri: mongodb+srv://
 
 # Eureka Client
 eureka:
@@ -24,15 +24,15 @@ eureka:
       defaultZone: ${app.eureka.url}/eureka
     enabled: true
   instance:
-    preferIpAddress: false
-    hostname: localhost
+    preferIpAddress: true
+    hostname: 10.0.3.23
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10
 
 opensearch:
-  host: localhost
+  host: vpc-dms-opensearch-7m6m3jd7mq6uz4r5bh3quasela.ap-southeast-1.es.amazonaws.com
   port: 9200
-  username: admin
-  password: admin
-  scheme: http
-  aws: false
+  username: dms_master
+  password: hzE8MYCuBvzkV3KT8kedTyWthea6ar1xC
+  scheme: https
+  aws: true

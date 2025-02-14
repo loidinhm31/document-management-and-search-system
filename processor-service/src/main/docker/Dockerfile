@@ -52,13 +52,13 @@ ENV TESSDATA_PREFIX=/usr/share/tessdata \
     JAVA_OPTS="-XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
 
 # Create necessary directories with proper permissions
-RUN mkdir -p /tmp/tesseract /tmp/ocr /app/document/storage && \
-    chmod 755 /tmp/tesseract /tmp/ocr /app/document/storage
+RUN mkdir -p /tmp/ocr  && \
+    chmod 755 /tmp/ocr
 
 # Create non-root user
 RUN addgroup -S spring && \
     adduser -S spring -G spring && \
-    chown -R spring:spring /tmp/tesseract /tmp/ocr /app/document/storage
+    chown -R spring:spring /tmp/ocr
 
 # Switch to non-root user
 USER spring:spring
@@ -74,7 +74,3 @@ CMD ["sh", "-c", "java $JAVA_OPTS \
     -Djava.security.egd=file:/dev/./urandom \
     -Duser.timezone=$TZ \
     -jar app.jar"]
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8084/actuator/health || exit 1

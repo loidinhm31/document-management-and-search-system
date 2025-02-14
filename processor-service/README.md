@@ -34,7 +34,7 @@ curl -X GET "localhost:9200/documents/_count" \
 
 
 ```shell
-curl -X DELETE "localhost:9200/documents" -u "elastic:NX9DYn+_4WSXRmHwymTo"
+curl -X DELETE "localhost:9200/documents" -u "admin:admin"
 ```
 
 

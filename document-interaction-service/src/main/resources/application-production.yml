@@ -1,6 +1,6 @@
 app:
   eureka:
-    url: http://localhost:8081
+    url: http://10.0.3.23:8081
   auth-service:
     api-key: ${AUTH_SERVICE_API_KEY:document-interaction-api-key}
   document:
@@ -20,8 +20,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8082
-          jwk-set-uri: http://localhost:8082/.well-known/jwks.json
+          issuer-uri: http://10.0.3.23:8082
+          jwk-set-uri: http://10.0.3.23:8082/.well-known/jwks.json
   # Database Configuration
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
@@ -33,7 +33,7 @@ spring:
     show-sql: true
   data:
     mongodb:
-      uri: mongodb://mongodb:mongodbpw@localhost:27017/dms?authSource=admin
+      uri: mongodb+srv://
   rabbitmq:
     host: localhost
     port: 5672
@@ -49,14 +49,10 @@ eureka:
       defaultZone: ${app.eureka.url}/eureka
     enabled: true
   instance:
-    preferIpAddress: false
-    hostname: localhost
+    preferIpAddress: true
+    hostname: 10.0.3.23
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10
-
-model-service:
-  url: http://localhost:8000
-  api-key: ${MODEL_SERVICE_API_KEY:your-secret-key}
 
 resilience4j:
   circuitbreaker:

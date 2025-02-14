@@ -19,21 +19,21 @@ app:
 spring:
   data:
     mongodb:
-      uri: mongodb://mongodb:mongodbpw@localhost:27017/dms?authSource=admin
+      uri: mongodb+srv://dms_master:WJjn5r0taKlMIFNO@dms.rdb8a.mongodb.net/dms?retryWrites=true&w=majority
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
-    username: postgres
-    password: postgrespw
+    url: jdbc:postgresql://dms-db-instance.clcc0wwq8t7m.ap-southeast-1.rds.amazonaws.com:5432/postgres?currentSchema=dms
+    username: dms_master
+    password: jgnaz6z8HhETshhD8CnuMZETnbu0AH2Ch
   jpa:
     hibernate:
       ddl-auto: none
     show-sql: true
   rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
+    host: b-c7466b67-82bd-43fb-b1bb-1d469e7a21a6.mq.ap-southeast-1.amazonaws.com
+    port: 5671
+    username: dms_master
+    password: DyQ3jtmVga9jw3YzHHjTtMgjRJ7XBmxqZ
     listener:
       simple:
         retry:
@@ -61,12 +61,12 @@ mail-sender:
   from-email: no-reply@dms.com
 
 opensearch:
-  host: localhost
+  host: vpc-dms-opensearch-7m6m3jd7mq6uz4r5bh3quasela.ap-southeast-1.es.amazonaws.com
   port: 9200
-  username: admin
-  password: admin
-  scheme: http
-  aws: false
+  username: dms_master
+  password: hzE8MYCuBvzkV3KT8kedTyWthea6ar1xC
+  scheme: https
+  aws: true
 
 # RabbitMQ
 rabbitmq:

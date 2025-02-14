@@ -1,10 +1,10 @@
 app:
   frontend:
-    url: http://localhost:3000
+    url: http://116.111.185.170:3000
   gateway:
-    url: http://localhost:8080
+    url: http://10.0.3.23:8080
   eureka:
-    url: http://localhost:8081
+    url: http://10.0.3.23:8081
   auth-service:
     service-api-keys:
       document-interaction-service: ${DOCUMENT_INTERACTION_SERVICE_API_KEY:document-interaction-api-key}
@@ -63,7 +63,7 @@ eureka:
       defaultZone: ${app.eureka.url}/eureka
     enabled: true
   instance:
-    preferIpAddress: false
-    hostname: localhost
+    preferIpAddress: true
+    hostname: 10.0.3.23
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20

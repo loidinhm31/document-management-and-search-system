@@ -19,7 +19,7 @@ app:
 spring:
   data:
     mongodb:
-      uri: mongodb://mongodb:mongodbpw@localhost:27017/
+      uri: mongodb://mongodb:mongodbpw@localhost:27017/dms?authSource=admin
   # Database Configuration
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
@@ -56,6 +56,9 @@ spring:
           auth: true
           starttls:
             enable: true
+
+mail-sender:
+  from-email: no-reply@dms.com
 
 opensearch:
   host: localhost

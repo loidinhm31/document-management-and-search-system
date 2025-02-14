@@ -1,10 +1,10 @@
 app:
   frontend:
-    url: http://localhost:3000
+    url: http://${FRONT_END_URL:100.104.245.71}:3000
   gateway:
-    url: http://localhost:8080
+    url: http://${FRONT_END_URL:100.101.13.113}:8080
   eureka:
-    url: http://localhost:8081
+    url: http://${EUREKA_URI:100.101.13.113}:8081
   auth-service:
     service-api-keys:
       document-interaction-service: ${DOCUMENT_INTERACTION_SERVICE_API_KEY:document-interaction-api-key}
@@ -12,7 +12,7 @@ app:
 spring:
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
+    url: jdbc:postgresql://${RESOURCE_URL:100.104.245.71}:5432/postgres?currentSchema=dms
     username: postgres
     password: postgrespw
   jpa:
@@ -63,7 +63,7 @@ eureka:
       defaultZone: ${app.eureka.url}/eureka
     enabled: true
   instance:
-    preferIpAddress: false
-    hostname: localhost
+    preferIpAddress: true
+    hostname: ${EUREKA_URI:100.101.13.113}
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20
