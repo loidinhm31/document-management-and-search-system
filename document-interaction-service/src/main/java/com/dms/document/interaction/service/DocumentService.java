@@ -43,8 +43,6 @@ import java.util.stream.Collectors;
 public class DocumentService {
     private final DocumentNotificationService documentNotificationService;
     private final S3Service s3Service;
-    @Value("${app.document.storage.path}")
-    private String storageBasePath;
 
     @Value("${app.document.max-size-mb}")
     private DataSize maxFileSize;
@@ -188,7 +186,7 @@ public class DocumentService {
             log.error("Error getting thumbnail from S3: {}", e.getMessage());
             return ThumbnailResponse.builder()
                     .data(getErrorPlaceholder())
-                    .status(HttpStatus.NOT_FOUND)
+                    .status(HttpStatus.OK)
                     .isPlaceholder(true)
                     .build();
         }
