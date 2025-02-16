@@ -1,13 +1,10 @@
 app:
   eureka:
     url: http://localhost:8081
+  auth-service:
+    api-key: ${AUTH_SERVICE_API_KEY:document-interaction-api-key}
   document:
-    storage:
-      path: ./document/storage
     max-size-mb: 50MB
-    thumbnail:
-      width: 300
-      height: 200
     placeholder:
       processing: classpath:placeholders/processing-thumbnail.png
       error: classpath:placeholders/error-thumbnail.png
@@ -36,14 +33,12 @@ spring:
     show-sql: true
   data:
     mongodb:
-      authentication-database: admin
-      username: mongodb
-      password: mongodbpw
-      database: dms
-      port: 27017
-      host: 127.0.0.1
+      uri: mongodb://mongodb:mongodbpw@localhost:27017/dms?authSource=admin
   rabbitmq:
-    addresses: localhost:5672
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 # Eureka Client
 eureka:
@@ -59,23 +54,9 @@ eureka:
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10
 
-model-service:
-  url: http://localhost:8000
-  api-key: ${MODEL_SERVICE_API_KEY:your-secret-key}
-
-resilience4j:
-  circuitbreaker:
-    instances:
-      modelService:
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        permittedNumberOfCallsInHalfOpenState: 3
-        waitDurationInOpenState: 5s
-        failureRateThreshold: 50
-  retry:
-    instances:
-      modelService:
-        maxAttempts: 3
-        waitDuration: 1s
-        enableExponentialBackoff: true
-        exponentialBackoffMultiplier: 2
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME}
+    region: ${AWS_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}

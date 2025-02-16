@@ -1,0 +1,38 @@
+app:
+  eureka:
+    url: http://${EUREKA_URI:100.101.13.113}:8081
+  auth-service:
+    api-key: ${AUTH_SERVICE_API_KEY:document-search-api-key}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://${SERVICE_ENDPOINT_URL:100.101.13.113}:8082
+          jwk-set-uri: http://${SERVICE_ENDPOINT_URL:100.101.13.113}:8082/.well-known/jwks.json
+  data:
+    mongodb:
+      uri: mongodb://mongodb:mongodbpw@${RESOURCE_URL:100.104.245.71}:27017/dms?authSource=admin
+
+# Eureka Client
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${app.eureka.url}/eureka
+    enabled: true
+  instance:
+    preferIpAddress: true
+    hostname: ${EUREKA_URI:100.101.13.113}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 20
+
+opensearch:
+  host: ${RESOURCE_URL:100.104.245.71}
+  port: 9200
+  username: admin
+  password: admin
+  scheme: http
+  aws: false

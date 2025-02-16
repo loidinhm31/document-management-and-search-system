@@ -1,10 +1,13 @@
-import { ArrowLeft, Bookmark, BookmarkPlus, Calendar, FileBox, Loader2, User } from "lucide-react";
+import { ArrowLeft, Calendar, FileBox, Loader2, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MdOutlineFavorite, MdOutlineFavoriteBorder } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { CommentSection } from "@/components/document/discover/comment-section";
+import { RelatedDocuments } from "@/components/document/discover/related-document";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
-import ShareDocumentDialog from "@/components/document/my-document/share-document-dialog";
+import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 import { getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
+import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
+import { setCurrentDocument } from "@/store/slices/document-slice";
+import { MasterDataType } from "@/types/master-data";
 
 export default function DocumentDetailPage() {
   const { t } = useTranslation();
@@ -27,12 +32,49 @@ export default function DocumentDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [documentData, setDocumentData] = useState<DocumentInformation | null>(null);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
 
   const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
+  const handleFavorite = async () => {
+    if (!documentId) return;
+
+    try {
+      if (isFavorited) {
+        await documentService.unfavoriteDocument(documentId);
+        setIsFavorited(false);
+        toast({
+          title: t("common.success"),
+          description: t("document.favorite.removeSuccess"),
+          variant: "success"
+        });
+      } else {
+        await documentService.favoriteDocument(documentId);
+        setIsFavorited(true);
+        toast({
+          title: t("common.success"),
+          description: t("document.favorite.addSuccess"),
+          variant: "success"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("document.favorite.error"),
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleVersionUpdate = (updatedDocument: DocumentInformation) => {
+    setDocumentData(updatedDocument);
+  };
+
   useEffect(() => {
-    // Only fetch master data if not already loaded
     if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
       dispatch(fetchMasterData());
     }
@@ -43,13 +85,14 @@ export default function DocumentDetailPage() {
       if (!documentId) return;
 
       try {
-        const [docResponse, bookmarkResponse] = await Promise.all([
+        const [docResponse, favoriteResponse] = await Promise.all([
           documentService.getDocumentDetails(documentId),
-          documentService.isDocumentBookmarked(documentId)
+          documentService.isDocumentFavorited(documentId)
         ]);
 
         setDocumentData(docResponse.data);
-        setIsBookmarked(bookmarkResponse.data);
+        setIsFavorited(favoriteResponse.data);
+        dispatch(setCurrentDocument(docResponse.data));
       } catch (error) {
         toast({
           title: t("common.error"),
@@ -62,45 +105,11 @@ export default function DocumentDetailPage() {
     };
 
     fetchDocument();
-  }, [documentId, navigate, t, toast]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const handleBookmark = async () => {
-    if (!documentId) return;
-
-    try {
-      if (isBookmarked) {
-        await documentService.unbookmarkDocument(documentId);
-        setIsBookmarked(false);
-        toast({
-          title: t("common.success"),
-          description: t("document.bookmark.removeSuccess"),
-          variant: "success"
-        });
-      } else {
-        await documentService.bookmarkDocument(documentId);
-        setIsBookmarked(true);
-        toast({
-          title: t("common.success"),
-          description: t("document.bookmark.addSuccess"),
-          variant: "success"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: t("common.error"),
-        description: t("document.bookmark.error"),
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleVersionUpdate = (updatedDocument: DocumentInformation) => {
-    setDocumentData(updatedDocument);
-  };
+    return () => {
+      dispatch(setCurrentDocument(null));
+    };
+  }, [documentId]);
 
   if (loading || masterDataLoading) {
     return (
@@ -113,53 +122,55 @@ export default function DocumentDetailPage() {
   if (!documentData) return null;
 
   return (
-    <div className="space-y-6">
-      <Button variant="ghost" onClick={() => navigate("/home")} className="mb-4">
+    <div className="container mx-auto py-6 space-y-6">
+      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
         {t("document.detail.backToList")}
       </Button>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* Document Properties */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileBox className="h-5 w-5" />
-              {documentData.filename}
-            </CardTitle>
-            <CardDescription>
-              {documentData.documentType} - {(documentData.fileSize / 1024).toFixed(2)} KB
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Document Metadata */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <User className="h-4 w-4" />
-                {t("document.detail.fields.uploadedBy")}: {documentData.createdBy}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                {t("document.detail.fields.uploadDate")}: {formatDate(documentData.createdAt.toString())}
-              </div>
+      <div className="grid grid-cols-1 gap-6">
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+          {/* Preview Section */}
+          <Card className="xl:h-[800px] xl:col-span-8">
+            <CardHeader>
+              <CardTitle>{documentData?.filename}</CardTitle>
+              <CardDescription>
+                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(2)} KB
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-full max-h-[700px]">
+              {documentData && (
+                <DocumentViewer
+                  documentId={documentData.id}
+                  documentType={documentData.documentType}
+                  mimeType={documentData.mimeType}
+                  fileName={documentData.filename}
+                />
+              )}
+            </CardContent>
+          </Card>
 
+          {/* Document Info Section */}
+          <Card className="xl:col-span-4">
+            <CardContent className="p-4 lg:p-6 space-y-6">
               {/* Document Actions */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   className="gap-2"
-                  onClick={() => handleBookmark()}
+                  onClick={handleFavorite}
                 >
-                  {isBookmarked ? (
+                  {isFavorited ? (
                     <>
-                      <Bookmark className="h-4 w-4 fill-current" />
-                      {t("document.actions.bookmarked")}
+                      <MdOutlineFavorite className="h-4 w-4 fill-current" />
+                      {t("document.actions.favorited")}
                     </>
                   ) : (
                     <>
-                      <BookmarkPlus className="h-4 w-4" />
-                      {t("document.actions.bookmark")}
+                      <MdOutlineFavoriteBorder className="h-4 w-4" />
+                      {t("document.actions.favorite")}
                     </>
                   )}
                 </Button>
@@ -168,89 +179,107 @@ export default function DocumentDetailPage() {
                   <ShareDocumentDialog
                     documentId={documentData.id}
                     documentName={documentData.filename}
-                    isShared={true}
+                    isShared={documentData.sharingType === "PUBLIC"}
                   />
                 )}
               </div>
-            </div>
 
-            {documentData && (
-              <DocumentVersionHistory
-                versions={documentData.versions}
-                currentVersion={documentData.currentVersion}
-                documentCreator={documentData.createdBy}
-                documentId={documentData.id}
-                onVersionUpdate={handleVersionUpdate}
-              />
-            )}
-
-            {/* Document Information */}
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <Label>{t("document.detail.fields.summary")}</Label>
-                <p className="text-sm text-muted-foreground">{documentData.summary}</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t("document.detail.fields.courseCode")}</Label>
-                <p className="text-sm text-muted-foreground">{documentData.courseCode}</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t("document.detail.fields.major")}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {getMasterDataTranslation(documentData.major, "major", { majors })}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t("document.detail.fields.level")}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {getMasterDataTranslation(documentData.courseLevel, "level", { levels })}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t("document.detail.fields.category")}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {getMasterDataTranslation(documentData.category, "category", { categories })}
-                </p>
-              </div>
-
-              {documentData.tags && documentData.tags.length > 0 && (
-                <div className="space-y-2">
-                  <Label>{t("document.detail.fields.tags")}</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {documentData.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+              {/* Document Metadata */}
+              <div className="space-y-6">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    {documentData.createdBy}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    {formatDate(documentData.createdAt.toString())}
                   </div>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Document Preview */}
-        <Card className="xl:h-[800px]">
+                {/* Document Details */}
+                <div className="space-y-4">
+                  {documentData.summary && (
+                    <div className="space-y-2">
+                      <Label>{t("document.detail.fields.summary")}</Label>
+                      <p className="text-sm text-muted-foreground">{documentData.summary}</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label>{t("document.detail.fields.courseCode")}</Label>
+                    <p className="text-sm text-muted-foreground">{documentData.courseCode}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t("document.detail.fields.major")}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {getMasterDataTranslation(documentData.major, MasterDataType.MAJOR, { majors })}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>{t("document.detail.fields.level")}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {getMasterDataTranslation(documentData.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{t("document.detail.fields.category")}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {getMasterDataTranslation(documentData.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
+                    </p>
+                  </div>
+
+                  {documentData.tags && documentData.tags.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>{t("document.detail.fields.tags")}</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {documentData.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Document Versions */}
+              {documentData && (
+                <DocumentVersionHistory
+                  versions={documentData.versions}
+                  currentVersion={documentData.currentVersion}
+                  documentCreatorId={documentData.userId}
+                  documentId={documentData.id}
+                  onVersionUpdate={handleVersionUpdate}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Related Documents Section */}
+        <RelatedDocuments
+          documentId={documentId}
+          onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)}
+        />
+
+        {/* Comments Section */}
+        <Card>
           <CardHeader>
-            <CardTitle>{documentData.filename}</CardTitle>
-            <CardDescription>
-              {documentData.documentType} - {(documentData.fileSize / 1024).toFixed(2)} KB
-            </CardDescription>
+            <CardTitle>{t("document.comments.title")}</CardTitle>
+            <CardDescription>{t("document.comments.description")}</CardDescription>
           </CardHeader>
-          <CardContent className="h-full max-h-[700px]">
-            <DocumentViewer
-              documentId={documentData.id}
-              documentType={documentData.documentType}
-              mimeType={documentData.mimeType}
-              fileName={documentData.filename}
-            />
+          <CardContent>
+            <CommentSection documentId={documentId} />
           </CardContent>
         </Card>
       </div>

@@ -24,6 +24,15 @@ public class UserSecurity {
         return Objects.nonNull(user) && Objects.equals(currentUsername, user.getUsername());
     }
 
+    public boolean isCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+        User user = userRepository.findByUsername(currentUsername)
+                .orElse(null);
+        return Objects.nonNull(user) && Objects.equals(currentUsername, user.getUsername());
+    }
+
+
     public UUID loggedInUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userRepository.findByUsername(authentication.getName())

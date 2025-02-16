@@ -1,0 +1,69 @@
+app:
+  frontend:
+    url: http://116.111.185.170:3000
+  gateway:
+    url: http://10.0.3.23:8080
+  eureka:
+    url: http://10.0.3.23:8081
+  auth-service:
+    service-api-keys:
+      document-interaction-service: ${DOCUMENT_INTERACTION_SERVICE_API_KEY:document-interaction-api-key}
+      document-search-service: ${DOCUMENT_SEARCH_SERVICE_API_KEY:document-search-api-key}
+spring:
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
+    username: postgres
+    password: postgrespw
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  flyway:
+    enabled: true
+    schemas: dms
+    out-of-order: true
+    baseline-on-migrate: true
+    table: schema_history
+
+  app:
+    jwtSecret: 9a4f2c8d3b7a1e6f45c8a0b3f267d8b1d4e6f3c8a9d2b5f8e3a7c4d9f1b6e8a4c7d2f5b8e9a3f6c1d4e7b2a5f8c9d3b6e0a4f7c2d5e8b1a9f4c7d0e3b6a2f5c8e1d4b7a0f3c6e9d2b5a8f1c4e7d0b3a6f9c2e5b8d1a4f7c0e3b6a9d2f5c8e1b4d7a0f3c6e9
+    accessTokenExpirationMs: 21600000
+    refreshTokenExpirationMs: 86400000
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id:
+            client-secret:
+            redirect-uri: ${app.gateway.url}/login/oauth2/code/google
+            scope:
+              - email
+              - profile
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# Eureka Client
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${app.eureka.url}/eureka
+    enabled: true
+  instance:
+    preferIpAddress: true
+    hostname: 10.0.3.23
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 20

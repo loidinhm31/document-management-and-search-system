@@ -3,11 +3,11 @@ import { Loader2 } from "lucide-react";
 import React, { Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/common/app-sidebar";
 import OAuth2RedirectHandler from "@/components/auth/oauth2-redirect-handler";
 import ProtectedRoute from "@/components/auth/protected-route";
-import { DynamicBreadcrumb } from "@/components/dynamic-breadcrumb";
-import { ThemeProvider } from "@/components/theme-provider";
+import { DynamicBreadcrumb } from "@/components/common/dynamic-breadcrumb";
+import { ThemeProvider } from "@/components/common/theme-provider";
 import { Card, CardContent } from "@/components/ui/card";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/toaster";
@@ -64,10 +64,8 @@ export default function App() {
                       path={route.path}
                       element={
                         route.isSecure ? (
-                          <ProtectedRoute>
-                            <AuthenticatedLayout>
-                              <Component />
-                            </AuthenticatedLayout>
+                          <ProtectedRoute permission={route.permission}>
+                            <AuthenticatedLayout children={<Component />} />
                           </ProtectedRoute>
                         ) : (
                           <Component />

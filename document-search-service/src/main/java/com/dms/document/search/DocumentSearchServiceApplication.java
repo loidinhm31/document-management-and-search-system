@@ -9,9 +9,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableDiscoveryClient
 @EnableFeignClients(basePackages = "com.dms.document.search.client")
 public class DocumentSearchServiceApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(DocumentSearchServiceApplication.class, args);
     }
-
 }

@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import * as z from "zod";
 
-import LanguageSwitcher from "@/components/language-switcher";
+import LanguageSwitcher from "@/components/common/language-switcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";

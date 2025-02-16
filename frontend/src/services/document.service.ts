@@ -1,6 +1,8 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
+import { UpdatePreferencesRequest } from "@/types/document-preference";
+import { UserSearchResponse } from "@/types/user";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
@@ -13,18 +15,27 @@ class DocumentService extends BaseService {
     );
   }
 
-  downloadDocument(id: string) {
+  downloadDocument(id: string, action?: string) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/downloads/${id}`, {
-        responseType: "blob"
+      axiosInstance.get(`/document-interaction/api/v1/documents/${id}/downloads`, {
+        responseType: "blob",
+        params: action,
       })
     );
   }
 
-  getDocumentThumbnail(id: string) {
+  getDocumentThumbnail(id: string, versionInfo: string) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/thumbnails/${id}`, {
-        responseType: "blob"
+      axiosInstance.get(`/document-interaction/api/v1/documents/${id}/thumbnails`, {
+        responseType: "blob",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        },
+        params: {
+          [versionInfo]: ""  // Add version info as URL parameter
+        }
       }));
   }
 
@@ -64,7 +75,7 @@ class DocumentService extends BaseService {
 
   getShareSettings(documentId: string) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/share`)
+      axiosInstance.get(`/document-interaction/api/v1/shares/documents/${documentId}`)
     );
   }
 
@@ -73,40 +84,48 @@ class DocumentService extends BaseService {
     sharedWith: string[];
   }) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/share`, settings)
+      axiosInstance.put(`/document-interaction/api/v1/shares/documents/${documentId}`, settings)
     );
   }
 
-  bookmarkDocument(id: string) {
+  searchShareableUsers(query: string) {
+    return this.handleApiResponse<UserSearchResponse[]>(
+      axiosInstance.get(`/document-interaction/api/v1/shares/users`, {
+        params: { query }
+      })
+    );
+  }
+
+  getShareableUsersByIds(userIds: string[]) {
+    return this.handleApiResponse<UserSearchResponse[]>(
+      axiosInstance.post(`/document-interaction/api/v1/shares/users/details`, userIds)
+    );
+  }
+
+  favoriteDocument(id: string) {
     return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/bookmarks/documents/${id}`)
+      axiosInstance.post(`/document-interaction/api/v1/favorites/documents/${id}`)
     );
   }
 
-  unbookmarkDocument(id: string) {
+  unfavoriteDocument(id: string) {
     return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/bookmarks/documents/${id}`)
+      axiosInstance.delete(`/document-interaction/api/v1/favorites/documents/${id}`)
     );
   }
 
-  isDocumentBookmarked(id: string) {
+  isDocumentFavorited(id: string) {
     return this.handleApiResponse<boolean>(
-      axiosInstance.get(`/document-interaction/api/v1/bookmarks/documents/${id}/status`)
+      axiosInstance.get(`/document-interaction/api/v1/favorites/documents/${id}/status`)
     );
   }
 
-  downloadDocumentVersion(documentId: string, versionNumber: number) {
+  downloadDocumentVersion(documentId: string, versionNumber: number, action?: string) {
     return this.handleApiResponse(
       axiosInstance.get(
         `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/download`,
-        { responseType: "blob" }
+        { responseType: "blob", params: action },
       )
-    );
-  }
-
-  getVersionHistory(documentId: string) {
-    return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/versions`)
     );
   }
 
@@ -116,6 +135,70 @@ class DocumentService extends BaseService {
     );
   }
 
+  getRecommendationDocuments(documentId: string, size: number = 6, page: number = 0) {
+    return this.handleApiResponse(
+      axiosInstance.get(
+        `/document-search/api/v1/documents/recommendation`,
+        {
+          params: { documentId, size, page }
+        }
+      )
+    );
+  }
+
+  getDocumentComments(documentId, params = {}) {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/comments/documents/${documentId}`, { params })
+    );
+  }
+
+  createComment(documentId, data) {
+    return this.handleApiResponse(
+      axiosInstance.post(`/document-interaction/api/v1/comments/documents/${documentId}`, data)
+    );
+  }
+
+  updateComment(commentId, data) {
+    return this.handleApiResponse(
+      axiosInstance.put(`/document-interaction/api/v1/comments/${commentId}`, data)
+    );
+  }
+
+  deleteComment(commentId) {
+    return this.handleApiResponse(
+      axiosInstance.delete(`/document-interaction/api/v1/comments/${commentId}`)
+    );
+  }
+
+  getDocumentPreferences() {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/preferences`)
+    );
+  }
+
+  getDocumentContentWeights() {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/preferences/content-weights`)
+    );
+  }
+
+  updateDocumentPreferences(preferences: UpdatePreferencesRequest) {
+    return this.handleApiResponse(
+      axiosInstance.put(`/document-interaction/api/v1/preferences`, preferences)
+    );
+  }
+
+  getInteractionStatistics() {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/preferences/statistics`)
+    );
+  }
+
+  getRecommendedTags() {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/preferences/tags`)
+    );
+  }
 }
 
 export const documentService = new DocumentService();

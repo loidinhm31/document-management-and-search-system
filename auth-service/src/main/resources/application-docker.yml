@@ -5,7 +5,10 @@ app:
     url: http://localhost:8080
   eureka:
     url: http://localhost:8081
-
+  auth-service:
+    service-api-keys:
+      document-interaction-service: ${DOCUMENT_INTERACTION_SERVICE_API_KEY:document-interaction-api-key}
+      document-search-service: ${DOCUMENT_SEARCH_SERVICE_API_KEY:document-search-api-key}
 spring:
   # Database Configuration
   datasource:
@@ -16,7 +19,6 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: true
-
   flyway:
     enabled: true
     schemas: dms
@@ -61,7 +63,7 @@ eureka:
       defaultZone: ${app.eureka.url}/eureka
     enabled: true
   instance:
-    preferIpAddress: true
+    preferIpAddress: false
     hostname: localhost
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20

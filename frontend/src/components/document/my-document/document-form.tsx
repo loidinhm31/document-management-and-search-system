@@ -7,8 +7,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
-import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
-import TagInput from "@/components/tag-input";
+import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
+import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
+import { ACCEPT_TYPE_MAP } from "@/types/document";
 
 
 const documentSchema = z.object({
@@ -46,7 +46,7 @@ interface DocumentFormProps {
   submitLabel?: string;
 }
 
-export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }: DocumentFormProps) {
+export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", loading }: DocumentFormProps) {
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { detectLanguage, detectedLanguage, detectingLanguage } = useLanguageDetection();
@@ -75,16 +75,6 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
     }
   }, [dispatch, majors.length, levels.length, categories.length]);
 
-  // Watch summary field changes for language detection
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "summary" && value.summary) {
-        detectLanguage(value.summary);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch, detectLanguage]);
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: acceptedFiles => {
       if (acceptedFiles?.length > 0) {
@@ -92,26 +82,13 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
       }
     },
     maxFiles: 1,
-    accept: {
-      "application/pdf": [".pdf"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-      "text/plain": [".txt"],
-      "text/csv": [".csv"],
-      "application/json": [".json"],
-      "application/xml": [".xml"],
-      "application/vnd.ms-powerpoint": [".pptx"]
-    }
+    accept: ACCEPT_TYPE_MAP
   });
 
   const handleSubmit = async (data: DocumentFormValues) => {
     await onSubmit(data, selectedFile || undefined);
-    if (!initialValues) {
-      form.reset();
-      setSelectedFile(null);
-    }
+    form.reset();
+    setSelectedFile(null);
   };
 
   return (
@@ -161,14 +138,6 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
                       }}
                     />
                   </FormControl>
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{field.value?.length || 0}/500 characters</span>
-                    {detectingLanguage ? (
-                      <span>Detecting language...</span>
-                    ) : detectedLanguage && (
-                      <span>Detected language: {detectedLanguage}</span>
-                    )}
-                  </div>
                   <FormMessage />
                 </div>
               </FormItem>
@@ -245,17 +214,20 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
-                <CategoryPredictions
-                  text={form.watch("summary")}
-                  filename={selectedFile?.name || ""}
-                  language={detectedLanguage || "en"}
-                  value={field.value}
-                  categories={categories}
-                  onValueChange={field.onChange}
-                  shouldFetchPredictions={shouldFetchPredictions}
-                  setShouldFetchPredictions={setShouldFetchPredictions}
-                  disabled={masterDataLoading}
-                />
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.code} value={category.code}>
+                        {category.translations[i18n.language] || category.translations.en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -268,7 +240,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
               <FormItem>
                 <FormLabel>{t("document.detail.form.tags.label")}</FormLabel>
                 <FormControl>
-                  <TagInput
+                  <TagInputDebounce
                     value={field.value || []}
                     onChange={field.onChange}
                     placeholder={t("document.detail.form.tags.placeholder")}
@@ -280,8 +252,8 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload" }
             )}
           />
 
-          <Button type="submit" disabled={masterDataLoading || (!initialValues && !selectedFile)} className="w-full">
-            {masterDataLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="submit" disabled={masterDataLoading || loading ||  (!initialValues && !selectedFile)} className="w-full">
+            {masterDataLoading || loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {submitLabel}
           </Button>
         </div>

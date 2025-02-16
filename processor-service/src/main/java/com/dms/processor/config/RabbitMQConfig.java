@@ -1,6 +1,7 @@
 package com.dms.processor.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -13,10 +14,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
-import org.springframework.retry.support.RetryTemplate;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,14 +29,26 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.exchanges.dlx}")
     private String deadLetterExchange;
 
+    @Value("${rabbitmq.exchanges.notification}")
+    private String notificationExchange;
+
     @Value("${rabbitmq.queues.document-sync}")
     private String documentSyncQueue;
 
     @Value("${rabbitmq.queues.document-sync-dlq}")
     private String documentSyncDlq;
 
+    @Value("${rabbitmq.queues.notification}")
+    private String notificationQueue;
+
+    @Value("${rabbitmq.queues.notification-dlq}")
+    private String notificationDlq;
+
     @Value("${rabbitmq.routing-keys.internal-document-sync}")
     private String internalNotificationRoutingKey;
+
+    @Value("${rabbitmq.routing-keys.notification}")
+    private String notificationRoutingKey;
 
     @Value("${rabbitmq.routing-keys.dlq}")
     private String deadLetterRoutingKey;
@@ -51,6 +61,7 @@ public class RabbitMQConfig {
         this.objectMapper = objectMapper;
     }
 
+    // Existing exchanges
     @Bean
     public TopicExchange internalTopicExchange() {
         return new TopicExchange(this.internalExchange);
@@ -59,6 +70,11 @@ public class RabbitMQConfig {
     @Bean
     public TopicExchange deadLetterExchange() {
         return new TopicExchange(this.deadLetterExchange);
+    }
+
+    @Bean
+    public TopicExchange notificationExchange() {
+        return new TopicExchange(this.notificationExchange);
     }
 
     @Bean
@@ -74,6 +90,21 @@ public class RabbitMQConfig {
     @Bean
     public Queue deadLetterQueue() {
         return new Queue(documentSyncDlq);
+    }
+
+    @Bean
+    public Queue notificationQueue() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-dead-letter-exchange", deadLetterExchange);
+        args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".notification");
+        args.put("x-message-ttl", 300000); // 5 minutes
+        args.put("x-max-length", 10000);
+        return new Queue(notificationQueue, true, false, false, args);
+    }
+
+    @Bean
+    public Queue notificationDeadLetterQueue() {
+        return new Queue(notificationDlq);
     }
 
     @Bean
@@ -93,21 +124,26 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public RetryTemplate retryTemplate() {
-        RetryTemplate retryTemplate = new RetryTemplate();
-        ExponentialBackOffPolicy backOffPolicy = new ExponentialBackOffPolicy();
-        backOffPolicy.setInitialInterval(1000); // 1 second
-        backOffPolicy.setMultiplier(2.0);
-        backOffPolicy.setMaxInterval(10000); // 10 seconds
-        retryTemplate.setBackOffPolicy(backOffPolicy);
-        return retryTemplate;
+    public Binding notificationBinding() {
+        return BindingBuilder
+                .bind(notificationQueue())
+                .to(notificationExchange())
+                .with(notificationRoutingKey);
+    }
+
+    @Bean
+    public Binding notificationDeadLetterBinding() {
+        return BindingBuilder
+                .bind(notificationDeadLetterQueue())
+                .to(deadLetterExchange())
+                .with(deadLetterRoutingKey + ".notification");
     }
 
     @Bean
     public RetryOperationsInterceptor retryInterceptor() {
         return RetryInterceptorBuilder.stateless()
                 .maxAttempts(3)
-                .backOffPolicy(new ExponentialBackOffPolicy())
+                .backOffOptions(1000, 2.0, 10000)
                 .recoverer(messageRecoverer())
                 .build();
     }
@@ -118,6 +154,8 @@ public class RabbitMQConfig {
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jacksonConverter());
         factory.setAdviceChain(retryInterceptor());
+        factory.setConcurrentConsumers(2);
+        factory.setMaxConcurrentConsumers(5);
         return factory;
     }
 

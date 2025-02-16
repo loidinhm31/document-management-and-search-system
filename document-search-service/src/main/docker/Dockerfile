@@ -8,6 +8,5 @@ RUN mvn clean package -DskipTests
 FROM amazoncorretto:17-alpine
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
-RUN mkdir -p /app/document/storage
 EXPOSE 8083
 ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "/app/app.jar"]

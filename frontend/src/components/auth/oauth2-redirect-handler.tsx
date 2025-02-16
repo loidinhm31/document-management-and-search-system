@@ -12,7 +12,7 @@ export default function OAuth2RedirectHandler() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { setAuthData, setIsAdmin } = useAuth();
+  const { setAuthData, setRole } = useAuth();
   const [tokenResponse, setTokenResponse] = useState<TokenResponse | null>();
   const [requires2FA, setRequires2FA] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export default function OAuth2RedirectHandler() {
           refreshToken: refreshToken,
           tokenType: "Bearer",
           username: decodedToken.sub,
-          roles: decodedToken.roles.split(","),
+          roles: decodedToken.roles.split(",")
         };
         setTokenResponse(tokenAuth);
 
@@ -55,12 +55,12 @@ export default function OAuth2RedirectHandler() {
 
   const handleSuccessfulLogin = (tokenAuth: TokenResponse, decodedToken: JwtPayload) => {
     setAuthData(tokenAuth);
-    setIsAdmin(decodedToken.roles.includes("ROLE_ADMIN"));
+    setRole(decodedToken.roles[0]);
 
     toast({
       title: t("common.success"),
       description: t("auth.login.success"),
-      variant: "success",
+      variant: "success"
     });
 
     navigate("/");

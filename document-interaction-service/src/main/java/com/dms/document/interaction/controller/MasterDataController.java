@@ -1,7 +1,8 @@
 package com.dms.document.interaction.controller;
 
+import com.dms.document.interaction.dto.MasterDataRequest;
+import com.dms.document.interaction.dto.MasterDataResponse;
 import com.dms.document.interaction.enums.MasterDataType;
-import com.dms.document.interaction.model.MasterData;
 import com.dms.document.interaction.service.MasterDataService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,17 +17,17 @@ public class MasterDataController {
     private final MasterDataService masterDataService;
 
     @GetMapping("/{type}")
-    public ResponseEntity<List<MasterData>> getAllByType(@PathVariable MasterDataType type) {
+    public ResponseEntity<List<MasterDataResponse>> getAllByType(@PathVariable MasterDataType type) {
         return ResponseEntity.ok(masterDataService.getAllByType(type));
     }
 
     @GetMapping("/{type}/active")
-    public ResponseEntity<List<MasterData>> getAllActiveByType(@PathVariable MasterDataType type) {
+    public ResponseEntity<List<MasterDataResponse>> getAllActiveByType(@PathVariable MasterDataType type) {
         return ResponseEntity.ok(masterDataService.getAllActiveByType(type));
     }
 
     @GetMapping("/{type}/{code}")
-    public ResponseEntity<MasterData> getByTypeAndCode(
+    public ResponseEntity<MasterDataResponse> getByTypeAndCode(
             @PathVariable MasterDataType type,
             @PathVariable String code) {
         return masterDataService.getByTypeAndCode(type, code)
@@ -35,21 +36,20 @@ public class MasterDataController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<MasterData>> searchByText(@RequestParam String query) {
+    public ResponseEntity<List<MasterDataResponse>> searchByText(@RequestParam String query) {
         return ResponseEntity.ok(masterDataService.searchByText(query));
     }
 
     @PostMapping
-    public ResponseEntity<MasterData> create(@RequestBody MasterData masterData) {
-        return ResponseEntity.ok(masterDataService.save(masterData));
+    public ResponseEntity<MasterDataResponse> create(@RequestBody MasterDataRequest request) {
+        return ResponseEntity.ok(masterDataService.save(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<MasterData> update(
+    public ResponseEntity<MasterDataResponse> update(
             @PathVariable String id,
-            @RequestBody MasterData masterData) {
-        masterData.setId(id);
-        return ResponseEntity.ok(masterDataService.save(masterData));
+            @RequestBody MasterDataRequest request) {
+        return ResponseEntity.ok(masterDataService.update(id, request));
     }
 
     @DeleteMapping("/{id}")

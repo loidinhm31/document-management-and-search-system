@@ -13,7 +13,6 @@ interface DocumentGridProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   onDelete?: (id: string) => void;
-  isShared?: boolean;
   loading?: boolean;
   onCardClick?: (doc: DocumentInformation) => void;
   className?: string;
@@ -25,7 +24,6 @@ export const DocumentGrid = React.memo(({
                                           totalPages,
                                           onPageChange,
                                           onDelete,
-                                          isShared = false,
                                           loading = false,
                                           onCardClick,
                                           className
@@ -48,36 +46,33 @@ export const DocumentGrid = React.memo(({
             key={doc.id}
             documentInformation={doc}
             onDelete={onDelete ? () => onDelete(doc.id) : undefined}
-            isShared={isShared}
             onClick={() => onCardClick?.(doc)}
           />
-          ))}
+        ))}
       </div>
 
-      {totalPages > 1 && (
-        <div className="mt-6 flex justify-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 0}
-          >
-            {t("document.discover.pagination.previous")}
-          </Button>
-          <span className="flex items-center px-4">
+      <div className="mt-6 flex justify-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 0}
+        >
+          {t("document.discover.pagination.previous")}
+        </Button>
+        <span className="flex items-center px-4">
             {t("document.discover.pagination.pageInfo", {
-              current: currentPage + 1,
+              current: documents.length > 0 ? currentPage + 1 : 0,
               total: totalPages
             })}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages - 1}
-          >
-            {t("document.discover.pagination.next")}
-          </Button>
-        </div>
-      )}
+        </span>
+        <Button
+          variant="outline"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages - 1}
+        >
+          {t("document.discover.pagination.next")}
+        </Button>
+      </div>
     </div>
   );
 });

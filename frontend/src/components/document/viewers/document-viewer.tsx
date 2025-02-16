@@ -6,17 +6,19 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 
+import { JsonViewer } from "@/components/document/viewers/json-viewer";
+import { MarkdownViewer } from "@/components/document/viewers/markdown-viewer";
+import { PDFViewer } from "@/components/document/viewers/pdf-viewer";
+import { PowerPointViewer } from "@/components/document/viewers/powerpoint-viewer";
+import { SpreadsheetViewer } from "@/components/document/viewers/spreadsheet-viewer";
+import { TextViewer } from "@/components/document/viewers/text-viewer";
+import { UnsupportedViewer } from "@/components/document/viewers/unsupported-viewer";
+import { WordViewer } from "@/components/document/viewers/word-viewer";
+import { XmlViewer } from "@/components/document/viewers/xml-viewer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { DocumentType } from "@/types/document";
-
-import { PDFViewer } from "./pdf-viewer";
-import { PowerPointViewer } from "./powerpoint-viewer";
-import { SpreadsheetViewer } from "./spreadsheet-viewer";
-import { TextViewer } from "./text-viewer";
-import { UnsupportedViewer } from "./unsupported-viewer";
-import { WordViewer } from "./word-viewer";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -171,6 +173,24 @@ export const DocumentViewer = ({
           break;
         }
 
+        case DocumentType.JSON: {
+          const text = await blob.text();
+          setTextContent(text);
+          break;
+        }
+
+        case DocumentType.XML: {
+          const text = await blob.text();
+          setTextContent(text);
+          break;
+        }
+
+        case DocumentType.MARKDOWN: {
+          const text = await blob.text();
+          setTextContent(text);
+          break;
+        }
+
         default: {
           setError(t("document.viewer.error.unsupported", { type: documentType }));
           break;
@@ -192,8 +212,8 @@ export const DocumentViewer = ({
   const handleDownload = async () => {
     try {
       const response = versionNumber !== undefined
-        ? await documentService.downloadDocumentVersion(documentId, versionNumber)
-        : await documentService.downloadDocument(documentId);
+        ? await documentService.downloadDocumentVersion(documentId, versionNumber, "download")
+        : await documentService.downloadDocument(documentId, "download");
       const blob = new Blob([response.data], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -237,8 +257,6 @@ export const DocumentViewer = ({
       return fileUrl && (
         <PDFViewer
           fileUrl={fileUrl}
-          mimeType={mimeType}
-          fileName={fileName}
           onDownload={handleDownload}
         />
       );
@@ -286,6 +304,30 @@ export const DocumentViewer = ({
     case DocumentType.TEXT_PLAIN:
       return textContent && (
         <TextViewer
+          content={textContent}
+          onDownload={handleDownload}
+        />
+      );
+
+    case DocumentType.JSON:
+      return textContent && (
+        <JsonViewer
+          content={textContent}
+          onDownload={handleDownload}
+        />
+      );
+
+    case DocumentType.XML:
+      return textContent && (
+        <XmlViewer
+          content={textContent}
+          onDownload={handleDownload}
+        />
+      );
+
+    case DocumentType.MARKDOWN:
+      return textContent && (
+        <MarkdownViewer
           content={textContent}
           onDownload={handleDownload}
         />

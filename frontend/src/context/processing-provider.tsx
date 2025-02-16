@@ -7,16 +7,16 @@ import {
   addProcessingItem,
   removeProcessingItem,
   selectProcessingItems,
-  updateProcessingItem} from "@/store/slices/processingSlice";
+  updateProcessingItem} from "@/store/slices/processing-slice";
 import { DocumentStatus } from "@/types/document";
 
 interface ProcessingItem {
   id: string;
   documentId: string;
   filename: string;
-  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  status: DocumentStatus;
   error?: string;
-  addedAt: Date;
+  addedAt: number;
 }
 
 interface ProcessingContextType {
@@ -38,7 +38,7 @@ export function ProcessingProvider({ children }: { children: React.ReactNode }) 
       documentId,
       filename,
       status: DocumentStatus.PENDING,
-      addedAt: new Date()
+      addedAt: new Date().getTime()
     };
     dispatch(addProcessingItem(item));
   }, [dispatch]);

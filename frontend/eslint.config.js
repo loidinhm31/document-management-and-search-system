@@ -41,7 +41,7 @@ export default [
         setTimeout: true,
         localStorage: true,
         clearTimeout: true,
-        caches: true,
+        indexedDB: true,
         clearInterval: true,
         setInterval: true,
         process: true,

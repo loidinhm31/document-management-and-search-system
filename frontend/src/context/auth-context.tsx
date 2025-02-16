@@ -12,26 +12,30 @@ interface AuthContextType {
   clearAuthData: () => void;
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
-  isAdmin: boolean;
-  setIsAdmin: (isAdmin: boolean) => void;
+  role: string;
+  setRole: (role: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   token: null,
   refreshToken: null,
-  setAuthData: () => {},
-  clearAuthData: () => {},
+  setAuthData: () => {
+  },
+  clearAuthData: () => {
+  },
   currentUser: null,
-  setCurrentUser: () => {},
-  isAdmin: false,
-  setIsAdmin: () => {},
+  setCurrentUser: () => {
+  },
+  role: null,
+  setRole: () => {
+  }
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem("JWT_TOKEN"));
   const [refreshToken, setRefreshToken] = useState<string | null>(localStorage.getItem("REFRESH_TOKEN"));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(localStorage.getItem("IS_ADMIN") === "true");
+  const [role, setRole] = useState<string>(localStorage.getItem("ROLE"));
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const setAuthData = (data: TokenResponse) => {
@@ -50,11 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("JWT_TOKEN");
       localStorage.removeItem("REFRESH_TOKEN");
       localStorage.removeItem("USER");
-      localStorage.removeItem("IS_ADMIN");
+      localStorage.removeItem("ROLES");
       setToken(null);
       setRefreshToken(null);
       setCurrentUser(null);
-      setIsAdmin(false);
       stopRefreshTimer();
     });
   };
@@ -114,14 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await userService.getCurrentUser();
       const userData = response.data;
       setCurrentUser(userData);
+      setRole(userData.roles[0]);
 
-      const isUserAdmin = userData.roles.includes("ROLE_ADMIN");
-      setIsAdmin(isUserAdmin);
-      if (isUserAdmin) {
-        localStorage.setItem("IS_ADMIN", "true");
-      } else {
-        localStorage.removeItem("IS_ADMIN");
-      }
+      localStorage.setItem("ROLE", userData.roles[0]);
     } catch (error) {
       console.error("Error fetching user data:", error);
       clearAuthData();
@@ -144,8 +142,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearAuthData,
     currentUser,
     setCurrentUser,
-    isAdmin,
-    setIsAdmin,
+    role,
+    setRole
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

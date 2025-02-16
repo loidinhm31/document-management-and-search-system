@@ -1,25 +1,25 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import i18n from "i18next";
+import { Loader2, Upload } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { Loader2, Upload } from "lucide-react";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import * as z from "zod";
 import { useTranslation } from "react-i18next";
+import * as z from "zod";
 
+import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { documentService } from "@/services/document.service";
-import { useToast } from "@/hooks/use-toast";
-import TagInput from "@/components/tag-input";
+import { Textarea } from "@/components/ui/textarea";
 import { useProcessing } from "@/context/processing-provider";
 import { useLanguageDetection } from "@/hooks/use-language-detection";
-import { Textarea } from "@/components/ui/textarea";
-import { MasterData } from "@/types/document";
-import { masterDataService, MasterDataType } from "@/services/master-data.service";
-import i18n from "i18next";
-import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
+import { useToast } from "@/hooks/use-toast";
+import { documentService } from "@/services/document.service";
+import { masterDataService } from "@/services/master-data.service";
+import { ACCEPT_TYPE_MAP } from "@/types/document";
+import { MasterData, MasterDataType } from "@/types/master-data";
 
 const formSchema = z.object({
   summary: z.string()
@@ -80,18 +80,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles: 1,
-    accept: {
-      "application/pdf": [".pdf"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
-      "text/plain": [".txt"],
-      "text/csv": [".csv"],
-      "application/json": [".json"],
-      "application/xml": [".xml"],
-      "application/vnd.ms-powerpoint": [".pptx"]
-    }
+    accept: ACCEPT_TYPE_MAP
   });
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
@@ -181,9 +170,9 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
     const fetchMasterData = async () => {
       try {
         const [levelsResponse, majorsResponse, categoriesResponse] = await Promise.all([
-          masterDataService.getByType(MasterDataType.COURSE_LEVEL),
-          masterDataService.getByType(MasterDataType.MAJOR),
-          masterDataService.getByType(MasterDataType.DOCUMENT_CATEGORY)
+          masterDataService.getAllActiveByType(MasterDataType.COURSE_LEVEL),
+          masterDataService.getAllActiveByType(MasterDataType.MAJOR),
+          masterDataService.getAllActiveByType(MasterDataType.DOCUMENT_CATEGORY)
         ]);
 
         setCourseLevels(levelsResponse.data);
@@ -223,7 +212,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
           <div className="space-y-2">
             <p>{t("document.upload.dropzone.info")}</p>
             <p className="text-sm text-muted-foreground">
-              {t("document.upload.dropzone.supportedFormats")} PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON, XML
+              {t("document.upload.dropzone.supportedFormats")} PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, CSV, TXT, JSON,
+              XML, MARKDOWN
             </p>
           </div>
         )}
@@ -338,17 +328,20 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
-                <CategoryPredictions
-                  text={form.watch("summary")}
-                  filename={selectedFile?.name || ""}
-                  language={detectedLanguage || "en"}
-                  value={field.value}
-                  categories={categories}
-                  onValueChange={field.onChange}
-                  shouldFetchPredictions={shouldFetchPredictions}
-                  setShouldFetchPredictions={setShouldFetchPredictions}
-                  disabled={loading}
-                />
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.code} value={category.code}>
+                        {category.translations[i18n.language] || category.translations.en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -361,7 +354,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
               <FormItem>
                 <FormLabel>{t("document.upload.form.tags.label")}</FormLabel>
                 <FormControl>
-                  <TagInput
+                  <TagInputDebounce
                     value={field.value || []}
                     onChange={field.onChange}
                     placeholder={t("document.upload.form.tags.placeholder")}

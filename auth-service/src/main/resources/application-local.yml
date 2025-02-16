@@ -5,7 +5,10 @@ app:
     url: http://localhost:8080
   eureka:
     url: http://localhost:8081
-
+  auth-service:
+    service-api-keys:
+      document-interaction-service: ${DOCUMENT_INTERACTION_SERVICE_API_KEY:document-interaction-api-key}
+      document-search-service: ${DOCUMENT_SEARCH_SERVICE_API_KEY:document-search-api-key}
 spring:
   # Database Configuration
   datasource:

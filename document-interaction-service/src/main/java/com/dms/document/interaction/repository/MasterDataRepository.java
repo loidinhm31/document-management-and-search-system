@@ -13,6 +13,13 @@ public interface MasterDataRepository extends MongoRepository<MasterData, String
     Optional<MasterData> findByTypeAndCode(MasterDataType type, String code);
     List<MasterData> findByTypeAndIsActiveTrue(MasterDataType type);
 
-    @Query("{ $text: { $search: ?0 } }")
+    @Query("""
+            { $or: [
+            { code: { $regex: ?0, $options: 'i' } },
+            { 'translations.en': { $regex: ?0, $options: 'i' } },
+            { 'translations.vi': { $regex: ?0, $options: 'i' } },
+            { description: { $regex: ?0, $options: 'i' } }
+            ] }
+            """)
     List<MasterData> searchByText(String searchText);
 }

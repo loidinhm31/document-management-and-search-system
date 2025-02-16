@@ -1,11 +1,11 @@
 package com.dms.document.interaction.service;
 
 import com.dms.document.interaction.client.UserClient;
-import com.dms.document.interaction.dto.*;
-import com.dms.document.interaction.enums.DocumentStatus;
-import com.dms.document.interaction.enums.DocumentType;
-import com.dms.document.interaction.enums.EventType;
-import com.dms.document.interaction.enums.SharingType;
+import com.dms.document.interaction.dto.DocumentUpdateRequest;
+import com.dms.document.interaction.dto.SyncEventRequest;
+import com.dms.document.interaction.dto.ThumbnailResponse;
+import com.dms.document.interaction.dto.UserResponse;
+import com.dms.document.interaction.enums.*;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.exception.UnsupportedDocumentTypeException;
 import com.dms.document.interaction.model.DocumentInformation;
@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -41,8 +39,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
-    @Value("${app.document.storage.path}")
-    private String storageBasePath;
+    private final DocumentNotificationService documentNotificationService;
+    private final S3Service s3Service;
 
     @Value("${app.document.max-size-mb}")
     private DataSize maxFileSize;
@@ -55,6 +53,7 @@ public class DocumentService {
 
     private final PublishEventService publishEventService;
     private final DocumentRepository documentRepository;
+    private final DocumentPreferencesService documentPreferencesService;
     private final UserClient userClient;
 
     public DocumentInformation uploadDocument(MultipartFile file,
@@ -65,34 +64,22 @@ public class DocumentService {
                                               String category,
                                               Set<String> tags,
                                               String username) throws IOException {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
 
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
         validateDocument(file);
 
-        // Generate unique filename
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = getFileExtension(originalFilename);
-        String uniqueFilename = getFileName(originalFilename) + "_" + Instant.now().toEpochMilli() + fileExtension;
-
-        // Create storage path
-        String relativePath = createStoragePath(uniqueFilename);
-        Path fullPath = Path.of(storageBasePath, relativePath);
-
-        // Create directories if they don't exist
-        Files.createDirectories(fullPath.getParent());
-
-        // Save file to disk
-        Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
+        // Upload new file to S3
+        String s3Key = s3Service.uploadFile(file, "documents");
 
         // Create new version metadata
         int nextVersion = 0;
         DocumentVersion newVersion = DocumentVersion.builder()
                 .versionNumber(nextVersion)
-                .filePath(fullPath.toString())
+                .filePath(s3Key)
                 .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
@@ -104,8 +91,8 @@ public class DocumentService {
         // Create document with PENDING status
         DocumentInformation document = DocumentInformation.builder()
                 .status(DocumentStatus.PENDING)
-                .filename(originalFilename)
-                .filePath(fullPath.toString())
+                .filename(file.getOriginalFilename())
+                .filePath(s3Key)
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .documentType(DocumentUtils.determineDocumentType(file.getContentType()))
@@ -115,7 +102,7 @@ public class DocumentService {
                 .courseLevel(level)
                 .category(category)
                 .tags(tags != null ? tags : new HashSet<>())
-                .userId(userDto.getUserId().toString())
+                .userId(userResponse.userId().toString())
                 .sharingType(SharingType.PRIVATE)
                 .sharedWith(new HashSet<>())
                 .deleted(false)
@@ -135,7 +122,7 @@ public class DocumentService {
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()
                         .eventId(UUID.randomUUID().toString())
-                        .userId(userDto.getUserId().toString())
+                        .userId(userResponse.userId().toString())
                         .documentId(savedDocument.getId())
                         .subject(EventType.SYNC_EVENT.name())
                         .triggerAt(LocalDateTime.now())
@@ -146,13 +133,13 @@ public class DocumentService {
     }
 
     public ThumbnailResponse getDocumentThumbnail(String documentId, String username) throws IOException {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // If document is still being processed, return processing placeholder
@@ -187,58 +174,52 @@ public class DocumentService {
         }
 
         try {
-            // Try to read the thumbnail file
-            Path thumbnailPath = Path.of(document.getThumbnailPath());
-            if (Files.exists(thumbnailPath)) {
-                byte[] thumbnailData = Files.readAllBytes(thumbnailPath);
-                return ThumbnailResponse.builder()
-                        .data(thumbnailData)
-                        .status(HttpStatus.OK)
-                        .isPlaceholder(false)
-                        .build();
-            } else {
-                log.warn("Thumbnail file not found at path: {}", document.getThumbnailPath());
-                return ThumbnailResponse.builder()
-                        .data(getErrorPlaceholder())
-                        .status(HttpStatus.NOT_FOUND)
-                        .isPlaceholder(true)
-                        .build();
-            }
-        } catch (IOException e) {
-            log.error("Error reading thumbnail for document: {}", documentId, e);
+            byte[] thumbnailData = s3Service.downloadFile(document.getThumbnailPath());
+            return ThumbnailResponse.builder()
+                    .data(thumbnailData)
+                    .status(HttpStatus.OK)
+                    .isPlaceholder(false)
+                    .build();
+        } catch (Exception e) {
+            log.error("Error getting thumbnail from S3: {}", e.getMessage());
             return ThumbnailResponse.builder()
                     .data(getErrorPlaceholder())
-                    .status(HttpStatus.NOT_FOUND)
+                    .status(HttpStatus.OK)
                     .isPlaceholder(true)
                     .build();
         }
     }
 
-    public byte[] getDocumentContent(String documentId, String username) throws IOException {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+    public byte[] getDocumentContent(String documentId, String username, String action) throws IOException {
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
-        try (InputStream in = Files.newInputStream(Path.of(document.getFilePath()))) {
-            return in.readAllBytes();
+        if (StringUtils.equals(action, "download")) {
+            CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
         }
+
+        return s3Service.downloadFile(document.getFilePath());
     }
 
     public DocumentInformation getDocumentDetails(String documentId, String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
         documentInformation.setContent(null);
+
+        CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.VIEW));
+
         return documentInformation;
     }
 
@@ -247,13 +228,13 @@ public class DocumentService {
             DocumentUpdateRequest documentUpdateRequest,
             String username) {
 
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Update fields if provided
@@ -274,7 +255,7 @@ public class DocumentService {
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()
                         .eventId(UUID.randomUUID().toString())
-                        .userId(userDto.getUserId().toString())
+                        .userId(userResponse.userId().toString())
                         .documentId(documentId)
                         .subject(EventType.UPDATE_EVENT.name())
                         .triggerAt(LocalDateTime.now())
@@ -293,25 +274,17 @@ public class DocumentService {
         // Get existing document
         DocumentInformation document = getDocumentDetails(documentId, username);
 
-        // Save new file
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = getFileExtension(originalFilename);
-        String uniqueFilename = getFileName(originalFilename) + "_" + Instant.now().toEpochMilli() + fileExtension;
-        String relativePath = createStoragePath(uniqueFilename);
-        Path fullPath = Path.of(storageBasePath, relativePath);
+        validateDocument(file);
 
-        // Create directories if they don't exist
-        Files.createDirectories(fullPath.getParent());
-
-        // Save new file to disk
-        Files.copy(file.getInputStream(), fullPath, StandardCopyOption.REPLACE_EXISTING);
+        // Upload new file to S3
+        String s3Key = s3Service.uploadFile(file, "documents");
 
         // Create new version metadata
         int nextVersion = (document.getCurrentVersion() != null ? document.getCurrentVersion() : 0) + 1;
         DocumentVersion newVersion = DocumentVersion.builder()
                 .versionNumber(nextVersion)
-                .filePath(fullPath.toString())
-                .filename(originalFilename)
+                .filePath(s3Key)
+                .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .status(DocumentStatus.PENDING)
@@ -321,8 +294,8 @@ public class DocumentService {
 
         // Update document information
         document.setStatus(DocumentStatus.PENDING); // Reset to pending for reprocessing
-        document.setFilename(originalFilename);
-        document.setFilePath(fullPath.toString());
+        document.setFilename(file.getOriginalFilename());
+        document.setFilePath(s3Key);
         document.setThumbnailPath(null); // Reset thumbnail - will be generated for new version
         document.setFileSize(file.getSize());
         document.setMimeType(file.getContentType());
@@ -352,27 +325,35 @@ public class DocumentService {
         DocumentInformation updatedDocument = documentRepository.save(document);
 
         // Send sync event for reprocessing
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(document.getUserId())
-                        .documentId(documentId)
-                        .subject(EventType.UPDATE_EVENT_WITH_FILE.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
+        CompletableFuture.runAsync(() -> {
+            publishEventService.sendSyncEvent(
+                    SyncEventRequest.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .userId(document.getUserId())
+                            .documentId(documentId)
+                            .subject(EventType.UPDATE_EVENT_WITH_FILE.name())
+                            .triggerAt(LocalDateTime.now())
+                            .build());
+
+            // Notify about new file version
+            documentNotificationService.handleFileVersionNotification(
+                    updatedDocument,
+                    username,
+                    updatedDocument.getCurrentVersion()
+            );
+        });
 
         return updatedDocument;
     }
 
     public void deleteDocument(String documentId, String username) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Soft delete in database
@@ -385,47 +366,12 @@ public class DocumentService {
         CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
                 SyncEventRequest.builder()
                         .eventId(UUID.randomUUID().toString())
-                        .userId(userDto.getUserId().toString())
+                        .userId(userResponse.userId().toString())
                         .documentId(documentId)
                         .subject(EventType.DELETE_EVENT.name())
                         .triggerAt(LocalDateTime.now())
                         .build()
         ));
-    }
-
-    public ShareSettings getShareSettings(String documentId, String username) {
-        DocumentInformation doc = getDocumentDetails(documentId, username);
-        return new ShareSettings(
-                doc.getSharingType() == SharingType.PUBLIC,
-                doc.getSharedWith()
-        );
-    }
-
-    public DocumentInformation updateShareSettings(
-            String documentId,
-            UpdateShareSettingsRequest request,
-            String username) {
-
-        DocumentInformation doc = getDocumentDetails(documentId, username);
-
-        doc.setSharingType(request.isPublic() ? SharingType.PUBLIC :
-                CollectionUtils.isEmpty(request.sharedWith()) ? SharingType.PRIVATE : SharingType.SPECIFIC);
-        doc.setSharedWith(request.sharedWith());
-        doc.setUpdatedAt(new Date());
-        doc.setUpdatedBy(username);
-
-        // Send sync event to update Elasticsearch
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(doc.getUserId())
-                        .documentId(documentId)
-                        .subject(EventType.UPDATE_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
-
-        return documentRepository.save(doc);
     }
 
     public Set<String> getPopularTags(String prefix) {
@@ -441,19 +387,23 @@ public class DocumentService {
                 .collect(Collectors.toSet());
     }
 
-    public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username) throws IOException {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+    public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username, String action) throws IOException {
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userDto.getUserId().toString())
+        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Find the specific version
         DocumentVersion targetVersion = document.getVersion(versionNumber)
                 .orElseThrow(() -> new InvalidDocumentException("Version not found"));
+
+        if (StringUtils.equals(action, "download")) {
+            CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
+        }
 
         // Read and return the file content
         try (InputStream in = Files.newInputStream(Path.of(targetVersion.getFilePath()))) {
@@ -511,17 +461,26 @@ public class DocumentService {
         // Save changes
         DocumentInformation savedDocument = documentRepository.save(document);
 
-        // Send sync event for Elasticsearch indexing
-        publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(document.getUserId())
-                        .documentId(documentId)
-                        .versionNumber(versionToRevert.getVersionNumber())
-                        .subject(EventType.REVERT_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        );
+        CompletableFuture.runAsync(() -> {
+            // Send sync event for indexing document
+            publishEventService.sendSyncEvent(
+                    SyncEventRequest.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .userId(document.getUserId())
+                            .documentId(documentId)
+                            .versionNumber(versionToRevert.getVersionNumber())
+                            .subject(EventType.REVERT_EVENT.name())
+                            .triggerAt(LocalDateTime.now())
+                            .build()
+            );
+
+            // Notify about document reversion
+            documentNotificationService.handleRevertNotification(
+                    savedDocument,
+                    username,
+                    versionNumber
+            );
+        });
 
         return savedDocument;
     }
@@ -539,7 +498,7 @@ public class DocumentService {
 
         // Check MIME type
         String mimeType = file.getContentType();
-        if (mimeType == null || !DocumentType.isSupportedMimeType(mimeType)) {
+        if (!DocumentType.isSupportedMimeType(mimeType)) {
             throw new UnsupportedDocumentTypeException("Unsupported document type: " + mimeType);
         }
 
@@ -547,26 +506,33 @@ public class DocumentService {
         String originalFilename = file.getOriginalFilename();
         if (originalFilename != null) {
             String extension = getFileExtension(originalFilename).toLowerCase();
-            boolean isValidExtension = switch (mimeType) {
-                case "application/pdf" -> extension.equals(".pdf");
-                case "application/msword" -> extension.equals(".doc");
-                case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ->
-                        extension.equals(".docx");
-                case "application/vnd.ms-excel" -> extension.equals(".xls");
-                case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> extension.equals(".xlsx");
-                case "application/vnd.ms-powerpoint" -> extension.equals(".ppt");
-                case "application/vnd.openxmlformats-officedocument.presentationml.presentation" ->
-                        extension.equals(".pptx");
-                case "text/plain" -> extension.equals(".txt");
-                case "application/rtf" -> extension.equals(".rtf");
-                case "text/csv" -> extension.equals(".csv");
-                case "application/xml" -> extension.equals(".xml");
-                case "application/json" -> extension.equals(".json");
-                default -> false;
+            DocumentType documentType;
+            try {
+                documentType = DocumentType.fromMimeType(mimeType);
+            } catch (UnsupportedDocumentTypeException e) {
+                throw new InvalidDocumentException("Invalid MIME type: " + mimeType);
+            }
+
+            boolean isValidExtension = switch (documentType) {
+                case PDF -> extension.equals(".pdf");
+                case WORD -> extension.equals(".doc");
+                case WORD_DOCX -> extension.equals(".docx");
+                case EXCEL -> extension.equals(".xls");
+                case EXCEL_XLSX -> extension.equals(".xlsx");
+                case POWERPOINT -> extension.equals(".ppt");
+                case POWERPOINT_PPTX -> extension.equals(".pptx");
+                case TEXT_PLAIN -> extension.equals(".txt");
+                case CSV -> extension.equals(".csv");
+                case XML -> extension.equals(".xml");
+                case JSON -> extension.equals(".json");
+                case MARKDOWN -> extension.equals(".md");
             };
 
             if (!isValidExtension) {
-                throw new InvalidDocumentException("File extension does not match the content type");
+                throw new InvalidDocumentException(
+                        String.format("File extension '%s' does not match the expected type '%s'",
+                                extension, documentType.getDisplayName())
+                );
             }
         }
     }

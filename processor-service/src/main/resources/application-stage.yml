@@ -1,0 +1,93 @@
+app:
+  base-url: http://${FRONT_END_URL:100.104.245.71}:3000
+  document:
+    max-size-threshold-mb: 25MB
+  ocr:
+    data-path: /usr/share/tesseract-ocr/5/tessdata
+    minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
+    chunk-size: 5
+    max-threads: 2
+    temp-dir: /tmp/ocr
+    dpi: 300
+    image-type: RGB
+  pdf:
+    quality-threshold: 0.8
+    min-text-density: 0.01
+  email:
+    batch-size: 50  # Number of emails per batch
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://mongodb:mongodbpw@${RESOURCE_URL:100.104.245.71}:27017/dms?authSource=admin
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://${RESOURCE_URL:100.104.245.71}:5432/postgres?currentSchema=dms
+    username: postgres
+    password: postgrespw
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  rabbitmq:
+    host: ${RESOURCE_URL:100.104.245.71}
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2.0
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: nebulea.event@gmail.com
+    password: kvcz hwsj gpwg zzlm
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+mail-sender:
+  from-email: no-reply@dms.com
+
+opensearch:
+  host: ${RESOURCE_URL:100.104.245.71}
+  port: 9200
+  username: admin
+  password: admin
+  scheme: http
+  aws: false
+
+# RabbitMQ
+rabbitmq:
+  exchanges:
+    internal: internal.exchange
+    dlx: dead.letter.exchange
+    notification: notification.exchange
+  queues:
+    document-sync: document-sync.queue
+    document-sync-dlq: document-sync.dlq
+    notification: notification.queue
+    notification-dlq: notification.dlq
+  routing-keys:
+    internal-document-sync: internal.document-sync.routing-key
+    notification: notification.email.routing-key
+    dlq: dead.letter.routing-key
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME}
+    region: ${AWS_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+    temp-dir: ${java.io.tmpdir}/dms-processor

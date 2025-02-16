@@ -10,13 +10,13 @@ import { useAuth } from "@/context/auth-context";
 import { toast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
-import { selectProcessingItemByDocumentId } from "@/store/slices/processingSlice";
+import { selectProcessingItemByDocumentId } from "@/store/slices/processing-slice";
 import { DocumentInformation, DocumentStatus, DocumentVersion } from "@/types/document";
 
 interface VersionHistoryProps {
   versions: DocumentVersion[];
   currentVersion: number;
-  documentCreator?: string;
+  documentCreatorId?: string;
   documentId?: string;
   onVersionUpdate?: (updatedDocument: DocumentInformation) => void;
 }
@@ -24,14 +24,14 @@ interface VersionHistoryProps {
 const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                                                                  versions,
                                                                  currentVersion,
-                                                                 documentCreator,
+                                                                 documentCreatorId,
                                                                  documentId,
                                                                  onVersionUpdate
                                                                }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const { currentUser } = useAuth();
-  const isDocumentCreator = currentUser?.username === documentCreator;
+  const isDocumentCreator = currentUser?.userId === documentCreatorId;
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
 
   const documentProcessingStatus = useAppSelector(
@@ -71,7 +71,8 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
     try {
       const response = await documentService.downloadDocumentVersion(
         documentId,
-        versionNumber
+        versionNumber,
+        "download",
       );
       const url = URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");

@@ -34,25 +34,36 @@ public class DocumentProcessService {
     private final ThumbnailService thumbnailService;
     private final DocumentIndexMapper documentIndexMapper;
     private final DocumentContentService documentContentService;
-
+    private final S3Service s3Service;
 
     @Transactional
     public void processDocument(DocumentInformation document, Integer versionNumber, EventType eventType) {
+        Path tempFile = null;
         try {
             // Update status to PROCESSING
             document.setStatus(DocumentStatus.PROCESSING);
             document.setProcessingError(null);
             documentRepository.save(document);
 
-            switch (eventType) {
-                case SYNC_EVENT, UPDATE_EVENT_WITH_FILE -> processFullDocument(document);
-                case UPDATE_EVENT -> processMetadataUpdate(document);
-                case REVERT_EVENT -> processRevertContent(document, versionNumber);
-                default -> throw new IllegalArgumentException("Unsupported event type: " + eventType);
+            // Download file to temp location if needed
+            if (eventType == EventType.SYNC_EVENT ||
+                    eventType == EventType.UPDATE_EVENT_WITH_FILE) {
+                tempFile = s3Service.downloadToTemp(document.getFilePath());
+                processFullDocument(document, tempFile);
+            } else if (eventType == EventType.UPDATE_EVENT) {
+                processMetadataUpdate(document);
+            } else if (eventType == EventType.REVERT_EVENT) {
+                processRevertContent(document, versionNumber);
+            } else {
+                throw new IllegalArgumentException("Unsupported event type: " + eventType);
             }
         } catch (Exception e) {
             handleProcessingError(document, e);
             throw new DocumentProcessingException("Failed to process document", e);
+        } finally {
+            if (tempFile != null) {
+                s3Service.cleanup(tempFile);
+            }
         }
     }
 
@@ -80,6 +91,7 @@ public class DocumentProcessService {
 
         // Update document with content and metadata from the content collection
         document.setContent(documentContent.getContent());
+        document.setLanguage(documentVersion.getLanguage());
         document.setExtractedMetadata(documentContent.getExtractedMetadata());
         document.setStatus(DocumentStatus.COMPLETED);
         document.setUpdatedAt(new Date());
@@ -91,7 +103,7 @@ public class DocumentProcessService {
         log.info("Successfully processed reverted document: {}", document.getId());
     }
 
-    private void processFullDocument(DocumentInformation document) {
+    private void processFullDocument(DocumentInformation document, Path tempFile) throws IOException {
         Integer versionNumber = document.getCurrentVersion();
         if (Objects.isNull(versionNumber)) {
             throw new DocumentProcessingException("No version number provided");
@@ -100,10 +112,10 @@ public class DocumentProcessService {
         DocumentVersion documentVersion = document.getVersion(versionNumber)
                 .orElseThrow(() -> new DocumentProcessingException("Version not found"));
 
-        DocumentExtractContent extractedContent = extractAndProcessContent(documentVersion);
+        DocumentExtractContent extractedContent = extractAndProcessContent(documentVersion, tempFile);
         updateDocumentWithContent(document, documentVersion, extractedContent);
         // Generate thumbnail if needed (base on extracted content)
-        handleThumbnail(document, documentVersion);
+        handleThumbnail(document, documentVersion, tempFile);
         indexDocument(document);
     }
 
@@ -114,8 +126,7 @@ public class DocumentProcessService {
         indexDocument(document);
     }
 
-    private DocumentExtractContent extractAndProcessContent(DocumentVersion documentVersion) {
-        Path filePath = Path.of(documentVersion.getFilePath());
+    private DocumentExtractContent extractAndProcessContent(DocumentVersion documentVersion, Path filePath) {
         DocumentExtractContent extractedContent = contentExtractorService.extractContent(filePath);
 
         if (extractedContent.content().isEmpty()) {
@@ -193,37 +204,40 @@ public class DocumentProcessService {
         }
     }
 
-    public void handleThumbnail(DocumentInformation document, DocumentVersion documentVersion) {
+    private void handleThumbnail(DocumentInformation document, DocumentVersion documentVersion, Path tempFile) {
         try {
-            generateAndSaveThumbnail(document, documentVersion);
+            generateAndSaveThumbnail(document, documentVersion, tempFile);
         } catch (IOException e) {
             log.error("Error handling thumbnail for document: {}", document.getId(), e);
             throw new DocumentProcessingException("Failed to handle thumbnail", e);
         }
     }
 
-    private void generateAndSaveThumbnail(DocumentInformation document, DocumentVersion documentVersion) throws IOException {
+    private void generateAndSaveThumbnail(DocumentInformation document,
+                                          DocumentVersion documentVersion,
+                                          Path tempFile) throws IOException {
         byte[] thumbnailData = thumbnailService.generateThumbnail(
-                Path.of(document.getFilePath()),
+                tempFile,
                 document.getDocumentType(),
                 document.getContent()
         );
 
-        Path thumbnailPath = saveThumbnailToFile(document, thumbnailData);
-        document.setThumbnailPath(thumbnailPath.toString());
-        documentVersion.setThumbnailPath(thumbnailPath.toString());
+        // Generate a temp thumbnail file
+        Path tempThumb = Files.createTempFile("thumb_", ".png");
+        Files.write(tempThumb, thumbnailData);
 
-        documentRepository.save(document);
+        try {
+            // Upload thumbnail to S3
+            String thumbnailKey = s3Service.uploadFile(tempThumb, "thumbnails", "image/png");
+
+            // Update document with S3 thumbnail path
+            document.setThumbnailPath(thumbnailKey);
+            documentVersion.setThumbnailPath(thumbnailKey);
+
+            documentRepository.save(document);
+        } finally {
+            // Cleanup temp thumbnail
+            Files.deleteIfExists(tempThumb);
+        }
     }
-
-    private Path saveThumbnailToFile(DocumentInformation document, byte[] thumbnailData) throws IOException {
-        Path thumbnailDir = Path.of(document.getFilePath()).getParent().resolve("thumbnails");
-        Files.createDirectories(thumbnailDir);
-
-        String thumbnailFilename = String.format("%s_v%d_thumb.png", document.getId(), document.getCurrentVersion());
-        Path thumbnailPath = thumbnailDir.resolve(thumbnailFilename);
-        Files.write(thumbnailPath, thumbnailData);
-        return thumbnailPath;
-    }
-
 }
