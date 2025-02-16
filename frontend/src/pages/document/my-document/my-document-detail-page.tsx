@@ -1,13 +1,16 @@
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { DeleteDialog } from "@/components/common/delete-dialog";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
 import { DocumentForm, DocumentFormValues } from "@/components/document/my-document/document-form";
+import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/context/auth-context";
 import { useProcessing } from "@/context/processing-provider";
 import { RoutePaths } from "@/core/route-config";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +23,7 @@ export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const { documentId } = useParams<{ documentId: string }>();
 
   const { addProcessingItem } = useProcessing();
@@ -27,6 +31,8 @@ export default function MyDocumentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [documentData, setDocumentData] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -37,7 +43,7 @@ export default function MyDocumentDetailPage() {
         const response = await documentService.getDocumentDetails(documentId);
         setDocumentData(response.data);
         dispatch(setCurrentDocument(response.data));
-      } catch (error) {
+      } catch (_error) {
         toast({
           title: t("common.error"),
           description: t("document.detail.fetchError"),
@@ -96,7 +102,7 @@ export default function MyDocumentDetailPage() {
         description: t("document.detail.updateSuccess"),
         variant: "success"
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.detail.updateError"),
@@ -115,7 +121,7 @@ export default function MyDocumentDetailPage() {
       // Add to processing queue
       addProcessingItem(document.id, document.originalFilename);
 
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.detail.updateError"),
@@ -136,67 +142,131 @@ export default function MyDocumentDetailPage() {
     );
   }
 
+  const handleDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      await documentService.deleteDocument(documentData.id);
+      toast({
+        title: t("common.success"),
+        description: t("document.myDocuments.delete.deleteSuccess"),
+        variant: "success"
+      });
+      setShowDeleteDialog(false);
+      navigate("/documents/me");
+    } catch (_error) {
+      toast({
+        title: t("common.error"),
+        description: t("document.myDocuments.delete.deleteError"),
+        variant: "destructive"
+      });
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <Button variant="ghost" onClick={() => navigate(RoutePaths.MY_DOCUMENT)} className="mb-4">
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        {t("document.detail.backToList")}
-      </Button>
+    <>
+      <div className="container mx-auto py-6 space-y-6">
+        <Button variant="ghost" onClick={() => navigate(RoutePaths.MY_DOCUMENT)} className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          {t("document.detail.backToList")}
+        </Button>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* Document Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("document.detail.title")}</CardTitle>
-            <CardDescription>{t("document.detail.description")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {documentData && (
-              <DocumentVersionHistory
-                versions={documentData.versions}
-                currentVersion={documentData.currentVersion}
-                documentCreatorId={documentData.userId}
-                documentId={documentData.id}
-                onVersionUpdate={handleVersionUpdate}
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {/* Document Form */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{t("document.detail.title")}</CardTitle>
+                  <CardDescription>{t("document.detail.description")}</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  {documentData && (
+                    <>
+                      {currentUser?.userId === documentData.userId && (
+                        <>
+                          <ShareDocumentDialog
+                            documentId={documentData.id}
+                            documentName={documentData.filename}
+                            isShared={documentData.sharingType === "PUBLIC"}
+                            iconOnly={true}
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center justify-center w-10 h-10 p-0"
+                            onClick={() => {
+                              setShowDeleteDialog(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {documentData && (
+                <DocumentVersionHistory
+                  versions={documentData.versions}
+                  currentVersion={documentData.currentVersion}
+                  documentCreatorId={documentData.userId}
+                  documentId={documentData.id}
+                  onVersionUpdate={handleVersionUpdate}
+                />
+              )}
+
+              <DocumentForm
+                initialValues={{
+                  summary: documentData?.summary ? documentData.summary : undefined,
+                  courseCode: documentData?.courseCode,
+                  major: documentData?.major,
+                  level: documentData?.courseLevel,
+                  category: documentData?.category,
+                  tags: documentData?.tags || []
+                }}
+                onSubmit={handleSubmit}
+                loading={updating}
+                submitLabel={t("document.detail.buttons.update")}
               />
-            )}
+            </CardContent>
+          </Card>
 
-            <DocumentForm
-              initialValues={{
-                summary: documentData?.summary ? documentData.summary : undefined,
-                courseCode: documentData?.courseCode,
-                major: documentData?.major,
-                level: documentData?.courseLevel,
-                category: documentData?.category,
-                tags: documentData?.tags || []
-              }}
-              onSubmit={handleSubmit}
-              loading={updating}
-              submitLabel={t("document.detail.buttons.update")}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Document Preview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{documentData?.filename}</CardTitle>
-            <CardDescription>
-              {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(2)} KB
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-full max-h-[1000px]">
-            {documentData && (
-              <DocumentViewer
-                documentId={documentData.id}
-                documentType={documentData.documentType}
-                mimeType={documentData.mimeType}
-                fileName={documentData.filename}
-              />
-            )}
-          </CardContent>
-        </Card>
+          {/* Document Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>{documentData?.filename}</CardTitle>
+              <CardDescription>
+                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(2)} KB
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-full max-h-[1000px]">
+              {documentData && (
+                <DocumentViewer
+                  documentId={documentData.id}
+                  documentType={documentData.documentType}
+                  mimeType={documentData.mimeType}
+                  fileName={documentData.filename}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+
+      {showDeleteDialog && (
+        <DeleteDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDelete}
+          loading={deleteLoading}
+          description={t("document.myDocuments.delete.confirmMessage", { name: documentData.filename })}
+        />
+      )}
+    </>
   );
 }

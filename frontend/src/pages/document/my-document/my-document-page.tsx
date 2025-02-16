@@ -1,14 +1,12 @@
 import { Loader2 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 
 import AdvancedSearch, { SearchFilters } from "@/components/document/my-document/advanced-search";
 import { DocumentGrid } from "@/components/document/my-document/document-grid";
 import DocumentUploadDialog from "@/components/document/my-document/document-upload-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { documentService } from "@/services/document.service";
 import { searchService } from "@/services/search.service";
 import { useAppSelector } from "@/store/hook";
 import { selectProcessingItems } from "@/store/slices/processing-slice";
@@ -16,7 +14,6 @@ import { DocumentInformation, DocumentStatus } from "@/types/document";
 
 export default function MyDocumentPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [documents, setDocuments] = useState<DocumentInformation[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
@@ -26,7 +23,7 @@ export default function MyDocumentPage() {
 
   const processingItems = useAppSelector(selectProcessingItems);
   const latestProcessingItem = useMemo(() =>
-      processingItems.length > 0 ? processingItems[processingItems.length - 1] : null, [processingItems]);
+    processingItems.length > 0 ? processingItems[processingItems.length - 1] : null, [processingItems]);
 
   const fetchUserDocuments = useCallback(async (page: number = 0, filters: SearchFilters = {}) => {
     setLoading(true);
@@ -35,7 +32,7 @@ export default function MyDocumentPage() {
       setDocuments(response.data.content);
       setTotalPages(response.data.totalPages);
       setCurrentPage(page);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.myDocuments.search.error"),
@@ -50,24 +47,6 @@ export default function MyDocumentPage() {
     setCurrentFilters(filters);
     setCurrentPage(0);
     fetchUserDocuments(0, filters);
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      await documentService.deleteDocument(id);
-      toast({
-        title: t("common.success"),
-        description: t("document.myDocuments.delete.deleteSuccess"),
-        variant: "success"
-      });
-      fetchUserDocuments(currentPage, currentFilters);
-    } catch (error) {
-      toast({
-        title: t("common.error"),
-        description: t("document.myDocuments.delete.deleteError"),
-        variant: "destructive"
-      });
-    }
   };
 
   const handlePageChange = (page: number) => {
@@ -95,7 +74,7 @@ export default function MyDocumentPage() {
               onUploadSuccess={() => {
                 // Reset to first page when new document is uploaded
                 setCurrentPage(0);
-                fetchUserDocuments(0, currentFilters)
+                fetchUserDocuments(0, currentFilters);
               }} />
           </div>
         </CardHeader>
@@ -113,9 +92,7 @@ export default function MyDocumentPage() {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}
-                onDelete={handleDelete}
                 loading={loading}
-                onCardClick={(doc) => navigate(`/documents/me/${doc.id}`)}
                 className="pt-4"
               />
             </>

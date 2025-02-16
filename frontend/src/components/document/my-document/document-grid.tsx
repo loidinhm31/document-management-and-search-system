@@ -1,6 +1,7 @@
 import { Loader2 } from "lucide-react";
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { DocumentCard } from "@/components/document/my-document/document-card";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,7 @@ interface DocumentGridProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  onDelete?: (id: string) => void;
   loading?: boolean;
-  onCardClick?: (doc: DocumentInformation) => void;
   className?: string;
 }
 
@@ -23,12 +22,11 @@ export const DocumentGrid = React.memo(({
                                           currentPage,
                                           totalPages,
                                           onPageChange,
-                                          onDelete,
                                           loading = false,
-                                          onCardClick,
                                           className
                                         }: DocumentGridProps) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -45,8 +43,7 @@ export const DocumentGrid = React.memo(({
           <DocumentCard
             key={doc.id}
             documentInformation={doc}
-            onDelete={onDelete ? () => onDelete(doc.id) : undefined}
-            onClick={() => onCardClick?.(doc)}
+            onClick={() =>  navigate(`/documents/me/${doc.id}`)}
           />
         ))}
       </div>
