@@ -41,9 +41,10 @@ public class DocumentController {
     @GetMapping("/{id}/downloads")
     public ResponseEntity<byte[]> getDocument(
             @PathVariable String id,
+            @RequestParam(required = false) String action,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         String username = jwt.getSubject();
-        byte[] content = documentService.getDocumentContent(id, username);
+        byte[] content = documentService.getDocumentContent(id, username, action);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"document\"")
                 .body(content);
@@ -172,9 +173,10 @@ public class DocumentController {
     public ResponseEntity<byte[]> downloadDocumentVersion(
             @PathVariable String documentId,
             @PathVariable Integer versionNumber,
+            @RequestParam(required = false) String action,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         String username = jwt.getSubject();
-        byte[] content = documentService.getDocumentVersionContent(documentId, versionNumber, username);
+        byte[] content = documentService.getDocumentVersionContent(documentId, versionNumber, username, action);
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"document\"")
                 .body(content);

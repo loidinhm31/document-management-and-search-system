@@ -8,7 +8,6 @@ import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
 import TagInputDebounce from "@/components/common/tag-input-debounce";
-import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -329,17 +328,20 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
-                <CategoryPredictions
-                  text={form.watch("summary")}
-                  filename={selectedFile?.name || ""}
-                  language={detectedLanguage || "en"}
-                  value={field.value}
-                  categories={categories}
-                  onValueChange={field.onChange}
-                  shouldFetchPredictions={shouldFetchPredictions}
-                  setShouldFetchPredictions={setShouldFetchPredictions}
-                  disabled={loading}
-                />
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.code} value={category.code}>
+                        {category.translations[i18n.language] || category.translations.en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

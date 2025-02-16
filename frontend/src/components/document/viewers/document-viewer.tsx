@@ -212,8 +212,8 @@ export const DocumentViewer = ({
   const handleDownload = async () => {
     try {
       const response = versionNumber !== undefined
-        ? await documentService.downloadDocumentVersion(documentId, versionNumber)
-        : await documentService.downloadDocument(documentId);
+        ? await documentService.downloadDocumentVersion(documentId, versionNumber, "download")
+        : await documentService.downloadDocument(documentId, "download");
       const blob = new Blob([response.data], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

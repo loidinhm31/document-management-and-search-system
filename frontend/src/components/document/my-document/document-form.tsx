@@ -8,7 +8,6 @@ import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
 import TagInputDebounce from "@/components/common/tag-input-debounce";
-import { CategoryPredictions } from "@/components/document/my-document/confidence-to-color";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -76,16 +75,6 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
     }
   }, [dispatch, majors.length, levels.length, categories.length]);
 
-  // Watch summary field changes for language detection
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "summary" && value.summary) {
-        detectLanguage(value.summary);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch, detectLanguage]);
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: acceptedFiles => {
       if (acceptedFiles?.length > 0) {
@@ -149,14 +138,6 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
                       }}
                     />
                   </FormControl>
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{field.value?.length || 0}/500 characters</span>
-                    {detectingLanguage ? (
-                      <span>Detecting language...</span>
-                    ) : detectedLanguage && (
-                      <span>Detected language: {detectedLanguage}</span>
-                    )}
-                  </div>
                   <FormMessage />
                 </div>
               </FormItem>
@@ -233,17 +214,20 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
-                <CategoryPredictions
-                  text={form.watch("summary")}
-                  filename={selectedFile?.name || ""}
-                  language={detectedLanguage || "en"}
-                  value={field.value}
-                  categories={categories}
-                  onValueChange={field.onChange}
-                  shouldFetchPredictions={shouldFetchPredictions}
-                  setShouldFetchPredictions={setShouldFetchPredictions}
-                  disabled={masterDataLoading}
-                />
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category.code} value={category.code}>
+                        {category.translations[i18n.language] || category.translations.en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}

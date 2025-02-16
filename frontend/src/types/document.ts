@@ -70,11 +70,6 @@ export enum DocumentStatus {
   FAILED = "FAILED"
 }
 
-export interface CategoryPrediction {
-  category: string;
-  confidence: number;
-}
-
 export interface DocumentVersion {
   versionNumber: number;
   filePath: string;

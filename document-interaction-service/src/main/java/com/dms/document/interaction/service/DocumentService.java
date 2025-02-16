@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -192,7 +190,7 @@ public class DocumentService {
         }
     }
 
-    public byte[] getDocumentContent(String documentId, String username) throws IOException {
+    public byte[] getDocumentContent(String documentId, String username, String action) throws IOException {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
@@ -202,7 +200,9 @@ public class DocumentService {
         DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
-        CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
+        if (StringUtils.equals(action, "download")) {
+            CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
+        }
 
         return s3Service.downloadFile(document.getFilePath());
     }
@@ -387,7 +387,7 @@ public class DocumentService {
                 .collect(Collectors.toSet());
     }
 
-    public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username) throws IOException {
+    public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username, String action) throws IOException {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
@@ -401,7 +401,9 @@ public class DocumentService {
         DocumentVersion targetVersion = document.getVersion(versionNumber)
                 .orElseThrow(() -> new InvalidDocumentException("Version not found"));
 
-        CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
+        if (StringUtils.equals(action, "download")) {
+            CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
+        }
 
         // Read and return the file content
         try (InputStream in = Files.newInputStream(Path.of(targetVersion.getFilePath()))) {

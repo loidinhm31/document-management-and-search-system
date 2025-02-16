@@ -15,10 +15,11 @@ class DocumentService extends BaseService {
     );
   }
 
-  downloadDocument(id: string) {
+  downloadDocument(id: string, action?: string) {
     return this.handleApiResponse(
       axiosInstance.get(`/document-interaction/api/v1/documents/${id}/downloads`, {
-        responseType: "blob"
+        responseType: "blob",
+        params: action,
       })
     );
   }
@@ -119,11 +120,11 @@ class DocumentService extends BaseService {
     );
   }
 
-  downloadDocumentVersion(documentId: string, versionNumber: number) {
+  downloadDocumentVersion(documentId: string, versionNumber: number, action?: string) {
     return this.handleApiResponse(
       axiosInstance.get(
         `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/download`,
-        { responseType: "blob" }
+        { responseType: "blob", params: action },
       )
     );
   }

@@ -30,7 +30,7 @@ export const DocumentCard = React.memo(({ documentInformation, onDelete, onClick
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const response = await documentService.downloadDocument(documentInformation.id);
+      const response = await documentService.downloadDocument(documentInformation.id, "download");
       const url = URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;

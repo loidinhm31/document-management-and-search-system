@@ -71,7 +71,8 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
     try {
       const response = await documentService.downloadDocumentVersion(
         documentId,
-        versionNumber
+        versionNumber,
+        "download",
       );
       const url = URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");

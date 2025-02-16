@@ -54,27 +54,6 @@ eureka:
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10
 
-model-service:
-  url: http://localhost:8000
-  api-key: ${MODEL_SERVICE_API_KEY:your-secret-key}
-
-resilience4j:
-  circuitbreaker:
-    instances:
-      modelService:
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        permittedNumberOfCallsInHalfOpenState: 3
-        waitDurationInOpenState: 5s
-        failureRateThreshold: 50
-  retry:
-    instances:
-      modelService:
-        maxAttempts: 3
-        waitDuration: 1s
-        enableExponentialBackoff: true
-        exponentialBackoffMultiplier: 2
-
 aws:
   s3:
     bucket-name: ${AWS_S3_BUCKET_NAME:dms-doc-s3}
