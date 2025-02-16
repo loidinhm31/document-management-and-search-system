@@ -5,9 +5,9 @@ eureka:
     expected-client-renewal-interval-seconds: 30
     eviction-interval-timer-in-ms: 5000
   instance:
+    prefer-ip-address: false
     hostname: localhost
   client:
-
     register-with-eureka: false
     fetch-registry: false
     serviceUrl:

@@ -38,18 +38,19 @@ public class DocumentController {
                 file, summary, courseCode, major, level, category, tags, jwt.getSubject()));
     }
 
-    @GetMapping("/downloads/{id}")
+    @GetMapping("/{id}/downloads")
     public ResponseEntity<byte[]> getDocument(
             @PathVariable String id,
+            @RequestParam(required = false) String action,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         String username = jwt.getSubject();
-        byte[] content = documentService.getDocumentContent(id, username);
+        byte[] content = documentService.getDocumentContent(id, username, action);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"document\"")
                 .body(content);
     }
 
-    @GetMapping("/thumbnails/{id}")
+    @GetMapping("/{id}/thumbnails")
     public ResponseEntity<byte[]> getDocumentThumbnail(
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt,
@@ -162,25 +163,6 @@ public class DocumentController {
         return ResponseEntity.ok(document);
     }
 
-    @GetMapping("/{id}/share")
-    public ResponseEntity<ShareSettings> getShareSettings(
-            @PathVariable String id,
-            @AuthenticationPrincipal Jwt jwt) {
-        String username = jwt.getSubject();
-        ShareSettings settings = documentService.getShareSettings(id, username);
-        return ResponseEntity.ok(settings);
-    }
-
-    @PutMapping("/{id}/share")
-    public ResponseEntity<DocumentInformation> updateShareSettings(
-            @PathVariable String id,
-            @RequestBody UpdateShareSettingsRequest request,
-            @AuthenticationPrincipal Jwt jwt) {
-        String username = jwt.getSubject();
-        DocumentInformation document = documentService.updateShareSettings(id, request, username);
-        return ResponseEntity.ok(document);
-    }
-
     @GetMapping("/tags/suggestions")
     public ResponseEntity<Set<String>> getTagSuggestions(
             @RequestParam(required = false) String prefix) {
@@ -191,9 +173,10 @@ public class DocumentController {
     public ResponseEntity<byte[]> downloadDocumentVersion(
             @PathVariable String documentId,
             @PathVariable Integer versionNumber,
+            @RequestParam(required = false) String action,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         String username = jwt.getSubject();
-        byte[] content = documentService.getDocumentVersionContent(documentId, versionNumber, username);
+        byte[] content = documentService.getDocumentVersionContent(documentId, versionNumber, username, action);
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"document\"")
                 .body(content);

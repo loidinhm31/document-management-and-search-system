@@ -7,4 +7,5 @@ public enum EventType {
     UPDATE_EVENT_WITH_FILE,
     DELETE_EVENT,
     REVERT_EVENT,
+    FAVORITE_NOTIFICATION
 }

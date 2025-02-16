@@ -24,7 +24,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class DocumentService {
     private final MongoTemplate mongoTemplate;
-
     private final UserClient userClient;
 
     public Page<DocumentInformation> getUserDocuments(String username, DocumentSearchCriteria criteria, int page, int size) {
@@ -35,8 +34,21 @@ public class DocumentService {
         UserDto userDto = response.getBody();
 
         // Build the query criteria
-        Criteria queryCriteria = Criteria.where("userId").is(userDto.getUserId().toString())
-                .and("deleted").ne(true);
+        Criteria baseCriteria = Criteria.where("deleted").ne(true);
+
+        // Build access criteria combining owned and shared documents
+        Criteria accessCriteria = new Criteria().orOperator(
+                // Documents owned by user
+                Criteria.where("userId").is(userDto.getUserId().toString()),
+
+                // Documents specifically shared with user
+                new Criteria().andOperator(
+                        Criteria.where("sharingType").is("SPECIFIC"),
+                        Criteria.where("sharedWith").in(userDto.getUserId().toString())
+                )
+        );
+
+        Criteria queryCriteria = new Criteria().andOperator(baseCriteria, accessCriteria);
 
         // Add search criteria if provided
         if (StringUtils.isNotBlank(criteria.getSearch())) {
@@ -70,8 +82,11 @@ public class DocumentService {
         Pageable pageable = PageRequest.of(page, size, sort);
 
         // Execute query
-        Query query = new Query(queryCriteria).with(pageable);
-        long total = mongoTemplate.count(query, DocumentInformation.class);
+        Query countQuery = new Query(queryCriteria);
+        long total = mongoTemplate.count(countQuery, DocumentInformation.class);
+
+        Query query = new Query(queryCriteria)
+                .with(pageable);
         List<DocumentInformation> documents = mongoTemplate.find(query, DocumentInformation.class);
 
         return new PageImpl<>(

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
+import java.util.UUID;
+
 
 @Setter
 @Getter
@@ -13,7 +15,7 @@ import lombok.*;
 @Data
 public class UpdateUserRequest {
     @NotNull(message = "User ID is required")
-    private Long userId;
+    private UUID userId;
 
     @NotBlank(message = "Role name is required")
     @Pattern(regexp = "^ROLE_[A-Z]+$", message = "Invalid role format")

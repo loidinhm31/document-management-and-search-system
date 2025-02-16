@@ -1,7 +1,7 @@
 app:
+  base-url: http://localhost:3000
   document:
     max-size-threshold-mb: 25MB
-
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
@@ -13,17 +13,27 @@ app:
   pdf:
     quality-threshold: 0.8
     min-text-density: 0.01
+  email:
+    batch-size: 50  # Number of emails per batch
 
 spring:
   data:
     mongodb:
-      authentication-database: admin
-      username: mongodb
-      password: mongodbpw
-      database: dms
-      port: 27017
-      host: 127.0.0.1
+      uri: mongodb://mongodb:mongodbpw@localhost:27017/dms?authSource=admin
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
+    username: postgres
+    password: postgrespw
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
   rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
     listener:
       simple:
         retry:
@@ -35,20 +45,49 @@ spring:
     publisher-confirm-type: correlated
     publisher-returns: true
 
-elasticsearch:
-  host: 127.0.0.1
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username:
+    password:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+mail-sender:
+  from-email: no-reply@dms.com
+
+opensearch:
+  host: localhost
   port: 9200
-  username: elastic  # Default username for Elasticsearch 8.x
-  password: "NX9DYn+_4WSXRmHwymTo"
+  username: admin
+  password: admin
+  scheme: http
+  aws: false
 
 # RabbitMQ
 rabbitmq:
   exchanges:
     internal: internal.exchange
     dlx: dead.letter.exchange
+    notification: notification.exchange
   queues:
     document-sync: document-sync.queue
     document-sync-dlq: document-sync.dlq
+    notification: notification.queue
+    notification-dlq: notification.dlq
   routing-keys:
     internal-document-sync: internal.document-sync.routing-key
+    notification: notification.email.routing-key
     dlq: dead.letter.routing-key
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME}
+    region: ${AWS_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+    temp-dir: ${java.io.tmpdir}/dms-processor

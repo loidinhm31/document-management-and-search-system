@@ -5,8 +5,8 @@ import { useNavigate } from "react-router-dom";
 
 import { LoginForm } from "@/components/auth/login-form";
 import { TwoFactorForm } from "@/components/auth/two-factor-form";
-import LanguageSwitcher from "@/components/language-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
+import LanguageSwitcher from "@/components/common/language-switcher";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/auth-context";
@@ -16,7 +16,7 @@ import { JwtPayload, TokenResponse } from "@/types/auth";
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { token, setAuthData, setIsAdmin } = useAuth();
+  const { token, setAuthData, setRole } = useAuth();
   const { toast } = useToast();
 
   const [step, setStep] = useState(1);
@@ -44,17 +44,17 @@ export default function LoginPage() {
   const handleSuccessfulLogin = (token: TokenResponse, decodedToken: JwtPayload) => {
     const user = {
       username: decodedToken.sub,
-      roles: decodedToken.roles.split(","),
+      roles: decodedToken.roles.split(",")
     };
 
     // Update auth context
     setAuthData(token);
-    setIsAdmin(user.roles.includes("ROLE_ADMIN"));
+    setRole(user.roles[0]);
 
     toast({
       title: t("common.success"),
       description: t("auth.login.success"),
-      variant: "success",
+      variant: "success"
     });
   };
 

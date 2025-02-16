@@ -1,7 +1,5 @@
 import React, { lazy } from "react";
 
-import DocumentDetailPage from "@/pages/document/discover/document-detail-page";
-
 const Login = lazy(() => import("@/pages/login-page"));
 const Register = lazy(() => import("@/pages/register-page"));
 const ForgotPassword = lazy(() => import("@/pages/forgot-password-page"));
@@ -9,11 +7,11 @@ const Home = lazy(() => import("@/pages/home-page"));
 const Profile = lazy(() => import("@/pages/profile-page"));
 const UserList = lazy(() => import("@/pages/admin/user-list-page"));
 const UserDetails = lazy(() => import("@/pages/admin/user-detail-page"));
-
+const MasterData = lazy(() => import("@/pages/admin/master-data-page"));
 const MyDocument = lazy(() => import("@/pages/document/my-document/my-document-page"));
 const MyDocumentDetail = lazy(() => import("@/pages/document/my-document/my-document-detail-page"));
-
 const DocumentDetail = lazy(() => import("@/pages/document/discover/document-detail-page"));
+const DocumentPreference = lazy(() => import("@/pages/document/document-preferences-page"));
 
 
 export interface Route {
@@ -23,7 +21,6 @@ export interface Route {
   isSecure: boolean;
   permission?: string[];
   subPages?: Route[];
-  adminRequired?: boolean;
 }
 
 export const RoutePaths = {
@@ -34,13 +31,15 @@ export const RoutePaths = {
   FORGOT_PASSWORD: "/forgot-password",
   EMPTY: "/empty",
   PROFILE: "/profile",
-  MY_DOCUMENT: "/document/me",
-  MY_DOCUMENT_DETAIL: "/document/me/:documentId",
-  DOCUMENT_DETAIL: "/document/:documentId",
+  MY_DOCUMENT: "/documents/me",
+  MY_DOCUMENT_DETAIL: "/documents/me/:documentId",
+  DOCUMENT_DETAIL: "/discover/:documentId",
+  DOCUMENT_PREFERENCE: "/document-prefs",
   ADMIN: {
     USERS: "/admin/users",
     USER_DETAILS: "/admin/users/:userId",
-  },
+    MASTER_DATA: "/admin/master-data"
+  }
 } as const;
 
 export const routes: Route[] = [
@@ -48,53 +47,61 @@ export const routes: Route[] = [
     path: RoutePaths.LOGIN,
     pageTitle: "Login",
     component: Login,
-    isSecure: false,
+    isSecure: false
   },
   {
     path: RoutePaths.REGISTER,
     pageTitle: "Sign Up",
     component: Register,
-    isSecure: false,
+    isSecure: false
   },
   {
     path: RoutePaths.FORGOT_PASSWORD,
     pageTitle: "Forgot Password",
     component: ForgotPassword,
-    isSecure: false,
+    isSecure: false
   },
   {
     path: RoutePaths.HOME,
     pageTitle: "pages.home",
     component: Home,
     isSecure: true,
-    permission: [],
+    permission: []
   },
   {
     path: RoutePaths.PROFILE,
     pageTitle: "pages.profile",
     component: Profile,
     isSecure: true,
-    permission: [],
+    permission: []
   },
   {
     path: RoutePaths.MY_DOCUMENT,
     pageTitle: "pages.my-document",
     component: MyDocument,
     isSecure: true,
-    permission: [],
+    permission: []
   },
   {
     path: RoutePaths.MY_DOCUMENT_DETAIL,
     pageTitle: "pages.my-document.detail",
     component: MyDocumentDetail,
-    isSecure: false,
-    permission: [],
+    isSecure: true,
+    permission: []
   },
   {
     path: RoutePaths.DOCUMENT_DETAIL,
-    pageTitle: "pages.document.detail",
+    pageTitle: "pages.document-discover.detail",
     component: DocumentDetail,
-    isSecure: false,
+    isSecure: true,
+    permission: []
+  },
+  {
+    path: RoutePaths.DOCUMENT_PREFERENCE,
+    pageTitle: "pages.document-preferences",
+    component: DocumentPreference,
+    isSecure: true,
+    permission: []
   },
   // Admin Routes
   {
@@ -102,17 +109,22 @@ export const routes: Route[] = [
     pageTitle: "pages.admin.users",
     component: UserList,
     isSecure: true,
-    adminRequired: true,
-    permission: [],
+    permission: ["ROLE_ADMIN"]
   },
   {
     path: RoutePaths.ADMIN.USER_DETAILS,
     pageTitle: "pages.admin.userDetail",
     component: UserDetails,
     isSecure: true,
-    adminRequired: true,
-    permission: [],
+    permission: ["ROLE_ADMIN"]
   },
+  {
+    path: RoutePaths.ADMIN.MASTER_DATA,
+    pageTitle: "pages.admin.masterData",
+    component: MasterData,
+    isSecure: true,
+    permission: ["ROLE_ADMIN"]
+  }
 ];
 
 export const getRoutes = (initRoutes = routes): Route[] => {

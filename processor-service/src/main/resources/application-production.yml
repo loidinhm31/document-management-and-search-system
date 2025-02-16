@@ -1,0 +1,93 @@
+app:
+  base-url: http://localhost:3000
+  document:
+    max-size-threshold-mb: 25MB
+  ocr:
+    data-path: /usr/share/tesseract-ocr/5/tessdata
+    minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
+    chunk-size: 10
+    max-threads: 4
+    temp-dir: /tmp/ocr
+    dpi: 300
+    image-type: RGB
+  pdf:
+    quality-threshold: 0.8
+    min-text-density: 0.01
+  email:
+    batch-size: 50  # Number of emails per batch
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://dms_master:WJjn5r0taKlMIFNO@dms.rdb8a.mongodb.net/dms?retryWrites=true&w=majority
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://dms-db-instance.clcc0wwq8t7m.ap-southeast-1.rds.amazonaws.com:5432/postgres?currentSchema=dms
+    username: dms_master
+    password: jgnaz6z8HhETshhD8CnuMZETnbu0AH2Ch
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  rabbitmq:
+    host: b-c7466b67-82bd-43fb-b1bb-1d469e7a21a6.mq.ap-southeast-1.amazonaws.com
+    port: 5671
+    username: dms_master
+    password: DyQ3jtmVga9jw3YzHHjTtMgjRJ7XBmxqZ
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2.0
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: nebulea.event@gmail.com
+    password: kvcz hwsj gpwg zzlm
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+mail-sender:
+  from-email: no-reply@dms.com
+
+opensearch:
+  host: vpc-dms-opensearch-7m6m3jd7mq6uz4r5bh3quasela.ap-southeast-1.es.amazonaws.com
+  port: 9200
+  username: dms_master
+  password: hzE8MYCuBvzkV3KT8kedTyWthea6ar1xC
+  scheme: https
+  aws: true
+
+# RabbitMQ
+rabbitmq:
+  exchanges:
+    internal: internal.exchange
+    dlx: dead.letter.exchange
+    notification: notification.exchange
+  queues:
+    document-sync: document-sync.queue
+    document-sync-dlq: document-sync.dlq
+    notification: notification.queue
+    notification-dlq: notification.dlq
+  routing-keys:
+    internal-document-sync: internal.document-sync.routing-key
+    notification: notification.email.routing-key
+    dlq: dead.letter.routing-key
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME}
+    region: ${AWS_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+    temp-dir: ${java.io.tmpdir}/dms-processor

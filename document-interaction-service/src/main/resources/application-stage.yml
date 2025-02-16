@@ -1,0 +1,62 @@
+app:
+  eureka:
+    url: http://${EUREKA_URI:100.101.13.113}:8081
+  auth-service:
+    api-key: ${AUTH_SERVICE_API_KEY:document-interaction-api-key}
+  document:
+    max-size-mb: 50MB
+    placeholder:
+      processing: classpath:placeholders/processing-thumbnail.png
+      error: classpath:placeholders/error-thumbnail.png
+
+spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: ${app.document.max-file-size:50MB}
+      max-request-size: ${app.document.max-file-size:50MB}
+      file-size-threshold: 2MB
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://${SERVICE_ENDPOINT_URL:100.101.13.113}:8082
+          jwk-set-uri: http://${SERVICE_ENDPOINT_URL:100.101.13.113}:8082/.well-known/jwks.json
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://${RESOURCE_URL:100.104.245.71}:5432/postgres?currentSchema=dms
+    username: postgres
+    password: postgrespw
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  data:
+    mongodb:
+      uri: mongodb://mongodb:mongodbpw@${RESOURCE_URL:100.104.245.71}:27017/dms?authSource=admin
+  rabbitmq:
+    host: ${RESOURCE_URL:100.104.245.71}
+    port: 5672
+    username: guest
+    password: guest
+
+# Eureka Client
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${app.eureka.url}/eureka
+    enabled: true
+  instance:
+    preferIpAddress: true
+    hostname: ${EUREKA_URI:100.101.13.113}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 10
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME}
+    region: ${AWS_REGION:ap-southeast-1}
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}

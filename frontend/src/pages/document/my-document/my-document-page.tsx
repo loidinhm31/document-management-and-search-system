@@ -10,9 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { searchService } from "@/services/search.service";
-import { DocumentInformation, DocumentStatus } from "@/types/document";
 import { useAppSelector } from "@/store/hook";
-import { selectProcessingItems } from "@/store/slices/processingSlice";
+import { selectProcessingItems } from "@/store/slices/processing-slice";
+import { DocumentInformation, DocumentStatus } from "@/types/document";
 
 export default function MyDocumentPage() {
   const { t } = useTranslation();
@@ -26,8 +26,7 @@ export default function MyDocumentPage() {
 
   const processingItems = useAppSelector(selectProcessingItems);
   const latestProcessingItem = useMemo(() =>
-      processingItems.length > 0 ? processingItems[processingItems.length - 1] : null
-    , [processingItems]);
+      processingItems.length > 0 ? processingItems[processingItems.length - 1] : null, [processingItems]);
 
   const fetchUserDocuments = useCallback(async (page: number = 0, filters: SearchFilters = {}) => {
     setLoading(true);
@@ -45,7 +44,7 @@ export default function MyDocumentPage() {
     } finally {
       setLoading(false);
     }
-  }, [t, toast]);
+  }, []);
 
   const handleSearch = (filters: SearchFilters) => {
     setCurrentFilters(filters);
@@ -109,18 +108,16 @@ export default function MyDocumentPage() {
             </div>
           ) : (
             <>
-              {documents.length > 0 && (
-                <DocumentGrid
-                  documents={documents}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                  onDelete={handleDelete}
-                  loading={loading}
-                  onCardClick={(doc) => navigate(`/document/me/${doc.id}`)}
-                  className="pt-4"
-                />
-              )}
+              <DocumentGrid
+                documents={documents}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                onDelete={handleDelete}
+                loading={loading}
+                onCardClick={(doc) => navigate(`/documents/me/${doc.id}`)}
+                className="pt-4"
+              />
             </>
           )}
         </CardContent>

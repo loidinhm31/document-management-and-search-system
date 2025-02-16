@@ -1,0 +1,38 @@
+app:
+  eureka:
+    url: http://10.0.3.23:8081
+  auth-service:
+    api-key: ${AUTH_SERVICE_API_KEY:document-search-api-key}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://10.0.3.23:8082
+          jwk-set-uri: http://10.0.3.23:8082/.well-known/jwks.json
+  data:
+    mongodb:
+      uri: mongodb+srv://
+
+# Eureka Client
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${app.eureka.url}/eureka
+    enabled: true
+  instance:
+    preferIpAddress: true
+    hostname: 10.0.3.23
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 10
+
+opensearch:
+  host: vpc-dms-opensearch-7m6m3jd7mq6uz4r5bh3quasela.ap-southeast-1.es.amazonaws.com
+  port: 9200
+  username: dms_master
+  password: hzE8MYCuBvzkV3KT8kedTyWthea6ar1xC
+  scheme: https
+  aws: true

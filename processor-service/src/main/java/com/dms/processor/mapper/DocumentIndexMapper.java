@@ -25,6 +25,7 @@ public class DocumentIndexMapper {
                 .sharedWith(doc.getSharedWith())
                 .deleted(doc.isDeleted())
                 .status(doc.getStatus())
+                .language(doc.getLanguage())
                 .createdAt(doc.getCreatedAt())
                 .build();
     }

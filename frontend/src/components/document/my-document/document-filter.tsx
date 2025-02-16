@@ -1,13 +1,11 @@
 import { Label } from "@radix-ui/react-menu";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-import TagInput from "@/components/tag-input";
+import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MasterData } from "@/types/document";
-import { masterDataService, MasterDataType } from "@/services/master-data.service";
 import i18n from "i18next";
-import { fetchMasterData, selectMasterData } from "@/store/slices/masterDataSlice";
+import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 
 export const courseTypes = [
@@ -133,7 +131,7 @@ export const DocumentFilter = ({
       {/* Tags Input */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.tagLabel")}</Label>
-        <TagInput
+        <TagInputDebounce
           value={tagsValue}
           onChange={onTagsChange}
           placeholder={t("document.commonSearch.tagsPlaceholder")}

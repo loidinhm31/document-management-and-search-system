@@ -1,4 +1,4 @@
-FROM amazoncorretto:17-alpine as builder
+FROM amazoncorretto:17-alpine AS builder
 WORKDIR /app
 COPY pom.xml .
 COPY src src

@@ -3,12 +3,15 @@ server:
   error:
     include-message: always
 
-#logging:
-#  level:
-#    org:
-#      springframework:
-#        web: DEBUG
-#        security: DEBUG
+logging:
+  level:
+    org:
+      springframework:
+        web: DEBUG
+        security: DEBUG
+        data:
+          elasticsearch: DEBUG
+      elasticsearch: DEBUG
 
 spring:
   application:
@@ -18,7 +21,3 @@ spring:
   cloud:
     discovery:
       enabled: true
-  data:
-    elasticsearch:
-      repositories:
-        enabled: true

@@ -4,7 +4,6 @@ import axiosInstance from "@/services/axios.config";
 import { UpdateCredentialsRequest, UpdatePasswordRequest, User } from "@/types/auth";
 
 import { BaseService } from "./base.service";
-import { UserSearchResponse } from "@/types/user";
 
 class UserService extends BaseService {
   updateCredentials(data: UpdateCredentialsRequest) {
@@ -59,21 +58,6 @@ class UserService extends BaseService {
     return this.handleApiResponse(axiosInstance.get(`/auth/api/v1/users/${userId}/2fa/status`), {
       errorMessage: i18next.t("profile.twoFactor.messages.statusError"),
     });
-  }
-
-  searchUsers(query: string) {
-    return this.handleApiResponse<UserSearchResponse[]>(
-      axiosInstance.get(`/auth/api/v1/users/search`, {
-        params: { query }
-      })
-    );
-  }
-
-
-  getUsersByIds(userIds: string[]) {
-    return this.handleApiResponse<UserSearchResponse[]>(
-      axiosInstance.post(`/auth/api/v1/users/details`, userIds)
-    );
   }
 }
 

@@ -9,7 +9,7 @@ import {
   fetchSuggestions,
   selectSuggestions,
   setSearchTerm
-} from "@/store/slices/searchSlice";
+} from "@/store/slices/search-slice";
 
 interface SearchSuggestionsProps {
   onSearch: () => void;
@@ -130,7 +130,6 @@ const SearchSuggestions = ({
             onFocus={() => {
               // Show suggestions on focus if there's a search term
               if (searchTerm.trim()) {
-                setShowSuggestions(true);
                 debouncedFetchSuggestions(searchTerm);
               }
             }}

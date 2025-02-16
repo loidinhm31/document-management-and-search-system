@@ -1,26 +1,27 @@
 package com.dms.document.search.controller;
 
+import com.dms.document.search.dto.DocumentResponseDto;
 import com.dms.document.search.dto.DocumentSearchCriteria;
 import com.dms.document.search.dto.DocumentSearchRequest;
 import com.dms.document.search.model.DocumentInformation;
+import com.dms.document.search.service.DocumentRecommendationService;
 import com.dms.document.search.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/documents")
 public class DocumentController {
     private final DocumentService documentService;
+    private final DocumentRecommendationService documentRecommendationService;
 
-    @PostMapping("/user/search")
+    @PostMapping("/me/search")
     public ResponseEntity<Page<DocumentInformation>> searchUserDocuments(
             @AuthenticationPrincipal Jwt jwt,
             @RequestBody(required = false) DocumentSearchRequest request) {
@@ -57,4 +58,23 @@ public class DocumentController {
         return ResponseEntity.ok(documents);
     }
 
+    @GetMapping("recommendation")
+    public ResponseEntity<Page<DocumentResponseDto>> getRecommendationDocuments(
+            @RequestParam(required = false) String documentId,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam int page,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String username = jwt.getSubject();
+        PageRequest pageable = PageRequest.of(page, size);
+
+        // Get recommendations
+        Page<DocumentResponseDto> recommendations = documentRecommendationService.getRecommendations(
+                documentId,
+                username,
+                pageable
+        );
+
+        return ResponseEntity.ok(recommendations);
+    }
 }

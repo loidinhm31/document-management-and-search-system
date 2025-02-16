@@ -38,6 +38,8 @@ public class DocumentResponseDto {
 
     private Map<String, String> extractedMetadata;
 
+    private String language;
+
     private Date createdAt;
 
     private List<String> highlights;
