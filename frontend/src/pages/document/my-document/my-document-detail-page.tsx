@@ -178,14 +178,14 @@ export default function MyDocumentDetailPage() {
         </Card>
 
         {/* Document Preview */}
-        <Card className="xl:h-[800px]">
+        <Card>
           <CardHeader>
             <CardTitle>{documentData?.filename}</CardTitle>
             <CardDescription>
               {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(2)} KB
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-full max-h-[700px]">
+          <CardContent className="h-full max-h-[1000px]">
             {documentData && (
               <DocumentViewer
                 documentId={documentData.id}
