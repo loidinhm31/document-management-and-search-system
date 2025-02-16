@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useProcessing } from "@/context/processing-provider";
-import { useLanguageDetection } from "@/hooks/use-language-detection";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { masterDataService } from "@/services/master-data.service";
@@ -51,13 +50,9 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
-  const { detectLanguage, detectedLanguage, detectingLanguage } = useLanguageDetection();
-
   const [courseLevels, setCourseLevels] = useState<MasterData[]>([]);
   const [majors, setMajors] = useState<MasterData[]>([]);
   const [categories, setCategories] = useState<MasterData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [shouldFetchPredictions, setShouldFetchPredictions] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -135,7 +130,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
       // Call the success callback if provided
       onUploadSuccess?.();
 
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.upload.messages.error"),
@@ -157,7 +152,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
       // Close dialog or continue with your existing flow
       onUploadSuccess?.();
 
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.upload.messages.error"),
@@ -180,23 +175,11 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
         setCategories(categoriesResponse.data);
       } catch (error) {
         console.error("Error fetching master data:", error);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchMasterData();
   }, []);
-
-  // Watch summary field changes for language detection
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === "summary" && value.summary) {
-        detectLanguage(value.summary);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch, detectLanguage]);
 
   return (
     <div className="space-y-6">
@@ -238,20 +221,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
                       {...field}
                       placeholder="Enter document summary..."
                       className="min-h-[150px]"
-                      onBlur={() => {
-                        field.onBlur();
-                        setShouldFetchPredictions(true);
-                      }}
                     />
                   </FormControl>
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>{field.value?.length || 0}/500 characters</span>
-                    {detectingLanguage ? (
-                      <span>Detecting language...</span>
-                    ) : detectedLanguage && (
-                      <span>Detected language: {detectedLanguage}</span>
-                    )}
-                  </div>
                   <FormMessage />
                 </div>
               </FormItem>

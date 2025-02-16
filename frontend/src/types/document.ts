@@ -77,6 +77,7 @@ export interface DocumentVersion {
   filename: string;
   fileSize: number;
   mimeType: string;
+  documentType: DocumentType;
   status: DocumentStatus;
   language?: string;
   extractedMetadata?: Record<string, string>;

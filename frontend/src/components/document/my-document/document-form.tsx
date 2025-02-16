@@ -13,7 +13,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useLanguageDetection } from "@/hooks/use-language-detection";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { ACCEPT_TYPE_MAP } from "@/types/document";
@@ -49,9 +48,6 @@ interface DocumentFormProps {
 export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", loading }: DocumentFormProps) {
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const { detectLanguage, detectedLanguage, detectingLanguage } = useLanguageDetection();
-
-  const [shouldFetchPredictions, setShouldFetchPredictions] = useState(false);
 
   const dispatch = useAppDispatch();
   const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
@@ -132,10 +128,6 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
                       {...field}
                       placeholder="Enter document summary..."
                       className="min-h-[150px]"
-                      onBlur={() => {
-                        field.onBlur(); // Call the original onBlur
-                        setShouldFetchPredictions(true);
-                      }}
                     />
                   </FormControl>
                   <FormMessage />

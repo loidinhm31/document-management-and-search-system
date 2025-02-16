@@ -71,6 +71,7 @@ public class DocumentService {
 
         UserResponse userResponse = response.getBody();
         validateDocument(file);
+        DocumentType documentType = DocumentUtils.determineDocumentType(file.getContentType());
 
         // Upload new file to S3
         String s3Key = s3Service.uploadFile(file, "documents");
@@ -83,6 +84,7 @@ public class DocumentService {
                 .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
+                .documentType(documentType)
                 .status(DocumentStatus.PENDING)
                 .createdBy(username)
                 .createdAt(new Date())
@@ -95,7 +97,7 @@ public class DocumentService {
                 .filePath(s3Key)
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
-                .documentType(DocumentUtils.determineDocumentType(file.getContentType()))
+                .documentType(documentType)
                 .summary(summary)
                 .major(major)
                 .courseCode(courseCode)
@@ -276,6 +278,8 @@ public class DocumentService {
 
         validateDocument(file);
 
+        DocumentType documentType = DocumentUtils.determineDocumentType(file.getContentType());
+
         // Upload new file to S3
         String s3Key = s3Service.uploadFile(file, "documents");
 
@@ -287,6 +291,7 @@ public class DocumentService {
                 .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
+                .documentType(documentType)
                 .status(DocumentStatus.PENDING)
                 .createdBy(username)
                 .createdAt(new Date())
@@ -299,7 +304,7 @@ public class DocumentService {
         document.setThumbnailPath(null); // Reset thumbnail - will be generated for new version
         document.setFileSize(file.getSize());
         document.setMimeType(file.getContentType());
-        document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
+        document.setDocumentType(documentType);
 
         // Update metadata
         document.setSummary(documentUpdateRequest.summary());
@@ -405,10 +410,7 @@ public class DocumentService {
             CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
         }
 
-        // Read and return the file content
-        try (InputStream in = Files.newInputStream(Path.of(targetVersion.getFilePath()))) {
-            return in.readAllBytes();
-        }
+        return s3Service.downloadFile(targetVersion.getFilePath());
     }
 
     public DocumentInformation revertToVersion(String documentId, Integer versionNumber, String username) {
@@ -432,6 +434,7 @@ public class DocumentService {
                 .filename(versionToRevert.getFilename())
                 .fileSize(versionToRevert.getFileSize())
                 .mimeType(versionToRevert.getMimeType())
+                .documentType(versionToRevert.getDocumentType())
                 .status(DocumentStatus.COMPLETED)
                 .language(versionToRevert.getLanguage())          // Reuse language detection
                 .extractedMetadata(versionToRevert.getExtractedMetadata()) // Reuse extracted metadata
@@ -446,7 +449,7 @@ public class DocumentService {
         document.setThumbnailPath(versionToRevert.getThumbnailPath());
         document.setFileSize(versionToRevert.getFileSize());
         document.setMimeType(versionToRevert.getMimeType());
-        document.setDocumentType(DocumentUtils.determineDocumentType(versionToRevert.getMimeType()));
+        document.setDocumentType(versionToRevert.getDocumentType());
         document.setLanguage(versionToRevert.getLanguage());
         document.setExtractedMetadata(versionToRevert.getExtractedMetadata());
         document.setUpdatedAt(new Date());
