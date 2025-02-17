@@ -416,22 +416,22 @@ public class UserServiceImpl implements UserService {
 
         // Update allowed fields based on role
         if (isAdmin) {
-            if (request.getAccountLocked() != null) {
+            if (Objects.nonNull(request.getAccountLocked())) {
                 user.setAccountNonLocked(!request.getAccountLocked());
             }
-            if (request.getAccountExpired() != null) {
+            if (Objects.nonNull(request.getAccountExpired())) {
                 user.setAccountNonExpired(!request.getAccountExpired());
             }
-            if (request.getCredentialsExpired() != null) {
+            if (Objects.nonNull(request.getCredentialsExpired())) {
                 user.setCredentialsNonExpired(!request.getCredentialsExpired());
             }
-            if (request.getEnabled() != null) {
+            if (Objects.nonNull(request.getEnabled())) {
                 user.setEnabled(request.getEnabled());
             }
-            if (request.getCredentialsExpiryDate() != null) {
+            if (Objects.nonNull(request.getAccountLocked())) {
                 user.setCredentialsExpiryDate(request.getCredentialsExpiryDate());
             }
-            if (request.getAccountExpiryDate() != null) {
+            if (Objects.nonNull(request.getAccountExpiryDate())) {
                 user.setAccountExpiryDate(request.getAccountExpiryDate());
             }
         }
