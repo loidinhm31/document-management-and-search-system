@@ -1,12 +1,15 @@
 package com.dms.document.search.service;
 
 import com.dms.document.search.dto.DocumentResponseDto;
+import com.dms.document.search.dto.DocumentSearchRequest;
 import com.dms.document.search.dto.SearchContext;
 import com.dms.document.search.enums.DocumentType;
 import com.dms.document.search.enums.QueryType;
 import com.dms.document.search.enums.SharingType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opensearch.core.common.text.Text;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
@@ -50,28 +53,52 @@ public abstract class OpenSearchBaseService {
         queryBuilder.filter(sharingFilter);
     }
 
+    protected void addFilterConditions(BoolQueryBuilder queryBuilder, String major, String courseLevel, String category, Set<String> tags) {
+        if (StringUtils.isNotBlank(major)) {
+            queryBuilder.filter(QueryBuilders.termQuery("major", major));
+        }
+
+        if (StringUtils.isNotBlank(courseLevel)) {
+            queryBuilder.filter(QueryBuilders.termQuery("courseLevel", courseLevel));
+        }
+
+        if (StringUtils.isNotBlank(category)) {
+            queryBuilder.filter(QueryBuilders.termQuery("category", category));
+        }
+
+        if (CollectionUtils.isNotEmpty(tags)) {
+            queryBuilder.filter(QueryBuilders.termsQuery("tags", tags));
+        }
+    }
+
     protected HighlightBuilder configureSuggestionHighlightFields() {
         HighlightBuilder highlightBuilder = new HighlightBuilder();
 
         // Configure filename highlights
         highlightBuilder.field(new HighlightBuilder.Field("filename.analyzed")
-                .preTags("<em><b>")
-                .postTags("</b></em>")
+                .preTags("@@HIGHLIGHT@@")
+                .postTags("@@E_HIGHLIGHT@@")
                 .fragmentSize(60)
-                .numOfFragments(1));
+                .numOfFragments(1)
+                .boundaryMaxScan(128)
+                .phraseLimit(256));
 
         highlightBuilder.field(new HighlightBuilder.Field("filename.search")
-                .preTags("<em><b>")
-                .postTags("</b></em>")
+                .preTags("@@HIGHLIGHT@@")
+                .postTags("@@E_HIGHLIGHT@@")
                 .fragmentSize(60)
-                .numOfFragments(1));
+                .numOfFragments(1)
+                .boundaryMaxScan(128)
+                .phraseLimit(256));
 
         // Configure content highlights
         highlightBuilder.field(new HighlightBuilder.Field("content")
-                .preTags("<em><b>")
-                .postTags("</b></em>")
+                .preTags("@@HIGHLIGHT@@")
+                .postTags("@@E_HIGHLIGHT@@")
                 .fragmentSize(150)
-                .numOfFragments(2));
+                .numOfFragments(1)
+                .boundaryMaxScan(128)
+                .phraseLimit(256));
 
         return highlightBuilder;
     }
@@ -191,6 +218,23 @@ public abstract class OpenSearchBaseService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(documentResponses, pageable, totalHits);
+    }
+
+    public List<String> processSuggestionResults(SearchHit[] hits) {
+        return Arrays.stream(hits)
+                .map(hit -> {
+                    List<String> highlights = new ArrayList<>();
+
+                    Map<String, HighlightField> highlightFields = hit.getHighlightFields();
+                    if (highlightFields != null) {
+                        addHighlightsFromField(highlightFields.get("filename.analyzed"), highlights);
+                        addHighlightsFromField(highlightFields.get("filename.search"), highlights);
+                        addHighlightsFromField(highlightFields.get("content"), highlights);
+                    }
+                    return highlights;
+                })
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
     }
 
     private void addHighlightsFromField(HighlightField field, List<String> highlights) {

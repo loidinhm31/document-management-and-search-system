@@ -16,6 +16,7 @@ import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.common.unit.Fuzziness;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.MoreLikeThisQueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
@@ -132,7 +133,7 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
 
         return processSearchResults(
                 searchResponse.getHits().getHits(),
-                searchResponse.getHits().getTotalHits().value,
+                Objects.nonNull(searchResponse.getHits().getTotalHits()) ? searchResponse.getHits().getTotalHits().value : 0,
                 pageable
         );
     }
@@ -197,7 +198,7 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
         if (courseCode != null) {
             queryBuilder.should(QueryBuilders.termQuery("courseCode", courseCode).boost(8.0f))
                     .should(QueryBuilders.matchQuery("courseCode", courseCode)
-                            .fuzziness("2")
+                            .fuzziness(Fuzziness.TWO)
                             .prefixLength(3)
                             .boost(6.0f));
         }
@@ -306,7 +307,7 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
 
         return processSearchResults(
                 searchResponse.getHits().getHits(),
-                searchResponse.getHits().getTotalHits().value,
+                Objects.nonNull(searchResponse.getHits().getTotalHits()) ? searchResponse.getHits().getTotalHits().value : 0,
                 pageable
         );
     }
