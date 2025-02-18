@@ -21,7 +21,8 @@ docker run -p 9200:9200 -p 9600:9600 \
 -e "plugins.security.allow_unsafe_democertificates=true" \
 -e "plugins.security.allow_default_init_securityindex=true" \
 -e "plugins.security.audit.type=internal_opensearch" \
--d opensearchproject/opensearch:2.11.1
+-e "OPENSEARCH_INITIAL_ADMIN_PASSWORD=27H4Gwxb24XGsARfuh3b" \
+-d opensearchproject/opensearch:2.17.0
 ```
 
 

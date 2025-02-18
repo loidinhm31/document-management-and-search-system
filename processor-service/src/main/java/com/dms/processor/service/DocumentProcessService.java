@@ -112,7 +112,7 @@ public class DocumentProcessService {
         DocumentVersion documentVersion = document.getVersion(versionNumber)
                 .orElseThrow(() -> new DocumentProcessingException("Version not found"));
 
-        DocumentExtractContent extractedContent = extractAndProcessContent(documentVersion, tempFile);
+        DocumentExtractContent extractedContent = extractAndProcessContent(tempFile);
         updateDocumentWithContent(document, documentVersion, extractedContent);
         // Generate thumbnail if needed (base on extracted content)
         handleThumbnail(document, documentVersion, tempFile);
@@ -126,7 +126,7 @@ public class DocumentProcessService {
         indexDocument(document);
     }
 
-    private DocumentExtractContent extractAndProcessContent(DocumentVersion documentVersion, Path filePath) {
+    private DocumentExtractContent extractAndProcessContent(Path filePath) {
         DocumentExtractContent extractedContent = contentExtractorService.extractContent(filePath);
 
         if (extractedContent.content().isEmpty()) {
