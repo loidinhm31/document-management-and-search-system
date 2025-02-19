@@ -16,10 +16,13 @@ class DocumentService extends BaseService {
   }
 
   downloadDocument(id: string, action?: string) {
+    console.log("asdsa");
     return this.handleApiResponse(
       axiosInstance.get(`/document-interaction/api/v1/documents/${id}/downloads`, {
         responseType: "blob",
-        params: action,
+        params: {
+          action
+        },
       })
     );
   }
@@ -124,7 +127,7 @@ class DocumentService extends BaseService {
     return this.handleApiResponse(
       axiosInstance.get(
         `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/download`,
-        { responseType: "blob", params: action },
+        { responseType: "blob", params: { action } },
       )
     );
   }
