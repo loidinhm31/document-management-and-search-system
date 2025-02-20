@@ -50,7 +50,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const dispatch = useAppDispatch();
-  const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
+  const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
 
   const form = useForm<DocumentFormValues>({
@@ -66,10 +66,10 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
   });
 
   useEffect(() => {
-    if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
+    if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
       dispatch(fetchMasterData());
     }
-  }, [dispatch, majors.length, levels.length, categories.length]);
+  }, [dispatch, majors?.length, courseCodes?.length, levels?.length, categories?.length]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: acceptedFiles => {
@@ -130,22 +130,11 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
                       className="min-h-[150px]"
                     />
                   </FormControl>
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>{field.value?.length || 0}/500 characters</span>
+                  </div>
                   <FormMessage />
                 </div>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="courseCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t("document.detail.form.courseCode.label")}</FormLabel>
-                <FormControl>
-                  <Input placeholder={t("document.detail.form.courseCode.placeholder")} {...field} />
-                </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -163,7 +152,32 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {majors.map((major) => (
+                    {majors?.map((major) => (
+                      <SelectItem key={major.code} value={major.code}>
+                        {major.translations[i18n.language] || major.translations.en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="courseCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("document.upload.form.courseCode.label")}</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("document.upload.form.courseCode.placeholder")} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {courseCodes?.map((major) => (
                       <SelectItem key={major.code} value={major.code}>
                         {major.translations[i18n.language] || major.translations.en}
                       </SelectItem>
@@ -188,7 +202,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {levels.map((level) => (
+                    {levels?.map((level) => (
                       <SelectItem key={level.code} value={level.code}>
                         {level.translations[i18n.language] || level.translations.en}
                       </SelectItem>
@@ -213,7 +227,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel = "Upload", 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories.map((category) => (
+                    {categories?.map((category) => (
                       <SelectItem key={category.code} value={category.code}>
                         {category.translations[i18n.language] || category.translations.en}
                       </SelectItem>

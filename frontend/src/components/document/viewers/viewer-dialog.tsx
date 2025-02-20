@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 import { DocumentViewer } from "@/components/document/viewers/document-viewer";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,6 +19,42 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
                                                                      documentId,
                                                                      isVersion = false,
                                                                    }) => {
+  useEffect(() => {
+    if (open) {
+      // Prevent right-click context menu
+      const handleContextMenu = (e: MouseEvent) => {
+        e.preventDefault();
+      };
+
+      // Prevent copy/cut
+      const handleCopy = (e: ClipboardEvent) => {
+        e.preventDefault();
+      };
+
+      // Prevent keyboard shortcuts
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (
+          (e.ctrlKey || e.metaKey) &&
+          (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X')
+        ) {
+          e.preventDefault();
+        }
+      };
+
+      document.addEventListener('contextmenu', handleContextMenu);
+      document.addEventListener('copy', handleCopy);
+      document.addEventListener('cut', handleCopy);
+      document.addEventListener('keydown', handleKeyDown);
+
+      return () => {
+        document.removeEventListener('contextmenu', handleContextMenu);
+        document.removeEventListener('copy', handleCopy);
+        document.removeEventListener('cut', handleCopy);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [open]);
+
   if (!documentData) return null;
 
   const getFileSize = () => {
@@ -28,7 +64,13 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-w-4xl flex-col gap-0 p-0">
+      <DialogContent
+        className="flex max-w-4xl flex-col gap-0 p-0 select-none"
+        onCopy={(e) => e.preventDefault()}
+        onCut={(e) => e.preventDefault()}
+        onPaste={(e) => e.preventDefault()}
+        style={{ WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none', userSelect: 'none' }}
+      >
         <DialogHeader className="px-6 py-4">
           <DialogTitle className="pr-8">
             {documentData?.filename}

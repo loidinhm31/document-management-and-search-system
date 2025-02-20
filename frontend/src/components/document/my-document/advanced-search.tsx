@@ -1,21 +1,12 @@
-import { Filter, Search, SortAsc, SortDesc } from "lucide-react";
-import React, { useState } from 'react';
+import { Filter, Search } from "lucide-react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import DocumentFilter from "@/components/document/my-document/document-filter";
+import DocumentFilter from "@/components/document/document-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const sortOptions = [
-  { label: "Created Date (Newest)", value: "createdAt,desc" },
-  { label: "Created Date (Oldest)", value: "createdAt,asc" },
-  { label: "Name (A-Z)", value: "filename,asc" },
-  { label: "Name (Z-A)", value: "filename,desc" },
-  { label: "Size (Largest)", value: "fileSize,desc" },
-  { label: "Size (Smallest)", value: "fileSize,asc" }
-];
 
 export interface SearchFilters {
   search?: string;
@@ -36,10 +27,10 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
 
   // Search states
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSort, setSelectedSort] = useState(sortOptions[0].value);
 
   // Filter states
   const [selectedMajor, setSelectedMajor] = useState("all");
+  const [selectedCourseCode, setSelectedCourseCode] = useState("all");
   const [selectedLevel, setSelectedLevel] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -50,7 +41,6 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
       major: selectedMajor === "all" ? undefined : selectedMajor,
       level: selectedLevel === "all" ? undefined : selectedLevel,
       category: selectedCategory === "all" ? undefined : selectedCategory,
-      sort: selectedSort,
       tags: selectedTags.length > 0 ? selectedTags : undefined
     });
   };
@@ -60,7 +50,6 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
     setSelectedMajor("all");
     setSelectedLevel("all");
     setSelectedCategory("all");
-    setSelectedSort(sortOptions[0].value);
     setSelectedTags([]);
     onSearch({});
   };
@@ -95,26 +84,6 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
             {t("document.commonSearch.apply")}
           </Button>
 
-          {/* Sort Dropdown */}
-          <Select value={selectedSort} onValueChange={setSelectedSort}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {sortOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  <span className="flex items-center gap-2">
-                    {option.value.endsWith('desc') ?
-                      <SortDesc className="h-4 w-4" /> :
-                      <SortAsc className="h-4 w-4" />
-                    }
-                    {option.label}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
           {/* Advanced Filter Toggle */}
           <Button
             variant="outline"
@@ -124,7 +93,8 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
             <Filter className="h-4 w-4" />
             {t("document.commonSearch.filters")}
             {getActiveFilterCount() > 0 && (
-              <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs flex items-center justify-center text-primary-foreground">
+              <span
+                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs flex items-center justify-center text-primary-foreground">
                 {getActiveFilterCount()}
               </span>
             )}
@@ -141,6 +111,8 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
             <DocumentFilter
               majorValue={selectedMajor}
               onMajorChange={setSelectedMajor}
+              courseCodeValue={selectedCourseCode}
+              onCourseCodeChange={setSelectedCourseCode}
               levelValue={selectedLevel}
               onLevelChange={setSelectedLevel}
               categoryValue={selectedCategory}

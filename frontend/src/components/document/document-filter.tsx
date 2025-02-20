@@ -1,42 +1,19 @@
 import { Label } from "@radix-ui/react-menu";
+import i18n from "i18next";
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import i18n from "i18next";
-import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
+import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 
-export const courseTypes = [
-  { label: "All", value: "all" },
-  { label: "Fundamental", value: "FUNDAMENTAL" },
-  { label: "Intermediate", value: "INTERMEDIATE" },
-  { label: "Advanced", value: "ADVANCED" },
-  { label: "Specialized", value: "SPECIALIZED" }
-];
-
-export const majors = [
-  { label: "All", value: "all" },
-  { label: "Software Engineering", value: "SOFTWARE_ENGINEERING" },
-  { label: "Artificial Intelligence", value: "ARTIFICIAL_INTELLIGENCE" },
-  { label: "Information Security", value: "INFORMATION_SECURITY" },
-  { label: "Internet of Things", value: "IOT" }
-];
-
-export const categories = [
-  { label: "All", value: "all" },
-  { label: "Lecture", value: "LECTURE" },
-  { label: "Exercise", value: "EXERCISE" },
-  { label: "Exam", value: "EXAM" },
-  { label: "Reference", value: "REFERENCE" },
-  { label: "Lab", value: "LAB" },
-  { label: "Project", value: "PROJECT" }
-];
 
 export interface DocumentFilterProps {
   majorValue: string;
   onMajorChange: (value: string) => void;
+  courseCodeValue: string;
+  onCourseCodeChange: (value: string) => void;
   levelValue: string;
   onLevelChange: (value: string) => void;
   categoryValue: string;
@@ -49,6 +26,8 @@ export interface DocumentFilterProps {
 export const DocumentFilter = ({
                                  majorValue,
                                  onMajorChange,
+                                 courseCodeValue,
+                                 onCourseCodeChange,
                                  levelValue,
                                  onLevelChange,
                                  categoryValue,
@@ -60,13 +39,13 @@ export const DocumentFilter = ({
   const { t } = useTranslation();
 
   const dispatch = useAppDispatch();
-  const { majors, levels, categories, loading } = useAppSelector(selectMasterData);
+  const { majors, courseCodes, levels, categories, loading } = useAppSelector(selectMasterData);
 
   useEffect(() => {
-    if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
+    if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
       dispatch(fetchMasterData());
     }
-  }, [dispatch, majors.length, levels.length, categories.length]);
+  }, [dispatch, majors?.length, courseCodes?.length, levels?.length, categories?.length]);
 
   if (loading) {
     return <div>Loading...</div>;
@@ -92,6 +71,24 @@ export const DocumentFilter = ({
         </Select>
       </div>
 
+      {/* Course code Filter */}
+      <div className="space-y-2">
+        <Label>{t("document.commonSearch.courseCodeLabel")}</Label>
+        <Select value={courseCodeValue} onValueChange={onCourseCodeChange}>
+          <SelectTrigger>
+            <SelectValue placeholder={t("document.commonSearch.courseCodePlaceholder")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
+            {courseCodes?.map((course) => (
+              <SelectItem key={course.code} value={course.code}>
+                {course.translations[i18n.language] || course.translations.en}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Level Filter */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.levelLabel")}</Label>
@@ -101,7 +98,7 @@ export const DocumentFilter = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
-            {levels.map((level) => (
+            {levels?.map((level) => (
               <SelectItem key={level.code} value={level.code}>
                 {level.translations[i18n.language] || level.translations.en}
               </SelectItem>
@@ -119,7 +116,7 @@ export const DocumentFilter = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
-            {categories.map((category) => (
+            {categories?.map((category) => (
               <SelectItem key={category.code} value={category.code}>
                 {category.translations[i18n.language] || category.translations.en}
               </SelectItem>

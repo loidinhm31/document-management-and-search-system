@@ -4,8 +4,9 @@ export interface Translation {
 }
 
 export enum MasterDataType {
-  COURSE_LEVEL = "COURSE_LEVEL",
   MAJOR = "MAJOR",
+  COURSE_CODE = "COURSE_CODE",
+  COURSE_LEVEL = "COURSE_LEVEL",
   DOCUMENT_CATEGORY = "DOCUMENT_CATEGORY"
 }
 

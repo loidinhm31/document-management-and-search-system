@@ -19,6 +19,8 @@ import { documentService } from "@/services/document.service";
 import { masterDataService } from "@/services/master-data.service";
 import { ACCEPT_TYPE_MAP } from "@/types/document";
 import { MasterData, MasterDataType } from "@/types/master-data";
+import { useAppDispatch, useAppSelector } from "@/store/hook";
+import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 
 const formSchema = z.object({
   summary: z.string()
@@ -50,9 +52,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
-  const [courseLevels, setCourseLevels] = useState<MasterData[]>([]);
-  const [majors, setMajors] = useState<MasterData[]>([]);
-  const [categories, setCategories] = useState<MasterData[]>([]);
+  const dispatch = useAppDispatch();
+  const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -65,6 +66,12 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
       tags: []
     }
   });
+
+  useEffect(() => {
+    if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
+      dispatch(fetchMasterData());
+    }
+  }, [dispatch, majors?.length, courseCodes?.length, levels?.length, categories?.length]);
 
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles?.length > 0) {
@@ -161,26 +168,6 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
     }
   };
 
-  useEffect(() => {
-    const fetchMasterData = async () => {
-      try {
-        const [levelsResponse, majorsResponse, categoriesResponse] = await Promise.all([
-          masterDataService.getAllActiveByType(MasterDataType.COURSE_LEVEL),
-          masterDataService.getAllActiveByType(MasterDataType.MAJOR),
-          masterDataService.getAllActiveByType(MasterDataType.DOCUMENT_CATEGORY)
-        ]);
-
-        setCourseLevels(levelsResponse.data);
-        setMajors(majorsResponse.data);
-        setCategories(categoriesResponse.data);
-      } catch (error) {
-        console.error("Error fetching master data:", error);
-      }
-    };
-
-    fetchMasterData();
-  }, []);
-
   return (
     <div className="space-y-6">
       <div
@@ -231,20 +218,6 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
 
           <FormField
             control={form.control}
-            name="courseCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t("document.detail.form.courseCode.label")}</FormLabel>
-                <FormControl>
-                  <Input placeholder={t("document.detail.form.courseCode.placeholder")} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="major"
             render={({ field }) => (
               <FormItem>
@@ -256,11 +229,36 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {majors.map((major) => (
+                    {majors?.map((major) => (
                       <SelectItem key={major.code} value={major.code}>
                         {major.translations[i18n.language] || major.translations.en}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="courseCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("document.upload.form.courseCode.label")}</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("document.upload.form.courseCode.placeholder")} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                         {courseCodes?.map((course) => (
+                           <SelectItem key={course.code} value={course.code}>
+                             {course.translations[i18n.language] || course.translations.en}
+                           </SelectItem>
+                         ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -281,7 +279,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {courseLevels.map((level) => (
+                    {levels?.map((level) => (
                       <SelectItem key={level.code} value={level.code}>
                         {level.translations[i18n.language] || level.translations.en}
                       </SelectItem>
@@ -306,7 +304,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories.map((category) => (
+                    {categories?.map((category) => (
                       <SelectItem key={category.code} value={category.code}>
                         {category.translations[i18n.language] || category.translations.en}
                       </SelectItem>

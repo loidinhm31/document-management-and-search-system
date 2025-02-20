@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar, FileBox, Loader2, User } from "lucide-react";
+import { ArrowLeft, Calendar, Loader2, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MdOutlineFavorite, MdOutlineFavoriteBorder } from "react-icons/md";
@@ -17,9 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 import { getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
+import { setCurrentDocument } from "@/store/slices/document-slice";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
-import { setCurrentDocument } from "@/store/slices/document-slice";
 import { MasterDataType } from "@/types/master-data";
 
 export default function DocumentDetailPage() {
@@ -34,7 +34,7 @@ export default function DocumentDetailPage() {
   const [documentData, setDocumentData] = useState<DocumentInformation | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
 
-  const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
+  const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
@@ -206,16 +206,18 @@ export default function DocumentDetailPage() {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label>{t("document.detail.fields.courseCode")}</Label>
-                    <p className="text-sm text-muted-foreground">{documentData.courseCode}</p>
-                  </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.major")}</Label>
                       <p className="text-sm text-muted-foreground">
                         {getMasterDataTranslation(documentData.major, MasterDataType.MAJOR, { majors })}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>{t("document.detail.fields.courseCode")}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {getMasterDataTranslation(documentData.courseCode, MasterDataType.COURSE_CODE, { courseCodes })}
                       </p>
                     </div>
 

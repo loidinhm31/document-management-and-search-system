@@ -1,21 +1,14 @@
 import { ArrowDown, ArrowUp, Calendar, Download, Eye, Filter, Loader2, MoreHorizontal } from "lucide-react";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import { DocumentListActions } from "@/components/document/discover/document-list-actions";
 import { HighlightCell } from "@/components/document/discover/highlight-cell";
 import SearchSuggestions from "@/components/document/discover/search-suggestions";
-import DocumentFilter from "@/components/document/my-document/document-filter";
-import { DocumentViewer } from "@/components/document/viewers/document-viewer";
+import DocumentFilter from "@/components/document/document-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { cn, getMasterDataTranslation } from "@/lib/utils";
@@ -30,6 +23,7 @@ import {
   selectSearchResults,
   selectSearchState,
   setCategory,
+  setCourseCode,
   setLevel,
   setMajor,
   setPage,
@@ -37,6 +31,14 @@ import {
   setTags
 } from "@/store/slices/search-slice";
 import { MasterDataType } from "@/types/master-data";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
+import { DocumentInformation } from "@/types/document";
 
 interface SortableColumn {
   field: string;
@@ -56,6 +58,7 @@ export const DocumentList = () => {
   const {
     selectedSort,
     selectedMajor,
+    selectedCourseCode,
     selectedLevel,
     selectedCategory,
     selectedTags,
@@ -67,13 +70,14 @@ export const DocumentList = () => {
   const { searchTerm } = useAppSelector(selectSearchState);
   const { isSearchMode } = useAppSelector(selectSearchState);
 
+  const [showPreview, setShowPreview] = useState(false);
   const [selectedDoc, setSelectedDoc] = React.useState(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
 
   const columns: SortableColumn[] = [
     { field: "filename", label: t("document.discover.headers.name"), sortable: !!isSearchMode },
-    { field: "courseCode", label: t("document.discover.headers.course"), sortable: !!isSearchMode },
     { field: "major", label: t("document.discover.headers.major"), sortable: !!isSearchMode },
+    { field: "courseCode", label: t("document.discover.headers.course"), sortable: !!isSearchMode },
     { field: "courseLevel", label: t("document.discover.headers.level"), sortable: !!isSearchMode },
     { field: "category", label: t("document.discover.headers.category"), sortable: !!isSearchMode },
     { field: "tags", label: t("document.discover.headers.tags"), sortable: false },
@@ -194,6 +198,11 @@ export const DocumentList = () => {
     return count;
   };
 
+  const handlePreview = (doc: DocumentInformation) => {
+    setSelectedDoc(doc);
+    setShowPreview(!showPreview);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -247,6 +256,8 @@ export const DocumentList = () => {
               <DocumentFilter
                 majorValue={selectedMajor}
                 onMajorChange={(value) => dispatch(setMajor(value))}
+                courseCodeValue={selectedCourseCode}
+                onCourseCodeChange={(value) => dispatch(setCourseCode(value))}
                 levelValue={selectedLevel}
                 onLevelChange={(value) => dispatch(setLevel(value))}
                 categoryValue={selectedCategory}
@@ -289,13 +300,13 @@ export const DocumentList = () => {
                     <CardContent className="p-4 pt-0">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{t("document.discover.headers.course")}:</span>
-                          <span className="text-sm">{doc.courseCode}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.major")}:</span>
                           <span
                             className="text-sm">{getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{t("document.discover.headers.course")}:</span>
+                          <span className="text-sm">{doc.courseCode}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.level")}:</span>
@@ -316,7 +327,7 @@ export const DocumentList = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setSelectedDoc(doc)}
+                            onClick={() => handlePreview(doc)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -368,10 +379,10 @@ export const DocumentList = () => {
                               {doc.filename}
                             </Button>
                           </TableCell>
-                          <TableCell className="truncate">{doc.courseCode}</TableCell>
                           <TableCell className="truncate">
                             {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}
                           </TableCell>
+                          <TableCell className="truncate">{doc.courseCode}</TableCell>
                           <TableCell className="hidden md:table-cell">
                             {getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
                           </TableCell>
@@ -402,24 +413,10 @@ export const DocumentList = () => {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Actions</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setSelectedDoc(doc)}>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  {t("document.actions.view")}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDownload(doc.id, doc.filename)}>
-                                  <Download className="mr-2 h-4 w-4" />
-                                  {t("document.actions.download")}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <DocumentListActions
+                              onDownload={() => handleDownload(doc.id, doc.filename)}
+                              onShowPreview={() => handlePreview(doc)}
+                            />
                           </TableCell>
                         </TableRow>
                       ))}
@@ -455,22 +452,14 @@ export const DocumentList = () => {
           </div>
 
           {/* Document Preview Dialog */}
-          {selectedDoc && (
-            <Dialog open={!!selectedDoc} onOpenChange={() => setSelectedDoc(null)}>
-              <DialogContent className="max-w-4xl h-[80vh]">
-                <DialogHeader>
-                  <DialogTitle>{selectedDoc?.filename}</DialogTitle>
-                </DialogHeader>
-                <div className="flex-1 overflow-auto">
-                  <DocumentViewer
-                    documentId={selectedDoc?.id}
-                    documentType={selectedDoc?.documentType}
-                    mimeType={selectedDoc?.mimeType}
-                    fileName={selectedDoc?.filename}
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
+          {showPreview && selectedDoc && (
+            <DocumentViewerDialog
+              open={showPreview}
+              onOpenChange={setShowPreview}
+              documentData={selectedDoc}
+              documentId={selectedDoc.id}
+              isVersion={false}
+            />
           )}
         </div>
       </CardContent>

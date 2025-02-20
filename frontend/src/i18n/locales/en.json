@@ -308,6 +308,7 @@
       },
       "types": {
         "major": "Major",
+        "course_code": "Course Code",
         "course_level": "Course Level",
         "document_category": "Document Category"
       },
@@ -352,7 +353,7 @@
       },
       "headers": {
         "name": "Name",
-        "course": "Course",
+        "course": "Course Code",
         "major": "Major",
         "level": "Level",
         "category": "Category",
@@ -551,6 +552,8 @@
       "filters": "Filters",
       "majorLabel": "Major",
       "majorPlaceholder": "Select major",
+      "courseCodeLabel": "Course Code",
+      "courseCodePlaceholder": "Select course code",
       "levelLabel": "Level",
       "levelPlaceholder": "Select level",
       "categoryLabel": "Category",
@@ -596,7 +599,7 @@
     "preferences": {
       "fetchError": "Failed to fetch preferences",
       "tabs": {
-        "preferences": "Preferences",
+        "preferences": "Preference Settings",
         "analytics": "Analytics"
       },
       "contentPreferences": {
@@ -609,6 +612,10 @@
         "majors": {
           "label": "Preferred Majors",
           "placeholder": "Select preferred majors"
+        },
+        "courseCode": {
+          "label": "Preferred Course Codes",
+          "placeholder": "Select preferred course codes"
         },
         "levels": {
           "label": "Preferred Course Levels",

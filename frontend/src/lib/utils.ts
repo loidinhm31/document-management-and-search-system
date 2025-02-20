@@ -10,6 +10,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export interface MasterDataMap {
   majors?: MasterData[];
+  courseCodes?: MasterData[];
   levels?: MasterData[];
   categories?: MasterData[];
 }
@@ -23,6 +24,9 @@ export const getMasterDataTranslation = (
   switch (type) {
     case MasterDataType.MAJOR:
       data = masterData.majors.find(item => item.code === code);
+      break;
+    case MasterDataType.COURSE_CODE:
+      data = masterData.courseCodes.find(item => item.code === code);
       break;
     case MasterDataType.COURSE_LEVEL:
       data = masterData.levels.find(item => item.code === code);

@@ -16,7 +16,6 @@ class DocumentService extends BaseService {
   }
 
   downloadDocument(id: string, action?: string) {
-    console.log("asdsa");
     return this.handleApiResponse(
       axiosInstance.get(`/document-interaction/api/v1/documents/${id}/downloads`, {
         responseType: "blob",
