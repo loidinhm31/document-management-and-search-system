@@ -1,4 +1,4 @@
-package com.dms.document.search.elasticsearch;
+package com.dms.document.search.opensearch;
 
 import com.dms.document.search.enums.DocumentStatus;
 import com.dms.document.search.enums.DocumentType;

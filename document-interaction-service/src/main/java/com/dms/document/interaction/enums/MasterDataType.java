@@ -1,7 +1,8 @@
 package com.dms.document.interaction.enums;
 
 public enum MasterDataType {
-    COURSE_LEVEL,
     MAJOR,
+    COURSE_CODE,
+    COURSE_LEVEL,
     DOCUMENT_CATEGORY
 }

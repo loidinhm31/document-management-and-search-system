@@ -217,6 +217,9 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
         // Add preferred majors boost
         addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 3.0f);
 
+        // Add preferred course code boost
+        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 3.0f);
+
         // Add preferred levels boost
         addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 2.0f);
 

@@ -23,6 +23,9 @@ public class DocumentPreferences {
     @Field("preferred_majors")
     private Set<String> preferredMajors;
 
+    @Field("preferred_course_codes")
+    private Set<String> preferredCourseCodes;
+
     @Field("preferred_levels")
     private Set<String> preferredLevels;
 

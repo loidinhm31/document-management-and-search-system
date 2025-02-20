@@ -53,9 +53,13 @@ public abstract class OpenSearchBaseService {
         queryBuilder.filter(sharingFilter);
     }
 
-    protected void addFilterConditions(BoolQueryBuilder queryBuilder, String major, String courseLevel, String category, Set<String> tags) {
+    protected void addFilterConditions(BoolQueryBuilder queryBuilder, String major, String courseCode, String courseLevel, String category, Set<String> tags) {
         if (StringUtils.isNotBlank(major)) {
             queryBuilder.filter(QueryBuilders.termQuery("major", major));
+        }
+
+        if (StringUtils.isNotBlank(courseCode)) {
+            queryBuilder.filter(QueryBuilders.termQuery("courseCode", courseCode));
         }
 
         if (StringUtils.isNotBlank(courseLevel)) {

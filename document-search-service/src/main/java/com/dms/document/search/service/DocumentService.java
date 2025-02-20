@@ -55,7 +55,6 @@ public class DocumentService {
             Criteria searchCriteria = new Criteria().orOperator(
                     Criteria.where("originalFilename").regex(criteria.getSearch(), "i"),
                     Criteria.where("content").regex(criteria.getSearch(), "i"),
-                    Criteria.where("courseCode").regex(criteria.getSearch(), "i"),
                     Criteria.where("tags").regex(criteria.getSearch(), "i")
             );
             queryCriteria.andOperator(searchCriteria);
@@ -64,6 +63,9 @@ public class DocumentService {
         // Add filters if provided
         if (StringUtils.isNotBlank(criteria.getMajor())) {
             queryCriteria.and("major").is(criteria.getMajor());
+        }
+        if (StringUtils.isNotBlank(criteria.getCourseCode())) {
+            queryCriteria.and("courseCode").is(criteria.getCourseCode());
         }
         if (StringUtils.isNotBlank(criteria.getLevel())) {
             queryCriteria.and("courseLevel").is(criteria.getLevel());

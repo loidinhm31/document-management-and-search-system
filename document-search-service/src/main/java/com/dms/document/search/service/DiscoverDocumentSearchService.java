@@ -101,7 +101,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         addSharingAccessFilter(queryBuilder, userId);
 
         // Add filter conditions
-        addFilterConditions(queryBuilder, request.getMajor(), request.getLevel(), request.getCategory(), request.getTags());
+        addFilterConditions(queryBuilder, request.getMajor(), request.getCourseCode(), request.getLevel(), request.getCategory(), request.getTags());
 
         // Add search conditions if search query exists
         if (StringUtils.isNotEmpty(context.originalQuery())) {
@@ -308,7 +308,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         addSharingAccessFilter(queryBuilder, userId);
 
         // Reuse filter conditions but simplified
-        addFilterConditions(queryBuilder, request.getMajor(), request.getLevel(), request.getCategory(), request.getTags());
+        addFilterConditions(queryBuilder, request.getMajor(), request.getCourseCode(), request.getLevel(), request.getCategory(), request.getTags());
 
         // Add lighter suggestion-specific search conditions
         if (StringUtils.isNotEmpty(context.originalQuery())) {
