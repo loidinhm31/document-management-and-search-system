@@ -53,6 +53,13 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing-keys.dlq}")
     private String deadLetterRoutingKey;
 
+    @Value("${rabbitmq.queues.otp}")
+    private String otpQueue;
+
+    @Value("${rabbitmq.routing-keys.otp}")
+    private String otpRoutingKey;
+
+
     private final ConnectionFactory connectionFactory;
     private final ObjectMapper objectMapper;
 
@@ -61,7 +68,6 @@ public class RabbitMQConfig {
         this.objectMapper = objectMapper;
     }
 
-    // Existing exchanges
     @Bean
     public TopicExchange internalTopicExchange() {
         return new TopicExchange(this.internalExchange);
@@ -112,7 +118,7 @@ public class RabbitMQConfig {
         return BindingBuilder
                 .bind(documentSyncQueue())
                 .to(internalTopicExchange())
-                .with(this.internalNotificationRoutingKey);
+                .with(internalNotificationRoutingKey);
     }
 
     @Bean
@@ -138,6 +144,26 @@ public class RabbitMQConfig {
                 .to(deadLetterExchange())
                 .with(deadLetterRoutingKey + ".notification");
     }
+
+
+    @Bean
+    public Queue otpQueue() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-dead-letter-exchange", deadLetterExchange);
+        args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".otp");
+        args.put("x-message-ttl", 300000); // 5 minutes
+        args.put("x-max-length", 10000);
+        return new Queue(otpQueue, true, false, false, args);
+    }
+
+    @Bean
+    public Binding otpBinding() {
+        return BindingBuilder
+                .bind(otpQueue())
+                .to(notificationExchange())
+                .with(otpRoutingKey);
+    }
+
 
     @Bean
     public RetryOperationsInterceptor retryInterceptor() {

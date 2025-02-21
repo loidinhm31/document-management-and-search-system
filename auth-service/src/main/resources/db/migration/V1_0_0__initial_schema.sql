@@ -40,20 +40,6 @@ CREATE TABLE users
     CONSTRAINT users_role_fk FOREIGN KEY (role_id) REFERENCES roles (role_id)
 );
 
--- Create audit_logs table
-CREATE TABLE audit_logs
-(
-    id         UUID PRIMARY KEY      DEFAULT uuid_generate_v4(),
-    user_id    UUID REFERENCES users (user_id),
-    username   VARCHAR(50)  NOT NULL,
-    action     VARCHAR(100) NOT NULL,
-    details    TEXT,
-    ip_address VARCHAR(45),
-    user_agent TEXT,
-    status     VARCHAR(20),
-    timestamp  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Create password_reset_token table
 CREATE TABLE password_reset_token
 (
@@ -72,14 +58,12 @@ CREATE TABLE password_reset_token
 -- Create indexes
 CREATE INDEX idx_users_username ON users (username);
 CREATE INDEX idx_users_email ON users (email);
-CREATE INDEX idx_audit_logs_username ON audit_logs (username);
-CREATE INDEX idx_audit_logs_timestamp ON audit_logs (timestamp);
 CREATE INDEX idx_password_reset_token ON password_reset_token (token);
 
 -- Create refresh_tokens table
 CREATE TABLE refresh_tokens
 (
-    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id          UUID PRIMARY KEY      DEFAULT uuid_generate_v4(),
     token       VARCHAR(255) NOT NULL UNIQUE,
     user_id     UUID         NOT NULL,
     expiry_date TIMESTAMP    NOT NULL,
@@ -98,3 +82,23 @@ CREATE INDEX idx_refresh_tokens_token ON refresh_tokens (token);
 
 -- Create index for user lookup
 CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id);
+
+
+CREATE TABLE otp_verifications
+(
+    id            UUID PRIMARY KEY,
+    otp           VARCHAR(6)   NOT NULL,
+    email         VARCHAR(255) NOT NULL,
+    expiry_time   TIMESTAMP    NOT NULL,
+    attempt_count INT          NOT NULL DEFAULT 0,
+    is_validated  BOOLEAN      NOT NULL DEFAULT FALSE,
+    locked_until  TIMESTAMP,
+    user_id       UUID REFERENCES users (user_id),
+    created_at    TIMESTAMP,
+    created_by    VARCHAR(255),
+    updated_at    TIMESTAMP,
+    updated_by    VARCHAR(255)
+);
+
+CREATE INDEX idx_otp_email ON otp_verifications (email);
+CREATE INDEX idx_otp_user ON otp_verifications (user_id);

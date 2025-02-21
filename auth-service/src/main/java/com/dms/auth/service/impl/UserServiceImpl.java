@@ -1,18 +1,16 @@
 package com.dms.auth.service.impl;
 
-import com.dms.auth.constant.AuditActions;
-import com.dms.auth.constant.AuditStatus;
 import com.dms.auth.dto.UserDto;
 import com.dms.auth.dto.UserSearchResponse;
 import com.dms.auth.dto.request.*;
+import com.dms.auth.entity.PasswordResetToken;
 import com.dms.auth.entity.RefreshToken;
+import com.dms.auth.entity.Role;
+import com.dms.auth.entity.User;
 import com.dms.auth.enums.AppRole;
 import com.dms.auth.exception.InvalidRequestException;
 import com.dms.auth.exception.ResourceNotFoundException;
 import com.dms.auth.mapper.UserMapper;
-import com.dms.auth.entity.PasswordResetToken;
-import com.dms.auth.entity.Role;
-import com.dms.auth.entity.User;
 import com.dms.auth.repository.PasswordResetTokenRepository;
 import com.dms.auth.repository.RoleRepository;
 import com.dms.auth.repository.UserRepository;
@@ -21,13 +19,17 @@ import com.dms.auth.security.request.Verify2FARequest;
 import com.dms.auth.security.response.TokenResponse;
 import com.dms.auth.security.response.UserInfoResponse;
 import com.dms.auth.security.services.CustomUserDetails;
-import com.dms.auth.service.AdminService;
 import com.dms.auth.service.TotpService;
 import com.dms.auth.service.UserService;
 import com.dms.auth.util.SecurityUtils;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -49,23 +51,39 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Transactional
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl extends BaseService implements UserService {
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordResetTokenRepository passwordResetTokenRepository;
-    private final RefreshTokenService refreshTokenService;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtils jwtUtils;
-    private final EmailService emailService;
-    private final TotpService totpService;
-    private final AdminService adminService;
-    private final UserMapper userMapper;
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    @Autowired
+    private TotpService totpService;
+
+    @Autowired
+    private OtpService otpService;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     public TokenResponse authenticateUser(LoginRequest loginRequest, HttpServletRequest request) {
@@ -75,36 +93,14 @@ public class UserServiceImpl implements UserService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        // Generate JWT token
-        String jwt = jwtUtils.generateTokenFromUsername(userDetails);
-
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", loginRequest.getUsername()));
 
-        // Create refresh token
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user, request);
-
-        // Create audit log for successful login
-        adminService.createAuditLog(
-                user.getUsername(),
-                AuditActions.LOGIN,
-                "User logged in successfully",
-                request.getRemoteAddr(),
-                AuditStatus.SUCCESS
-        );
-
-        // Get user roles
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-
-        return new TokenResponse(
-                jwt,
-                refreshToken.getToken(),
-                "Bearer",
-                userDetails.getUsername(),
-                roles
-        );
+        if (!user.isEnabled()) {
+            return new TokenResponse()
+                    .withEnabled(user.isEnabled());
+        }
+        return createToken(user, userDetails, request);
     }
 
     @Override
@@ -143,15 +139,6 @@ public class UserServiceImpl implements UserService {
         // Revoke refresh token
         refreshTokenService.revokeToken(refreshToken);
 
-        // Create audit log for logout
-        adminService.createAuditLog(
-                user.getUsername(),
-                AuditActions.LOGOUT,
-                "User logged out successfully",
-                null,
-                AuditStatus.SUCCESS
-        );
-
         // Clear security context
         SecurityContextHolder.clearContext();
     }
@@ -177,7 +164,7 @@ public class UserServiceImpl implements UserService {
         user.setAccountNonLocked(true);
         user.setAccountNonExpired(true);
         user.setCredentialsNonExpired(true);
-        user.setEnabled(true);
+        user.setEnabled(false); // disabled until verified
         user.setCredentialsExpiryDate(LocalDate.now().plusYears(1));
         user.setAccountExpiryDate(LocalDate.now().plusYears(1));
         user.setTwoFactorEnabled(false);
@@ -185,7 +172,10 @@ public class UserServiceImpl implements UserService {
         user.setCreatedBy(request.getUsername());
         user.setUpdatedBy(request.getUsername());
 
-        userRepository.save(user);
+        user = userRepository.save(user);
+
+        // Generate and send OTP
+        otpService.generateAndSendOtp(user);
     }
 
     @Override
@@ -225,7 +215,7 @@ public class UserServiceImpl implements UserService {
         passwordResetTokenRepository.save(resetToken);
 
         String resetUrl = String.format("%s/reset-password?token=%s", frontendUrl, token);
-        emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
+//        emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
     }
 
     @Override
@@ -295,9 +285,6 @@ public class UserServiceImpl implements UserService {
                 });
 
         userRepository.save(user);
-
-        // Create audit log
-        adminService.createAuditLog(user.getUsername(), AuditActions.PASSWORD_CHANGE, "Password changed successfully", null, AuditStatus.SUCCESS);
     }
 
     // 2FA operations
@@ -461,8 +448,8 @@ public class UserServiceImpl implements UserService {
                 .stream()
                 .map(user -> new UserSearchResponse(
                         user.getUserId().toString(),
-                                user.getUsername(),
-                                user.getEmail())
+                        user.getUsername(),
+                        user.getEmail())
                 )
                 .toList();
     }

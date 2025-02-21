@@ -35,6 +35,34 @@ public class EmailService {
     @Value("${app.email.batch-size:50}")
     private int batchSize;
 
+    public void sendOtpEmail(String to, String username, String otp,
+                             int expiryMinutes, int maxAttempts) {
+        try {
+            Context context = new Context();
+            context.setVariable("username", username);
+            context.setVariable("otp", otp);
+            context.setVariable("expiryMinutes", expiryMinutes);
+            context.setVariable("maxAttempts", maxAttempts);
+
+            String htmlContent = templateEngine.process("otp-verification", context);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject("Account Verification OTP");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("OTP email sent successfully to: {}", to);
+        } catch (MessagingException e) {
+            log.error("Failed to send OTP email to: {}", to, e);
+            throw new RuntimeException("Failed to send OTP email", e);
+        }
+    }
+
+
     public void sendBatchNotificationEmails(Collection<String> toEmails, String subject,
                                             String templateName, Map<String, Object> templateVars) {
         if (toEmails == null || toEmails.isEmpty()) {
