@@ -191,6 +191,9 @@
         "verify": "Verify"
       },
       "verificationCodePlaceholder": "Enter 6-digit code",
+      "manualCode": "If you can't scan the QR code, enter this code manually in your authenticator app",
+      "copy": "Copy",
+      "codeCopied": "Secret code copied to clipboard",
       "messages": {
         "enableSuccess": "2FA has been enabled",
         "disableSuccess": "2FA has been disabled",

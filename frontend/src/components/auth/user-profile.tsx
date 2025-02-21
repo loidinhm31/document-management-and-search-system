@@ -1,10 +1,7 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { jwtDecode } from "jwt-decode";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import * as z from "zod";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -17,18 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/user.service";
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import PasswordUpdateForm from "@/components/auth/password-update-form";
-
-const formSchema = z.object({
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters")
-    .regex(
-      /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
-      "Password must contain at least one digit, lowercase, uppercase, and special character",
-    ),
-});
-
-type FormValues = z.infer<typeof formSchema>;
 
 export default function UserProfile() {
   const { t } = useTranslation();
@@ -115,7 +100,7 @@ export default function UserProfile() {
       toast({
         title: t("common.success"),
         description: t("profile.twoFactor.messages.disableSuccess"),
-        variant: "success"
+        variant: "success",
       });
     } catch (_error) {
       toast({
@@ -251,6 +236,49 @@ export default function UserProfile() {
               <div className="space-y-4">
                 <div className="rounded-lg border p-4">
                   <img src={qrCodeUrl} alt="2FA QR Code" className="mx-auto" />
+
+                  {/* Extract and display the secret key for manual entry */}
+                  {(() => {
+                    try {
+                      // Parse the secret from the QR URL
+                      const url = new URL(qrCodeUrl);
+                      const data = url.searchParams.get("data");
+                      if (data) {
+                        const decodedData = decodeURIComponent(data);
+                        const secretMatch = decodedData.match(/secret=([A-Z0-9]+)/);
+                        if (secretMatch && secretMatch[1]) {
+                          const secret = secretMatch[1];
+                          return (
+                            <div className="mt-4 text-center">
+                              <p className="text-sm text-muted-foreground mb-2">{t("profile.twoFactor.manualCode")}</p>
+                              <div className="flex items-center justify-center gap-2">
+                                <code className="bg-muted px-2 py-1 rounded text-base font-mono tracking-wider">
+                                  {secret}
+                                </code>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(secret);
+                                    toast({
+                                      title: t("common.success"),
+                                      description: t("profile.twoFactor.codeCopied"),
+                                      variant: "success",
+                                    });
+                                  }}
+                                >
+                                  {t("profile.twoFactor.copy")}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      console.error("Error parsing 2FA QR code URL:", e);
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 <div className="flex gap-2">
