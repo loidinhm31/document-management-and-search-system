@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,5 +16,5 @@ public interface OtpVerificationRepository extends JpaRepository<OtpVerification
     @Query("SELECT o FROM OtpVerification o WHERE o.user.username = :username AND o.validated = false")
     Optional<OtpVerification> findValidOtpByUsername(String username);
 
-    boolean existsByEmailAndLockedUntilAfter(String email, LocalDateTime now);
+    boolean existsByEmailAndLockedUntilAfter(String email, Instant now);
 }

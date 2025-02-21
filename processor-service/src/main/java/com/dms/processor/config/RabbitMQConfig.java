@@ -59,6 +59,11 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing-keys.otp}")
     private String otpRoutingKey;
 
+    @Value("${rabbitmq.queues.password-reset}")
+    private String passwordResetQueue;
+
+    @Value("${rabbitmq.routing-keys.password-reset}")
+    private String passwordResetRoutingKey;
 
     private final ConnectionFactory connectionFactory;
     private final ObjectMapper objectMapper;
@@ -164,6 +169,23 @@ public class RabbitMQConfig {
                 .with(otpRoutingKey);
     }
 
+    @Bean
+    public Queue passwordResetQueue() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-dead-letter-exchange", deadLetterExchange);
+        args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".password-reset");
+        args.put("x-message-ttl", 300000); // 5 minutes
+        args.put("x-max-length", 10000);
+        return new Queue(passwordResetQueue, true, false, false, args);
+    }
+
+    @Bean
+    public Binding passwordResetBinding() {
+        return BindingBuilder
+                .bind(passwordResetQueue())
+                .to(notificationExchange())
+                .with(passwordResetRoutingKey);
+    }
 
     @Bean
     public RetryOperationsInterceptor retryInterceptor() {

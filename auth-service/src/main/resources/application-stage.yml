@@ -60,3 +60,10 @@ eureka:
     hostname: ${EUREKA_URI:100.101.13.113}
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20
+
+rabbitmq:
+  exchanges:
+    notification: notification.exchange
+  routing-keys:
+    otp: notification.otp.email.routing-key
+    password-reset: notification.password-reset.routing-key

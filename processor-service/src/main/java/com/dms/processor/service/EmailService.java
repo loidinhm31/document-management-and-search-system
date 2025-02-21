@@ -62,6 +62,30 @@ public class EmailService {
         }
     }
 
+    public void sendPasswordResetEmail(String to, String username, String resetUrl, int expiryHours) {
+        try {
+            Context context = new Context();
+            context.setVariable("username", username);
+            context.setVariable("resetUrl", resetUrl);
+            context.setVariable("expiryHours", expiryHours);
+
+            String htmlContent = templateEngine.process("password-reset", context);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject("Password Reset Request");
+            helper.setText(htmlContent, true);
+
+            mailSender.send(message);
+            log.info("Password reset email sent successfully to: {}", to);
+        } catch (MessagingException e) {
+            log.error("Failed to send password reset email to: {}", to, e);
+            throw new RuntimeException("Failed to send password reset email", e);
+        }
+    }
 
     public void sendBatchNotificationEmails(Collection<String> toEmails, String subject,
                                             String templateName, Map<String, Object> templateVars) {

@@ -44,10 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -84,6 +83,9 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private PublishEventService publishEventService;
 
     @Override
     public TokenResponse authenticateUser(LoginRequest loginRequest, HttpServletRequest request) {
@@ -146,11 +148,11 @@ public class UserServiceImpl extends BaseService implements UserService {
     @Override
     public void registerUser(SignupRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username is already taken");
+            throw new IllegalArgumentException("USERNAME_EXISTS");
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email is already in use");
+            throw new IllegalArgumentException("EMAIL_EXISTS");
         }
 
         Role role = roleRepository.findByRoleName(AppRole.ROLE_USER)
@@ -165,10 +167,11 @@ public class UserServiceImpl extends BaseService implements UserService {
         user.setAccountNonExpired(true);
         user.setCredentialsNonExpired(true);
         user.setEnabled(false); // disabled until verified
-        user.setCredentialsExpiryDate(LocalDate.now().plusYears(1));
-        user.setAccountExpiryDate(LocalDate.now().plusYears(1));
+        user.setCredentialsExpiryDate(Instant.now().atZone(ZoneId.systemDefault()).plusYears(1).toInstant());
+        user.setAccountExpiryDate(Instant.now().atZone(ZoneId.systemDefault()).plusYears(1).toInstant());
         user.setTwoFactorEnabled(false);
         user.setSignUpMethod("email");
+        user.setCreatedAt(Instant.now());
         user.setCreatedBy(request.getUsername());
         user.setUpdatedBy(request.getUsername());
 
@@ -198,6 +201,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                 user.getCredentialsExpiryDate(),
                 user.getAccountExpiryDate(),
                 user.isTwoFactorEnabled(),
+                user.getCreatedAt(),
                 roles
         );
     }
@@ -207,27 +211,49 @@ public class UserServiceImpl extends BaseService implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
+        // Check if there's a recent token (less than 5 minutes old)
+        Optional<PasswordResetToken> recentToken = passwordResetTokenRepository.findLatestByUserEmail(email);
+        if (recentToken.isPresent()) {
+            Instant fiveMinutesAgo = Instant.now().minus(5, ChronoUnit.MINUTES);
+            if (recentToken.get().getCreatedAt().isAfter(fiveMinutesAgo)) {
+                throw new IllegalStateException("Please wait 5 minutes before requesting another password reset email");
+            }
+        }
+
+        // Mark all others tokens used
+        List<PasswordResetToken> passwordResetTokens = passwordResetTokenRepository.findAllByUserId(user.getUserId());
+        passwordResetTokens.forEach(passwordResetToken -> passwordResetToken.setUsed(true));
+        passwordResetTokenRepository.saveAllAndFlush(passwordResetTokens);
+
         String token = UUID.randomUUID().toString();
-        Instant expiryDate = Instant.now().plus(24, ChronoUnit.HOURS);
+        // Set expiry to 5 hours from now
+        Instant expiryDate = Instant.now().plus(5, ChronoUnit.HOURS);
 
         PasswordResetToken resetToken = new PasswordResetToken(token, expiryDate, user);
-        resetToken.setUpdatedBy(SecurityUtils.getUserIdentifier());
+        resetToken.setCreatedAt(Instant.now());
+        resetToken.setCreatedBy(user.getUsername());
+        resetToken.setUpdatedBy(user.getUsername());
         passwordResetTokenRepository.save(resetToken);
 
-        String resetUrl = String.format("%s/reset-password?token=%s", frontendUrl, token);
-//        emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
+        // Send email
+        publishEventService.sendPasswordResetEmail(user, token, 5); // 5 hours expiry
     }
 
     @Override
     public void resetPassword(String token, String newPassword) {
-        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenAndUsed(token, false)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid password reset token"));
 
-        if (resetToken.isUsed() || resetToken.getExpiryDate().isBefore(Instant.now())) {
+        if (resetToken.isUsed()) {
+            throw new IllegalArgumentException("Password reset token has already been used");
+        }
+
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
             throw new IllegalArgumentException("Password reset token has expired");
         }
 
         User user = resetToken.getUser();
+
         user.setPassword(passwordEncoder.encode(newPassword));
         resetToken.setUsed(true);
 
@@ -274,7 +300,7 @@ public class UserServiceImpl extends BaseService implements UserService {
         // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setUpdatedBy(SecurityUtils.getUserIdentifier());
-        user.setCredentialsExpiryDate(LocalDate.now().plusMonths(6)); // Reset credentials expiry
+        user.setCredentialsExpiryDate(Instant.now().plus(6, ChronoUnit.MONTHS)); // Reset credentials expiry
 
         // Optionally invalidate any existing password reset tokens
         passwordResetTokenRepository.findAll().stream()
@@ -416,10 +442,10 @@ public class UserServiceImpl extends BaseService implements UserService {
                 user.setEnabled(request.getEnabled());
             }
             if (Objects.nonNull(request.getAccountLocked())) {
-                user.setCredentialsExpiryDate(request.getCredentialsExpiryDate());
+                user.setCredentialsExpiryDate(Instant.from(request.getCredentialsExpiryDate()));
             }
             if (Objects.nonNull(request.getAccountExpiryDate())) {
-                user.setAccountExpiryDate(request.getAccountExpiryDate());
+                user.setAccountExpiryDate(Instant.from(request.getAccountExpiryDate()));
             }
         }
 

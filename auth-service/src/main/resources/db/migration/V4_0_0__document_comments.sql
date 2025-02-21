@@ -1,15 +1,15 @@
 CREATE TABLE document_comments
 (
     id          bigint PRIMARY KEY,
-    document_id VARCHAR       NOT NULL,
-    user_id     UUID          NOT NULL,
-    content     VARCHAR(1000) NOT NULL,
+    document_id VARCHAR                  NOT NULL,
+    user_id     UUID                     NOT NULL,
+    content     VARCHAR(1000)            NOT NULL,
     parent_id   bigint,
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    edited      BOOLEAN                  DEFAULT FALSE,
-    deleted     BOOLEAN                  DEFAULT FALSE,
-    version     BIGINT                   DEFAULT 0,
+    created_at  TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at  TIMESTAMP WITH TIME ZONE NOT NULL,
+    edited      BOOLEAN DEFAULT FALSE,
+    deleted     BOOLEAN DEFAULT FALSE,
+    version     BIGINT  DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users (user_id),
     CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users (user_id),
     CONSTRAINT fk_comments_parent FOREIGN KEY (parent_id) REFERENCES document_comments (id)

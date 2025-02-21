@@ -3,6 +3,7 @@ package com.dms.auth.controller;
 import com.dms.auth.dto.request.*;
 import com.dms.auth.dto.response.OtpVerificationResponse;
 import com.dms.auth.entity.OtpVerification;
+import com.dms.auth.exception.ResourceNotFoundException;
 import com.dms.auth.security.request.RefreshTokenRequest;
 import com.dms.auth.security.request.Verify2FARequest;
 import com.dms.auth.security.response.TokenResponse;
@@ -15,6 +16,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -54,9 +58,23 @@ public class AuthController {
     }
 
     @PostMapping("/password/forgot")
-    public ResponseEntity<Void> forgotPassword(@RequestParam @Email String email) {
-        userService.generatePasswordResetToken(email);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestParam @Email String email) {
+        try {
+            userService.generatePasswordResetToken(email);
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            return ResponseEntity.ok(response);
+        } catch (IllegalStateException e) {
+            // This exception will be thrown for rate limiting
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "error");
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+        } catch (ResourceNotFoundException e) {
+            // We return 200 even if email not found for security reasons
+            Map<String, String> response = new HashMap<>();
+            response.put("status", "success");
+            return ResponseEntity.ok(response);
+        }
     }
 
     @PostMapping("/password/reset")

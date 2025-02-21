@@ -1,11 +1,14 @@
 package com.dms.auth.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @SuperBuilder
@@ -29,7 +32,7 @@ public class OtpVerification extends BaseEntity<String> {
     private String email;
 
     @Column(name = "expiry_time", nullable = false)
-    private LocalDateTime expiryTime;
+    private Instant expiryTime;
 
     @Column(name = "attempt_count", nullable = false)
     private int attemptCount;
@@ -38,18 +41,18 @@ public class OtpVerification extends BaseEntity<String> {
     private boolean validated;
 
     @Column(name = "locked_until")
-    private LocalDateTime lockedUntil;
+    private Instant lockedUntil;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
     public boolean isExpired() {
-        return LocalDateTime.now().isAfter(expiryTime);
+        return Instant.now().isAfter(expiryTime);
     }
 
     public boolean isLocked() {
-        return lockedUntil != null && LocalDateTime.now().isBefore(lockedUntil);
+        return lockedUntil != null && Instant.now().isBefore(lockedUntil);
     }
 
     public boolean hasExceededMaxAttempts() {

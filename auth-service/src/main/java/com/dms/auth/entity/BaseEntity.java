@@ -13,7 +13,10 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Date;
 
 @Getter
@@ -26,11 +29,8 @@ import java.util.Date;
 @EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity<T> implements Serializable {
 
-    @CreatedDate
     @Column(name = "created_at")
-    @Temporal(TemporalType.TIMESTAMP)
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
-    private Date createdAt;
+    private Instant createdAt;
 
     @CreatedBy
     @Column(name = "created_by")
@@ -38,9 +38,7 @@ public abstract class BaseEntity<T> implements Serializable {
 
     @LastModifiedDate
     @Column(name = "updated_at")
-    @Temporal(TemporalType.TIMESTAMP)
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
-    private Date updatedAt;
+    private Instant updatedAt;
 
     @LastModifiedBy
     @Column(name = "updated_by")

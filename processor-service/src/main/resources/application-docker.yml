@@ -79,10 +79,14 @@ rabbitmq:
     document-sync-dlq: document-sync.dlq
     notification: notification.queue
     notification-dlq: notification.dlq
+    otp: notification.otp.queue
+    password-reset: password-reset.queue
   routing-keys:
     internal-document-sync: internal.document-sync.routing-key
     notification: notification.email.routing-key
     dlq: dead.letter.routing-key
+    otp: notification.otp.email.routing-key
+    password-reset: notification.password-reset.routing-key
 
 aws:
   s3:

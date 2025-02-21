@@ -1,6 +1,7 @@
 package com.dms.auth.service.impl;
 
 import com.dms.auth.dto.EmailNotificationPayload;
+import com.dms.auth.dto.PasswordResetEmailPayload;
 import com.dms.auth.entity.User;
 import com.dms.auth.producer.RabbitMQMessageProducer;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,9 @@ public class PublishEventService {
     @Value("${rabbitmq.routing-keys.otp}")
     private String otpRoutingKey;
 
+    @Value("${rabbitmq.routing-keys.password-reset}")
+    private String passwordResetRoutingKey;
+
     public void sendOtpEmail(User user, String otp) {
         try {
             EmailNotificationPayload payload = EmailNotificationPayload.builder()
@@ -45,6 +49,27 @@ public class PublishEventService {
         } catch (Exception e) {
             log.error("Failed to publish OTP email", e);
             throw new RuntimeException("Failed to send OTP email", e);
+        }
+    }
+
+    public void sendPasswordResetEmail(User user, String token, int expiryHours) {
+        try {
+            PasswordResetEmailPayload payload = PasswordResetEmailPayload.builder()
+                    .to(user.getEmail())
+                    .username(user.getUsername())
+                    .token(token)
+                    .expiryHours(expiryHours)
+                    .build();
+
+            log.info("Publishing password reset email for user: {}", user.getUsername());
+            rabbitMQMessageProducer.publish(
+                    payload,
+                    notificationExchange,
+                    passwordResetRoutingKey
+            );
+        } catch (Exception e) {
+            log.error("Failed to publish password reset email", e);
+            throw new RuntimeException("Failed to send password reset email", e);
         }
     }
 }

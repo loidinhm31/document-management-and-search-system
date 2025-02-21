@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Random;
 
@@ -57,7 +59,7 @@ public class OtpService extends BaseService {
     public void generateAndSendOtp(User user) {
         // Check if user is locked
         if (otpVerificationRepository.existsByEmailAndLockedUntilAfter(
-                user.getEmail(), LocalDateTime.now())) {
+                user.getEmail(), Instant.now())) {
             throw new IllegalStateException("Account is temporarily locked. Please try again later.");
         }
 
@@ -72,10 +74,11 @@ public class OtpService extends BaseService {
         verification.setOtp(otp);
         verification.setEmail(user.getEmail());
         verification.setUser(user);
-        verification.setExpiryTime(LocalDateTime.now().plusMinutes(otpExpiryMinutes));
+        verification.setExpiryTime(Instant.now().plus(otpExpiryMinutes, ChronoUnit.MINUTES));
         verification.setAttemptCount(0);
         verification.setValidated(false);
         verification.setLockedUntil(null);
+        verification.setCreatedAt(Instant.now());
         verification.setCreatedBy(user.getUsername());
         verification.setUpdatedBy(user.getUsername());
 
@@ -107,7 +110,7 @@ public class OtpService extends BaseService {
         verification.setAttemptCount(verification.getAttemptCount() + 1);
 
         if (verification.hasExceededMaxAttempts()) {
-            verification.setLockedUntil(LocalDateTime.now().plusMinutes(lockMinutes));
+            verification.setLockedUntil(Instant.now().plus(lockMinutes, ChronoUnit.MINUTES));
             OtpVerification savedOtp = otpVerificationRepository.save(verification);
             return new TokenResponse(
                     savedOtp.getAttemptCount(),
