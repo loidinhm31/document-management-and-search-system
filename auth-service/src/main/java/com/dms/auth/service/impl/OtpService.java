@@ -94,8 +94,8 @@ public class OtpService extends BaseService {
         if (verification.isLocked()) {
             return new TokenResponse(
                     verification.getAttemptCount(),
-                    verification.isValidated(),
-                    verification.isLocked()
+                    verification.isLocked(),
+                    verification.isValidated()
             );
         } else {
             if (Objects.nonNull(verification.getLockedUntil())) { // If locked before then reset
