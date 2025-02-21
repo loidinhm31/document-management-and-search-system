@@ -1,17 +1,19 @@
 import { Label } from "@radix-ui/react-menu";
 import { Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
-const TIMER_DURATION = 300; // 5 minutes in seconds
+const TIMER_DURATION = 1; // 5 minutes in seconds
 const MAX_ATTEMPTS = 5;
 const LOCK_DURATION = 1800; // 30 minutes in seconds
 
 export default function OtpVerificationForm({ onVerified, onResend }) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(TIMER_DURATION);
@@ -51,68 +53,51 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
   };
 
   const handleResendOtp = async () => {
-    try {
-      setIsLoading(true);
-      await onResend();
-      setTimer(TIMER_DURATION);
-      toast({
-        title: "Success",
-        description: "OTP code has been resent",
-        variant: "success",
-      });
-    } catch (_error) {
-      toast({
-        title: "Error",
-        description: "Failed to resend OTP code",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(true);
+    await onResend();
+    setTimer(TIMER_DURATION);
+    setIsLoading(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLockTimer || isLocked || !otpValue || otpValue.length !== 6) return;
 
-    try {
-      setIsLoading(true);
-      const response = await onVerified(otpValue);
-      if (response.data) {
-        if (response.data.locked) {
-          setIsLocked(true);
-          setOtpValue("");
-        } else if (!response.data.verified) {
-          if (response.data.otpCount >= MAX_ATTEMPTS) {
-            setIsLocked(true);
-            setLockTimer(LOCK_DURATION);
-            toast({
-              title: "Error",
-              description: `Maximum attempts reached. Please try again after ${formatTime(LOCK_DURATION)}`,
-              variant: "destructive",
-            });
-          } else {
-            setOtpValue("");
-            toast({
-              title: "Error",
-              description: `Invalid OTP code. ${MAX_ATTEMPTS - response.data.otpCount} attempts remaining`,
-              variant: "destructive",
-            });
-          }
-        }
-      } else {
+    setIsLoading(true);
+    const response = await onVerified(otpValue);
+    if (response.data) {
+      if (response.data.locked) {
+        console.log("kicj");
+        setIsLocked(true);
         setOtpValue("");
-        toast({
-          title: "Error",
-          description: `Error occurred`,
-          variant: "destructive",
-        });
+      } else if (!response.data.verified) {
+        if (response.data.otpCount >= MAX_ATTEMPTS) {
+          setIsLocked(true);
+          setLockTimer(LOCK_DURATION);
+          toast({
+            title: t("common.error"),
+            description: t("auth.otp.maxAttemptsReached", { time: formatTime(LOCK_DURATION) }),
+            variant: "destructive",
+          });
+        } else {
+          setOtpValue("");
+          toast({
+            title: t("common.error"),
+            description: t("auth.otp.verifyError", { remaining: MAX_ATTEMPTS - response.data.otpCount }),
+            variant: "destructive",
+          });
+        }
       }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+    } else {
+      setOtpValue("");
+      toast({
+        title: t("common.error"),
+        description: t("auth.otp.verifyError"),
+        variant: "destructive",
+      });
     }
+
+    setIsLoading(false);
   };
 
   const handleOtpChange = (e) => {
@@ -123,18 +108,18 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Verify your account</CardTitle>
-        <CardDescription>Enter the 6-digit code sent to your email</CardDescription>
+        <CardTitle>{t("auth.otp.title")}</CardTitle>
+        <CardDescription>{t("auth.otp.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Verification Code</Label>
+            <Label>{t("auth.otp.code")}</Label>
             <Input
               value={otpValue}
               onChange={handleOtpChange}
               disabled={isLoading || isLockTimer || isLocked}
-              placeholder="Enter 6-digit code"
+              placeholder={t("auth.otp.code")}
               maxLength={6}
               className="text-center text-2xl tracking-widest"
             />
@@ -147,16 +132,18 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
               className="w-full"
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Verify Account
+              {t("auth.otp.verify")}
             </Button>
 
             {isLockTimer || isLocked ? (
               <div className="text-center text-sm text-muted-foreground">
-                OTP verification locked. Try again later {isLockTimer && `in ${formatTime(lockTimer)}`}
+                {t("auth.otp.lockedMessage", { time: isLockTimer ? formatTime(lockTimer) : "" })}
               </div>
             ) : (
               <>
-                <div className="text-center text-sm text-muted-foreground">Code expires in {formatTime(timer)}</div>
+                <div className="text-center text-sm text-muted-foreground">
+                  {t("auth.otp.expiresIn", { time: formatTime(timer) })}
+                </div>
 
                 <Button
                   type="button"
@@ -165,7 +152,7 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
                   onClick={handleResendOtp}
                   className="w-full"
                 >
-                  Resend Code
+                  {t("auth.otp.resend")}
                 </Button>
               </>
             )}

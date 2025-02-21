@@ -112,14 +112,14 @@
     },
     "otp": {
       "title": "Verify Your Account",
-      "description": "Enter the 6-digit code sent to {email}",
+      "description": "Enter the 6-digit code sent to your email",
       "code": "Verification Code",
       "verify": "Verify Account",
       "resend": "Resend Code",
-      "expiresIn": "Code expires in {time}",
-      "lockedMessage": "Account locked. Try again in {time}",
+      "expiresIn": "Code expires in {{time}}",
+      "lockedMessage": "OTP verification locked. Try again later ",
       "verifySuccess": "Account verified successfully",
-      "verifyError": "Invalid code. {remaining} attempts remaining",
+      "verifyError": "Invalid code. {{remaining}} attempts remaining",
       "resendSuccess": "New verification code sent",
       "resendError": "Failed to send verification code",
       "maxAttemptsReached": "Maximum attempts reached. Please try again later"

@@ -70,8 +70,8 @@ export default function OtpVerificationPage() {
     } catch (_error) {
       toast({
         title: t("common.error"),
-        description: t("auth.otp.failureResend"),
-        variant: "success",
+        description: t("auth.otp.resendError"),
+        variant: "destructive",
       });
     }
   };
