@@ -4,44 +4,116 @@
     <meta charset="UTF-8">
     <title>Account Verification</title>
     <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #1c2434;
+            --card: #ffffff;
+            --card-foreground: #1c2434;
+            --primary: #fbbf24;
+            --primary-foreground: #1c2434;
+            --secondary: #f8f9fc;
+            --secondary-foreground: #1c2434;
+            --muted: #f5f6fa;
+            --muted-foreground: #757a8c;
+            --accent: #ef4444;
+            --accent-foreground: #1c2434;
+            --destructive: #ef4444;
+            --destructive-foreground: #f8f9fc;
+            --border: #e5e7eb;
+            --radius: 0.5rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f4f4f5;
+            color: var(--foreground);
+            line-height: 1.6;
+        }
+
         .container {
             max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            font-family: Arial, sans-serif;
+            margin: 40px auto;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
+
         .header {
-            background-color: #4A90E2;
-            color: white;
-            padding: 20px;
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            padding: 24px;
             text-align: center;
-            border-radius: 5px 5px 0 0;
         }
+
+        .header h2 {
+            font-weight: 600;
+            margin: 0;
+        }
+
         .content {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 0 0 5px 5px;
+            background-color: var(--card);
+            padding: 32px 24px;
+            color: var(--card-foreground);
         }
+
+        .content p {
+            margin-bottom: 16px;
+            color: var(--foreground);
+        }
+
         .otp-code {
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 4px;
             text-align: center;
-            color: #4A90E2;
-            padding: 10px;
-            margin: 20px 0;
-            background-color: white;
-            border-radius: 5px;
+            color: var(--foreground);
+            padding: 20px;
+            margin: 24px auto;
+            background-color: var(--muted);
+            border-radius: var(--radius);
+            max-width: 280px;
+            border: 1px solid var(--border);
         }
-        .footer {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-        }
+
         .warning {
-            color: #dc3545;
-            font-size: 14px;
-            margin-top: 15px;
+            margin-top: 24px;
+            padding: 16px;
+            background-color: var(--muted);
+            border-radius: var(--radius);
+            border-left: 4px solid var(--destructive);
+        }
+
+        .warning p {
+            font-weight: 600;
+            color: var(--foreground);
+            margin-bottom: 8px;
+        }
+
+        .warning ul {
+            padding-left: 24px;
+        }
+
+        .warning li {
+            margin-bottom: 8px;
+            color: var(--muted-foreground);
+        }
+
+        .footer {
+            padding: 24px;
+            text-align: center;
+            background-color: var(--secondary);
+            color: var(--muted-foreground);
+            font-size: 12px;
+        }
+
+        .footer p {
+            margin-bottom: 8px;
         }
     </style>
 </head>
@@ -53,11 +125,13 @@
     <div class="content">
         <p>Hello <span th:text="${username}">User</span>,</p>
 
-        <p>Thank you for registering with our service. To complete your account verification, please use the following OTP code:</p>
+        <p>Thank you for registering with Document Management and Search System. To complete your account verification, please use the following OTP code:</p>
 
         <div class="otp-code">
             <span th:text="${otp}">123456</span>
         </div>
+
+        <p>Please enter this code in the verification page to activate your account.</p>
 
         <p>This code will expire in <strong th:text="${expiryMinutes}">5</strong> minutes.</p>
 
@@ -69,12 +143,13 @@
                 <li>The OTP is valid for <span th:text="${expiryMinutes}">5</span> minutes only</li>
                 <li>Maximum <span th:text="${maxAttempts}">5</span> incorrect attempts allowed</li>
                 <li>Do not share this OTP with anyone</li>
+                <li>After <span th:text="${maxAttempts}">5</span> failed attempts, your account will be temporarily locked</li>
             </ul>
         </div>
     </div>
     <div class="footer">
         <p>This is an automated message, please do not reply to this email.</p>
-        <p>© 2025 Document Management System. All rights reserved.</p>
+        <p>© 2025 Document Management and Search System. All rights reserved.</p>
     </div>
 </div>
 </body>
