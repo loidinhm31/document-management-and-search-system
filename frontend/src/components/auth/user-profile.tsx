@@ -1,8 +1,10 @@
+import { Separator } from "@radix-ui/react-dropdown-menu";
 import { jwtDecode } from "jwt-decode";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import PasswordUpdateForm from "@/components/auth/password-update-form";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,8 +14,6 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/user.service";
-import { Separator } from "@radix-ui/react-dropdown-menu";
-import PasswordUpdateForm from "@/components/auth/password-update-form";
 
 export default function UserProfile() {
   const { t } = useTranslation();
