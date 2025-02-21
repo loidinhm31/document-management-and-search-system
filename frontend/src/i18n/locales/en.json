@@ -190,6 +190,10 @@
         "disable": "Disable 2FA",
         "verify": "Verify"
       },
+      "disable": {
+        "title": "Disable Two-Factor Authentication",
+        "description": "Are you sure you want to disable two-factor authentication? This will reduce the security of your account. Anyone with your password will be able to access your account."
+      },
       "verificationCodePlaceholder": "Enter 6-digit code",
       "manualCode": "If you can't scan the QR code, enter this code manually in your authenticator app",
       "copy": "Copy",

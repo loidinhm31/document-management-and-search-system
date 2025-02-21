@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/user.service";
+import Disable2FADialog from "@/components/auth/disable-2fa-dialog";
 
 export default function UserProfile() {
   const { t } = useTranslation();
@@ -26,6 +27,7 @@ export default function UserProfile() {
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [step, setStep] = useState(1);
+  const [showDisableDialog, setShowDisableDialog] = useState(false);
 
   // Loading states
   const [loading, setLoading] = useState({
@@ -90,8 +92,13 @@ export default function UserProfile() {
     }
   };
 
+  // Open disable confirmation dialog
+  const handleDisable2FA = () => {
+    setShowDisableDialog(true);
+  };
+
   // Disable 2FA
-  const disable2FA = async () => {
+  const confirmDisable2FA = async () => {
     setLoading((prev) => ({ ...prev, twoFactor: true }));
     try {
       await userService.disable2FA(currentUser?.userId);
@@ -110,6 +117,7 @@ export default function UserProfile() {
       });
     } finally {
       setLoading((prev) => ({ ...prev, twoFactor: false }));
+      setShowDisableDialog(false);
     }
   };
 
@@ -224,7 +232,7 @@ export default function UserProfile() {
             <p className="text-sm text-muted-foreground">{t("profile.twoFactor.description")}</p>
 
             <Button
-              onClick={is2faEnabled ? disable2FA : enable2FA}
+              onClick={is2faEnabled ? handleDisable2FA : enable2FA}
               variant={is2faEnabled ? "destructive" : "default"}
               disabled={loading.twoFactor}
             >
@@ -285,6 +293,7 @@ export default function UserProfile() {
                   <Input
                     placeholder={t("profile.twoFactor.verificationCodePlaceholder")}
                     value={verificationCode}
+                    maxLength={6}
                     onChange={(e) => setVerificationCode(e.target.value)}
                   />
                   <Button onClick={verify2FA} disabled={loading.twoFactor}>
@@ -297,6 +306,14 @@ export default function UserProfile() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 2FA Disable Confirmation Dialog */}
+      <Disable2FADialog
+        open={showDisableDialog}
+        onOpenChange={setShowDisableDialog}
+        onConfirm={confirmDisable2FA}
+        loading={loading.twoFactor}
+      />
     </div>
   );
 }
