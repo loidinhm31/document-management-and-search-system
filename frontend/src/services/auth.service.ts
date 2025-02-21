@@ -15,7 +15,7 @@ class AuthService extends BaseService {
   }
 
   register(data: SignupRequest) {
-    return this.handleApiResponse(axiosInstance.post("/auth/api/v1/auth/register", data));
+    return axiosInstance.post("/auth/api/v1/auth/register", data);
   }
 
   logout(refreshToken: string) {

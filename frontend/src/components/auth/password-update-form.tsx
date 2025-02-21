@@ -67,12 +67,12 @@ export default function PasswordUpdateForm() {
       console.log("error", error?.response);
 
       // Error handling is done by the service
-      if (error?.response?.data?.error?.status === 500) {
-        if (error?.response?.data?.error?.message === "INCORRECT_PASSWORD") {
+      if (error?.response?.status === 500) {
+        if (error?.response?.data === "INCORRECT_PASSWORD") {
           form.setError("currentPassword", {
             message: t("profile.password.errors.incorrectCurrent"),
           });
-        } else if (error?.response?.data?.error?.message === "DIFFERENT_PASSWORD") {
+        } else if (error?.response?.data === "DIFFERENT_PASSWORD") {
           form.setError("newPassword", {
             message: t("profile.password.errors.passwordNotTheSame"),
           });

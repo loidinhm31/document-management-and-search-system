@@ -1,9 +1,11 @@
 import { Separator } from "@radix-ui/react-dropdown-menu";
 import { jwtDecode } from "jwt-decode";
 import { Loader2 } from "lucide-react";
+import moment from "moment-timezone";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import Disable2FADialog from "@/components/auth/disable-2fa-dialog";
 import PasswordUpdateForm from "@/components/auth/password-update-form";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -14,7 +16,6 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/user.service";
-import Disable2FADialog from "@/components/auth/disable-2fa-dialog";
 
 export default function UserProfile() {
   const { t } = useTranslation();
@@ -168,6 +169,7 @@ export default function UserProfile() {
         <Card>
           <CardHeader className="space-y-1">
             <div className="flex items-center gap-4">
+
               <Avatar className="h-12 w-12">
                 <AvatarFallback>{currentUser?.username?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
@@ -205,6 +207,10 @@ export default function UserProfile() {
               </AccordionItem>
             </Accordion>
 
+            <div className="rounded-lg border p-4">
+              <h3 className="font-semibold">{t("profile.createdDate.title")}</h3>
+              <p className="text-sm text-muted-foreground"><p>{moment(currentUser.createdDate).format('DD/MM/YYYY, h:mm:ss a')}</p></p>
+            </div>
             {loginSession && (
               <div className="rounded-lg border p-4">
                 <h3 className="font-semibold">{t("profile.lastLogin.title")}</h3>

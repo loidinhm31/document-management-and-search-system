@@ -4,6 +4,7 @@ const Login = lazy(() => import("@/pages/login-page"));
 const Register = lazy(() => import("@/pages/register-page"));
 const OtpVerification = lazy(() => import("@/pages/otp-verification-page"));
 const ForgotPassword = lazy(() => import("@/pages/forgot-password-page"));
+const ResetPassword = lazy(() => import("@/pages/reset-password-page"));
 const Home = lazy(() => import("@/pages/home-page"));
 const Profile = lazy(() => import("@/pages/profile-page"));
 const UserList = lazy(() => import("@/pages/admin/user-list-page"));
@@ -30,6 +31,7 @@ export const RoutePaths = {
   LOGIN: "/login",
   REGISTER: "/register",
   FORGOT_PASSWORD: "/forgot-password",
+  RESET_PASSWORD: "/reset-password",
   VERIFY_OTP: "/verify-otp",
   PROFILE: "/profile",
   MY_DOCUMENT: "/documents/me",
@@ -66,6 +68,12 @@ export const routes: Route[] = [
     path: RoutePaths.FORGOT_PASSWORD,
     pageTitle: "Forgot Password",
     component: ForgotPassword,
+    isSecure: false
+  },
+  {
+    path: RoutePaths.RESET_PASSWORD,
+    pageTitle: "Reset Password",
+    component: ResetPassword,
     isSecure: false
   },
   {
