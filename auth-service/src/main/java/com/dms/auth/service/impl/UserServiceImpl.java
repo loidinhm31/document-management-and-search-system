@@ -242,14 +242,14 @@ public class UserServiceImpl extends BaseService implements UserService {
     @Override
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenAndUsed(token, false)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid password reset token"));
+                .orElseThrow(() -> new IllegalArgumentException("INVALID_PASSWORD_RESET_TOKEN"));
 
         if (resetToken.isUsed()) {
-            throw new IllegalArgumentException("Password reset token has already been used");
+            throw new IllegalArgumentException("PASSWORD_RESET_TOKEN_USED");
         }
 
         if (resetToken.getExpiryDate().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Password reset token has expired");
+            throw new IllegalArgumentException("PASSWORD_RESET_TOKEN_EXPIRED");
         }
 
         User user = resetToken.getUser();
