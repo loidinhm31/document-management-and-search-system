@@ -2,6 +2,7 @@ import React, { lazy } from "react";
 
 const Login = lazy(() => import("@/pages/login-page"));
 const Register = lazy(() => import("@/pages/register-page"));
+const OtpVerification = lazy(() => import("@/pages/otp-verification-page"));
 const ForgotPassword = lazy(() => import("@/pages/forgot-password-page"));
 const Home = lazy(() => import("@/pages/home-page"));
 const Profile = lazy(() => import("@/pages/profile-page"));
@@ -29,7 +30,7 @@ export const RoutePaths = {
   LOGIN: "/login",
   REGISTER: "/register",
   FORGOT_PASSWORD: "/forgot-password",
-  EMPTY: "/empty",
+  VERIFY_OTP: "/verify-otp",
   PROFILE: "/profile",
   MY_DOCUMENT: "/documents/me",
   MY_DOCUMENT_DETAIL: "/documents/me/:documentId",
@@ -53,6 +54,12 @@ export const routes: Route[] = [
     path: RoutePaths.REGISTER,
     pageTitle: "Sign Up",
     component: Register,
+    isSecure: false
+  },
+  {
+    path: RoutePaths.VERIFY_OTP,
+    pageTitle: "pages.verify-otp",
+    component: OtpVerification,
     isSecure: false
   },
   {

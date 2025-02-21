@@ -47,6 +47,14 @@ class AuthService extends BaseService {
       }),
     );
   }
+
+  verifyOtp(data: { username: string; otp: string }) {
+    return this.handleApiResponse(axiosInstance.post<TokenResponse>("/auth/api/v1/auth/otp/verify", data));
+  }
+
+  resendOtp(data: { username: string }) {
+    return axiosInstance.post("/auth/api/v1/auth/otp/resend", data);
+  }
 }
 
 export const authService = new AuthService();

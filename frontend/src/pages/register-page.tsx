@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { SignupRequest } from "@/types/auth";
-import { adminService } from "@/services/admin.service";
 import { authService } from "@/services/auth.service";
 
 const signupSchema = z.object({
@@ -66,11 +65,14 @@ export default function RegisterPage() {
 
       toast({
         title: t("common.success"),
-        description: t("auth.register.success"),
+        description: t("auth.register.otpSent"),
         variant: "success",
       });
 
-      navigate("/login");
+      // Redirect to OTP verification page after successful registration
+      navigate("/verify-otp", {
+        state: { username: data.username },
+      });
     } catch (error: any) {
       const message = error?.response?.data?.error?.message;
       if (message?.includes("Username")) {

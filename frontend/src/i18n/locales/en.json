@@ -107,8 +107,22 @@
         "prompt": "Already have an account?",
         "link": "Login"
       },
-      "success": "Registration successful! Please log in to continue.",
-      "error": "Registration failed. Please try again."
+      "error": "Registration failed. Please try again.",
+      "otpSent": "Registration successful. Please check your email for verification code"
+    },
+    "otp": {
+      "title": "Verify Your Account",
+      "description": "Enter the 6-digit code sent to {email}",
+      "code": "Verification Code",
+      "verify": "Verify Account",
+      "resend": "Resend Code",
+      "expiresIn": "Code expires in {time}",
+      "lockedMessage": "Account locked. Try again in {time}",
+      "verifySuccess": "Account verified successfully",
+      "verifyError": "Invalid code. {remaining} attempts remaining",
+      "resendSuccess": "New verification code sent",
+      "resendError": "Failed to send verification code",
+      "maxAttemptsReached": "Maximum attempts reached. Please try again later"
     },
     "forgotPassword": {
       "title": "Forgot Password",
