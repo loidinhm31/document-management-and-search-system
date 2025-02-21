@@ -87,7 +87,6 @@ export default function RegisterPage() {
             message: t("auth.register.validation.emailExists"),
           });
         }
-        return;
       } else {
         toast({
           title: t("common.error"),

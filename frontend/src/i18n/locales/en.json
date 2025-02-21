@@ -155,6 +155,11 @@
       "success": "Password reset successfully",
       "error": "Failed to reset password",
       "backToLogin": "Back to Login",
+      "validation": {
+        "invalidPasswordResetToken": "Invalid password reset token",
+        "passwordResetTokenUsed": "Password reset token has already been used",
+        "passwordResetTokenExpired": "Password reset token has expired"
+      },
       "form": {
         "password": {
           "label": "New Password",

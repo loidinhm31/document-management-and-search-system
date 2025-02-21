@@ -24,7 +24,7 @@ const resetPasswordSchema = z
       .min(6, "Password must be at least 6 characters")
       .regex(
         /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
-        "Password must contain at least one digit, lowercase, uppercase, and special character"
+        "Password must contain at least one digit, lowercase, uppercase, and special character",
       ),
     confirmPassword: z.string(),
   })
@@ -104,12 +104,38 @@ export default function ResetPasswordPage() {
         navigate("/login");
       }, 1500);
     } catch (error) {
-      // Error is handled by the service, but we can add more specific handling here if needed
-      toast({
-        title: t("common.error"),
-        description: t("auth.resetPassword.error"),
-        variant: "destructive",
-      });
+      console.log("error", error?.response);
+
+      if (error?.response?.status === 500) {
+        if (error?.response?.data === "INVALID_PASSWORD_RESET_TOKEN") {
+          toast({
+            title: t("common.error"),
+            description: t("auth.resetPassword.validation.invalidPasswordResetToken"),
+            variant: "destructive",
+          });
+        } else if (error?.response?.data === "PASSWORD_RESET_TOKEN_USED") {
+          toast({
+            title: t("common.error"),
+            description: t("auth.resetPassword.validation.passwordResetTokenUsed"),
+            variant: "destructive",
+          });
+        } else if (error?.response?.data === "PASSWORD_RESET_TOKEN_EXPIRED") {
+          toast({
+            title: t("common.error"),
+            description: t("auth.resetPassword.validation.passwordResetTokenExpired"),
+            variant: "destructive",
+          });
+        }
+        setTimeout(() => {
+          navigate("/login");
+        }, 200);
+      } else {
+        toast({
+          title: t("common.error"),
+          description: t("auth.resetPassword.error"),
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
