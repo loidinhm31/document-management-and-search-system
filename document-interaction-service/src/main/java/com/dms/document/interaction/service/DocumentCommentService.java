@@ -21,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -113,7 +114,7 @@ public class DocumentCommentService {
 
         comment.setContent(request.content());
         comment.setEdited(true);
-        comment.setUpdatedAt(LocalDateTime.now());
+        comment.setUpdatedAt(Instant.now());
 
         DocumentComment updatedComment = documentCommentRepository.save(comment);
         return mapToCommentResponse(updatedComment, Collections.singletonMap(userResponse.userId(), userResponse));

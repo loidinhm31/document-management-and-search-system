@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Data
 @Document(collection = "master_data")
@@ -23,10 +23,10 @@ public class MasterData {
     private String description;
 
     @Field("created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Field("updated_at")
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @Field("is_active")
     private boolean isActive;

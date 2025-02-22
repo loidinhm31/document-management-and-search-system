@@ -6,7 +6,7 @@ import com.dms.processor.enums.SharingType;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,5 +32,5 @@ public class DocumentIndex {
     private boolean deleted;
     private DocumentStatus status;
     private String language;
-    private Date createdAt;
+    private Instant createdAt;
 }

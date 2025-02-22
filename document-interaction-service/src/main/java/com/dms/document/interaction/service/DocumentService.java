@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -93,7 +94,7 @@ public class DocumentService {
                 .documentType(documentType)
                 .status(DocumentStatus.PENDING)
                 .createdBy(username)
-                .createdAt(new Date())
+                .createdAt(Instant.now())
                 .build();
 
         // Create document with PENDING status
@@ -116,9 +117,9 @@ public class DocumentService {
                 .deleted(false)
                 .currentVersion(nextVersion)
                 .versions(List.of(newVersion))
-                .createdAt(new Date())
+                .createdAt(Instant.now())
                 .createdBy(username)
-                .updatedAt(new Date())
+                .updatedAt(Instant.now())
                 .updatedBy(username)
                 .build();
 
@@ -254,7 +255,7 @@ public class DocumentService {
             document.setCategory(documentUpdateRequest.category());
             document.setTags(documentUpdateRequest.tags());
         }
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
 
         DocumentInformation updatedDocument = documentRepository.save(document);
@@ -300,7 +301,7 @@ public class DocumentService {
                 .documentType(documentType)
                 .status(DocumentStatus.PENDING)
                 .createdBy(username)
-                .createdAt(new Date())
+                .createdAt(Instant.now())
                 .build();
 
         // Update document information
@@ -319,7 +320,7 @@ public class DocumentService {
         document.setCourseLevel(documentUpdateRequest.level());
         document.setCategory(documentUpdateRequest.category());
         document.setTags(documentUpdateRequest.tags());
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
 
         document.setCurrentVersion(nextVersion);
@@ -329,7 +330,7 @@ public class DocumentService {
         versions.add(newVersion);
         document.setVersions(versions);
 
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
 
         // Save all changes
@@ -369,7 +370,7 @@ public class DocumentService {
 
         // Soft delete in database
         document.setDeleted(true);
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
         documentRepository.save(document);
 
@@ -445,7 +446,7 @@ public class DocumentService {
                 .language(versionToRevert.getLanguage())          // Reuse language detection
                 .extractedMetadata(versionToRevert.getExtractedMetadata()) // Reuse extracted metadata
                 .createdBy(username)
-                .createdAt(new Date())
+                .createdAt(Instant.now())
                 .build();
 
         // Update document information - reuse existing data
@@ -458,7 +459,7 @@ public class DocumentService {
         document.setDocumentType(versionToRevert.getDocumentType());
         document.setLanguage(versionToRevert.getLanguage());
         document.setExtractedMetadata(versionToRevert.getExtractedMetadata());
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
         document.setCurrentVersion(nextVersion);
 

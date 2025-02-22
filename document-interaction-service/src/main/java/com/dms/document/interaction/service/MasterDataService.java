@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -47,8 +48,8 @@ public class MasterDataService {
     public MasterDataResponse save(MasterDataRequest request) {
         MasterData masterData = new MasterData();
         updateMasterDataFromRequest(masterData, request);
-        masterData.setCreatedAt(LocalDateTime.now());
-        masterData.setUpdatedAt(LocalDateTime.now());
+        masterData.setCreatedAt(Instant.now());
+        masterData.setUpdatedAt(Instant.now());
 
         return toResponse(masterDataRepository.save(masterData));
     }
@@ -58,7 +59,7 @@ public class MasterDataService {
                 .orElseThrow(() -> new IllegalArgumentException("Master data not found"));
 
         updateMasterDataFromRequest(masterData, request);
-        masterData.setUpdatedAt(LocalDateTime.now());
+        masterData.setUpdatedAt(Instant.now());
 
         return toResponse(masterDataRepository.save(masterData));
     }

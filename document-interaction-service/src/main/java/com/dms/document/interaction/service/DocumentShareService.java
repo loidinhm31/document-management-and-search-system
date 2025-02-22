@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -64,7 +65,7 @@ public class DocumentShareService {
                 new HashSet<>());
 
         // Update audit fields
-        doc.setUpdatedAt(new Date());
+        doc.setUpdatedAt(Instant.now());
         doc.setUpdatedBy(username);
 
         // Save changes

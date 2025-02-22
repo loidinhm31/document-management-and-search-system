@@ -30,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 
 @Slf4j
@@ -68,8 +69,8 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
                 .orElseGet(() -> {
                     DocumentPreferences defaultPrefs = new DocumentPreferences();
                     defaultPrefs.setUserId(userId);
-                    defaultPrefs.setCreatedAt(new Date());
-                    defaultPrefs.setUpdatedAt(new Date());
+                    defaultPrefs.setCreatedAt(Instant.now());
+                    defaultPrefs.setUpdatedAt(Instant.now());
                     return documentPreferencesRepository.save(defaultPrefs);
                 });
     }

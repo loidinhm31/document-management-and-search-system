@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.Date;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -46,5 +46,5 @@ public class DocumentVersion {
     private String createdBy;
 
     @Field("created_at")
-    private Date createdAt;
+    private Instant createdAt;
 }

@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Objects;
 
@@ -94,7 +95,7 @@ public class DocumentProcessService {
         document.setLanguage(documentVersion.getLanguage());
         document.setExtractedMetadata(documentContent.getExtractedMetadata());
         document.setStatus(DocumentStatus.COMPLETED);
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         documentRepository.save(document);
 
         // Index the document
@@ -156,7 +157,7 @@ public class DocumentProcessService {
         document.setStatus(DocumentStatus.COMPLETED);
 
         // Update timestamps
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         documentRepository.save(document);
 
         documentContentService.saveVersionContent(
@@ -189,7 +190,7 @@ public class DocumentProcessService {
         // Update document status
         document.setStatus(DocumentStatus.FAILED);
         document.setProcessingError(e.getMessage());
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
 
         documentRepository.save(document);
     }

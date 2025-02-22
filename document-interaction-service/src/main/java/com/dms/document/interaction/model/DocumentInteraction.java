@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 
 @Data
@@ -28,16 +28,16 @@ public class DocumentInteraction {
     private Map<String, InteractionStats> interactions;
 
     @Field("first_interaction_date")
-    private Date firstInteractionDate;
+    private Instant firstInteractionDate;
 
     @Field("last_interaction_date")
     @Indexed
-    private Date lastInteractionDate;
+    private Instant lastInteractionDate;
 
     @Data
     @NoArgsConstructor
     public static class InteractionStats {
         private int count;
-        private Date lastUpdate;
+        private Instant lastUpdate;
     }
 }

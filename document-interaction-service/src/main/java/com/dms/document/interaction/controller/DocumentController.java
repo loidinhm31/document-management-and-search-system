@@ -101,7 +101,7 @@ public class DocumentController {
         // Include the current version number and specific version's thumbnail path
         String contentKey = String.format("%s_%s_%s_%s_%s_%s",
                 document.getId(),
-                document.getUpdatedAt().getTime(),
+                document.getUpdatedAt().toEpochMilli(),
                 document.getCurrentVersion(),
                 document.getFileSize(),
                 document.getFilename(),
