@@ -5,11 +5,14 @@ import com.dms.document.interaction.dto.CommentRequest;
 import com.dms.document.interaction.dto.CommentResponse;
 import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.enums.InteractionType;
+import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentComment;
 import com.dms.document.interaction.model.DocumentInformation;
+import com.dms.document.interaction.model.UserDocumentHistory;
 import com.dms.document.interaction.repository.DocumentCommentRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
+import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +40,7 @@ public class DocumentCommentService {
     private final DocumentRepository documentRepository;
     private final DocumentNotificationService documentNotificationService;
     private final DocumentPreferencesService documentPreferencesService;
+    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
 
     @Transactional(readOnly = true)
     public Page<CommentResponse> getDocumentComments(String documentId, Pageable pageable, String username) {
@@ -88,6 +92,16 @@ public class DocumentCommentService {
         savedComment.setReplies(new ArrayList<>());
 
         CompletableFuture.runAsync(() -> {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(userResponse.userId().toString())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.COMMENT)
+                    .version(documentInformation.getCurrentVersion())
+                    .detail(comment.getContent())
+                    .createdAt(Instant.now())
+                    .build());
+
             // Only notify if this is a new commenter
             documentNotificationService.handleCommentNotification(
                     documentId,

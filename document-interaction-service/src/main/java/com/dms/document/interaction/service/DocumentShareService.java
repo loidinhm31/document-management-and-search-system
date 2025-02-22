@@ -8,9 +8,12 @@ import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.enums.EventType;
 import com.dms.document.interaction.enums.InteractionType;
 import com.dms.document.interaction.enums.SharingType;
+import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentInformation;
+import com.dms.document.interaction.model.UserDocumentHistory;
 import com.dms.document.interaction.repository.DocumentRepository;
+import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -33,6 +36,7 @@ public class DocumentShareService {
     private final PublishEventService publishEventService;
     private final DocumentRepository documentRepository;
     private final DocumentPreferencesService documentPreferencesService;
+    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
 
     public ShareSettings getDocumentShareSettings(String documentId, String username) {
 
@@ -74,6 +78,16 @@ public class DocumentShareService {
 
         // Send sync event to indexing document
         CompletableFuture.runAsync(() -> {
+            // Hístory
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(doc.getUserId())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.SHARE)
+                    .version(doc.getCurrentVersion())
+                    .detail(updatedDoc.getSharingType().name())
+                    .createdAt(Instant.now())
+                    .build());
+
             publishEventService.sendSyncEvent(
                     SyncEventRequest.builder()
                             .eventId(UUID.randomUUID().toString())
