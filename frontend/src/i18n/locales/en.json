@@ -432,6 +432,7 @@
       "status": {
         "noMatches": "No matches found"
       },
+      "empty": "Not found document",
       "pagination": {
         "previous": "Previous",
         "next": "Next",

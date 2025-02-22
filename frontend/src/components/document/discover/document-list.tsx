@@ -28,14 +28,14 @@ import {
   setMajor,
   setPage,
   setSort,
-  setTags
+  setTags,
 } from "@/store/slices/search-slice";
 import { MasterDataType } from "@/types/master-data";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 import { DocumentInformation } from "@/types/document";
@@ -63,7 +63,7 @@ export const DocumentList = () => {
     selectedCategory,
     selectedTags,
     totalPages,
-    currentPage
+    currentPage,
   } = useAppSelector(selectSearchState);
 
   const { majors, levels, categories } = useAppSelector(selectMasterData);
@@ -84,7 +84,7 @@ export const DocumentList = () => {
     // Only show matches column in search mode
     ...(isSearchMode ? [{ field: "highlights", label: t("document.discover.headers.matches"), sortable: false }] : []),
     { field: "createdAt", label: t("document.discover.headers.created"), sortable: !!isSearchMode },
-    { field: "actions", label: t("document.discover.headers.actions"), sortable: false }
+    { field: "actions", label: t("document.discover.headers.actions"), sortable: false },
   ];
 
   // Extract current sort field and direction from selectedSort
@@ -110,11 +110,7 @@ export const DocumentList = () => {
     const { field: currentField, direction } = getCurrentSort();
     if (field !== currentField) return null;
 
-    return direction === "asc" ? (
-      <ArrowUp className="ml-1 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-1 h-4 w-4" />
-    );
+    return direction === "asc" ? <ArrowUp className="ml-1 h-4 w-4" /> : <ArrowDown className="ml-1 h-4 w-4" />;
   };
 
   // Initial fetch master data
@@ -127,11 +123,13 @@ export const DocumentList = () => {
 
   // Initial fetch
   useEffect(() => {
-    if (searchTerm ||
+    if (
+      searchTerm ||
       selectedMajor !== "all" ||
       selectedLevel !== "all" ||
       selectedCategory !== "all" ||
-      selectedTags.length > 0) {
+      selectedTags.length > 0
+    ) {
       dispatch(fetchSearchDocuments());
     } else {
       dispatch(fetchRecommendedDocuments());
@@ -139,11 +137,13 @@ export const DocumentList = () => {
   }, []);
 
   const handleSearch = () => {
-    if (!searchTerm.trim() &&
+    if (
+      !searchTerm.trim() &&
       selectedMajor === "all" &&
       selectedLevel === "all" &&
       selectedCategory === "all" &&
-      selectedTags.length === 0) {
+      selectedTags.length === 0
+    ) {
       dispatch(fetchRecommendedDocuments());
     } else {
       dispatch(setPage(0));
@@ -165,7 +165,7 @@ export const DocumentList = () => {
       toast({
         title: t("common.error"),
         description: t("document.viewer.error.download"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -229,16 +229,11 @@ export const DocumentList = () => {
 
             {/* Filter and Reset Buttons */}
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="relative gap-2"
-              >
+              <Button variant="outline" onClick={() => setShowAdvanced(!showAdvanced)} className="relative gap-2">
                 <Filter className="h-4 w-4" />
                 <span className="hidden sm:inline">{t("document.commonSearch.filters")}</span>
                 {getActiveFilterCount() > 0 && (
-                  <span
-                    className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                  <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
                     {getActiveFilterCount()}
                   </span>
                 )}
@@ -275,7 +270,7 @@ export const DocumentList = () => {
               <Loader2 className="h-8 w-8 animate-spin" />
               <span className="ml-2">{t("document.search.loading")}</span>
             </div>
-          ) : (
+          ) : documents?.length > 0 ? (
             <>
               <div className="space-y-4 lg:hidden">
                 {documents.map((doc) => (
@@ -301,8 +296,9 @@ export const DocumentList = () => {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.major")}:</span>
-                          <span
-                            className="text-sm">{getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}</span>
+                          <span className="text-sm">
+                            {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.course")}:</span>
@@ -310,13 +306,15 @@ export const DocumentList = () => {
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.level")}:</span>
-                          <span
-                            className="text-sm">{getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}</span>
+                          <span className="text-sm">
+                            {getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.category")}:</span>
-                          <span
-                            className="text-sm">{getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}</span>
+                          <span className="text-sm">
+                            {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
+                          </span>
                         </div>
                         {doc.highlights && doc.highlights.length > 0 && (
                           <div className="mt-2">
@@ -324,18 +322,10 @@ export const DocumentList = () => {
                           </div>
                         )}
                         <div className="flex justify-end gap-2 pt-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handlePreview(doc)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => handlePreview(doc)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownload(doc.id, doc.filename)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => handleDownload(doc.id, doc.filename)}>
                             <Download className="h-4 w-4" />
                           </Button>
                         </div>
@@ -355,7 +345,7 @@ export const DocumentList = () => {
                             key={column.field}
                             className={cn(
                               column.sortable && "cursor-pointer select-none",
-                              column.field === "actions" && "text-right"
+                              column.field === "actions" && "text-right",
                             )}
                             onClick={() => column.sortable && handleSort(column.field)}
                           >
@@ -396,8 +386,8 @@ export const DocumentList = () => {
                                   key={index}
                                   className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20"
                                 >
-                              {tag}
-                            </span>
+                                  {tag}
+                                </span>
                               ))}
                             </div>
                           </TableCell>
@@ -425,22 +415,20 @@ export const DocumentList = () => {
                 </div>
               </div>
             </>
+          ) : (
+            <p className="flex justify-center">{t("document.discover.empty")}</p>
           )}
 
           {/* Pagination */}
           <div className="mt-4 flex justify-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 0}
-            >
+            <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}>
               {t("document.discover.pagination.previous")}
             </Button>
             <span className="flex items-center px-4">
-                {t("document.discover.pagination.pageInfo", {
-                  current: documents.length > 0 ? currentPage + 1 : 0,
-                  total: totalPages
-                })}
+              {t("document.discover.pagination.pageInfo", {
+                current: documents.length > 0 ? currentPage + 1 : 0,
+                total: totalPages,
+              })}
             </span>
             <Button
               variant="outline"
