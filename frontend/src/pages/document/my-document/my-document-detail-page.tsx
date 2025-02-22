@@ -219,6 +219,7 @@ export default function MyDocumentDetailPage() {
                   documentCreatorId={documentData.userId}
                   documentId={documentData.id}
                   onVersionUpdate={handleVersionUpdate}
+                  allowRevert={true}
                 />
               )}
 

@@ -27,6 +27,7 @@ interface DocumentViewerProps {
   fileName: string;
   versionNumber?: number;
   fileChange?: boolean;
+  history?: boolean;
 }
 
 export interface ExcelSheet {
@@ -41,6 +42,7 @@ export const DocumentViewer = ({
   fileName,
   versionNumber,
   fileChange,
+  history = false,
 }: DocumentViewerProps) => {
   const { t } = useTranslation();
 
@@ -78,8 +80,8 @@ export const DocumentViewer = ({
     try {
       const response =
         versionNumber !== undefined
-          ? await documentService.downloadDocumentVersion(documentId, versionNumber)
-          : await documentService.downloadDocument(documentId);
+          ? await documentService.downloadDocumentVersion({ id: documentId, versionNumber })
+          : await documentService.downloadDocument({ id: documentId });
       const blob = new Blob([response.data], { type: mimeType });
 
       switch (documentType) {
@@ -224,8 +226,13 @@ export const DocumentViewer = ({
     try {
       const response =
         versionNumber !== undefined
-          ? await documentService.downloadDocumentVersion(documentId, versionNumber, "download")
-          : await documentService.downloadDocument(documentId, "download");
+          ? await documentService.downloadDocumentVersion({
+              id: documentId,
+              versionNumber,
+              action: "download",
+              history: history,
+            })
+          : await documentService.downloadDocument({ id: documentId, action: "download", history: history });
       const blob = new Blob([response.data], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

@@ -168,7 +168,7 @@ export const DocumentList = () => {
 
   const handleDownload = async (id: string, filename: string) => {
     try {
-      const response = await documentService.downloadDocument(id, "download");
+      const response = await documentService.downloadDocument({id, action: "download", history: true});
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;

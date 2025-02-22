@@ -9,20 +9,21 @@ class DocumentService extends BaseService {
     return this.handleApiResponse<DocumentInformation>(
       axiosInstance.post("/document-interaction/api/v1/documents", formData, {
         headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      })
+          "Content-Type": "multipart/form-data",
+        },
+      }),
     );
   }
 
-  downloadDocument(id: string, action?: string) {
+  downloadDocument(payload: { id: string; action?: string; history?: boolean }) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${id}/downloads`, {
+      axiosInstance.get(`/document-interaction/api/v1/documents/${payload?.id}/downloads`, {
         responseType: "blob",
         params: {
-          action
+          action: payload?.action,
+          history: payload?.history,
         },
-      })
+      }),
     );
   }
 
@@ -32,174 +33,163 @@ class DocumentService extends BaseService {
         responseType: "blob",
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
-          "Pragma": "no-cache",
-          "Expires": "0"
+          Pragma: "no-cache",
+          Expires: "0",
         },
         params: {
-          [versionInfo]: ""  // Add version info as URL parameter
-        }
-      }));
+          [versionInfo]: "",
+        },
+      }),
+    );
   }
 
-  getDocumentDetails(id: string) {
-    return axiosInstance.get<DocumentInformation>(`/document-interaction/api/v1/documents/${id}`);
+  getDocumentDetails(id: string, history?: boolean) {
+    return axiosInstance.get<DocumentInformation>(`/document-interaction/api/v1/documents/${id}`, {
+      params: {
+        history,
+      },
+    });
   }
 
   updateDocument(id: string, data: DocumentMetadataUpdate) {
-    return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/documents/${id}`, data)
-    );
+    return this.handleApiResponse(axiosInstance.put(`/document-interaction/api/v1/documents/${id}`, data));
   }
 
   deleteDocument(id: string) {
-    return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/documents/${id}`)
-    );
+    return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/documents/${id}`));
   }
 
   updateDocumentWithFile(id: string, formData: FormData) {
     return this.handleApiResponse(
       axiosInstance.put(`/document-interaction/api/v1/documents/${id}/file`, formData, {
         headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      })
+          "Content-Type": "multipart/form-data",
+        },
+      }),
     );
   }
 
   getTagSuggestions(prefix?: string) {
     return this.handleApiResponse<string[]>(
       axiosInstance.get(`/document-interaction/api/v1/documents/tags/suggestions`, {
-        params: { prefix }
-      })
+        params: { prefix },
+      }),
     );
   }
 
   getShareSettings(documentId: string) {
-    return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/shares/documents/${documentId}`)
-    );
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/shares/documents/${documentId}`));
   }
 
-  updateShareSettings(documentId: string, settings: {
-    isPublic: boolean;
-    sharedWith: string[];
-  }) {
+  updateShareSettings(
+    documentId: string,
+    settings: {
+      isPublic: boolean;
+      sharedWith: string[];
+    },
+  ) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/shares/documents/${documentId}`, settings)
+      axiosInstance.put(`/document-interaction/api/v1/shares/documents/${documentId}`, settings),
     );
   }
 
   searchShareableUsers(query: string) {
     return this.handleApiResponse<UserSearchResponse[]>(
       axiosInstance.get(`/document-interaction/api/v1/shares/users`, {
-        params: { query }
-      })
+        params: { query },
+      }),
     );
   }
 
   getShareableUsersByIds(userIds: string[]) {
     return this.handleApiResponse<UserSearchResponse[]>(
-      axiosInstance.post(`/document-interaction/api/v1/shares/users/details`, userIds)
+      axiosInstance.post(`/document-interaction/api/v1/shares/users/details`, userIds),
     );
   }
 
   favoriteDocument(id: string) {
-    return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/favorites/documents/${id}`)
-    );
+    return this.handleApiResponse(axiosInstance.post(`/document-interaction/api/v1/favorites/documents/${id}`));
   }
 
   unfavoriteDocument(id: string) {
-    return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/favorites/documents/${id}`)
-    );
+    return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/favorites/documents/${id}`));
   }
 
   isDocumentFavorited(id: string) {
     return this.handleApiResponse<boolean>(
-      axiosInstance.get(`/document-interaction/api/v1/favorites/documents/${id}/status`)
+      axiosInstance.get(`/document-interaction/api/v1/favorites/documents/${id}/status`),
     );
   }
 
-  downloadDocumentVersion(documentId: string, versionNumber: number, action?: string) {
+  downloadDocumentVersion(payload: { documentId: string; versionNumber: number; action?: string; history?: boolean }) {
     return this.handleApiResponse(
       axiosInstance.get(
-        `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/download`,
-        { responseType: "blob", params: { action } },
-      )
+        `/document-interaction/api/v1/documents/${payload.documentId}/versions/${payload.versionNumber}/download`,
+        {
+          responseType: "blob",
+          params: {
+            action: payload?.action,
+            history: payload?.history,
+          },
+        },
+      ),
     );
   }
 
   revertToVersion(documentId: string, versionNumber: number) {
     return this.handleApiResponse(
-      axiosInstance.post<DocumentInformation>(`/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/revert`)
+      axiosInstance.post<DocumentInformation>(
+        `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/revert`,
+      ),
     );
   }
 
   getRecommendationDocuments(documentId: string, size: number = 6, page: number = 0) {
     return this.handleApiResponse(
-      axiosInstance.get(
-        `/document-search/api/v1/documents/recommendation`,
-        {
-          params: { documentId, size, page }
-        }
-      )
+      axiosInstance.get(`/document-search/api/v1/documents/recommendation`, {
+        params: { documentId, size, page },
+      }),
     );
   }
 
   getDocumentComments(documentId, params = {}) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/comments/documents/${documentId}`, { params })
+      axiosInstance.get(`/document-interaction/api/v1/comments/documents/${documentId}`, { params }),
     );
   }
 
   createComment(documentId, data) {
     return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/comments/documents/${documentId}`, data)
+      axiosInstance.post(`/document-interaction/api/v1/comments/documents/${documentId}`, data),
     );
   }
 
   updateComment(commentId, data) {
-    return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/comments/${commentId}`, data)
-    );
+    return this.handleApiResponse(axiosInstance.put(`/document-interaction/api/v1/comments/${commentId}`, data));
   }
 
   deleteComment(commentId) {
-    return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/comments/${commentId}`)
-    );
+    return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/comments/${commentId}`));
   }
 
   getDocumentPreferences() {
-    return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/preferences`)
-    );
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/preferences`));
   }
 
   getDocumentContentWeights() {
-    return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/preferences/content-weights`)
-    );
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/preferences/content-weights`));
   }
 
   updateDocumentPreferences(preferences: UpdatePreferencesRequest) {
-    return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/preferences`, preferences)
-    );
+    return this.handleApiResponse(axiosInstance.put(`/document-interaction/api/v1/preferences`, preferences));
   }
 
   getInteractionStatistics() {
-    return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/preferences/statistics`)
-    );
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/preferences/statistics`));
   }
 
   getRecommendedTags() {
-    return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/preferences/tags`)
-    );
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/preferences/tags`));
   }
 }
 

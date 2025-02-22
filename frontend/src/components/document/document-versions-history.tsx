@@ -19,24 +19,24 @@ interface VersionHistoryProps {
   documentCreatorId?: string;
   documentId?: string;
   onVersionUpdate?: (updatedDocument: DocumentInformation) => void;
+  allowRevert?: boolean;
 }
 
 const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
-                                                                 versions,
-                                                                 currentVersion,
-                                                                 documentCreatorId,
-                                                                 documentId,
-                                                                 onVersionUpdate
-                                                               }) => {
+  versions,
+  currentVersion,
+  documentCreatorId,
+  documentId,
+  onVersionUpdate,
+  allowRevert = false,
+}) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const { currentUser } = useAuth();
   const isDocumentCreator = currentUser?.userId === documentCreatorId;
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
 
-  const documentProcessingStatus = useAppSelector(
-    selectProcessingItemByDocumentId(documentId)
-  );
+  const documentProcessingStatus = useAppSelector(selectProcessingItemByDocumentId(documentId));
 
   const fetchDocumentDetails = useCallback(async () => {
     if (!documentId) return;
@@ -49,7 +49,6 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
       if (onVersionUpdate) {
         onVersionUpdate(response.data);
       }
-
     } catch (error) {
       console.error("Error fetching document details:", error);
     } finally {
@@ -69,11 +68,12 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
 
   const handleVersionDownload = async (versionNumber: number, filename: string) => {
     try {
-      const response = await documentService.downloadDocumentVersion(
-        documentId,
+      const response = await documentService.downloadDocumentVersion({
+        id: documentId,
         versionNumber,
-        "download",
-      );
+        action: "download",
+        history: true,
+      });
       const url = URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -82,11 +82,11 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.versions.error.download"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -106,13 +106,13 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
       toast({
         title: t("common.success"),
         description: t("document.versions.revertSuccess"),
-        variant: "success"
+        variant: "success",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.versions.error.revertError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -147,8 +147,8 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
             <div className="flex flex-1 items-center gap-2">
               <History className="h-4 w-4" />
               <span>
-              {t("document.versions.title")} ({t("document.versions.total", { total: versions.length })})
-            </span>
+                {t("document.versions.title")} ({t("document.versions.total", { total: versions.length })})
+              </span>
             </div>
           </AccordionTrigger>
           <AccordionContent>
@@ -162,27 +162,27 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                     {/* Version Header */}
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {t("document.versions.versionNumber", {
-                          number: version.versionNumber + 1
-                        })}
-                      </span>
+                        <span className="font-medium">
+                          {t("document.versions.versionNumber", {
+                            number: version.versionNumber + 1,
+                          })}
+                        </span>
                         {version.versionNumber === currentVersion && (
                           <span className="rounded bg-primary/10 px-2 py-0.5 text-xs text-primary">
-                          {t("document.versions.current")}
-                        </span>
+                            {t("document.versions.current")}
+                          </span>
                         )}
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColor(
-                            version.status
+                            version.status,
                           )}`}
                         >
-                        {t(`document.versions.status.${version.status.toLowerCase()}`)}
-                      </span>
+                          {t(`document.versions.status.${version.status.toLowerCase()}`)}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {version.versionNumber !== currentVersion && isDocumentCreator && (
+                        {allowRevert && version.versionNumber !== currentVersion && isDocumentCreator && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -194,11 +194,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                           </Button>
                         )}
                         {version.versionNumber !== currentVersion && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenViewVersion(version)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => handleOpenViewVersion(version)}>
                             {t("document.versions.actions.view")}
                           </Button>
                         )}
@@ -228,8 +224,8 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                     <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <span>{version.filename}</span>
                       <span>
-                      {version.mimeType} • {(version.fileSize / 1024).toFixed(3)} KB
-                    </span>
+                        {version.mimeType} • {(version.fileSize / 1024).toFixed(3)} KB
+                      </span>
                     </div>
 
                     {/* Error Message */}

@@ -86,7 +86,7 @@ export default function DocumentDetailPage() {
 
       try {
         const [docResponse, favoriteResponse] = await Promise.all([
-          documentService.getDocumentDetails(documentId),
+          documentService.getDocumentDetails(documentId, true),
           documentService.isDocumentFavorited(documentId)
         ]);
 
@@ -146,6 +146,7 @@ export default function DocumentDetailPage() {
                   documentType={documentData.documentType}
                   mimeType={documentData.mimeType}
                   fileName={documentData.filename}
+                  history={true}
                 />
               )}
             </CardContent>
@@ -262,6 +263,7 @@ export default function DocumentDetailPage() {
                   documentCreatorId={documentData.userId}
                   documentId={documentData.id}
                   onVersionUpdate={handleVersionUpdate}
+                  allowRevert={false}
                 />
               )}
             </CardContent>

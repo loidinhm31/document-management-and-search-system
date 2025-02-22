@@ -28,7 +28,11 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const response = await documentService.downloadDocument(documentInformation.id, "download");
+      const response = await documentService.downloadDocument({
+        id: documentInformation.id,
+        action: "download",
+        history: true,
+      });
       const url = URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -72,10 +76,16 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
                 {moment(documentInformation?.createdAt).format("DD/MM/YYYY, h:mm a")}
               </span>
             </div>
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-2 flex items-center gap-2">
               <span className="text-sm text-muted-foreground">File size:</span>
               <span className="text-sm font-semibold">
                 {(documentInformation.fileSize / (1024 * 1024)).toFixed(3)} MB
+              </span>
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Language:</span>
+              <span className="text-sm font-semibold">
+                {(documentInformation.language)}
               </span>
             </div>
             {documentInformation.sharedWith.includes(currentUser?.userId) && (
@@ -85,7 +95,6 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
               </div>
             )}
           </div>
-
         </CardContent>
         <CardFooter className="flex justify-center">
           <div className="flex items-center gap-2">
