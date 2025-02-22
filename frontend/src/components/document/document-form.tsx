@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import i18n from "i18next";
 import { Loader2, Upload } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -63,6 +63,28 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
     },
   });
 
+  const selectedMajor = form.watch("major");
+
+  const filteredCourseCodes = useMemo(() => {
+    if (!selectedMajor) {
+      return [];
+    }
+
+    return courseCodes.filter((course) => course.parentId === selectedMajor);
+  }, [selectedMajor, courseCodes]);
+
+  useEffect(() => {
+    if (selectedMajor && form.getValues("courseCode")) {
+      // Check if the current course code belongs to the selected major
+      const currentCourseCode = form.getValues("courseCode");
+      const isValidCourseCode = filteredCourseCodes.some((course) => course.code === currentCourseCode);
+
+      if (!isValidCourseCode) {
+        form.setValue("courseCode", "");
+      }
+    }
+  }, [selectedMajor, filteredCourseCodes, form]);
+
   useEffect(() => {
     if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
       dispatch(fetchMasterData());
@@ -78,7 +100,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
     }
   }, []);
 
-  const onDropRejected = React.useCallback((fileRejections) => {
+  const onDropRejected = useCallback((fileRejections) => {
     const fileSizeError = fileRejections.find((rejection) =>
       rejection.errors.some((error) => error.code === "file-too-large"),
     );
@@ -160,7 +182,9 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
                       />
                     </FormControl>
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{field.value?.length || 0}/500 {t("document.upload.form.summary.count")}</span>
+                      <span>
+                        {field.value?.length || 0}/500 {t("document.upload.form.summary.count")}
+                      </span>
                     </div>
                     <FormMessage />
                   </div>
@@ -182,7 +206,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
                     </FormControl>
                     <SelectContent>
                       {majors?.map((major) => (
-                        <SelectItem key={major.code} value={major.code}>
+                        <SelectItem key={major.code} value={major.id}>
                           {major.translations[i18n.language] || major.translations.en}
                         </SelectItem>
                       ))}
@@ -201,12 +225,12 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
                   <FormLabel>{t("document.upload.form.courseCode.label")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger disabled={!courseCodes}>
+                      <SelectTrigger disabled={!selectedMajor || filteredCourseCodes.length === 0}>
                         <SelectValue placeholder={t("document.upload.form.courseCode.placeholder")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {courseCodes?.map((course) => (
+                      {filteredCourseCodes.map((course) => (
                         <SelectItem key={course.code} value={course.code}>
                           {course.translations[i18n.language] || course.translations.en}
                         </SelectItem>

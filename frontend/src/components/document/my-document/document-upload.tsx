@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { DocumentForm, DocumentFormValues } from "@/components/document/my-document/document-form";
+import { DocumentForm, DocumentFormValues } from "@/components/document/document-form";
 import { useProcessing } from "@/context/processing-provider";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";

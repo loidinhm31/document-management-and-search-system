@@ -3,41 +3,43 @@ import { BaseService } from "@/services/base.service";
 import { MasterData, MasterDataType } from "@/types/master-data";
 
 class MasterDataService extends BaseService {
-  getAllActiveByType(type: MasterDataType) {
+  getAllByType(type: MasterDataType, active?: boolean) {
     return this.handleApiResponse<MasterData[]>(
-      axiosInstance.get(`/document-interaction/api/v1/master-data/${type}/active`)
-    );
-  }
-
-  getAllByType(type: MasterDataType) {
-    return this.handleApiResponse<MasterData[]>(
-      axiosInstance.get(`/document-interaction/api/v1/master-data/${type}`)
+      axiosInstance.get(`/document-interaction/api/v1/master-data/${type}`, {
+        params: { active },
+      }),
     );
   }
 
   getByTypeAndCode(type: MasterDataType, code: string) {
     return this.handleApiResponse<MasterData>(
-      axiosInstance.get(`/document-interaction/api/v1/master-data/${type}/${code}`)
+      axiosInstance.get(`/document-interaction/api/v1/master-data/${type}/${code}`),
+    );
+  }
+
+  getAllByTypeAndParentId(type: MasterDataType, parentId: string, active  ?: boolean) {
+    return this.handleApiResponse<MasterData[]>(
+      axiosInstance.get(`/document-interaction/api/v1/master-data/${type}/parent/${parentId}`, {
+        params: { active },
+      }),
     );
   }
 
   searchByText(query: string) {
     return this.handleApiResponse<MasterData[]>(
       axiosInstance.get(`/document-interaction/api/v1/master-data/search`, {
-        params: { query }
-      })
+        params: { query },
+      }),
     );
   }
 
   create(data: MasterData) {
-    return this.handleApiResponse<MasterData>(
-      axiosInstance.post("/document-interaction/api/v1/master-data", data)
-    );
+    return this.handleApiResponse<MasterData>(axiosInstance.post("/document-interaction/api/v1/master-data", data));
   }
 
   update(id: string, data: MasterData) {
     return this.handleApiResponse<MasterData>(
-      axiosInstance.put(`/document-interaction/api/v1/master-data/${id}`, data)
+      axiosInstance.put(`/document-interaction/api/v1/master-data/${id}`, data),
     );
   }
 
@@ -49,9 +51,7 @@ class MasterDataService extends BaseService {
   }
 
   deleteById(id: string) {
-    return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/master-data/${id}`)
-    );
+    return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/master-data/${id}`));
   }
 }
 

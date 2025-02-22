@@ -7,6 +7,8 @@
     "and": "and",
     "delete": "Delete",
     "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
     "confirmDelete": {
       "title": "Confirm Delete",
       "description": "Are you sure you want to delete this item? This action cannot be undone."
@@ -351,6 +353,8 @@
       "description": "Manage system master data such as majors, course levels, and document categories",
       "selectType": "Select type",
       "searchPlaceholder": "Search master data...",
+      "selectParent": "Select parent type",
+      "allParents": "All parent types",
       "search": "Search",
       "add": "Add New",
       "headers": {
@@ -359,7 +363,8 @@
         "nameVi": "Vietnamese Name",
         "type": "Type",
         "status": "Status",
-        "actions": "Actions"
+        "actions": "Actions",
+        "parent": "Parent Type"
       },
       "actions": {
         "edit": "Edit",
@@ -380,14 +385,17 @@
           "nameEn": "English Name",
           "nameVi": "Vietnamese Name",
           "description": "Description",
-          "active": "Active Status"
+          "active": "Active Status",
+          "parent": "Parent Type"
         },
         "placeholders": {
           "code": "Enter code",
           "nameEn": "Enter English name",
           "nameVi": "Enter Vietnamese name",
-          "description": "Enter description"
-        }
+          "description": "Enter description",
+          "parent": "Select parent type"
+        },
+        "noParent": "None parent type"
       },
       "delete": {
         "title": "Delete Master Data",

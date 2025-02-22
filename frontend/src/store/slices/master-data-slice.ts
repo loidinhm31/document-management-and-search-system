@@ -27,10 +27,10 @@ export const fetchMasterData = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const [majorsResponse, courseCodesReponse, levelsResponse, categoriesResponse] = await Promise.all([
-        masterDataService.getAllActiveByType(MasterDataType.MAJOR),
-        masterDataService.getAllActiveByType(MasterDataType.COURSE_CODE),
-        masterDataService.getAllActiveByType(MasterDataType.COURSE_LEVEL),
-        masterDataService.getAllActiveByType(MasterDataType.DOCUMENT_CATEGORY)
+        masterDataService.getAllByType(MasterDataType.MAJOR, true),
+        masterDataService.getAllByType(MasterDataType.COURSE_CODE, true),
+        masterDataService.getAllByType(MasterDataType.COURSE_LEVEL, true),
+        masterDataService.getAllByType(MasterDataType.DOCUMENT_CATEGORY, true)
       ]);
 
       return {

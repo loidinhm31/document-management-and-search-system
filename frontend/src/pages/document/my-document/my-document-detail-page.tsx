@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { DeleteDialog } from "@/components/common/delete-dialog";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
-import { DocumentForm, DocumentFormValues } from "@/components/document/my-document/document-form";
+import { DocumentForm, DocumentFormValues } from "@/components/document/document-form";
 import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";

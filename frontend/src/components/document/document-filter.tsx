@@ -1,13 +1,12 @@
 import { Label } from "@radix-ui/react-menu";
 import i18n from "i18next";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
-
 
 export interface DocumentFilterProps {
   majorValue: string;
@@ -24,22 +23,39 @@ export interface DocumentFilterProps {
 }
 
 export const DocumentFilter = ({
-                                 majorValue,
-                                 onMajorChange,
-                                 courseCodeValue,
-                                 onCourseCodeChange,
-                                 levelValue,
-                                 onLevelChange,
-                                 categoryValue,
-                                 onCategoryChange,
-                                 tagsValue,
-                                 onTagsChange,
-                                 className
-                               }: DocumentFilterProps) => {
+  majorValue,
+  onMajorChange,
+  courseCodeValue,
+  onCourseCodeChange,
+  levelValue,
+  onLevelChange,
+  categoryValue,
+  onCategoryChange,
+  tagsValue,
+  onTagsChange,
+  className,
+}: DocumentFilterProps) => {
   const { t } = useTranslation();
 
   const dispatch = useAppDispatch();
   const { majors, courseCodes, levels, categories, loading } = useAppSelector(selectMasterData);
+
+  const filteredCourseCodes = useMemo(() => {
+    if (majorValue === "all") {
+      return courseCodes;
+    }
+    return courseCodes.filter((course) => course.parentId === majorValue);
+  }, [majorValue, courseCodes]);
+
+  useEffect(() => {
+    if (majorValue !== "all" && courseCodeValue !== "all") {
+      // Check if the current course code belongs to the selected major
+      const isValidCourseCode = filteredCourseCodes.some((course) => course.code === courseCodeValue);
+      if (!isValidCourseCode) {
+        onCourseCodeChange("all");
+      }
+    }
+  }, [majorValue, filteredCourseCodes, courseCodeValue, onCourseCodeChange]);
 
   useEffect(() => {
     if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
@@ -51,19 +67,23 @@ export const DocumentFilter = ({
     return <div>Loading...</div>;
   }
 
+  const handleMajorChange = (value: string) => {
+    onMajorChange(value);
+  };
+
   return (
     <div className={`grid gap-4 ${className}`}>
       {/* Major Filter */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.majorLabel")}</Label>
-        <Select value={majorValue} onValueChange={onMajorChange}>
-          <SelectTrigger>
+        <Select value={majorValue} onValueChange={handleMajorChange}>
+          <SelectTrigger disabled={!majors}>
             <SelectValue placeholder={t("document.commonSearch.majorPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
-            {majors.map((major) => (
-              <SelectItem key={major.code} value={major.code}>
+            {majors?.map((major) => (
+              <SelectItem key={major.code} value={major.id}>
                 {major.translations[i18n.language] || major.translations.en}
               </SelectItem>
             ))}
@@ -75,12 +95,12 @@ export const DocumentFilter = ({
       <div className="space-y-2">
         <Label>{t("document.commonSearch.courseCodeLabel")}</Label>
         <Select value={courseCodeValue} onValueChange={onCourseCodeChange}>
-          <SelectTrigger>
+          <SelectTrigger disabled={!filteredCourseCodes}>
             <SelectValue placeholder={t("document.commonSearch.courseCodePlaceholder")} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
-            {courseCodes?.map((course) => (
+            {filteredCourseCodes?.map((course) => (
               <SelectItem key={course.code} value={course.code}>
                 {course.translations[i18n.language] || course.translations.en}
               </SelectItem>
@@ -93,7 +113,7 @@ export const DocumentFilter = ({
       <div className="space-y-2">
         <Label>{t("document.commonSearch.levelLabel")}</Label>
         <Select value={levelValue} onValueChange={onLevelChange}>
-          <SelectTrigger>
+          <SelectTrigger disabled={!levels}>
             <SelectValue placeholder={t("document.commonSearch.levelPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
@@ -111,7 +131,7 @@ export const DocumentFilter = ({
       <div className="space-y-2">
         <Label>{t("document.commonSearch.categoryLabel")}</Label>
         <Select value={categoryValue} onValueChange={onCategoryChange}>
-          <SelectTrigger>
+          <SelectTrigger disabled={!categories}>
             <SelectValue placeholder={t("document.commonSearch.categoryPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
