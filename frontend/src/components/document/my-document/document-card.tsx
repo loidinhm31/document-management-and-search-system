@@ -9,9 +9,12 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
+import { DocumentInformation } from "@/types/document";
+import moment from "moment-timezone";
+import { Separator } from "@/components/ui/separator";
 
 interface DocumentCardProps {
-  documentInformation: any;
+  documentInformation: DocumentInformation;
   onClick?: () => void;
 }
 
@@ -38,7 +41,7 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
       toast({
         title: t("common.error"),
         description: t("document.viewer.error.download"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -52,25 +55,37 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
     <>
       <Card className="h-full flex flex-col overflow-hidden">
         <CardHeader>
-          <CardTitle
-            className="truncate text-base cursor-pointer hover:text-primary"
-            onClick={() => onClick?.()}
-          >
+          <CardTitle className="truncate text-base cursor-pointer hover:text-primary" onClick={() => onClick?.()}>
             {documentInformation.filename}
           </CardTitle>
+          <Separator />
         </CardHeader>
+
         <CardContent className="flex-1 min-h-0">
           <div className="relative w-full h-40 overflow-hidden rounded-lg">
             <LazyThumbnail documentInformation={documentInformation} />
           </div>
-          {documentInformation.sharedWith.includes(currentUser?.userId) && (
-            <div className="mt-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Shared by:</span>
-                <span className="text-sm font-medium">{documentInformation.createdBy}</span>
-              </div>
+          <div className="mt-2">
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Created at:</span>
+              <span className="text-sm font-semibold">
+                {moment(documentInformation?.createdAt).format("DD/MM/YYYY, h:mm a")}
+              </span>
             </div>
-          )}
+            <div className="mt-4 flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">File size:</span>
+              <span className="text-sm font-semibold">
+                {(documentInformation.fileSize / (1024 * 1024)).toFixed(3)} MB
+              </span>
+            </div>
+            {documentInformation.sharedWith.includes(currentUser?.userId) && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Shared by:</span>
+                <span className="text-sm font-semibold">{documentInformation.createdBy}</span>
+              </div>
+            )}
+          </div>
+
         </CardContent>
         <CardFooter className="flex justify-center">
           <div className="flex items-center gap-2">

@@ -59,7 +59,7 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
 
   const getFileSize = () => {
     const size = documentData.fileSize / 1024;
-    return size >= 1024 ? `${(size / 1024).toFixed(2)} MB` : `${size.toFixed(2)} KB`;
+    return size >= 1024 ? `${(size / 1024).toFixed(3)} MB` : `${size.toFixed(3)} KB`;
   };
 
   return (

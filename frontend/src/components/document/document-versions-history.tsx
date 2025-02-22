@@ -228,7 +228,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                     <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
                       <span>{version.filename}</span>
                       <span>
-                      {version.mimeType} • {(version.fileSize / 1024).toFixed(2)} KB
+                      {version.mimeType} • {(version.fileSize / 1024).toFixed(3)} KB
                     </span>
                     </div>
 

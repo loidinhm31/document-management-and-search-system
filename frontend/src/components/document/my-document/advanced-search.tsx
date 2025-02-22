@@ -1,4 +1,4 @@
-import { Filter, Search } from "lucide-react";
+import { Filter, Search, SortAsc, SortDesc } from "lucide-react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -6,6 +6,7 @@ import DocumentFilter from "@/components/document/document-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 export interface SearchFilters {
@@ -23,10 +24,21 @@ interface AdvancedSearchProps {
 
 export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
   const { t } = useTranslation();
+
+  const sortOptions = [
+    { label: "Created Date (Newest)", value: "createdAt,desc" },
+    { label: "Created Date (Oldest)", value: "createdAt,asc" },
+    { label: "Name (A-Z)", value: "filename,asc" },
+    { label: "Name (Z-A)", value: "filename,desc" },
+    { label: "Size (Largest)", value: "fileSize,desc" },
+    { label: "Size (Smallest)", value: "fileSize,asc" }
+  ];
+
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Search states
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSort, setSelectedSort] = useState(sortOptions[0].value);
 
   // Filter states
   const [selectedMajor, setSelectedMajor] = useState("all");
@@ -41,6 +53,7 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
       major: selectedMajor === "all" ? undefined : selectedMajor,
       level: selectedLevel === "all" ? undefined : selectedLevel,
       category: selectedCategory === "all" ? undefined : selectedCategory,
+      sort: selectedSort,
       tags: selectedTags.length > 0 ? selectedTags : undefined
     });
   };
@@ -51,6 +64,7 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
     setSelectedLevel("all");
     setSelectedCategory("all");
     setSelectedTags([]);
+    setSelectedSort(sortOptions[0].value);
     onSearch({});
   };
 
@@ -83,6 +97,26 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
           <Button onClick={handleSearch} className="gap-2">
             {t("document.commonSearch.apply")}
           </Button>
+
+          {/* Sort Dropdown */}
+          <Select value={selectedSort} onValueChange={setSelectedSort}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  <span className="flex items-center gap-2">
+                    {option.value.endsWith('desc') ?
+                      <SortDesc className="h-4 w-4" /> :
+                      <SortAsc className="h-4 w-4" />
+                    }
+                    {option.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Advanced Filter Toggle */}
           <Button

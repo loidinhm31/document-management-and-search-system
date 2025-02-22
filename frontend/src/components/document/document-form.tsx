@@ -27,7 +27,7 @@ const documentSchema = z.object({
           val && val.length < 50 ? "Summary must be at least 50 characters" : "Summary must not exceed 500 characters",
       }),
     ),
-  courseCode: z.string().min(1, "Course code is required"),
+  courseCode: z.string().optional(),
   major: z.string().min(1, "Major is required"),
   level: z.string().min(1, "Course level is required"),
   category: z.string().min(1, "Document category is required"),
@@ -108,8 +108,8 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
     if (fileSizeError) {
       setSizeError(
         t("document.upload.dropzone.sizeLimitError", {
-          maxFileSize: (MAX_FILE_SIZE / (1024 * 1024)).toFixed(2),
-          fileSizeError: (fileSizeError.file.size / (1024 * 1024)).toFixed(2),
+          maxFileSize: (MAX_FILE_SIZE / (1024 * 1024)).toFixed(3),
+          fileSizeError: (fileSizeError.file.size / (1024 * 1024)).toFixed(3),
         }),
       );
       setSelectedFile(null);
@@ -149,7 +149,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
               XML, MARKDOWN
             </p>
             <p className="text-sm text-muted-foreground">
-              {t("document.upload.dropzone.maxFileSize", { fileSize: (MAX_FILE_SIZE / (1024 * 1024)).toFixed(2) })}
+              {t("document.upload.dropzone.maxFileSize", { fileSize: (MAX_FILE_SIZE / (1024 * 1024)).toFixed(3) })}
             </p>
           </div>
         )}

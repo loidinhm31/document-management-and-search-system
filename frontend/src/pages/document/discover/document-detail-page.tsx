@@ -136,7 +136,7 @@ export default function DocumentDetailPage() {
             <CardHeader>
               <CardTitle>{documentData?.filename}</CardTitle>
               <CardDescription>
-                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(2)} KB
+                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(3)} KB
               </CardDescription>
             </CardHeader>
             <CardContent className="h-full max-h-[700px]">

@@ -102,7 +102,7 @@ export const routes: Route[] = [
     pageTitle: "pages.my-document.detail",
     component: MyDocumentDetail,
     isSecure: true,
-    permission: []
+    permission: ["ROLE_MENTOR", "ROLE_USER"]
   },
   {
     path: RoutePaths.DOCUMENT_DETAIL,
