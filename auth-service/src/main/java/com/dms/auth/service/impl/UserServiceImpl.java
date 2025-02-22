@@ -18,17 +18,12 @@ import com.dms.auth.security.jwt.JwtUtils;
 import com.dms.auth.security.request.Verify2FARequest;
 import com.dms.auth.security.response.TokenResponse;
 import com.dms.auth.security.response.UserInfoResponse;
-import com.dms.auth.security.services.CustomUserDetails;
+import com.dms.auth.security.service.CustomUserDetails;
 import com.dms.auth.service.TotpService;
 import com.dms.auth.service.UserService;
 import com.dms.auth.util.SecurityUtils;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.SuperBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -40,10 +35,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -131,13 +124,6 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Override
     public void logout(String refreshToken) {
-        // Find and validate refresh token
-        RefreshToken token = refreshTokenService.findByToken(refreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
-
-        // Get user before revoking token
-        User user = token.getUser();
-
         // Revoke refresh token
         refreshTokenService.revokeToken(refreshToken);
 
