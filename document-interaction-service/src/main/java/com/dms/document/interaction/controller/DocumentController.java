@@ -144,7 +144,7 @@ public class DocumentController {
             @PathVariable String id,
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) String summary,
-            @RequestParam String courseCode,
+            @RequestParam(required = false) String courseCode,
             @RequestParam String major,
             @RequestParam String level,
             @RequestParam String category,
