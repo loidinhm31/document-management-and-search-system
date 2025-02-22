@@ -7,7 +7,7 @@ import com.dms.auth.enums.AppRole;
 import com.dms.auth.repository.RoleRepository;
 import com.dms.auth.repository.UserRepository;
 import com.dms.auth.security.jwt.JwtUtils;
-import com.dms.auth.security.services.CustomUserDetails;
+import com.dms.auth.security.service.CustomUserDetails;
 import com.dms.auth.service.impl.RefreshTokenService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -100,6 +101,7 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
         newUser.setAccountNonExpired(true);
         newUser.setAccountNonLocked(true);
         newUser.setCredentialsNonExpired(true);
+        newUser.setCreatedAt(Instant.now());
         return newUser;
     }
 
