@@ -41,9 +41,10 @@ interface DocumentFormProps {
   onSubmit: (data: DocumentFormValues, file?: File) => Promise<void>;
   loading?: boolean;
   submitLabel?: string;
+  isCreator?: boolean;
 }
 
-export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: DocumentFormProps) {
+export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, isCreator = true }: DocumentFormProps) {
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
@@ -69,12 +70,17 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
     if (!selectedMajor) {
       return [];
     }
-
-    return courseCodes.filter((course) => course.parentId === selectedMajor);
+    const majorObj = majors.find((m) => m.code === selectedMajor);
+    return courseCodes.filter((course) => course.parentId === majorObj?.id);
   }, [selectedMajor, courseCodes]);
 
   useEffect(() => {
     if (selectedMajor && form.getValues("courseCode")) {
+      if (filteredCourseCodes?.length === 0) {
+        form.setValue("courseCode", "");
+        return;
+      }
+
       // Check if the current course code belongs to the selected major
       const currentCourseCode = form.getValues("courseCode");
       const isValidCourseCode = filteredCourseCodes.some((course) => course.code === currentCourseCode);
@@ -83,7 +89,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
         form.setValue("courseCode", "");
       }
     }
-  }, [selectedMajor, filteredCourseCodes, form]);
+  }, [selectedMajor, filteredCourseCodes]);
 
   useEffect(() => {
     if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
@@ -91,7 +97,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
     }
   }, [dispatch, majors?.length, courseCodes?.length, levels?.length, categories?.length]);
 
-  const onDrop = React.useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
     // Clear previous errors
     setSizeError(null);
 
@@ -118,6 +124,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    disabled: !isCreator,
     onDropRejected,
     maxFiles: 1,
     maxSize: MAX_FILE_SIZE,
@@ -168,6 +175,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <FormField
+              disabled={!isCreator}
               control={form.control}
               name="summary"
               render={({ field }) => (
@@ -200,13 +208,13 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
                   <FormLabel>{t("document.upload.form.major.label")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger disabled={!majors}>
+                      <SelectTrigger disabled={majors?.length === 0 || !isCreator}>
                         <SelectValue placeholder={t("document.upload.form.major.placeholder")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {majors?.map((major) => (
-                        <SelectItem key={major.code} value={major.id}>
+                        <SelectItem key={major.code} value={major.code}>
                           {major.translations[i18n.language] || major.translations.en}
                         </SelectItem>
                       ))}
@@ -225,7 +233,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
                   <FormLabel>{t("document.upload.form.courseCode.label")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger disabled={!selectedMajor || filteredCourseCodes.length === 0}>
+                      <SelectTrigger disabled={!selectedMajor || filteredCourseCodes.length === 0 || !isCreator}>
                         <SelectValue placeholder={t("document.upload.form.courseCode.placeholder")} />
                       </SelectTrigger>
                     </FormControl>
@@ -250,7 +258,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
                   <FormLabel>{t("document.upload.form.level.label")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger disabled={!levels}>
+                      <SelectTrigger disabled={levels?.length === 0 || !isCreator}>
                         <SelectValue placeholder={t("document.upload.form.level.placeholder")} />
                       </SelectTrigger>
                     </FormControl>
@@ -275,7 +283,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
                   <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger disabled={!categories}>
+                      <SelectTrigger disabled={categories?.length === 0 || !isCreator}>
                         <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
                       </SelectTrigger>
                     </FormControl>
@@ -303,7 +311,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading }: 
                       value={field.value || []}
                       onChange={field.onChange}
                       placeholder={t("document.detail.form.tags.placeholder")}
-                      disabled={masterDataLoading}
+                      disabled={masterDataLoading || !isCreator}
                     />
                   </FormControl>
                   <FormMessage />

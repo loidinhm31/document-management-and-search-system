@@ -236,6 +236,7 @@ export default function MyDocumentDetailPage() {
                   onSubmit={handleSubmit}
                   loading={updating}
                   submitLabel={t("document.detail.buttons.update")}
+                  isCreator={documentData?.userId === currentUser.userId}
                 />
               )}
             </CardContent>

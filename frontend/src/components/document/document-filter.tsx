@@ -44,7 +44,8 @@ export const DocumentFilter = ({
     if (majorValue === "all") {
       return courseCodes;
     }
-    return courseCodes.filter((course) => course.parentId === majorValue);
+    const majorObj = majors.find((m) => m.code === majorValue);
+    return courseCodes.filter((course) => course.parentId === majorObj?.id);
   }, [majorValue, courseCodes]);
 
   useEffect(() => {
@@ -83,7 +84,7 @@ export const DocumentFilter = ({
           <SelectContent>
             <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
             {majors?.map((major) => (
-              <SelectItem key={major.code} value={major.id}>
+              <SelectItem key={major.code} value={major.code}>
                 {major.translations[i18n.language] || major.translations.en}
               </SelectItem>
             ))}
