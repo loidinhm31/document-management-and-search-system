@@ -42,9 +42,10 @@ public class DocumentController {
     public ResponseEntity<byte[]> getDocument(
             @PathVariable String id,
             @RequestParam(required = false) String action,
+            @RequestParam(required = false) boolean history,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         String username = jwt.getSubject();
-        byte[] content = documentService.getDocumentContent(id, username, action);
+        byte[] content = documentService.getDocumentContent(id, username, action, history);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"document\"")
                 .body(content);
@@ -57,7 +58,7 @@ public class DocumentController {
             @RequestHeader(value = "If-None-Match", required = false) String ifNoneMatch) throws IOException {
 
         String username = jwt.getSubject();
-        DocumentInformation document = documentService.getDocumentDetails(id, username);
+        DocumentInformation document = documentService.getDocumentDetails(id, username, false);
         ThumbnailResponse thumbnailResponse = documentService.getDocumentThumbnail(id, username);
 
         HttpHeaders headers = new HttpHeaders();
@@ -117,9 +118,10 @@ public class DocumentController {
     @GetMapping("/{id}")
     public ResponseEntity<DocumentInformation> getDocumentDetails(
             @PathVariable String id,
+            @RequestParam(required = false) boolean history,
             @AuthenticationPrincipal Jwt jwt) {
         String username = jwt.getSubject();
-        DocumentInformation document = documentService.getDocumentDetails(id, username);
+        DocumentInformation document = documentService.getDocumentDetails(id, username, history);
         return ResponseEntity.ok(document);
     }
 
@@ -174,9 +176,10 @@ public class DocumentController {
             @PathVariable String documentId,
             @PathVariable Integer versionNumber,
             @RequestParam(required = false) String action,
+            @RequestParam(required = false) boolean history,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         String username = jwt.getSubject();
-        byte[] content = documentService.getDocumentVersionContent(documentId, versionNumber, username, action);
+        byte[] content = documentService.getDocumentVersionContent(documentId, versionNumber, username, action, history);
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"document\"")
                 .body(content);
