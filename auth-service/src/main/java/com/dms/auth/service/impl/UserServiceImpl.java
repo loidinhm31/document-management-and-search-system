@@ -1,5 +1,6 @@
 package com.dms.auth.service.impl;
 
+import com.dms.auth.dto.RoleDto;
 import com.dms.auth.dto.UserDto;
 import com.dms.auth.dto.UserSearchResponse;
 import com.dms.auth.dto.request.*;
@@ -449,7 +450,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                 .userId(user.getUserId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .role(user.getRole())
+                .role(new RoleDto(user.getRole().getRoleId(), user.getRole().getRoleName()))
                 .build();
     }
 

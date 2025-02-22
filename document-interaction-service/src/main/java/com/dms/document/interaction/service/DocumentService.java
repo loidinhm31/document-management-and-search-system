@@ -70,6 +70,12 @@ public class DocumentService {
         }
 
         UserResponse userResponse = response.getBody();
+
+        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
+                Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+            throw new InvalidDataAccessResourceUsageException("Invalid role");
+        }
+
         validateDocument(file);
         DocumentType documentType = DocumentUtils.determineDocumentType(file.getContentType());
 

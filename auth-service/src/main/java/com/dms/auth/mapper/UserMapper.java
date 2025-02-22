@@ -1,5 +1,6 @@
 package com.dms.auth.mapper;
 
+import com.dms.auth.dto.RoleDto;
 import com.dms.auth.dto.UserDto;
 import com.dms.auth.entity.User;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,7 @@ public class UserMapper {
                 user.getTwoFactorSecret(),
                 user.isTwoFactorEnabled(),
                 user.getSignUpMethod(),
-                user.getRole(),
+                new RoleDto(user.getRole().getRoleId(), user.getRole().getRoleName()),
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );

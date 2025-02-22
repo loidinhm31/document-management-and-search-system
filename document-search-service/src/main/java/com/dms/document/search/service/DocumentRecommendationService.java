@@ -2,7 +2,7 @@ package com.dms.document.search.service;
 
 import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.DocumentResponseDto;
-import com.dms.document.search.dto.UserDto;
+import com.dms.document.search.dto.UserResponse;
 import com.dms.document.search.exception.InvalidDocumentException;
 import com.dms.document.search.model.DocumentPreferences;
 import com.dms.document.search.repository.DocumentPreferencesRepository;
@@ -46,17 +46,17 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
 
     public Page<DocumentResponseDto> getRecommendations(String documentId, String username, Pageable pageable) {
         try {
-            ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+            ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
             if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
                 throw new InvalidDataAccessResourceUsageException("User not found");
             }
 
-            UserDto userDto = response.getBody();
-            DocumentPreferences preferences = getOrCreatePreferences(userDto.getUserId().toString());
+            UserResponse userResponse = response.getBody();
+            DocumentPreferences preferences = getOrCreatePreferences(userResponse.userId().toString());
 
             return StringUtils.isNotEmpty(documentId)
-                    ? getContentBasedRecommendations(documentId, userDto.getUserId().toString(), preferences, pageable)
-                    : getPreferenceBasedRecommendations(userDto.getUserId().toString(), preferences, pageable);
+                    ? getContentBasedRecommendations(documentId, userResponse.userId().toString(), preferences, pageable)
+                    : getPreferenceBasedRecommendations(userResponse.userId().toString(), preferences, pageable);
         } catch (IOException e) {
             log.error("Error getting recommendations: {}", e.getMessage());
             throw new RuntimeException("Failed to get recommendations", e);

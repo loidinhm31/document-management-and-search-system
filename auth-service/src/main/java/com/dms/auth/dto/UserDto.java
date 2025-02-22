@@ -27,7 +27,7 @@ public class UserDto {
     private String twoFactorSecret;
     private boolean isTwoFactorEnabled;
     private String signUpMethod;
-    private Role role;
+    private RoleDto role;
     private Instant createdDate;
     private Instant updatedDate;
 }

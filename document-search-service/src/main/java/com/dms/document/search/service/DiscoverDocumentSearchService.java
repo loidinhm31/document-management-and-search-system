@@ -65,12 +65,12 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
 
     public Page<DocumentResponseDto> searchDocuments(DocumentSearchRequest request, String username) {
         try {
-            ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+            ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
             if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
                 throw new InvalidDataAccessResourceUsageException("User not found");
             }
 
-            UserDto userDto = response.getBody();
+            UserResponse userResponse = response.getBody();
             SearchContext searchContext = analyzeQuery(request.getSearch());
 
             // If search query is too short, only apply filters
@@ -78,7 +78,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
                 return Page.empty(Pageable.unpaged());
             }
 
-            SearchRequest searchRequest = buildSearchRequest(request, searchContext, userDto.getUserId().toString());
+            SearchRequest searchRequest = buildSearchRequest(request, searchContext, userResponse.userId().toString());
             SearchResponse searchResponse = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
 
             return processSearchResults(
@@ -279,17 +279,17 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
                 return Collections.emptyList();
             }
 
-            ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+            ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
             if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
                 return Collections.emptyList();
             }
 
-            UserDto userDto = response.getBody();
+            UserResponse userResponse = response.getBody();
 
             SearchContext searchContext = analyzeQuery(request.getQuery());
 
             // Add suggestion search conditions
-            SearchRequest searchRequest = buildSuggestionRequest(request, searchContext, userDto.getUserId().toString());
+            SearchRequest searchRequest = buildSuggestionRequest(request, searchContext, userResponse.userId().toString());
 
             SearchResponse searchResponse = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
             return processSuggestionResults(searchResponse.getHits().getHits());

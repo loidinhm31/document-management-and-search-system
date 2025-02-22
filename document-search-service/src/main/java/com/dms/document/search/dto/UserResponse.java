@@ -1,4 +1,4 @@
-package com.dms.document.interaction.dto;
+package com.dms.document.search.dto;
 
 import java.util.UUID;
 
@@ -7,4 +7,5 @@ public record UserResponse(
         String username,
         String email,
         RoleResponse role
-) {}
+) {
+}

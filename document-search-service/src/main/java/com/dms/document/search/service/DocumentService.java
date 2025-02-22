@@ -2,7 +2,9 @@ package com.dms.document.search.service;
 
 import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.DocumentSearchCriteria;
-import com.dms.document.search.dto.UserDto;
+import com.dms.document.search.dto.UserResponse;
+import com.dms.document.search.enums.AppRole;
+import com.dms.document.search.enums.SharingType;
 import com.dms.document.search.model.DocumentInformation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,11 +29,16 @@ public class DocumentService {
     private final UserClient userClient;
 
     public Page<DocumentInformation> getUserDocuments(String username, DocumentSearchCriteria criteria, int page, int size) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
+
+        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
+                Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+            throw new InvalidDataAccessResourceUsageException("Invalid role");
+        }
 
         // Build the query criteria
         Criteria baseCriteria = Criteria.where("deleted").ne(true);
@@ -39,12 +46,12 @@ public class DocumentService {
         // Build access criteria combining owned and shared documents
         Criteria accessCriteria = new Criteria().orOperator(
                 // Documents owned by user
-                Criteria.where("userId").is(userDto.getUserId().toString()),
+                Criteria.where("userId").is(userResponse.userId().toString()),
 
                 // Documents specifically shared with user
                 new Criteria().andOperator(
-                        Criteria.where("sharingType").is("SPECIFIC"),
-                        Criteria.where("sharedWith").in(userDto.getUserId().toString())
+                        Criteria.where("sharingType").is(SharingType.SPECIFIC.name()),
+                        Criteria.where("sharedWith").in(userResponse.userId().toString())
                 )
         );
 

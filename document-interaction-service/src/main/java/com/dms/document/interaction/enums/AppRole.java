@@ -1,4 +1,4 @@
-package com.dms.auth.enums;
+package com.dms.document.interaction.enums;
 
 public enum AppRole {
     ROLE_USER,
