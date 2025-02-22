@@ -18,6 +18,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -40,22 +41,21 @@ public class DocumentService {
             throw new InvalidDataAccessResourceUsageException("Invalid role");
         }
 
-        // Build the query criteria
-        Criteria baseCriteria = Criteria.where("deleted").ne(true);
+        // Create a list to hold all criteria
+        List<Criteria> criteriaList = new ArrayList<>();
 
-        // Build access criteria combining owned and shared documents
-        Criteria accessCriteria = new Criteria().orOperator(
-                // Documents owned by user
-                Criteria.where("userId").is(userResponse.userId().toString()),
+        // Basic criteria for non-deleted documents
+        criteriaList.add(Criteria.where("deleted").ne(true));
 
-                // Documents specifically shared with user
-                new Criteria().andOperator(
-                        Criteria.where("sharingType").is(SharingType.SPECIFIC.name()),
-                        Criteria.where("sharedWith").in(userResponse.userId().toString())
-                )
+        // Access criteria for ownership and sharing
+        Criteria ownedCriteria = Criteria.where("userId").is(userResponse.userId().toString());
+
+        Criteria sharedCriteria = new Criteria().andOperator(
+                Criteria.where("sharingType").is(SharingType.SPECIFIC.name()),
+                Criteria.where("sharedWith").in(userResponse.userId().toString())
         );
 
-        Criteria queryCriteria = new Criteria().andOperator(baseCriteria, accessCriteria);
+        criteriaList.add(new Criteria().orOperator(ownedCriteria, sharedCriteria));
 
         // Add search criteria if provided
         if (StringUtils.isNotBlank(criteria.getSearch())) {
@@ -64,37 +64,37 @@ public class DocumentService {
                     Criteria.where("content").regex(criteria.getSearch(), "i"),
                     Criteria.where("tags").regex(criteria.getSearch(), "i")
             );
-            queryCriteria.andOperator(searchCriteria);
+            criteriaList.add(searchCriteria);
         }
 
         // Add filters if provided
         if (StringUtils.isNotBlank(criteria.getMajor())) {
-            queryCriteria.and("major").is(criteria.getMajor());
-        }
-        if (StringUtils.isNotBlank(criteria.getCourseCode())) {
-            queryCriteria.and("courseCode").is(criteria.getCourseCode());
+            criteriaList.add(Criteria.where("major").is(criteria.getMajor()));
         }
         if (StringUtils.isNotBlank(criteria.getLevel())) {
-            queryCriteria.and("courseLevel").is(criteria.getLevel());
+            criteriaList.add(Criteria.where("courseLevel").is(criteria.getLevel()));
         }
         if (StringUtils.isNotBlank(criteria.getCategory())) {
-            queryCriteria.and("category").is(criteria.getCategory());
+            criteriaList.add(Criteria.where("category").is(criteria.getCategory()));
         }
 
         // Add tag filter if provided
         if (CollectionUtils.isNotEmpty(criteria.getTags())) {
-            queryCriteria.and("tags").all(criteria.getTags());
+            criteriaList.add(Criteria.where("tags").all(criteria.getTags()));
         }
+
+        // Combine all criteria with AND
+        Criteria finalCriteria = new Criteria().andOperator(criteriaList.toArray(new Criteria[0]));
 
         // Create pageable with sort
         Sort sort = Sort.by(Sort.Direction.fromString(criteria.getSortDirection()), criteria.getSortField());
         Pageable pageable = PageRequest.of(page, size, sort);
 
         // Execute query
-        Query countQuery = new Query(queryCriteria);
+        Query countQuery = new Query(finalCriteria);
         long total = mongoTemplate.count(countQuery, DocumentInformation.class);
 
-        Query query = new Query(queryCriteria)
+        Query query = new Query(finalCriteria)
                 .with(pageable);
         List<DocumentInformation> documents = mongoTemplate.find(query, DocumentInformation.class);
 
