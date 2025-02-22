@@ -13,6 +13,8 @@ export enum DocumentType {
   MARKDOWN = "MARKDOWN",
 }
 
+export const MAX_FILE_SIZE = 25 * 1024 * 1024 // 10MB in bytes
+
 export interface DocumentInformation {
   id: string;
   status: DocumentStatus;

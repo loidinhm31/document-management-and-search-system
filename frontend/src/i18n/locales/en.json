@@ -436,7 +436,10 @@
       "dropzone": {
         "prompt": "Drop the file here ...",
         "info": "Drag & drop a file here, or click to select file",
-        "supportedFormats": "Supported formats:"
+        "supportedFormats": "Supported formats:",
+        "selected": "Selected:",
+        "maxFileSize": "Maximum file size: {{fileSize}} MB",
+        "sizeLimitError": "File size exceeds the maximum limit {{maxFileSize}} MB. Selected file is {{fileSizeError}} MB"
       },
       "form": {
         "courseCode": {
@@ -458,6 +461,11 @@
         "tags": {
           "label": "Tags",
           "placeholder": "Enter tags separated by comma"
+        },
+        "summary": {
+          "label": "Summary (50-500 characters)",
+          "placeholder": "Enter document summary...",
+          "count": "characters"
         }
       },
       "buttons": {
