@@ -30,32 +30,33 @@ export default function MyDocumentDetailPage() {
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [documentData, setDocumentData] = useState(null);
+  const [documentData, setDocumentData] = useState<DocumentInformation | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [fileChange, setFileChange] = useState<boolean>(false);
   const { toast } = useToast();
 
+  const fetchDocument = async () => {
+    if (!documentId) return;
+
+    try {
+      const response = await documentService.getDocumentDetails(documentId);
+      const document = response.data;
+      setDocumentData(document);
+      dispatch(setCurrentDocument(document));
+    } catch (_error) {
+      toast({
+        title: t("common.error"),
+        description: t("document.detail.fetchError"),
+        variant: "destructive",
+      });
+      navigate("/documents/me");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDocument = async () => {
-      if (!documentId) return;
-
-      try {
-        const response = await documentService.getDocumentDetails(documentId);
-        setDocumentData(response.data);
-        dispatch(setCurrentDocument(response.data));
-      } catch (_error) {
-        toast({
-          title: t("common.error"),
-          description: t("document.detail.fetchError"),
-          variant: "destructive",
-        });
-        navigate("/documents/me");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDocument();
 
     return () => {
@@ -221,19 +222,22 @@ export default function MyDocumentDetailPage() {
                 />
               )}
 
-              <DocumentForm
-                initialValues={{
-                  summary: documentData?.summary ? documentData.summary : undefined,
-                  courseCode: documentData?.courseCode,
-                  major: documentData?.major,
-                  level: documentData?.courseLevel,
-                  category: documentData?.category,
-                  tags: documentData?.tags || [],
-                }}
-                onSubmit={handleSubmit}
-                loading={updating}
-                submitLabel={t("document.detail.buttons.update")}
-              />
+              {documentData && (
+                <DocumentForm
+                  key={`document-form-${documentData.id}-${documentData.updatedAt}`}
+                  initialValues={{
+                    summary: documentData?.summary || "",
+                    courseCode: documentData?.courseCode || "",
+                    major: documentData?.major || "",
+                    level: documentData?.courseLevel || "",
+                    category: documentData?.category || "",
+                    tags: documentData?.tags || [],
+                  }}
+                  onSubmit={handleSubmit}
+                  loading={updating}
+                  submitLabel={t("document.detail.buttons.update")}
+                />
+              )}
             </CardContent>
           </Card>
 
