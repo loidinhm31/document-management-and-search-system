@@ -450,20 +450,20 @@
         "sizeLimitError": "File size exceeds the maximum limit {{maxFileSize}} MB. Selected file is {{fileSizeError}} MB"
       },
       "form": {
+        "major": {
+          "label": "Major *",
+          "placeholder": "Select major"
+        },
         "courseCode": {
           "label": "Course Code",
           "placeholder": "Enter course code"
         },
-        "major": {
-          "label": "Major",
-          "placeholder": "Select major"
-        },
         "level": {
-          "label": "Course Level",
+          "label": "Course Level *",
           "placeholder": "Select course level"
         },
         "category": {
-          "label": "Document Category",
+          "label": "Document Category *",
           "placeholder": "Select document category"
         },
         "tags": {
