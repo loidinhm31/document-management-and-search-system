@@ -436,7 +436,8 @@
       "pagination": {
         "previous": "Previous",
         "next": "Next",
-        "pageInfo": "Page {{current}} of {{total}}"
+        "pageInfo": "Page {{current}} of {{total}}",
+        "pageSize": "Items per page:"
       }
     },
     "upload": {

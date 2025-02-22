@@ -9,6 +9,7 @@ import SearchSuggestions from "@/components/document/discover/search-suggestions
 import DocumentFilter from "@/components/document/document-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { cn, getMasterDataTranslation } from "@/lib/utils";
@@ -27,6 +28,7 @@ import {
   setLevel,
   setMajor,
   setPage,
+  setPageSize,
   setSort,
   setTags,
 } from "@/store/slices/search-slice";
@@ -64,11 +66,14 @@ export const DocumentList = () => {
     selectedTags,
     totalPages,
     currentPage,
+    pageSize,
   } = useAppSelector(selectSearchState);
 
   const { majors, levels, categories } = useAppSelector(selectMasterData);
   const { searchTerm } = useAppSelector(selectSearchState);
   const { isSearchMode } = useAppSelector(selectSearchState);
+
+  const pageSizeOptions = [10, 20, 50, 100];
 
   const [showPreview, setShowPreview] = useState(false);
   const [selectedDoc, setSelectedDoc] = React.useState(null);
@@ -148,6 +153,16 @@ export const DocumentList = () => {
     } else {
       dispatch(setPage(0));
       dispatch(fetchSearchDocuments());
+    }
+  };
+
+  const handlePageSizeChange = (newSize: string) => {
+    dispatch(setPageSize(parseInt(newSize)));
+    dispatch(setPage(0)); // Reset to first page when changing page size
+    if (isSearchMode) {
+      dispatch(fetchSearchDocuments());
+    } else {
+      dispatch(fetchRecommendedDocuments());
     }
   };
 
@@ -420,23 +435,41 @@ export const DocumentList = () => {
           )}
 
           {/* Pagination */}
-          <div className="mt-4 flex justify-center gap-2">
-            <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}>
-              {t("document.discover.pagination.previous")}
-            </Button>
-            <span className="flex items-center px-4">
-              {t("document.discover.pagination.pageInfo", {
-                current: documents.length > 0 ? currentPage + 1 : 0,
-                total: totalPages,
-              })}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages - 1}
-            >
-              {t("document.discover.pagination.next")}
-            </Button>
+          <div className="mt-4 flex flex-col sm:flex-row justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">{t("document.discover.pagination.pageSize")}</span>
+              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+                <SelectTrigger className="w-[80px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizeOptions.map(size => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex justify-center gap-2">
+              <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}>
+                {t("document.discover.pagination.previous")}
+              </Button>
+              <span className="flex items-center px-4">
+                {t("document.discover.pagination.pageInfo", {
+                  current: documents.length > 0 ? currentPage + 1 : 0,
+                  total: totalPages,
+                })}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages - 1}
+              >
+                {t("document.discover.pagination.next")}
+              </Button>
+            </div>
           </div>
 
           {/* Document Preview Dialog */}
