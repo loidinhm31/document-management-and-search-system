@@ -1,6 +1,6 @@
 package com.dms.auth.security.jwt;
 
-import com.dms.auth.security.services.UserDetailsServiceImpl;
+import com.dms.auth.security.service.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

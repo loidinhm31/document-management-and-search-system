@@ -4,9 +4,8 @@ import com.dms.auth.entity.RefreshToken;
 import com.dms.auth.entity.User;
 import com.dms.auth.security.jwt.JwtUtils;
 import com.dms.auth.security.response.TokenResponse;
-import com.dms.auth.security.services.CustomUserDetails;
+import com.dms.auth.security.service.CustomUserDetails;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 

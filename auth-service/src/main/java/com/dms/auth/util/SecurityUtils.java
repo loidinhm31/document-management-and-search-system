@@ -1,6 +1,6 @@
 package com.dms.auth.util;
 
-import com.dms.auth.security.services.CustomUserDetails;
+import com.dms.auth.security.service.CustomUserDetails;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

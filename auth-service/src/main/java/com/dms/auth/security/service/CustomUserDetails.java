@@ -1,4 +1,4 @@
-package com.dms.auth.security.services;
+package com.dms.auth.security.service;
 
 import com.dms.auth.entity.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
