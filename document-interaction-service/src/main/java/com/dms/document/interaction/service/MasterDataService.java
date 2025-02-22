@@ -8,10 +8,12 @@ import com.dms.document.interaction.model.MasterData;
 import com.dms.document.interaction.model.Translation;
 import com.dms.document.interaction.repository.MasterDataRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -20,14 +22,13 @@ import java.util.stream.Collectors;
 public class MasterDataService {
     private final MasterDataRepository masterDataRepository;
 
-    public List<MasterDataResponse> getAllByType(MasterDataType type) {
+    public List<MasterDataResponse> getAllByType(MasterDataType type, Boolean isActive) {
+        if (Objects.nonNull(isActive)) {
+            return masterDataRepository.findByTypeAndIsActive(type, isActive).stream()
+                    .map(this::toResponse)
+                    .collect(Collectors.toList());
+        }
         return masterDataRepository.findByType(type).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    public List<MasterDataResponse> getAllActiveByType(MasterDataType type) {
-        return masterDataRepository.findByTypeAndIsActiveTrue(type).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -63,7 +64,24 @@ public class MasterDataService {
     }
 
     public void deleteById(String id) {
+        // Update all children master data to none parent
+        List<MasterData> childrenMasterDataList = masterDataRepository.findByParentId(id);
+        if (CollectionUtils.isNotEmpty(childrenMasterDataList)) {
+            childrenMasterDataList.forEach(masterData -> masterData.setParentId(null));
+        }
+        masterDataRepository.saveAll(childrenMasterDataList);
         masterDataRepository.deleteById(id);
+    }
+
+    public List<MasterDataResponse> getAllByTypeAndParentId(MasterDataType type, String parentId, Boolean isActive) {
+        if (Objects.nonNull(isActive)) {
+            return masterDataRepository.findByTypeAndParentIdAndIsActive(type, parentId, isActive).stream()
+                    .map(this::toResponse)
+                    .collect(Collectors.toList());
+        }
+        return masterDataRepository.findByTypeAndParentId(type, parentId).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
     private MasterDataResponse toResponse(MasterData masterData) {
@@ -76,6 +94,7 @@ public class MasterDataService {
                 .createdAt(masterData.getCreatedAt())
                 .updatedAt(masterData.getUpdatedAt())
                 .isActive(masterData.isActive())
+                .parentId(masterData.getParentId())
                 .build();
     }
 
@@ -85,6 +104,7 @@ public class MasterDataService {
         masterData.setTranslations(toTranslation(request.getTranslations()));
         masterData.setDescription(request.getDescription());
         masterData.setActive(request.isActive());
+        masterData.setParentId(request.getParentId());
     }
 
     private TranslationDTO toTranslationDTO(Translation translation) {

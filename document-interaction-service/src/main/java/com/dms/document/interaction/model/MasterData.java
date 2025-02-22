@@ -30,4 +30,7 @@ public class MasterData {
 
     @Field("is_active")
     private boolean isActive;
+
+    @Field("parent_id")
+    private String parentId;
 }

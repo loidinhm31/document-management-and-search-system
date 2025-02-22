@@ -17,4 +17,5 @@ public class MasterDataResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isActive;
+    private String parentId;
 }

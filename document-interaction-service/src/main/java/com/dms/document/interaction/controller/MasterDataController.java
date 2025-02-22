@@ -17,13 +17,8 @@ public class MasterDataController {
     private final MasterDataService masterDataService;
 
     @GetMapping("/{type}")
-    public ResponseEntity<List<MasterDataResponse>> getAllByType(@PathVariable MasterDataType type) {
-        return ResponseEntity.ok(masterDataService.getAllByType(type));
-    }
-
-    @GetMapping("/{type}/active")
-    public ResponseEntity<List<MasterDataResponse>> getAllActiveByType(@PathVariable MasterDataType type) {
-        return ResponseEntity.ok(masterDataService.getAllActiveByType(type));
+    public ResponseEntity<List<MasterDataResponse>> getAllByType(@PathVariable MasterDataType type, @RequestParam(required = false) Boolean active) {
+        return ResponseEntity.ok(masterDataService.getAllByType(type, active));
     }
 
     @GetMapping("/{type}/{code}")
@@ -33,6 +28,15 @@ public class MasterDataController {
         return masterDataService.getByTypeAndCode(type, code)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+
+    @GetMapping("/{type}/parent/{parentId}")
+    public ResponseEntity<List<MasterDataResponse>> getAllByTypeAndParentId(
+            @PathVariable MasterDataType type,
+            @PathVariable String parentId,
+            @RequestParam(required = false) Boolean active) {
+        return ResponseEntity.ok(masterDataService.getAllByTypeAndParentId(type, parentId, active));
     }
 
     @GetMapping("/search")

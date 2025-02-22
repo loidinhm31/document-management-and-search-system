@@ -10,4 +10,5 @@ public class MasterDataRequest {
     private TranslationDTO translations;
     private String description;
     private boolean isActive;
+    private String parentId;
 }
