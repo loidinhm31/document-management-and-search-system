@@ -18,7 +18,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  useSidebar
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/context/auth-context";
 import { RoutePaths } from "@/core/route-config";
@@ -35,20 +35,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("navigation.main.home"),
       icon: BookOpen,
       href: "/home",
-      isActive: location.pathname === "/home"
+      isActive: location.pathname === "/home",
+      permissions: ["ROLE_ADMIN", "ROLE_MENTOR", "ROLE_USER"],
     },
     {
       title: t("navigation.main.document"),
       icon: FileText,
       href: RoutePaths.MY_DOCUMENT,
-      isActive: location.pathname === RoutePaths.MY_DOCUMENT
+      isActive: location.pathname === RoutePaths.MY_DOCUMENT,
+      permissions: ["ROLE_MENTOR", "ROLE_USER"],
     },
     {
       title: t("navigation.main.preferences"),
       icon: Settings2Icon,
       href: RoutePaths.DOCUMENT_PREFERENCE,
-      isActive: location.pathname === RoutePaths.DOCUMENT_PREFERENCE
-    }
+      isActive: location.pathname === RoutePaths.DOCUMENT_PREFERENCE,
+      permissions: ["ROLE_MENTOR", "ROLE_USER"],
+    },
   ];
 
   const adminNavItems = [
@@ -56,20 +59,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: t("navigation.admin.userManagement"),
       icon: Users,
       href: RoutePaths.ADMIN.USERS,
-      isActive: location.pathname.startsWith(RoutePaths.ADMIN.USERS)
+      isActive: location.pathname.startsWith(RoutePaths.ADMIN.USERS),
     },
     {
       title: t("navigation.admin.masterData"),
       icon: Database,
       href: RoutePaths.ADMIN.MASTER_DATA,
-      isActive: location.pathname.startsWith(RoutePaths.ADMIN.MASTER_DATA)
+      isActive: location.pathname.startsWith(RoutePaths.ADMIN.MASTER_DATA),
     },
-    {
-      title: t("navigation.admin.roles"),
-      icon: Shield,
-      href: "/admin/roles",
-      isActive: location.pathname.startsWith("/admin/roles")
-    }
   ];
 
   return (
@@ -94,16 +91,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupLabel>{t("navigation.main.title")}</SidebarGroupLabel>
           <SidebarMenu>
-            {mainNavItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton asChild tooltip={item.title} isActive={item.isActive}>
-                  <a href={item.href}>
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+            {mainNavItems.map(
+              (item) =>
+                item?.permissions?.includes(role) && (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild tooltip={item.title} isActive={item.isActive}>
+                      <a href={item.href}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ),
+            )}
           </SidebarMenu>
         </SidebarGroup>
 

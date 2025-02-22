@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { adminService } from "@/services/admin.service";
+import { Role } from "@/types/user";
 
 export default function UserList() {
   const { t } = useTranslation();
@@ -23,9 +24,11 @@ export default function UserList() {
   const [roleFilter, setRoleFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [roles, setRoles] = useState<Role[]>([]);
 
   useEffect(() => {
     fetchUsers();
+    fetchRoles();
   }, [searchQuery, statusFilter, roleFilter, currentPage]);
 
   const fetchUsers = async () => {
@@ -41,6 +44,23 @@ export default function UserList() {
       const { content, totalPages: total } = response.data;
       setUsers(content);
       setTotalPages(total);
+    } catch (error) {
+      console.log("Error:", error);
+      toast({
+        title: t("common.error"),
+        description: t("admin.users.messages.fetchError"),
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      setLoading(true);
+      const response = await adminService.getAllRoles();
+      setRoles(response.data);
     } catch (error) {
       console.log("Error:", error);
       toast({
@@ -108,9 +128,12 @@ export default function UserList() {
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="ROLE_USER">User</SelectItem>
-              <SelectItem value="ROLE_ADMIN">Admin</SelectItem>
+              <SelectItem value="all">ALL</SelectItem>
+              {roles.map((role) => (
+                <SelectItem key={role.roleId} value={role.roleName}>
+                  {role.roleName.replace("ROLE_", "")}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -127,7 +150,12 @@ export default function UserList() {
             </TableHeader>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.userId} onClick={() => navigate(`${user.userId}`)} className="cursor-pointer hover:bg-muted">                  <TableCell className="font-medium">{user.username}</TableCell>
+                <TableRow
+                  key={user.userId}
+                  onClick={() => navigate(`${user.userId}`)}
+                  className="cursor-pointer hover:bg-muted"
+                >
+                  <TableCell className="font-medium">{user.username}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -162,11 +190,11 @@ export default function UserList() {
             Previous
           </Button>
           <span className="flex items-center px-4">
-                {t("document.discover.pagination.pageInfo", {
-                  current: users.length > 0 ? currentPage + 1 : 0,
-                  total: totalPages
-                })}
-            </span>
+            {t("document.discover.pagination.pageInfo", {
+              current: users.length > 0 ? currentPage + 1 : 0,
+              total: totalPages,
+            })}
+          </span>
           <Button
             variant="outline"
             onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}

@@ -95,7 +95,7 @@ export const routes: Route[] = [
     pageTitle: "pages.my-document",
     component: MyDocument,
     isSecure: true,
-    permission: []
+    permission: ["ROLE_MENTOR", "ROLE_USER"]
   },
   {
     path: RoutePaths.MY_DOCUMENT_DETAIL,

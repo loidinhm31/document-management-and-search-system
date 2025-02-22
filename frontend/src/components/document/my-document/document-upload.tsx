@@ -47,12 +47,6 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
 
       handleUpload(formData);
 
-      toast({
-        title: t("common.success"),
-        description: t("document.upload.messages.success"),
-        variant: "success",
-      });
-
       // Call the success callback if provided
       onUploadSuccess?.();
     } catch (_error) {
@@ -76,6 +70,12 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
 
       // Close dialog or continue with your existing flow
       onUploadSuccess?.();
+
+      toast({
+        title: t("common.success"),
+        description: t("document.upload.messages.success"),
+        variant: "success",
+      });
     } catch (_error) {
       toast({
         title: t("common.error"),
