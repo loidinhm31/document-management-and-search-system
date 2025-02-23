@@ -75,7 +75,7 @@ public class DocumentService {
         UserResponse userResponse = response.getBody();
 
         if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
-                Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+              Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
             throw new InvalidDataAccessResourceUsageException("Invalid role");
         }
 
@@ -156,7 +156,7 @@ public class DocumentService {
         // If document is still being processed, return processing placeholder
         // with a header indicating it's still processing
         if (document.getStatus() == DocumentStatus.PENDING ||
-                document.getStatus() == DocumentStatus.PROCESSING) {
+            document.getStatus() == DocumentStatus.PROCESSING) {
             return ThumbnailResponse.builder()
                     .data(getProcessingPlaceholder())
                     .status(HttpStatus.ACCEPTED)
@@ -211,25 +211,27 @@ public class DocumentService {
         DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
-        if (StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
-            // History
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
-                    .userId(userResponse.userId().toString())
-                    .documentId(documentId)
-                    .userDocumentActionType(UserDocumentActionType.DOWNLOAD_FILE)
-                    .version(documentInformation.getCurrentVersion())
-                    .detail(String.format("%s - %s - %s KB",
-                            documentInformation.getFilename(),
-                            documentInformation.getLanguage(),
-                            documentInformation.getFileSize())
-                    )
-                    .createdAt(Instant.now())
-                    .build());
+        byte[] fileContent = s3Service.downloadFile(documentInformation.getFilePath());
+        if (Objects.nonNull(fileContent) && StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
+            CompletableFuture.runAsync(() -> {
+                // History
+                userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                        .userId(userResponse.userId().toString())
+                        .documentId(documentId)
+                        .userDocumentActionType(UserDocumentActionType.DOWNLOAD_FILE)
+                        .version(documentInformation.getCurrentVersion())
+                        .detail(String.format("%s - %s - %s KB",
+                                documentInformation.getFilename(),
+                                documentInformation.getLanguage(),
+                                documentInformation.getFileSize())
+                        )
+                        .createdAt(Instant.now())
+                        .build());
 
-            CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
+                documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD);
+            });
         }
-
-        return s3Service.downloadFile(documentInformation.getFilePath());
+        return fileContent;
     }
 
     public DocumentInformation getDocumentDetails(String documentId, String username, Boolean history) {
@@ -478,7 +480,8 @@ public class DocumentService {
         DocumentVersion targetVersion = documentInformation.getVersion(versionNumber)
                 .orElseThrow(() -> new InvalidDocumentException("Version not found"));
 
-        if (StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
+        byte[] fileContent = s3Service.downloadFile(targetVersion.getFilePath());
+        if (Objects.nonNull(fileContent) && StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
             // History
             userDocumentHistoryRepository.save(UserDocumentHistory.builder()
                     .userId(userResponse.userId().toString())
@@ -496,8 +499,7 @@ public class DocumentService {
 
             CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
         }
-
-        return s3Service.downloadFile(targetVersion.getFilePath());
+        return fileContent;
     }
 
     public DocumentInformation revertToVersion(String documentId, Integer versionNumber, String username) {
