@@ -20,6 +20,7 @@ interface VersionHistoryProps {
   documentId?: string;
   onVersionUpdate?: (updatedDocument: DocumentInformation) => void;
   allowRevert?: boolean;
+  onDownloadSuccess?: () => void;
 }
 
 const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
@@ -29,6 +30,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
   documentId,
   onVersionUpdate,
   allowRevert = false,
+  onDownloadSuccess,
 }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -82,6 +84,9 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
+
+      // Tracking download
+      onDownloadSuccess();
     } catch (_error) {
       toast({
         title: t("common.error"),
@@ -152,28 +157,28 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <ScrollArea className="h-[400px] rounded-md border">
-              <div className="space-y-4 p-4">
+            <ScrollArea className="h-[325px] rounded-md border">
+              <div className="space-y-1 p-3">
                 {sortedVersions.map((version) => (
                   <div
                     key={version.versionNumber}
-                    className="relative flex flex-col gap-2 rounded-lg border bg-card p-4 shadow-sm transition-colors hover:bg-accent/5"
+                    className="relative flex flex-col gap-1.5 rounded-lg border bg-card p-2 shadow-sm transition-colors hover:bg-accent/5"
                   >
-                    {/* Version Header */}
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">
+                    {/* Version Header - Made responsive */}
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-sm">
                           {t("document.versions.versionNumber", {
                             number: version.versionNumber + 1,
                           })}
                         </span>
                         {version.versionNumber === currentVersion && (
-                          <span className="rounded bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
                             {t("document.versions.current")}
                           </span>
                         )}
                         <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusColor(
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${getStatusColor(
                             version.status,
                           )}`}
                         >
@@ -181,20 +186,27 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      {/* Action Buttons - Wrap on small screens */}
+                      <div className="flex flex-wrap items-center gap-1">
                         {allowRevert && version.versionNumber !== currentVersion && isDocumentCreator && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleRevertVersion(version.versionNumber)}
                             disabled={loading}
+                            className="h-7 w-full sm:w-auto"
                           >
-                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {loading && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                             {t("document.versions.actions.revert")}
                           </Button>
                         )}
                         {version.versionNumber !== currentVersion && (
-                          <Button variant="outline" size="sm" onClick={() => handleOpenViewVersion(version)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenViewVersion(version)}
+                            className="h-7 w-full sm:w-auto"
+                          >
                             {t("document.versions.actions.view")}
                           </Button>
                         )}
@@ -202,37 +214,38 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                           variant="outline"
                           size="sm"
                           onClick={() => handleVersionDownload(version.versionNumber, version.filename)}
+                          className="h-7 w-full sm:w-auto"
                         >
                           {t("document.versions.actions.download")}
                         </Button>
                       </div>
                     </div>
 
-                    {/* Version Details */}
-                    <div className="mt-2 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <User className="h-4 w-4" />
-                        <span>{version.createdBy}</span>
+                    {/* Version Details - Made responsive */}
+                    <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <User className="h-3 w-3" />
+                        <span className="truncate">{version.createdBy}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="h-3 w-3" />
                         <span>{formatDate(version.createdAt)}</span>
                       </div>
                     </div>
 
-                    {/* File Details */}
-                    <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <span>{version.filename}</span>
-                      <span>
+                    {/* File Details - Made responsive with truncation */}
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span className="truncate max-w-full sm:max-w-[200px]">{version.filename}</span>
+                      <span className="whitespace-nowrap">
                         {version.mimeType} • {(version.fileSize / 1024).toFixed(3)} KB
                       </span>
                     </div>
 
-                    {/* Error Message */}
+                    {/* Error Message - Made responsive */}
                     {version.processingError && (
-                      <div className="mt-2 flex items-center gap-2 text-sm text-destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        {version.processingError}
+                      <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        <span className="break-words">{version.processingError}</span>
                       </div>
                     )}
                   </div>

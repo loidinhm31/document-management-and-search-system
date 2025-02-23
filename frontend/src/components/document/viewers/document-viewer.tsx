@@ -28,6 +28,7 @@ interface DocumentViewerProps {
   versionNumber?: number;
   fileChange?: boolean;
   history?: boolean;
+  onDownloadSuccess?: () => void;
 }
 
 export interface ExcelSheet {
@@ -43,6 +44,7 @@ export const DocumentViewer = ({
   versionNumber,
   fileChange,
   history = false,
+  onDownloadSuccess,
 }: DocumentViewerProps) => {
   const { t } = useTranslation();
 
@@ -242,6 +244,9 @@ export const DocumentViewer = ({
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
+
+      // Tracking download
+      onDownloadSuccess();
     } catch (_err) {
       toast({
         title: t("document.viewer.error.title"),

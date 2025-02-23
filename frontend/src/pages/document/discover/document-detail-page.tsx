@@ -1,10 +1,11 @@
-import { ArrowLeft, Calendar, Eye, FileDown, Languages, LanguagesIcon, Loader2, User } from "lucide-react";
+import { ArrowLeft, Calendar, Languages, Loader2, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MdOutlineFavorite, MdOutlineFavoriteBorder } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { CommentSection } from "@/components/document/discover/comment-section";
+import DocumentStats from "@/components/document/discover/document-stats";
 import { RelatedDocuments } from "@/components/document/discover/related-document";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
 import ShareDocumentDialog from "@/components/document/share-document-dialog";
@@ -21,7 +22,6 @@ import { setCurrentDocument } from "@/store/slices/document-slice";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
-import DocumentStats from "@/components/document/discover/document-stats";
 
 export default function DocumentDetailPage() {
   const { t } = useTranslation();
@@ -131,6 +131,11 @@ export default function DocumentDetailPage() {
 
   if (!documentData) return null;
 
+  const handleDownloadSuccess = async () => {
+    const statisticsResponse = await documentService.getDocumentStatistics(documentId);
+    setStatistics(statisticsResponse.data);
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
@@ -142,14 +147,14 @@ export default function DocumentDetailPage() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
           {/* Preview Section */}
-          <Card className="xl:h-[800px] xl:col-span-8">
+          <Card className="xl:h-[880px] xl:col-span-8">
             <CardHeader>
               <CardTitle>{documentData?.filename}</CardTitle>
               <CardDescription>
                 {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(3)} KB
               </CardDescription>
             </CardHeader>
-            <CardContent className="h-full max-h-[700px]">
+            <CardContent className="h-full max-h-[770px]">
               {documentData && (
                 <DocumentViewer
                   documentId={documentData.id}
@@ -157,6 +162,7 @@ export default function DocumentDetailPage() {
                   mimeType={documentData.mimeType}
                   fileName={documentData.filename}
                   history={true}
+                  onDownloadSuccess={handleDownloadSuccess}
                 />
               )}
             </CardContent>
@@ -284,6 +290,7 @@ export default function DocumentDetailPage() {
                   documentId={documentData.id}
                   onVersionUpdate={handleVersionUpdate}
                   allowRevert={false}
+                  onDownloadSuccess={handleDownloadSuccess}
                 />
               )}
             </CardContent>
