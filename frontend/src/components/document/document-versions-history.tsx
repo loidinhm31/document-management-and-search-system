@@ -88,7 +88,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
       URL.revokeObjectURL(url);
 
       // Tracking download
-      onDownloadSuccess();
+      onDownloadSuccess?.();
     } catch (_error) {
       toast({
         title: t("common.error"),

@@ -248,8 +248,9 @@ export const DocumentViewer = ({
       URL.revokeObjectURL(url);
 
       // Tracking download
-      onDownloadSuccess();
-    } catch (_err) {
+      onDownloadSuccess?.();
+    } catch (error) {
+      console.error("err:", error);
       toast({
         title: t("document.viewer.error.title"),
         description: t("document.viewer.error.download"),

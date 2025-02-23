@@ -116,7 +116,7 @@ class DocumentService extends BaseService {
   }
 
   async isDocumentFavorited(id: string) {
-    axiosInstance.get(`/document-interaction/api/v1/documents/${id}/favorites/status`);
+    return axiosInstance.get(`/document-interaction/api/v1/documents/${id}/favorites/status`);
   }
 
   downloadDocumentVersion(payload: { documentId: string; versionNumber: number; action?: string; history?: boolean }) {
