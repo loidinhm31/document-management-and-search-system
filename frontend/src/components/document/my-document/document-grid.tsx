@@ -32,26 +32,29 @@ export const DocumentGrid = React.memo(
 
     return (
       <div className={cn("space-y-6", className)}>
-        <div className="grid grid-cols-1 auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-
         {documents?.length > 0 ? (
-          documents.map((doc) => (
+          <div className="grid grid-cols-1 auto-rows-fr gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {documents.map((doc) => (
               <DocumentCard
                 key={doc.id}
                 documentInformation={doc}
                 onClick={() => navigate(`/documents/me/${doc.id}`)}
               />
-          ))
+            ))}
+          </div>
         ) : (
           <p className="flex justify-center">{t("document.discover.empty")}</p>
         )}
-        </div>
 
         <div className="mt-6 flex justify-center gap-2">
-          <Button variant="outline" onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 0}>
+          <Button
+            variant="outline"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 0 || documents.length === 0}
+          >
             {t("document.discover.pagination.previous")}
           </Button>
-          <span className="flex items-center px-4">
+          <span className={cn("flex items-center px-4", documents.length === 0 && "text-muted-foreground")}>
             {t("document.discover.pagination.pageInfo", {
               current: documents.length > 0 ? currentPage + 1 : 0,
               total: totalPages,
@@ -60,7 +63,7 @@ export const DocumentGrid = React.memo(
           <Button
             variant="outline"
             onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages - 1}
+            disabled={currentPage === totalPages - 1 || documents.length === 0}
           >
             {t("document.discover.pagination.next")}
           </Button>

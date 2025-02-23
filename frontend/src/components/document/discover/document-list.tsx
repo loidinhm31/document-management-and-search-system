@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Calendar, Download, Eye, Filter, Loader2, MoreHorizontal } from "lucide-react";
+import { ArrowDown, ArrowUp, Calendar, Download, Eye, Filter, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +7,7 @@ import { DocumentListActions } from "@/components/document/discover/document-lis
 import { HighlightCell } from "@/components/document/discover/highlight-cell";
 import SearchSuggestions from "@/components/document/discover/search-suggestions";
 import DocumentFilter from "@/components/document/document-filter";
+import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,15 +33,8 @@ import {
   setSort,
   setTags,
 } from "@/store/slices/search-slice";
-import { MasterDataType } from "@/types/master-data";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 import { DocumentInformation } from "@/types/document";
+import { MasterDataType } from "@/types/master-data";
 
 interface SortableColumn {
   field: string;
@@ -168,7 +162,7 @@ export const DocumentList = () => {
 
   const handleDownload = async (id: string, filename: string) => {
     try {
-      const response = await documentService.downloadDocument({id, action: "download", history: true});
+      const response = await documentService.downloadDocument({ id, action: "download", history: true });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -439,12 +433,16 @@ export const DocumentList = () => {
           <div className="mt-4 flex flex-col sm:flex-row justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="text-sm">{t("document.discover.pagination.pageSize")}</span>
-              <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={handlePageSizeChange}
+                disabled={documents.length === 0}
+              >
                 <SelectTrigger className="w-[80px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {pageSizeOptions.map(size => (
+                  {pageSizeOptions.map((size) => (
                     <SelectItem key={size} value={size.toString()}>
                       {size}
                     </SelectItem>
@@ -454,10 +452,14 @@ export const DocumentList = () => {
             </div>
 
             <div className="flex justify-center gap-2">
-              <Button variant="outline" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 0 || documents.length === 0}
+              >
                 {t("document.discover.pagination.previous")}
               </Button>
-              <span className="flex items-center px-4">
+              <span className={cn("flex items-center px-4", documents.length === 0 && "text-muted-foreground")}>
                 {t("document.discover.pagination.pageInfo", {
                   current: documents.length > 0 ? currentPage + 1 : 0,
                   total: totalPages,
@@ -466,7 +468,7 @@ export const DocumentList = () => {
               <Button
                 variant="outline"
                 onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages - 1}
+                disabled={currentPage === totalPages - 1 || documents.length === 0}
               >
                 {t("document.discover.pagination.next")}
               </Button>
