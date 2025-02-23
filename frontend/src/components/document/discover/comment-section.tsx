@@ -130,7 +130,7 @@ export const CommentSection = ({ documentId }) => {
 
   const handleDeleteComment = async (commentId) => {
     try {
-      await documentService.deleteComment(commentId);
+      await documentService.deleteComment(documentId, commentId);
 
       // Update state with the filtered comments
       setComments(prevComments => removeCommentFromList(prevComments, commentId));
@@ -151,7 +151,7 @@ export const CommentSection = ({ documentId }) => {
 
   const handleEditComment = async (commentId, { content }) => {
     try {
-      await documentService.updateComment(commentId, { content });
+      await documentService.updateComment(documentId, commentId, { content });
       fetchComments(); // Refresh comments after edit
       return true;
     } catch (error) {

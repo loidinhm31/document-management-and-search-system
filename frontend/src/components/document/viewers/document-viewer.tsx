@@ -80,7 +80,7 @@ export const DocumentViewer = ({
     try {
       const response =
         versionNumber !== undefined
-          ? await documentService.downloadDocumentVersion({ id: documentId, versionNumber })
+          ? await documentService.downloadDocumentVersion({ documentId, versionNumber })
           : await documentService.downloadDocument({ id: documentId });
       const blob = new Blob([response.data], { type: mimeType });
 
@@ -227,7 +227,7 @@ export const DocumentViewer = ({
       const response =
         versionNumber !== undefined
           ? await documentService.downloadDocumentVersion({
-              id: documentId,
+              documentId,
               versionNumber,
               action: "download",
               history: history,

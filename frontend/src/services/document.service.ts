@@ -17,7 +17,7 @@ class DocumentService extends BaseService {
 
   downloadDocument(payload: { id: string; action?: string; history?: boolean }) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${payload?.id}/downloads`, {
+      axiosInstance.get(`/document-interaction/api/v1/documents/${payload?.id}/file`, {
         responseType: "blob",
         params: {
           action: payload?.action,
@@ -29,7 +29,7 @@ class DocumentService extends BaseService {
 
   getDocumentThumbnail(id: string, versionInfo: string) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${id}/thumbnails`, {
+      axiosInstance.get(`/document-interaction/api/v1/documents/${id}/thumbnail`, {
         responseType: "blob",
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -78,7 +78,7 @@ class DocumentService extends BaseService {
   }
 
   getShareSettings(documentId: string) {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/shares/documents/${documentId}`));
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/sharing`));
   }
 
   updateShareSettings(
@@ -89,13 +89,13 @@ class DocumentService extends BaseService {
     },
   ) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/shares/documents/${documentId}`, settings),
+      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/sharing`, settings),
     );
   }
 
   searchShareableUsers(query: string) {
     return this.handleApiResponse<UserSearchResponse[]>(
-      axiosInstance.get(`/document-interaction/api/v1/shares/users`, {
+      axiosInstance.get(`/document-interaction/api/v1/documents/sharing/users`, {
         params: { query },
       }),
     );
@@ -103,28 +103,28 @@ class DocumentService extends BaseService {
 
   getShareableUsersByIds(userIds: string[]) {
     return this.handleApiResponse<UserSearchResponse[]>(
-      axiosInstance.post(`/document-interaction/api/v1/shares/users/details`, userIds),
+      axiosInstance.post(`/document-interaction/api/v1/document/sharing/users/details`, userIds),
     );
   }
 
   favoriteDocument(id: string) {
-    return this.handleApiResponse(axiosInstance.post(`/document-interaction/api/v1/favorites/documents/${id}`));
+    return this.handleApiResponse(axiosInstance.post(`/document-interaction/api/v1/documents/${id}/favorites`));
   }
 
   unfavoriteDocument(id: string) {
-    return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/favorites/documents/${id}`));
+    return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/documents/${id}/favorites`));
   }
 
   isDocumentFavorited(id: string) {
     return this.handleApiResponse<boolean>(
-      axiosInstance.get(`/document-interaction/api/v1/favorites/documents/${id}/status`),
+      axiosInstance.get(`/document-interaction/api/v1/documents/${id}/favorites/status`),
     );
   }
 
   downloadDocumentVersion(payload: { documentId: string; versionNumber: number; action?: string; history?: boolean }) {
     return this.handleApiResponse(
       axiosInstance.get(
-        `/document-interaction/api/v1/documents/${payload.documentId}/versions/${payload.versionNumber}/download`,
+        `/document-interaction/api/v1/documents/${payload.documentId}/versions/${payload.versionNumber}/file`,
         {
           responseType: "blob",
           params: {
@@ -139,7 +139,7 @@ class DocumentService extends BaseService {
   revertToVersion(documentId: string, versionNumber: number) {
     return this.handleApiResponse(
       axiosInstance.put<DocumentInformation>(
-        `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}/revert`,
+        `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}`,
       ),
     );
   }
@@ -154,42 +154,46 @@ class DocumentService extends BaseService {
 
   getDocumentComments(documentId, params = {}) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/comments/documents/${documentId}`, { params }),
+      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/comments`, { params }),
     );
   }
 
   createComment(documentId, data) {
     return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/comments/documents/${documentId}`, data),
+      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/comments`, data),
     );
   }
 
-  updateComment(commentId, data) {
-    return this.handleApiResponse(axiosInstance.put(`/document-interaction/api/v1/comments/${commentId}`, data));
+  updateComment(documentId, commentId, data) {
+    return this.handleApiResponse(
+      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`, data),
+    );
   }
 
-  deleteComment(commentId) {
-    return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/comments/${commentId}`));
+  deleteComment(documentId, commentId) {
+    return this.handleApiResponse(
+      axiosInstance.delete(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`),
+    );
   }
 
   getDocumentPreferences() {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/preferences`));
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/documents/preferences`));
   }
 
   getDocumentContentWeights() {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/preferences/content-weights`));
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/documents/preferences/content-weights`));
   }
 
   updateDocumentPreferences(preferences: UpdatePreferencesRequest) {
-    return this.handleApiResponse(axiosInstance.put(`/document-interaction/api/v1/preferences`, preferences));
+    return this.handleApiResponse(axiosInstance.put(`/document-interaction/api/v1/documents/preferences`, preferences));
   }
 
   getInteractionStatistics() {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/preferences/statistics`));
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/documents/preferences/statistics`));
   }
 
   getRecommendedTags() {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/preferences/tags`));
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/documents/preferences/tags`));
   }
 }
 

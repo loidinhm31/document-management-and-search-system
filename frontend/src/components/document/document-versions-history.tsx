@@ -69,7 +69,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
   const handleVersionDownload = async (versionNumber: number, filename: string) => {
     try {
       const response = await documentService.downloadDocumentVersion({
-        id: documentId,
+        documentId,
         versionNumber,
         action: "download",
         history: true,
