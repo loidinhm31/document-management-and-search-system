@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { CommentItem } from "@/components/document/discover/comment-item";
@@ -31,16 +31,19 @@ export const CommentSection = ({ documentId }) => {
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
-  const fetchComments = async () => {
+  const fetchComments = async (page = 0) => {
+    if (!documentId) return;
+
     setLoading(true);
     try {
       const response = await documentService.getDocumentComments(documentId, {
-        page: currentPage,
+        page,
         size: 10,
         sort: "createdAt,desc"
       });
       setComments(response.data.content);
       setTotalPages(response.data.totalPages);
+      setCurrentPage(page);
     } catch (error) {
       toast({
         title: t("common.error"),
@@ -49,6 +52,23 @@ export const CommentSection = ({ documentId }) => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Initial load and document change handler
+  useEffect(() => {
+    fetchComments(0);
+  }, [documentId]);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 0) {
+      fetchComments(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      fetchComments(currentPage + 1);
     }
   };
 
@@ -176,22 +196,10 @@ export const CommentSection = ({ documentId }) => {
     }
   };
 
-  useEffect(() => {
-    // Reset to first page when documentId changes
-    setCurrentPage(0);
-    fetchComments();
-  }, [documentId]);
-
-  useEffect(() => {
-    if (documentId) {
-      fetchComments();
-    }
-  }, [currentPage]);
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" key={documentId}>
+      {/* Comment input section */}
       <div className="space-y-4">
-        {/* Comment input */}
         <div className="space-y-2">
           <Textarea
             placeholder={t("document.comments.placeholder")}
@@ -245,15 +253,15 @@ export const CommentSection = ({ documentId }) => {
           <div className="flex justify-center gap-2 mt-4">
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-              disabled={currentPage === 0}
+              onClick={handlePreviousPage}
+              disabled={currentPage === 0 || loading}
             >
               {t("document.comments.previous")}
             </Button>
             <Button
               variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-              disabled={currentPage === totalPages - 1}
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages - 1 || loading}
             >
               {t("document.comments.next")}
             </Button>
