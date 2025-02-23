@@ -2,7 +2,6 @@ package com.dms.document.interaction.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -35,7 +34,6 @@ public class DocumentComment {
     @Column(name = "parent_id")
     private Long parentId;
 
-    @CreationTimestamp
     @Column(name = "created_at")
     private Instant createdAt;
 

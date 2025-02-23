@@ -16,6 +16,7 @@ import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -79,16 +80,25 @@ public class DocumentCommentService {
         DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
+        // Check parent id is still valid
+        if (Objects.nonNull(request.parentId())) {
+            Optional<DocumentComment> parentComment = documentCommentRepository.findById(request.parentId());
+            if (parentComment.isPresent() && parentComment.get().isDeleted()) {
+                throw new InvalidDocumentException("PARENT_COMMENT_DELETED");
+            }
+        }
+
         DocumentComment comment = new DocumentComment();
         comment.setDocumentId(documentInformation.getId());
         comment.setUserId(userResponse.userId());
         comment.setContent(request.content());
         comment.setParentId(request.parentId());
+        comment.setCreatedAt(Instant.now());
 
         DocumentComment savedComment = documentCommentRepository.save(comment);
 
         // Initialize empty replies list for new comment
-        savedComment.setReplies(new ArrayList<>());
+        savedComment.setReplies(Collections.emptyList());
 
         CompletableFuture.runAsync(() -> {
             // History
