@@ -603,8 +603,6 @@
         },
         "success": "Document shared successfully",
         "error": "Failed to share document",
-        "enableSuccess": "Document sharing enabled",
-        "disableSuccess": "Document sharing disabled",
         "specific": {
           "title": "Share with specific users",
           "searchPlaceholder": "Search users...",

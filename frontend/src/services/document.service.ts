@@ -43,7 +43,7 @@ class DocumentService extends BaseService {
     );
   }
 
-  getDocumentDetails(id: string, history?: boolean) {
+  async getDocumentDetails(id: string, history?: boolean) {
     return axiosInstance.get<DocumentInformation>(`/document-interaction/api/v1/documents/${id}`, {
       params: {
         history,
@@ -115,10 +115,8 @@ class DocumentService extends BaseService {
     return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/documents/${id}/favorites`));
   }
 
-  isDocumentFavorited(id: string) {
-    return this.handleApiResponse<boolean>(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${id}/favorites/status`),
-    );
+  async isDocumentFavorited(id: string) {
+    axiosInstance.get(`/document-interaction/api/v1/documents/${id}/favorites/status`);
   }
 
   downloadDocumentVersion(payload: { documentId: string; versionNumber: number; action?: string; history?: boolean }) {
@@ -181,7 +179,9 @@ class DocumentService extends BaseService {
   }
 
   getDocumentContentWeights() {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/documents/preferences/content-weights`));
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/documents/preferences/content-weights`),
+    );
   }
 
   updateDocumentPreferences(preferences: UpdatePreferencesRequest) {
@@ -196,7 +196,7 @@ class DocumentService extends BaseService {
     return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/documents/preferences/tags`));
   }
 
-  getDocumentStatistics(documentId: string) {
+  async getDocumentStatistics(documentId: string) {
     return axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/statistics`);
   }
 }

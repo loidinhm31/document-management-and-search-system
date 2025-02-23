@@ -173,21 +173,23 @@ export default function DocumentDetailPage() {
             <CardContent className="p-4 lg:p-6 space-y-6">
               {/* Document Actions */}
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="gap-2" onClick={handleFavorite}>
-                  {isFavorited ? (
-                    <>
-                      <MdOutlineFavorite className="h-4 w-4 fill-red-500" />
-                      {t("document.actions.favorited")}
-                    </>
-                  ) : (
-                    <>
-                      <MdOutlineFavoriteBorder className="h-4 w-4" />
-                      {t("document.actions.favorite")}
-                    </>
-                  )}
-                </Button>
+                {!currentUser.roles.includes("ROLE_ADMIN") && (
+                  <Button variant="outline" size="sm" className="gap-2" onClick={handleFavorite}>
+                    {isFavorited ? (
+                      <>
+                        <MdOutlineFavorite className="h-4 w-4 fill-red-500" />
+                        {t("document.actions.favorited")}
+                      </>
+                    ) : (
+                      <>
+                        <MdOutlineFavoriteBorder className="h-4 w-4" />
+                        {t("document.actions.favorite")}
+                      </>
+                    )}
+                  </Button>
+                )}
 
-                {currentUser?.username === documentData.createdBy && (
+                {currentUser?.userId === documentData.userId && (
                   <ShareDocumentDialog
                     documentId={documentData.id}
                     documentName={documentData.filename}
