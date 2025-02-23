@@ -1,5 +1,4 @@
-package com.dms.api.gateway;
-
+package com.dms.api.gateway.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -26,21 +25,15 @@ public class ApiGatewayConfiguration {
                         .uri("lb://auth-service"))
                 .route(r -> r.path("/oauth2/authorization/google")
                         .uri("lb://auth-service"))
-                // General auth routes
-                .route(r-> r.path("/auth/**")
-                        .filters(f -> f.rewritePath(
-                                "/auth/(?<segment>.*)",
-                                "/${segment}"))
+                // Service routes
+                .route(r -> r.path("/auth/**")
+                        .filters(f -> f.rewritePath("/auth/(?<segment>.*)", "/${segment}"))
                         .uri("lb://auth-service"))
-                .route(r-> r.path("/document-interaction/**")
-                        .filters(f -> f.rewritePath(
-                                "/document-interaction/(?<segment>.*)",
-                                "/${segment}"))
+                .route(r -> r.path("/document-interaction/**")
+                        .filters(f -> f.rewritePath("/document-interaction/(?<segment>.*)", "/${segment}"))
                         .uri("lb://document-interaction-service"))
-                .route(r-> r.path("/document-search/**")
-                        .filters(f -> f.rewritePath(
-                                "/document-search/(?<segment>.*)",
-                                "/${segment}"))
+                .route(r -> r.path("/document-search/**")
+                        .filters(f -> f.rewritePath("/document-search/(?<segment>.*)", "/${segment}"))
                         .uri("lb://document-search-service"))
                 .build();
     }
