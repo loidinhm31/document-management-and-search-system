@@ -216,12 +216,11 @@ public class DocumentController {
         return ResponseEntity.ok(documentShareService.getShareableUserDetails(userIds));
     }
 
-    @Operation(summary = "Get download statistics",
-            description = "Retrieve document download count statistics")
-    @GetMapping("/{id}/statistics/downloads")
-    public ResponseEntity<Map<String, Integer>> getDocumentDownloadStatistics(@PathVariable String id) {
-        int downloadCount = documentHistoryService.getDocumentDownloadCount(id);
-        return ResponseEntity.ok(Map.of("downloadCount", downloadCount));
+    @Operation(summary = "Get document statistics",
+            description = "Retrieve document statistics including counts for views, downloads, updates, etc.")
+    @GetMapping("/{id}/statistics")
+    public ResponseEntity<DocumentStatisticsResponse> getDocumentStatistics(@PathVariable String id) {
+        return ResponseEntity.ok(documentHistoryService.getDocumentStatistics(id));
     }
 
     private String generateETag(DocumentInformation document) {

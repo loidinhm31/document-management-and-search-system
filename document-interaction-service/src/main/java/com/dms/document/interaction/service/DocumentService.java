@@ -208,14 +208,28 @@ public class DocumentService {
         }
         UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
+        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
         if (StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(userResponse.userId().toString())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.DOWNLOAD_FILE)
+                    .version(documentInformation.getCurrentVersion())
+                    .detail(String.format("%s - %s - %s KB",
+                            documentInformation.getFilename(),
+                            documentInformation.getLanguage(),
+                            documentInformation.getFileSize())
+                    )
+                    .createdAt(Instant.now())
+                    .build());
+
             CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
         }
 
-        return s3Service.downloadFile(document.getFilePath());
+        return s3Service.downloadFile(documentInformation.getFilePath());
     }
 
     public DocumentInformation getDocumentDetails(String documentId, String username, Boolean history) {
@@ -457,14 +471,29 @@ public class DocumentService {
         }
         UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
+        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Find the specific version
-        DocumentVersion targetVersion = document.getVersion(versionNumber)
+        DocumentVersion targetVersion = documentInformation.getVersion(versionNumber)
                 .orElseThrow(() -> new InvalidDocumentException("Version not found"));
 
         if (StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(userResponse.userId().toString())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.DOWNLOAD_VERSION)
+                    .version(documentInformation.getCurrentVersion())
+                    .detail(String.format("%s - %s - %s KB - v%s",
+                            targetVersion.getFilename(),
+                            targetVersion.getLanguage(),
+                            targetVersion.getFileSize(),
+                            targetVersion.getVersionNumber())
+                    )
+                    .createdAt(Instant.now())
+                    .build());
+
             CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
         }
 

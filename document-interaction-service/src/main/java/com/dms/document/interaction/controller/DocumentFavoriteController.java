@@ -39,7 +39,7 @@ public class DocumentFavoriteController {
 
     @Operation(summary = "Check favorite status",
             description = "Check if a document is in user's favorites")
-    @GetMapping
+    @GetMapping("/status")
     public ResponseEntity<Boolean> isDocumentFavorited(
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt) {
