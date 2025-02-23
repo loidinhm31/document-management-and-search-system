@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -116,10 +115,10 @@ public class DocumentCommentService {
     }
 
     @Transactional
-    public CommentResponse updateComment(Long commentId, CommentRequest request, String username) {
+    public CommentResponse updateComment(String documentId, Long commentId, CommentRequest request, String username) {
         UserResponse userResponse = getUserByUsername(username);
 
-        DocumentComment comment = documentCommentRepository.findById(commentId)
+        DocumentComment comment = documentCommentRepository.findByDocumentIdAndId(documentId, commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
         if (!comment.getUserId().equals(userResponse.userId())) {
@@ -135,10 +134,10 @@ public class DocumentCommentService {
     }
 
     @Transactional
-    public void deleteComment(Long commentId, String username) {
+    public void deleteComment(String documentId, Long commentId, String username) {
         UserResponse userResponse = getUserByUsername(username);
 
-        DocumentComment comment = documentCommentRepository.findById(commentId)
+        DocumentComment comment = documentCommentRepository.findByDocumentIdAndId(documentId, commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
         if (!comment.getUserId().equals(userResponse.userId())) {
