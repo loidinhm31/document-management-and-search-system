@@ -5,10 +5,7 @@ import com.dms.document.interaction.dto.ShareSettings;
 import com.dms.document.interaction.dto.SyncEventRequest;
 import com.dms.document.interaction.dto.UpdateShareSettingsRequest;
 import com.dms.document.interaction.dto.UserResponse;
-import com.dms.document.interaction.enums.EventType;
-import com.dms.document.interaction.enums.InteractionType;
-import com.dms.document.interaction.enums.SharingType;
-import com.dms.document.interaction.enums.UserDocumentActionType;
+import com.dms.document.interaction.enums.*;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.UserDocumentHistory;
@@ -17,6 +14,8 @@ import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -98,7 +97,9 @@ public class DocumentShareService {
                             .build());
 
             // Record sharing interaction
-            documentPreferencesService.recordInteraction(UUID.fromString(doc.getUserId()), documentId, InteractionType.SHARE);
+            if (updatedDoc.getSharingType() == SharingType.PUBLIC || updatedDoc.getSharingType() == SharingType.SPECIFIC) {
+                documentPreferencesService.recordInteraction(UUID.fromString(doc.getUserId()), documentId, InteractionType.SHARE);
+            }
         });
 
         return updatedDoc;
@@ -130,6 +131,10 @@ public class DocumentShareService {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserResponse userResponse = response.getBody();
+        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
+              Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+            throw new InvalidDataAccessResourceUsageException("Invalid role");
+        }
 
         return documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found or access denied"));

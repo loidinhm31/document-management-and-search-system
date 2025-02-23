@@ -2,6 +2,7 @@ package com.dms.document.interaction.service;
 
 import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.UserResponse;
+import com.dms.document.interaction.enums.AppRole;
 import com.dms.document.interaction.enums.InteractionType;
 import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.exception.DuplicateFavoriteException;
@@ -44,6 +45,10 @@ public class DocumentFavoriteService {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserResponse userResponse = response.getBody();
+        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
+              Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+            throw new InvalidDataAccessResourceUsageException("Invalid role");
+        }
 
         // Check if document exists
         DocumentInformation doc = documentRepository.findById(documentId)
@@ -80,6 +85,10 @@ public class DocumentFavoriteService {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserResponse userResponse = response.getBody();
+        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
+              Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+            throw new InvalidDataAccessResourceUsageException("Invalid role");
+        }
 
         // Check if document exists
         DocumentInformation doc = documentRepository.findById(documentId)
@@ -106,37 +115,10 @@ public class DocumentFavoriteService {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserResponse userResponse = response.getBody();
-
-        return documentFavoriteRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId);
-    }
-
-    public Page<DocumentInformation> getFavoritedDocuments(Pageable pageable, String username) {
-        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
-        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
-            throw new InvalidDataAccessResourceUsageException("User not found");
+        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
+              Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+            throw new InvalidDataAccessResourceUsageException("Invalid role");
         }
-        UserResponse userResponse = response.getBody();
-
-        // Get favorites from database
-        Page<DocumentFavorite> favorites = documentFavoriteRepository.findByUserId(userResponse.userId(), pageable);
-
-        // Get document IDs
-        List<String> documentIds = favorites.getContent().stream()
-                .map(DocumentFavorite::getDocumentId)
-                .collect(Collectors.toList());
-
-        // Fetch documents
-        List<DocumentInformation> documents = documentRepository.findByIdIn(documentIds);
-
-        // Maintain order from favorites
-        Map<String, DocumentInformation> documentMap = documents.stream()
-                .collect(Collectors.toMap(DocumentInformation::getId, d -> d));
-
-        List<DocumentInformation> orderedDocuments = documentIds.stream()
-                .map(documentMap::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        return new PageImpl<>(orderedDocuments, pageable, favorites.getTotalElements());
+        return documentFavoriteRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId);
     }
 }
