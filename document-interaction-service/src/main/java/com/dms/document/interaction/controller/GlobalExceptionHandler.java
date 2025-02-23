@@ -3,30 +3,36 @@ package com.dms.document.interaction.controller;
 import com.dms.document.interaction.exception.DuplicateFavoriteException;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.exception.UnsupportedDocumentTypeException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@ControllerAdvice
+
+@RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidDocumentException.class)
     public ResponseEntity<Map<String, String>> handleInvalidDocument(InvalidDocumentException ex) {
+        log.error(ex.getMessage(), ex);
         return createErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(UnsupportedDocumentTypeException.class)
     public ResponseEntity<Map<String, String>> handleUnsupportedDocumentType(UnsupportedDocumentTypeException ex) {
+        log.error(ex.getMessage(), ex);
         return createErrorResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE, ex.getMessage());
     }
 
     @ExceptionHandler(DuplicateFavoriteException.class)
     public ResponseEntity<Map<String, String>> handleDuplicateFavorite(DuplicateFavoriteException ex) {
+        log.error(ex.getMessage(), ex);
         return createErrorResponse(HttpStatus.CONFLICT, ex.getMessage());
     }
 
@@ -37,6 +43,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
+        log.error(ex.getMessage(), ex);
         return createErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
     }
 

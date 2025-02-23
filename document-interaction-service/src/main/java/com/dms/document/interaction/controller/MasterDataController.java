@@ -1,5 +1,6 @@
 package com.dms.document.interaction.controller;
 
+import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.MasterDataRequest;
 import com.dms.document.interaction.dto.MasterDataResponse;
 import com.dms.document.interaction.enums.MasterDataType;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/master-data")
+@RequestMapping(ApiConstant.API_VERSION + ApiConstant.MASTER_DATA)
 @RequiredArgsConstructor
 @Tag(name = "Master Data", description = "APIs for managing system master data like majors, course codes, levels, and categories")
 public class MasterDataController {

@@ -414,15 +414,27 @@ public class DocumentService {
         documentRepository.save(document);
 
         // Send delete event
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(userResponse.userId().toString())
-                        .documentId(documentId)
-                        .subject(EventType.DELETE_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
+        CompletableFuture.runAsync(() -> {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(document.getUserId())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.DELETE_DOCUMENT)
+                    .version(document.getCurrentVersion())
+                    .detail(String.format("%s - v%s", document.getFilename(), document.getCurrentVersion()))
+                    .createdAt(Instant.now())
+                    .build());
+
+            publishEventService.sendSyncEvent(
+                    SyncEventRequest.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .userId(userResponse.userId().toString())
+                            .documentId(documentId)
+                            .subject(EventType.DELETE_EVENT.name())
+                            .triggerAt(LocalDateTime.now())
+                            .build()
+            );
+        });
     }
 
     public Set<String> getPopularTags(String prefix) {

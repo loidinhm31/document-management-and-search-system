@@ -1,5 +1,6 @@
 package com.dms.document.interaction.controller;
 
+import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.UpdateDocumentPreferencesRequest;
 import com.dms.document.interaction.model.DocumentPreferences;
 import com.dms.document.interaction.service.DocumentPreferencesService;
@@ -15,10 +16,10 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
-@RequestMapping(BaseController.DOCUMENT_BASE_PATH + "/preferences")
+@RequestMapping(ApiConstant.API_VERSION + ApiConstant.DOCUMENT_BASE_PATH + "/preferences")
 @RequiredArgsConstructor
 @Tag(name = "Document Preferences", description = "APIs for managing user document preferences")
-public class DocumentPreferencesController extends BaseController {
+public class DocumentPreferencesController {
     private final DocumentPreferencesService documentPreferencesService;
 
     @Operation(summary = "Get user document preferences",
@@ -26,15 +27,16 @@ public class DocumentPreferencesController extends BaseController {
     @GetMapping
     public ResponseEntity<DocumentPreferences> getDocumentPreferences(
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentPreferencesService.getDocumentPreferences(jwt.getSubject()));
+        return ResponseEntity.ok(documentPreferencesService.getDocumentPreferences(jwt.getSubject()));
     }
 
     @Operation(summary = "Update document preferences",
-            description = "Update user's explicit document preferences")    @PutMapping
+            description = "Update user's explicit document preferences")
+    @PutMapping
     public ResponseEntity<DocumentPreferences> updatePreferences(
             @RequestBody UpdateDocumentPreferencesRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentPreferencesService.updateExplicitPreferences(jwt.getSubject(), request));
+        return ResponseEntity.ok(documentPreferencesService.updateExplicitPreferences(jwt.getSubject(), request));
     }
 
     @Operation(summary = "Get content type weights",
@@ -42,7 +44,7 @@ public class DocumentPreferencesController extends BaseController {
     @GetMapping("/content-weights")
     public ResponseEntity<Map<String, Double>> getContentTypeWeights(
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentPreferencesService.getCalculateContentTypeWeights(jwt.getSubject()));
+        return ResponseEntity.ok(documentPreferencesService.getCalculateContentTypeWeights(jwt.getSubject()));
     }
 
     @Operation(summary = "Get recommended tags",
@@ -50,7 +52,7 @@ public class DocumentPreferencesController extends BaseController {
     @GetMapping("/tags")
     public ResponseEntity<Set<String>> getRecommendedTags(
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentPreferencesService.getRecommendedTags(jwt.getSubject()));
+        return ResponseEntity.ok(documentPreferencesService.getRecommendedTags(jwt.getSubject()));
     }
 
 
@@ -59,6 +61,6 @@ public class DocumentPreferencesController extends BaseController {
     @GetMapping("/statistics")
     public ResponseEntity<Map<String, Object>> getInteractionStatistics(
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentPreferencesService.getInteractionStatistics(jwt.getSubject()));
+        return ResponseEntity.ok(documentPreferencesService.getInteractionStatistics(jwt.getSubject()));
     }
 }

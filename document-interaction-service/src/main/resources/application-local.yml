@@ -60,9 +60,3 @@ aws:
     region: ${AWS_REGION:ap-southeast-1}
     access-key: ${AWS_ACCESS_KEY:test}
     secret-key: ${AWS_SECRET_KEY:test}
-
-openapi:
-  service:
-    title: document-interaction doc
-    version: 1.0.0
-    url: http://localhost:8080 #api gateway url

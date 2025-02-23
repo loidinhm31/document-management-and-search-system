@@ -1,5 +1,6 @@
 package com.dms.document.interaction.controller;
 
+import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.*;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentVersion;
@@ -27,12 +28,11 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @RestController
-@RequestMapping(BaseController.DOCUMENT_BASE_PATH)
+@RequestMapping(ApiConstant.API_VERSION + ApiConstant.DOCUMENT_BASE_PATH)
 @RequiredArgsConstructor
 @Tag(name = "Document Operations", description = "APIs for core document operations")
-public class DocumentController extends BaseController {
+public class DocumentController {
     private final DocumentService documentService;
-    private final DocumentFavoriteService documentFavoriteService;
     private final DocumentShareService documentShareService;
     private final DocumentHistoryService documentHistoryService;
 
@@ -42,13 +42,13 @@ public class DocumentController extends BaseController {
     public ResponseEntity<DocumentInformation> uploadDocument(
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) String summary,
-            @RequestParam String courseCode,
+            @RequestParam(required = false) String courseCode,
             @RequestParam String major,
             @RequestParam String level,
             @RequestParam String category,
             @RequestParam(required = false) Set<String> tags,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
-        return ok(documentService.uploadDocument(
+        return ResponseEntity.ok(documentService.uploadDocument(
                 file, summary, courseCode, major, level, category, tags, jwt.getSubject()));
     }
 
@@ -59,15 +59,15 @@ public class DocumentController extends BaseController {
             @PathVariable String id,
             @RequestParam(required = false) boolean history,
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentService.getDocumentDetails(id, jwt.getSubject(), history));
+        return ResponseEntity.ok(documentService.getDocumentDetails(id, jwt.getSubject(), history));
     }
 
     @Operation(
-            summary = "Download document content",
+            summary = "Download document file",
             description = "Download the current version of a document's content as a byte array. " +
                     "Optionally records the download action in user history."
     )
-    @GetMapping("/{id}/content")
+    @GetMapping("/{id}/file")
     public ResponseEntity<byte[]> downloadDocument(
             @PathVariable String id,
             @RequestParam(required = false) String action,
@@ -84,7 +84,7 @@ public class DocumentController extends BaseController {
             description = "Retrieve the thumbnail image for a document. Returns a placeholder if the thumbnail is not yet available or if processing failed. " +
                     "Supports ETag-based caching for efficient retrieval."
     )
-    @GetMapping("/{id}/thumbnails")
+    @GetMapping("/{id}/thumbnail")
     public ResponseEntity<byte[]> getDocumentThumbnail(
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt,
@@ -136,7 +136,7 @@ public class DocumentController extends BaseController {
             description = "Update an existing document by uploading a new file and optionally updating its metadata. " +
                     "Creates a new version of the document and triggers reprocessing."
     )
-    @PutMapping(value = "/{id}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(value = "/{id}/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DocumentInformation> updateDocumentWithFile(
             @PathVariable String id,
             @RequestParam("file") MultipartFile file,
@@ -150,7 +150,7 @@ public class DocumentController extends BaseController {
         DocumentUpdateRequest updateRequest = new DocumentUpdateRequest(
                 summary, courseCode, major, level, category, tags
         );
-        return ok(documentService.updateDocumentWithFile(id, file, updateRequest, jwt.getSubject()));
+        return ResponseEntity.ok(documentService.updateDocumentWithFile(id, file, updateRequest, jwt.getSubject()));
     }
 
     @Operation(summary = "Update document metadata",
@@ -160,7 +160,7 @@ public class DocumentController extends BaseController {
             @PathVariable String id,
             @RequestBody DocumentUpdateRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentService.updateDocument(id, request, jwt.getSubject()));
+        return ResponseEntity.ok(documentService.updateDocument(id, request, jwt.getSubject()));
     }
 
     @Operation(summary = "Delete document",
@@ -170,7 +170,7 @@ public class DocumentController extends BaseController {
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt) {
         documentService.deleteDocument(id, jwt.getSubject());
-        return noContent();
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Get tag suggestions",
@@ -178,70 +178,7 @@ public class DocumentController extends BaseController {
     @GetMapping("/tags/suggestions")
     public ResponseEntity<Set<String>> getTagSuggestions(
             @RequestParam(required = false) String prefix) {
-        return ok(documentService.getPopularTags(prefix));
-    }
-
-    @Operation(summary = "Download specific document version",
-            description = "Download document content for a specific version number")
-    @GetMapping("/{id}/versions/{versionNumber}/content")
-    public ResponseEntity<byte[]> downloadDocumentVersion(
-            @PathVariable String id,
-            @PathVariable Integer versionNumber,
-            @RequestParam(required = false) String action,
-            @RequestParam(required = false) boolean history,
-            @AuthenticationPrincipal Jwt jwt) throws IOException {
-        byte[] content = documentService.getDocumentVersionContent(id, versionNumber, jwt.getSubject(), action, history);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"document\"")
-                .body(content);
-    }
-
-    @Operation(summary = "Revert to previous version",
-            description = "Revert document to a specific previous version")
-    @PutMapping("/{id}/versions/{versionNumber}")
-    public ResponseEntity<DocumentInformation> revertToVersion(
-            @PathVariable String id,
-            @PathVariable Integer versionNumber,
-            @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentService.revertToVersion(id, versionNumber, jwt.getSubject()));
-    }
-
-    @Operation(summary = "Add document to favorites",
-            description = "Mark a document as favorite for the current user")
-    @PostMapping("/{id}/favorites")
-    public ResponseEntity<Void> favoriteDocument(
-            @PathVariable String id,
-            @AuthenticationPrincipal Jwt jwt) {
-        documentFavoriteService.favoriteDocument(id, jwt.getSubject());
-        return ok();
-    }
-
-    @Operation(summary = "Remove document from favorites",
-            description = "Remove a document from user's favorites")
-    @DeleteMapping("{id}/favorites")
-    public ResponseEntity<Void> unfavoriteDocument(
-            @PathVariable String id,
-            @AuthenticationPrincipal Jwt jwt) {
-        documentFavoriteService.unfavoriteDocument(id, jwt.getSubject());
-        return noContent();
-    }
-
-    @Operation(summary = "Check favorite status",
-            description = "Check if a document is in user's favorites")
-    @GetMapping("/{id}/favorites/status")
-    public ResponseEntity<Boolean> isDocumentFavorited(
-            @PathVariable String id,
-            @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentFavoriteService.isDocumentFavorited(id, jwt.getSubject()));
-    }
-
-    @Operation(summary = "Get favorited documents",
-            description = "Retrieve paginated list of user's favorite documents")
-    @GetMapping("/favorites")
-    public ResponseEntity<Page<DocumentInformation>> getFavoritedDocuments(
-            Pageable pageable,
-            @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentFavoriteService.getFavoritedDocuments(pageable, jwt.getSubject()));
+        return ResponseEntity.ok(documentService.getPopularTags(prefix));
     }
 
     @Operation(summary = "Get document share settings",
@@ -250,7 +187,7 @@ public class DocumentController extends BaseController {
     public ResponseEntity<ShareSettings> getDocumentShareSettings(
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentShareService.getDocumentShareSettings(id, jwt.getSubject()));
+        return ResponseEntity.ok(documentShareService.getDocumentShareSettings(id, jwt.getSubject()));
     }
 
     @Operation(summary = "Update share settings",
@@ -260,7 +197,7 @@ public class DocumentController extends BaseController {
             @PathVariable String id,
             @RequestBody UpdateShareSettingsRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(documentShareService.updateDocumentShareSettings(id, request, jwt.getSubject()));
+        return ResponseEntity.ok(documentShareService.updateDocumentShareSettings(id, request, jwt.getSubject()));
     }
 
     @Operation(summary = "Search users for sharing",
@@ -268,7 +205,7 @@ public class DocumentController extends BaseController {
     @GetMapping("/sharing/users")
     public ResponseEntity<List<UserResponse>> searchShareableUsers(
             @RequestParam String query) {
-        return ok(documentShareService.searchShareableUsers(query));
+        return ResponseEntity.ok(documentShareService.searchShareableUsers(query));
     }
 
     @Operation(summary = "Get shared users details",
@@ -276,7 +213,7 @@ public class DocumentController extends BaseController {
     @PostMapping("/sharing/users/details")
     public ResponseEntity<List<UserResponse>> getShareableUserDetails(
             @RequestBody List<UUID> userIds) {
-        return ok(documentShareService.getShareableUserDetails(userIds));
+        return ResponseEntity.ok(documentShareService.getShareableUserDetails(userIds));
     }
 
     @Operation(summary = "Get download statistics",
@@ -284,7 +221,7 @@ public class DocumentController extends BaseController {
     @GetMapping("/{id}/statistics/downloads")
     public ResponseEntity<Map<String, Integer>> getDocumentDownloadStatistics(@PathVariable String id) {
         int downloadCount = documentHistoryService.getDocumentDownloadCount(id);
-        return ok(Map.of("downloadCount", downloadCount));
+        return ResponseEntity.ok(Map.of("downloadCount", downloadCount));
     }
 
     private String generateETag(DocumentInformation document) {

@@ -1,5 +1,6 @@
 package com.dms.document.interaction.controller;
 
+import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.CommentRequest;
 import com.dms.document.interaction.dto.CommentResponse;
 import com.dms.document.interaction.service.DocumentCommentService;
@@ -14,10 +15,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(BaseController.DOCUMENT_BASE_PATH + BaseController.DOCUMENT_ID_PATH + "/comments")
+@RequestMapping(ApiConstant.API_VERSION + ApiConstant.DOCUMENT_BASE_PATH + ApiConstant.DOCUMENT_ID_PATH + "/comments")
 @RequiredArgsConstructor
 @Tag(name = "Document Comments", description = "APIs for managing document comments")
-public class DocumentCommentController extends BaseController {
+public class DocumentCommentController {
     private final DocumentCommentService commentService;
 
     @Operation(summary = "Create a new comment",
@@ -27,7 +28,7 @@ public class DocumentCommentController extends BaseController {
             @PathVariable String id,
             @RequestBody CommentRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(commentService.createComment(id, request, jwt.getSubject()));
+        return ResponseEntity.ok(commentService.createComment(id, request, jwt.getSubject()));
     }
 
     @Operation(summary = "Get document comments",
@@ -37,7 +38,7 @@ public class DocumentCommentController extends BaseController {
             @PathVariable String id,
             Pageable pageable,
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(commentService.getDocumentComments(id, pageable, jwt.getSubject()));
+        return ResponseEntity.ok(commentService.getDocumentComments(id, pageable, jwt.getSubject()));
     }
 
     @Operation(summary = "Update comment",
@@ -48,7 +49,7 @@ public class DocumentCommentController extends BaseController {
             @PathVariable Long commentId,
             @RequestBody CommentRequest request,
             @AuthenticationPrincipal Jwt jwt) {
-        return ok(commentService.updateComment(id, commentId, request, jwt.getSubject()));
+        return ResponseEntity.ok(commentService.updateComment(id, commentId, request, jwt.getSubject()));
     }
 
     @Operation(summary = "Delete comment",
@@ -59,6 +60,6 @@ public class DocumentCommentController extends BaseController {
             @PathVariable Long commentId,
             @AuthenticationPrincipal Jwt jwt) {
         commentService.deleteComment(id, commentId, jwt.getSubject());
-        return noContent();
+        return ResponseEntity.noContent().build();
     }
 }
