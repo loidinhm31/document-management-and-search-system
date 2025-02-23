@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { CommentItem } from "@/components/document/discover/comment-item";
@@ -39,7 +39,7 @@ export const CommentSection = ({ documentId }) => {
       const response = await documentService.getDocumentComments(documentId, {
         page,
         size: 10,
-        sort: "createdAt,desc"
+        sort: "createdAt,desc",
       });
       setComments(response.data.content);
       setTotalPages(response.data.totalPages);
@@ -48,7 +48,7 @@ export const CommentSection = ({ documentId }) => {
       toast({
         title: t("common.error"),
         description: t("document.comments.fetchError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -80,36 +80,19 @@ export const CommentSection = ({ documentId }) => {
     try {
       const response = await documentService.createComment(documentId, {
         content: commentTrim,
-        parentId: replyTo?.id || null
+        parentId: replyTo?.id || null,
       });
 
       if (replyTo) {
-        // Helper function to update nested comments
-        const updateCommentsWithReply = (commentsList) => {
-          return commentsList.map(comment => {
-            if (comment.id === replyTo.id) {
-              // Found the parent comment, add the reply
-              return {
-                ...comment,
-                replies: [...(comment.replies || []), response.data]
-              };
-            }
-            // If this comment has replies, recursively search them
-            if (comment.replies?.length > 0) {
-              return {
-                ...comment,
-                replies: updateCommentsWithReply(comment.replies)
-              };
-            }
-            return comment;
-          });
-        };
-
-        // Update the comments state with the new reply
-        setComments(prevComments => updateCommentsWithReply(prevComments));
+        // Update comments state with new reply
+        setComments((prevComments) =>
+          updateCommentInState(prevComments, replyTo.id, {
+            replies: [...(replyTo.replies || []), response.data],
+          }),
+        );
       } else {
-        // For top-level comments, just add to the start of the list
-        setComments(prevComments => [response.data, ...prevComments]);
+        // Add new top-level comment
+        setComments((prevComments) => [response.data, ...prevComments]);
       }
 
       // Clear form
@@ -119,7 +102,7 @@ export const CommentSection = ({ documentId }) => {
       toast({
         title: t("common.success"),
         description: t("document.comments.createSuccess"),
-        variant: "success"
+        variant: "success",
       });
     } catch (error) {
       console.info(error);
@@ -131,26 +114,40 @@ export const CommentSection = ({ documentId }) => {
       toast({
         title: t("common.error"),
         description: t("document.comments.createError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const removeCommentFromList = (comments, commentId) => {
-    return comments.filter(comment => {
+  const removeCommentFromState = (comments, commentId) => {
+    return comments.filter((comment) => {
       // If this comment matches the ID, remove it
       if (comment.id === commentId) {
         return false;
       }
 
-      // If this comment has replies, recursively filter them
+      // If this comment has replies, recursively filter them\
       if (comment.replies?.length > 0) {
-        comment.replies = removeCommentFromList(comment.replies, commentId);
+        comment.replies = removeCommentFromState(comment.replies, commentId);
       }
-
       return true;
+    });
+  };
+
+  const updateCommentInState = (comments, commentId, updatedFields) => {
+    return comments.map((comment) => {
+      if (comment.id === commentId) {
+        return { ...comment, ...updatedFields };
+      }
+      if (comment.replies?.length > 0) {
+        return {
+          ...comment,
+          replies: updateCommentInState(comment.replies, commentId, updatedFields),
+        };
+      }
+      return comment;
     });
   };
 
@@ -158,17 +155,16 @@ export const CommentSection = ({ documentId }) => {
     try {
       await documentService.deleteComment(documentId, commentId);
 
-      // Update state with the filtered comments
-      setComments(prevComments => removeCommentFromList(prevComments, commentId));
+      // Update state locally
+      setComments((prevComments) => removeCommentFromState(prevComments, commentId));
 
       toast({
         title: t("common.success"),
         description: t("document.comments.deleteSuccess"),
-        variant: "success"
+        variant: "success",
       });
 
-      // Clear reply (if any)
-      if (replyTo) {
+      if (replyTo?.id === commentId) {
         setReplyTo(null);
       }
     } catch (error) {
@@ -176,7 +172,7 @@ export const CommentSection = ({ documentId }) => {
       toast({
         title: t("common.error"),
         description: t("document.comments.deleteError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -184,13 +180,28 @@ export const CommentSection = ({ documentId }) => {
   const handleEditComment = async (commentId, { content }) => {
     try {
       await documentService.updateComment(documentId, commentId, { content });
-      fetchComments(); // Refresh comments after edit
+
+      // Update comment locally instead of refetching
+      setComments((prevComments) =>
+        updateCommentInState(prevComments, commentId, {
+          content,
+          edited: true,
+          updatedAt: new Date().toISOString(),
+        }),
+      );
+
+      toast({
+        title: t("common.success"),
+        description: t("document.comments.editSuccess"),
+        variant: "success",
+      });
+
       return true;
     } catch (error) {
       toast({
         title: t("common.error"),
         description: t("document.comments.editError"),
-        variant: "destructive"
+        variant: "destructive",
       });
       throw error;
     }
@@ -209,19 +220,12 @@ export const CommentSection = ({ documentId }) => {
           {replyTo && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>{t("document.comments.replyingTo", { username: replyTo.username })}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setReplyTo(null)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setReplyTo(null)}>
                 {t("document.comments.cancelReply")}
               </Button>
             </div>
           )}
-          <Button
-            onClick={handleSubmitComment}
-            disabled={!commentText.trim()}
-          >
+          <Button onClick={handleSubmitComment} disabled={!commentText.trim()}>
             {t("document.comments.submit")}
           </Button>
         </div>
@@ -251,18 +255,10 @@ export const CommentSection = ({ documentId }) => {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-center gap-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={handlePreviousPage}
-              disabled={currentPage === 0 || loading}
-            >
+            <Button variant="outline" onClick={handlePreviousPage} disabled={currentPage === 0 || loading}>
               {t("document.comments.previous")}
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages - 1 || loading}
-            >
+            <Button variant="outline" onClick={handleNextPage} disabled={currentPage === totalPages - 1 || loading}>
               {t("document.comments.next")}
             </Button>
           </div>
