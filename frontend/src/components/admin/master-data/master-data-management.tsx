@@ -56,7 +56,7 @@ export default function MasterDataManagement() {
       });
       setParentMap(map);
     } catch (error) {
-      console.error("Error loading parent options:", error);
+      console.info("Error loading parent options:", error);
       toast({
         title: t("common.error"),
         description: t("masterData.fetchError"),

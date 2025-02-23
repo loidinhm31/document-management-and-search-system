@@ -90,7 +90,7 @@ export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload, isDow
 
       return formatted;
     } catch (e) {
-      console.error("Error formatting XML:", e);
+      console.info("Error formatting XML:", e);
       return xmlString;
     }
   };

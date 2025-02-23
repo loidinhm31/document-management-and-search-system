@@ -66,7 +66,7 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload, isD
         </>
       );
     } catch (error) {
-      console.error("Error parsing JSON:", error);
+      console.info("Error parsing JSON:", error);
       return <>{jsonString}</>;
     }
   };

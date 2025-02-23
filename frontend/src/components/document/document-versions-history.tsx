@@ -53,7 +53,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
         onVersionUpdate(response.data);
       }
     } catch (error) {
-      console.error("Error fetching document details:", error);
+      console.info("Error fetching document details:", error);
     } finally {
       setLoading(false);
     }

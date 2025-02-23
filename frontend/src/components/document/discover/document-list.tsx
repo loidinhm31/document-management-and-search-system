@@ -177,7 +177,7 @@ export const DocumentList = () => {
       link.click();
       link.remove();
     } catch (error) {
-      console.error("err:", error);
+      console.info("err:", error);
       toast({
         title: t("common.error"),
         description: t("document.viewer.error.download"),

@@ -86,7 +86,7 @@ export default function MasterDataDialog({
       const response = await masterDataService.getAllByType(parentType, true);
       setParentOptions(response.data);
     } catch (error) {
-      console.error("Error loading parent options:", error);
+      console.info("Error loading parent options:", error);
       toast({
         title: t("common.error"),
         description: t("masterData.fetchParentError"),

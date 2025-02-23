@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { ACCEPT_TYPE_MAP, MAX_FILE_SIZE } from "@/types/document";
+import { cn } from "@/lib/utils";
 
 const documentSchema = z.object({
   summary: z
@@ -41,10 +42,10 @@ interface DocumentFormProps {
   onSubmit: (data: DocumentFormValues, file?: File) => Promise<void>;
   loading?: boolean;
   submitLabel?: string;
-  isCreator?: boolean;
+  disabled?: boolean;
 }
 
-export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, isCreator = true }: DocumentFormProps) {
+export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, disabled }: DocumentFormProps) {
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
       category: "",
       tags: [],
     },
+    mode: "onBlur",
   });
 
   const selectedMajor = form.watch("major");
@@ -72,7 +74,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
     }
     const majorObj = majors.find((m) => m.code === selectedMajor);
     return courseCodes.filter((course) => course.parentId === majorObj?.id);
-  }, [selectedMajor, courseCodes]);
+  }, [selectedMajor, courseCodes, majors]);
 
   useEffect(() => {
     if (selectedMajor && form.getValues("courseCode")) {
@@ -89,7 +91,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
         form.setValue("courseCode", "");
       }
     }
-  }, [selectedMajor, filteredCourseCodes]);
+  }, [selectedMajor, filteredCourseCodes, form]);
 
   useEffect(() => {
     if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
@@ -106,25 +108,28 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
     }
   }, []);
 
-  const onDropRejected = useCallback((fileRejections) => {
-    const fileSizeError = fileRejections.find((rejection) =>
-      rejection.errors.some((error) => error.code === "file-too-large"),
-    );
-
-    if (fileSizeError) {
-      setSizeError(
-        t("document.upload.dropzone.sizeLimitError", {
-          maxFileSize: (MAX_FILE_SIZE / (1024 * 1024)).toFixed(3),
-          fileSizeError: (fileSizeError.file.size / (1024 * 1024)).toFixed(3),
-        }),
+  const onDropRejected = useCallback(
+    (fileRejections) => {
+      const fileSizeError = fileRejections.find((rejection) =>
+        rejection.errors.some((error) => error.code === "file-too-large"),
       );
-      setSelectedFile(null);
-    }
-  }, []);
+
+      if (fileSizeError) {
+        setSizeError(
+          t("document.upload.dropzone.sizeLimitError", {
+            maxFileSize: (MAX_FILE_SIZE / (1024 * 1024)).toFixed(3),
+            fileSizeError: (fileSizeError.file.size / (1024 * 1024)).toFixed(3),
+          }),
+        );
+        setSelectedFile(null);
+      }
+    },
+    [t],
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    disabled: !isCreator,
+    disabled: disabled,
     onDropRejected,
     maxFiles: 1,
     maxSize: MAX_FILE_SIZE,
@@ -142,7 +147,10 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
       {/* File Upload Section */}
       <div
         {...getRootProps()}
-        className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+        className={cn(
+          "border-2 border-dashed rounded-lg p-8 text-center hover:border-primary transition-colors",
+          disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
+        )}
       >
         <input {...getInputProps()} />
         <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
@@ -175,7 +183,6 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             <FormField
-              disabled={!isCreator}
               control={form.control}
               name="summary"
               render={({ field }) => (
@@ -187,6 +194,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
                         {...field}
                         placeholder={t("document.upload.form.summary.placeholder")}
                         className="min-h-[150px]"
+                        disabled={disabled}
                       />
                     </FormControl>
                     <div className="flex justify-between text-sm text-muted-foreground">
@@ -206,9 +214,13 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("document.upload.form.major.label")}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={disabled || majors?.length === 0}
+                  >
                     <FormControl>
-                      <SelectTrigger disabled={majors?.length === 0 || !isCreator}>
+                      <SelectTrigger>
                         <SelectValue placeholder={t("document.upload.form.major.placeholder")} />
                       </SelectTrigger>
                     </FormControl>
@@ -231,9 +243,13 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("document.upload.form.courseCode.label")}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={disabled || !selectedMajor || filteredCourseCodes.length === 0}
+                  >
                     <FormControl>
-                      <SelectTrigger disabled={!selectedMajor || filteredCourseCodes.length === 0 || !isCreator}>
+                      <SelectTrigger>
                         <SelectValue placeholder={t("document.upload.form.courseCode.placeholder")} />
                       </SelectTrigger>
                     </FormControl>
@@ -256,9 +272,13 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("document.upload.form.level.label")}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={disabled || levels?.length === 0}
+                  >
                     <FormControl>
-                      <SelectTrigger disabled={levels?.length === 0 || !isCreator}>
+                      <SelectTrigger>
                         <SelectValue placeholder={t("document.upload.form.level.placeholder")} />
                       </SelectTrigger>
                     </FormControl>
@@ -281,9 +301,13 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={disabled || categories?.length === 0}
+                  >
                     <FormControl>
-                      <SelectTrigger disabled={categories?.length === 0 || !isCreator}>
+                      <SelectTrigger>
                         <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
                       </SelectTrigger>
                     </FormControl>
@@ -311,7 +335,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
                       value={field.value || []}
                       onChange={field.onChange}
                       placeholder={t("document.detail.form.tags.placeholder")}
-                      disabled={masterDataLoading || !isCreator}
+                      disabled={disabled || masterDataLoading}
                     />
                   </FormControl>
                   <FormMessage />
@@ -324,7 +348,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, is
               disabled={masterDataLoading || loading || (!initialValues && !selectedFile)}
               className="w-full"
             >
-              {masterDataLoading || (loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />)}
+              {(masterDataLoading || loading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitLabel}
             </Button>
           </form>

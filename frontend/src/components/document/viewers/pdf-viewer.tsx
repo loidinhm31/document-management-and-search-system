@@ -50,7 +50,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onDownload, isDow
   }, []);
 
   const onDocumentLoadError = useCallback((error: Error) => {
-    console.error("Error loading PDF:", error);
+    console.info("Error loading PDF:", error);
     setError(true);
   }, []);
 

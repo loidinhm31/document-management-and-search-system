@@ -289,7 +289,7 @@ export default function UserProfile() {
                         }
                       }
                     } catch (e) {
-                      console.error("Error parsing 2FA QR code URL:", e);
+                      console.info("Error parsing 2FA QR code URL:", e);
                     }
                     return null;
                   })()}

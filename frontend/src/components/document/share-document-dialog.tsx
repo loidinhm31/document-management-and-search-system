@@ -81,7 +81,7 @@ export default function ShareDocumentDialog({
         }
       }
     } catch (error) {
-      console.error("Error fetching share settings:", error);
+      console.info("Error fetching share settings:", error);
     }
   };
 
@@ -93,7 +93,7 @@ export default function ShareDocumentDialog({
           const userDetailsResponse = await documentService.getShareableUsersByIds(selectedUsers);
           setUsers(userDetailsResponse.data);
         } catch (error) {
-          console.error("Error fetching selected users:", error);
+          console.info("Error fetching selected users:", error);
         }
       } else {
         setUsers([]);
@@ -106,7 +106,7 @@ export default function ShareDocumentDialog({
       const response = await documentService.searchShareableUsers(searchQuery);
       setUsers(response.data);
     } catch (error) {
-      console.error("Error searching users:", error);
+      console.info("Error searching users:", error);
     } finally {
       setLoading(false);
     }

@@ -236,7 +236,7 @@ export default function DocumentPreferencesManager() {
                       const response = await documentService.getTagSuggestions(query);
                       return response.data;
                     } catch (error) {
-                      console.error("Error fetching tag suggestions:", error);
+                      console.info("Error fetching tag suggestions:", error);
                       return [];
                     }
                   }}

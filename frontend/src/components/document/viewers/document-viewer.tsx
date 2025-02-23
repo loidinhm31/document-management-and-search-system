@@ -142,7 +142,7 @@ export const DocumentViewer = ({
               setCsvContent(typedData);
             },
             error: (error) => {
-              console.error("Error parsing CSV:", error);
+              console.info("Error parsing CSV:", error);
               setError("Failed to parse CSV file");
             },
             delimiter: ",", // auto-detect delimiter
@@ -213,7 +213,7 @@ export const DocumentViewer = ({
         }
       }
     } catch (err) {
-      console.error("Error loading document:", err);
+      console.info("Error loading document:", err);
       setError(t("document.viewer.error.loading"));
       toast({
         title: t("document.viewer.error.title"),
@@ -250,7 +250,7 @@ export const DocumentViewer = ({
       // Tracking download
       onDownloadSuccess?.();
     } catch (error) {
-      console.error("err:", error);
+      console.info("err:", error);
       toast({
         title: t("document.viewer.error.title"),
         description: t("document.viewer.error.download"),

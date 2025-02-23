@@ -225,7 +225,7 @@ export default function MyDocumentDetailPage() {
 
               {documentData && (
                 <DocumentForm
-                  key={`document-form-${documentData.id}-${documentData.updatedAt}`}
+                  key={`df-${documentData.id}-${documentData.updatedAt}`}
                   initialValues={{
                     summary: documentData?.summary || "",
                     courseCode: documentData?.courseCode || "",
@@ -237,7 +237,7 @@ export default function MyDocumentDetailPage() {
                   onSubmit={handleSubmit}
                   loading={updating}
                   submitLabel={t("document.detail.buttons.update")}
-                  isCreator={documentData?.userId === currentUser.userId}
+                  disabled={documentData?.userId !== currentUser?.userId}
                 />
               )}
             </CardContent>
