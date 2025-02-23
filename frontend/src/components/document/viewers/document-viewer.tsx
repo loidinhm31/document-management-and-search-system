@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import mammoth from "mammoth";
 import Papa from "papaparse";
 import React, { useEffect, useState } from "react";
@@ -49,6 +49,7 @@ export const DocumentViewer = ({
   const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [wordContent, setWordContent] = useState<string | null>(null);
   const [textContent, setTextContent] = useState<string | null>(null);
@@ -226,6 +227,7 @@ export const DocumentViewer = ({
 
   const handleDownload = async () => {
     try {
+      setIsDownloading(true);
       const response =
         versionNumber !== undefined
           ? await documentService.downloadDocumentVersion({
@@ -253,6 +255,8 @@ export const DocumentViewer = ({
         description: t("document.viewer.error.download"),
         variant: "destructive",
       });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -269,8 +273,9 @@ export const DocumentViewer = ({
     return (
       <div className="flex flex-col items-center h-full gap-4">
         <p className="text-destructive">{error}</p>
-        <Button onClick={handleDownload} variant="outline">
-          {t("document.viewer.buttons.downloadInstead")}
+        <Button onClick={handleDownload} variant="outline" disabled={isDownloading || loading}>
+          <Download className="h-4 w-4 mr-2" />
+          {!isDownloading ? t("document.viewer.buttons.downloadInstead") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
     );
@@ -278,11 +283,24 @@ export const DocumentViewer = ({
 
   switch (documentType) {
     case DocumentType.PDF:
-      return fileUrl && <PDFViewer fileUrl={fileUrl} onDownload={handleDownload} />;
+      return (
+        fileUrl && (
+          <PDFViewer fileUrl={fileUrl} onDownload={handleDownload} isDownloading={isDownloading} loading={loading} />
+        )
+      );
 
     case DocumentType.WORD:
     case DocumentType.WORD_DOCX:
-      return wordContent && <WordViewer content={wordContent} onDownload={handleDownload} />;
+      return (
+        wordContent && (
+          <WordViewer
+            content={wordContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
+      );
 
     case DocumentType.EXCEL:
     case DocumentType.EXCEL_XLSX:
@@ -293,6 +311,8 @@ export const DocumentViewer = ({
             activeSheet={activeSheet}
             onSheetChange={setActiveSheet}
             onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
           />
         )
       );
@@ -305,6 +325,8 @@ export const DocumentViewer = ({
             activeSheet={0}
             onSheetChange={() => {}}
             onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
           />
         )
       );
@@ -312,23 +334,73 @@ export const DocumentViewer = ({
     case DocumentType.POWERPOINT:
     case DocumentType.POWERPOINT_PPTX:
       return (
-        powerPointContent.length > 0 && <PowerPointViewer content={powerPointContent} onDownload={handleDownload} />
+        powerPointContent.length > 0 && (
+          <PowerPointViewer
+            content={powerPointContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
       );
 
     case DocumentType.TEXT_PLAIN:
-      return textContent && <TextViewer content={textContent} onDownload={handleDownload} />;
+      return (
+        textContent && (
+          <TextViewer
+            content={textContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
+      );
 
     case DocumentType.JSON:
-      return textContent && <JsonViewer content={textContent} onDownload={handleDownload} />;
+      return (
+        textContent && (
+          <JsonViewer
+            content={textContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
+      );
 
     case DocumentType.XML:
-      return textContent && <XmlViewer content={textContent} onDownload={handleDownload} />;
+      return (
+        textContent && (
+          <XmlViewer
+            content={textContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
+      );
 
     case DocumentType.MARKDOWN:
-      return textContent && <MarkdownViewer content={textContent} onDownload={handleDownload} />;
+      return (
+        textContent && (
+          <MarkdownViewer
+            content={textContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
+      );
 
     default:
-      return <UnsupportedViewer documentType={documentType} onDownload={handleDownload} />;
+      return (
+        <UnsupportedViewer
+          documentType={documentType}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      );
   }
 };
 

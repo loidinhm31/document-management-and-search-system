@@ -1,14 +1,17 @@
 import { Download } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
+
+import { Button } from "@/components/ui/button";
 
 interface PowerPointViewerProps {
   content: string[];
   onDownload: () => void;
+  isDownloading?: boolean;
+  loading?: boolean;
 }
 
-export const PowerPointViewer: React.FC<PowerPointViewerProps> = ({ content, onDownload }) => {
+export const PowerPointViewer: React.FC<PowerPointViewerProps> = ({ content, onDownload, isDownloading, loading }) => {
   const { t } = useTranslation();
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -37,39 +40,26 @@ export const PowerPointViewer: React.FC<PowerPointViewerProps> = ({ content, onD
     <div className="h-full flex flex-col">
       <div className="flex justify-between p-2 bg-muted">
         <div className="flex items-center gap-2">
-          <Button
-            onClick={handlePrevSlide}
-            disabled={currentSlide === 0}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={handlePrevSlide} disabled={currentSlide === 0} variant="outline" size="sm">
             {t("document.viewer.buttons.previous")}
           </Button>
-          <Button
-            onClick={handleNextSlide}
-            disabled={currentSlide === content.length - 1}
-            variant="outline"
-            size="sm"
-          >
+          <Button onClick={handleNextSlide} disabled={currentSlide === content.length - 1} variant="outline" size="sm">
             {t("document.viewer.buttons.next")}
           </Button>
           <span className="text-sm">
             {t("document.viewer.buttons.slideInfo", {
               current: currentSlide + 1,
-              total: content.length
+              total: content.length,
             })}
           </span>
         </div>
-        <Button onClick={onDownload} variant="outline" size="sm">
+        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
           <Download className="h-4 w-4 mr-2" />
-          {t("document.viewer.buttons.download")}
+          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
       <div className="flex-1 overflow-auto bg-white p-4">
-        <div
-          className="w-full h-full"
-          dangerouslySetInnerHTML={{ __html: content[currentSlide] || "" }}
-        />
+        <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: content[currentSlide] || "" }} />
       </div>
     </div>
   );

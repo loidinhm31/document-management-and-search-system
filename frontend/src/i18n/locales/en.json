@@ -520,6 +520,7 @@
       "buttons": {
         "download": "Download",
         "downloadInstead": "Download Instead",
+        "downloading": "Preparing file...",
         "previous": "Previous",
         "next": "Next",
         "pageInfo": "Page {{current}} of {{total}}",
@@ -657,6 +658,7 @@
       "actions": {
         "view": "View",
         "download": "Download",
+        "downloading": "Preparing file...",
         "revert": "Revert"
       },
       "error": {

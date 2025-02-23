@@ -13,12 +13,12 @@ interface DocumentViewerDialogProps {
 }
 
 const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
-                                                                     open,
-                                                                     onOpenChange,
-                                                                     documentData,
-                                                                     documentId,
-                                                                     isVersion = false,
-                                                                   }) => {
+  open,
+  onOpenChange,
+  documentData,
+  documentId,
+  isVersion = false,
+}) => {
   useEffect(() => {
     if (open) {
       // Prevent right-click context menu
@@ -33,24 +33,21 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
 
       // Prevent keyboard shortcuts
       const handleKeyDown = (e: KeyboardEvent) => {
-        if (
-          (e.ctrlKey || e.metaKey) &&
-          (e.key === 'c' || e.key === 'C' || e.key === 'x' || e.key === 'X')
-        ) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C" || e.key === "x" || e.key === "X")) {
           e.preventDefault();
         }
       };
 
-      document.addEventListener('contextmenu', handleContextMenu);
-      document.addEventListener('copy', handleCopy);
-      document.addEventListener('cut', handleCopy);
-      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener("contextmenu", handleContextMenu);
+      document.addEventListener("copy", handleCopy);
+      document.addEventListener("cut", handleCopy);
+      document.addEventListener("keydown", handleKeyDown);
 
       return () => {
-        document.removeEventListener('contextmenu', handleContextMenu);
-        document.removeEventListener('copy', handleCopy);
-        document.removeEventListener('cut', handleCopy);
-        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener("contextmenu", handleContextMenu);
+        document.removeEventListener("copy", handleCopy);
+        document.removeEventListener("cut", handleCopy);
+        document.removeEventListener("keydown", handleKeyDown);
       };
     }
   }, [open]);
@@ -69,12 +66,10 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
         onCopy={(e) => e.preventDefault()}
         onCut={(e) => e.preventDefault()}
         onPaste={(e) => e.preventDefault()}
-        style={{ WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none', userSelect: 'none' }}
+        style={{ WebkitUserSelect: "none", MozUserSelect: "none", msUserSelect: "none", userSelect: "none" }}
       >
         <DialogHeader className="px-6 py-4">
-          <DialogTitle className="pr-8">
-            {documentData?.filename}
-          </DialogTitle>
+          <DialogTitle className="pr-8">{documentData?.filename}</DialogTitle>
           <DialogDescription className="text-sm">
             {isVersion && `Version ${(documentData as DocumentVersion).versionNumber + 1} - `}
             {documentData.mimeType} - {getFileSize()}

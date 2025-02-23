@@ -37,6 +37,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
   const { currentUser } = useAuth();
   const isDocumentCreator = currentUser?.userId === documentCreatorId;
   const [selectedVersion, setSelectedVersion] = useState<DocumentVersion | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const documentProcessingStatus = useAppSelector(selectProcessingItemByDocumentId(documentId));
 
@@ -70,6 +71,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
 
   const handleVersionDownload = async (versionNumber: number, filename: string) => {
     try {
+      setIsDownloading(true);
       const response = await documentService.downloadDocumentVersion({
         documentId,
         versionNumber,
@@ -93,6 +95,8 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
         description: t("document.versions.error.download"),
         variant: "destructive",
       });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -215,8 +219,9 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                           size="sm"
                           onClick={() => handleVersionDownload(version.versionNumber, version.filename)}
                           className="h-7 w-full sm:w-auto"
+                          disabled={isDownloading || loading}
                         >
-                          {t("document.versions.actions.download")}
+                          {!isDownloading ? t("document.versions.actions.download") : t("document.versions.actions.downloading")}
                         </Button>
                       </div>
                     </div>
