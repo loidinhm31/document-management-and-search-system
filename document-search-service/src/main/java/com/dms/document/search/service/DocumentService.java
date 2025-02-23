@@ -60,7 +60,7 @@ public class DocumentService {
         // Add search criteria if provided
         if (StringUtils.isNotBlank(criteria.getSearch())) {
             Criteria searchCriteria = new Criteria().orOperator(
-                    Criteria.where("originalFilename").regex(criteria.getSearch(), "i"),
+                    Criteria.where("filename").regex(criteria.getSearch(), "i"),
                     Criteria.where("content").regex(criteria.getSearch(), "i"),
                     Criteria.where("tags").regex(criteria.getSearch(), "i")
             );
