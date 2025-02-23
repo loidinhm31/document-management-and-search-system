@@ -195,6 +195,10 @@ class DocumentService extends BaseService {
   getRecommendedTags() {
     return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/documents/preferences/tags`));
   }
+
+  getDocumentStatistics(documentId: string) {
+    return axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/statistics`);
+  }
 }
 
 export const documentService = new DocumentService();

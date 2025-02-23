@@ -1,4 +1,4 @@
-import { ArrowLeft, Calendar, Loader2, User } from "lucide-react";
+import { ArrowLeft, Calendar, Eye, FileDown, Languages, LanguagesIcon, Loader2, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MdOutlineFavorite, MdOutlineFavoriteBorder } from "react-icons/md";
@@ -21,6 +21,7 @@ import { setCurrentDocument } from "@/store/slices/document-slice";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
+import DocumentStats from "@/components/document/discover/document-stats";
 
 export default function DocumentDetailPage() {
   const { t } = useTranslation();
@@ -33,6 +34,12 @@ export default function DocumentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [documentData, setDocumentData] = useState<DocumentInformation | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
+
+  const [statistics, setStatistics] = useState<{
+    viewCount: number;
+    downloadCount: number;
+    totalInteractions: number;
+  } | null>(null);
 
   const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
@@ -50,7 +57,7 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.success"),
           description: t("document.favorite.removeSuccess"),
-          variant: "success"
+          variant: "success",
         });
       } else {
         await documentService.favoriteDocument(documentId);
@@ -58,14 +65,14 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.success"),
           description: t("document.favorite.addSuccess"),
-          variant: "success"
+          variant: "success",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.favorite.error"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -85,19 +92,22 @@ export default function DocumentDetailPage() {
       if (!documentId) return;
 
       try {
-        const [docResponse, favoriteResponse] = await Promise.all([
-          documentService.getDocumentDetails(documentId, true),
-          documentService.isDocumentFavorited(documentId)
-        ]);
-
+        const docResponse = await documentService.getDocumentDetails(documentId, true);
         setDocumentData(docResponse.data);
-        setIsFavorited(favoriteResponse.data);
         dispatch(setCurrentDocument(docResponse.data));
-      } catch (error) {
+
+        documentService.isDocumentFavorited(documentId).then((favoriteResponse) => {
+          setIsFavorited(favoriteResponse.data);
+        });
+
+        documentService.getDocumentStatistics(documentId).then((statisticsResponse) => {
+          setStatistics(statisticsResponse.data);
+        });
+      } catch (_error) {
         toast({
           title: t("common.error"),
           description: t("document.detail.fetchError"),
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -157,15 +167,10 @@ export default function DocumentDetailPage() {
             <CardContent className="p-4 lg:p-6 space-y-6">
               {/* Document Actions */}
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={handleFavorite}
-                >
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleFavorite}>
                   {isFavorited ? (
                     <>
-                      <MdOutlineFavorite className="h-4 w-4 fill-current" />
+                      <MdOutlineFavorite className="h-4 w-4 fill-red-500" />
                       {t("document.actions.favorited")}
                     </>
                   ) : (
@@ -187,6 +192,11 @@ export default function DocumentDetailPage() {
 
               {/* Document Metadata */}
               <div className="space-y-6">
+                {/* Document Statistics */}
+                {statistics && (
+                  <DocumentStats viewCount={statistics.viewCount} downloadCount={statistics.downloadCount} />
+                )}
+
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <User className="h-4 w-4" />
@@ -195,6 +205,10 @@ export default function DocumentDetailPage() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     {formatDate(documentData.createdAt.toString())}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Languages className="h-4 w-4" />
+                    {documentData.language}
                   </div>
                 </div>
 
@@ -215,12 +229,16 @@ export default function DocumentDetailPage() {
                       </p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>{t("document.detail.fields.courseCode")}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {getMasterDataTranslation(documentData.courseCode, MasterDataType.COURSE_CODE, { courseCodes })}
-                      </p>
-                    </div>
+                    {documentData.courseCode && (
+                      <div className="space-y-2">
+                        <Label>{t("document.detail.fields.courseCode")}</Label>
+                        <p className="text-sm text-muted-foreground">
+                          {getMasterDataTranslation(documentData.courseCode, MasterDataType.COURSE_CODE, {
+                            courseCodes,
+                          })}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.level")}</Label>
@@ -233,7 +251,9 @@ export default function DocumentDetailPage() {
                   <div className="space-y-2">
                     <Label>{t("document.detail.fields.category")}</Label>
                     <p className="text-sm text-muted-foreground">
-                      {getMasterDataTranslation(documentData.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
+                      {getMasterDataTranslation(documentData.category, MasterDataType.DOCUMENT_CATEGORY, {
+                        categories,
+                      })}
                     </p>
                   </div>
 
@@ -271,10 +291,7 @@ export default function DocumentDetailPage() {
         </div>
 
         {/* Related Documents Section */}
-        <RelatedDocuments
-          documentId={documentId}
-          onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)}
-        />
+        <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
 
         {/* Comments Section */}
         <Card>

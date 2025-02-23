@@ -432,6 +432,10 @@
       "status": {
         "noMatches": "No matches found"
       },
+      "stats": {
+        "views": "Views",
+        "downloads": "Downloads"
+      },
       "empty": "Not found document",
       "pagination": {
         "previous": "Previous",
