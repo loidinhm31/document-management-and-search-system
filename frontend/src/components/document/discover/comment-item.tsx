@@ -1,4 +1,5 @@
 import { Check, Edit2, MoreHorizontal, Reply, Trash, X } from "lucide-react";
+import moment from "moment-timezone";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,7 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -21,7 +22,7 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit })
   const [editedContent, setEditedContent] = useState(comment.content);
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleString();
+    return moment(date).format("DD/MM/YYYY, h:mm a");
   };
 
   const handleEditSubmit = async () => {
@@ -33,13 +34,13 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit })
       toast({
         title: t("common.success"),
         description: t("document.comments.editSuccess"),
-        variant: "success"
+        variant: "success",
       });
     } catch (error) {
       toast({
         title: t("common.error"),
         description: t("document.comments.editError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -59,14 +60,8 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit })
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <span className="font-medium">{comment.username}</span>
-            <span className="text-sm text-muted-foreground">
-                {formatDate(comment.createdAt)}
-              </span>
-            {comment.edited && (
-              <span className="text-xs text-muted-foreground">
-                  ({t("document.comments.edited")})
-                </span>
-            )}
+            <span className="text-sm text-muted-foreground">{formatDate(comment.createdAt)}</span>
+            {comment.edited && <span className="text-xs text-muted-foreground">({t("document.comments.edited")})</span>}
           </div>
 
           {isEditing ? (
@@ -86,11 +81,7 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit })
                   <Check className="mr-2 h-4 w-4" />
                   {t("document.comments.save")}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancelEdit}
-                >
+                <Button variant="outline" size="sm" onClick={handleCancelEdit}>
                   <X className="mr-2 h-4 w-4" />
                   {t("document.comments.cancel")}
                 </Button>
@@ -102,12 +93,7 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit })
 
           {!isEditing && (
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8"
-                onClick={() => onReply(comment)}
-              >
+              <Button variant="ghost" size="sm" className="h-8" onClick={() => onReply(comment)}>
                 <Reply className="mr-2 h-4 w-4" />
                 {t("document.comments.reply")}
               </Button>

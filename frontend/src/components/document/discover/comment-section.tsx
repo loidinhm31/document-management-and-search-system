@@ -102,6 +102,12 @@ export const CommentSection = ({ documentId }) => {
         variant: "success"
       });
     } catch (error) {
+      console.info(error);
+      if (error.status === 400) {
+        if (error.response?.data?.message === "PARENT_COMMENT_DELETED" && replyTo) {
+          setReplyTo(null);
+        }
+      }
       toast({
         title: t("common.error"),
         description: t("document.comments.createError"),
@@ -140,7 +146,13 @@ export const CommentSection = ({ documentId }) => {
         description: t("document.comments.deleteSuccess"),
         variant: "success"
       });
+
+      // Clear reply (if any)
+      if (replyTo) {
+        setReplyTo(null);
+      }
     } catch (error) {
+      console.info(error);
       toast({
         title: t("common.error"),
         description: t("document.comments.deleteError"),
