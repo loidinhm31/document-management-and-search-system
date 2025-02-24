@@ -16,6 +16,8 @@ public class CommentResponse {
     private Instant createdAt;
     private Instant updatedAt;
     private boolean edited;
+    private boolean reportedByUser;
+    private boolean reportResolved;
     private List<CommentResponse> replies;
 
 }

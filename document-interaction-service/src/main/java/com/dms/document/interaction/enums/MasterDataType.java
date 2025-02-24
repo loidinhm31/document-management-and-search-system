@@ -5,5 +5,6 @@ public enum MasterDataType {
     COURSE_CODE,
     COURSE_LEVEL,
     DOCUMENT_CATEGORY,
-    REPORT_TYPE
+    REPORT_DOCUMENT_TYPE,
+    REPORT_COMMENT_TYPE
 }

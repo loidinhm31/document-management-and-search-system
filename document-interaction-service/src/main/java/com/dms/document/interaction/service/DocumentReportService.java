@@ -6,6 +6,7 @@ import com.dms.document.interaction.enums.AppRole;
 import com.dms.document.interaction.enums.EventType;
 import com.dms.document.interaction.enums.MasterDataType;
 import com.dms.document.interaction.enums.ReportStatus;
+import com.dms.document.interaction.mapper.ReportTypeMapper;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentReport;
 import com.dms.document.interaction.model.MasterData;
@@ -35,6 +36,7 @@ public class DocumentReportService {
     private final MasterDataRepository masterDataRepository;
     private final UserClient userClient;
     private final PublishEventService publishEventService;
+    private final ReportTypeMapper reportTypeMapper;
 
     @Transactional
     public ReportResponse createReport(String documentId, ReportRequest request, String username) {
@@ -45,7 +47,7 @@ public class DocumentReportService {
                 .orElseThrow(() -> new IllegalArgumentException("Document not found or not accessible"));
 
         // Verify report type exists in master data
-        MasterData reportType = masterDataRepository.findByTypeAndCode(MasterDataType.REPORT_TYPE, request.reportTypeCode())
+        MasterData reportType = masterDataRepository.findByTypeAndCode(MasterDataType.REPORT_DOCUMENT_TYPE, request.reportTypeCode())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid report type"));
 
         // Check if user has already reported this document
@@ -60,10 +62,10 @@ public class DocumentReportService {
         report.setReportTypeCode(reportType.getCode());
         report.setDescription(request.description());
         report.setStatus(ReportStatus.PENDING);
-
+        report.setCreatedAt(Instant.now());
 
         DocumentReport savedReport = documentReportRepository.save(report);
-        return mapToResponse(savedReport, reportType);
+        return reportTypeMapper.mapToResponse(savedReport, reportType);
     }
 
     @Transactional
@@ -109,18 +111,17 @@ public class DocumentReportService {
         return documentReportRepository.findByDocumentIdAndUserId(documentId, userResponse.userId())
                 .map(report -> {
                     MasterData reportType = masterDataRepository.findByTypeAndCode(
-                            MasterDataType.REPORT_TYPE,
+                            MasterDataType.REPORT_DOCUMENT_TYPE,
                             report.getReportTypeCode()
                     ).orElseThrow(() -> new IllegalStateException("Report type not found"));
-                    return mapToResponse(report, reportType);
+                    return reportTypeMapper.mapToResponse(report, reportType);
                 });
     }
 
-    @Transactional(readOnly = true)
     public List<ReportTypeResponse> getReportTypes() {
-        return masterDataRepository.findByTypeAndIsActive(MasterDataType.REPORT_TYPE, true)
+        return masterDataRepository.findByTypeAndIsActive(MasterDataType.REPORT_DOCUMENT_TYPE, true)
                 .stream()
-                .map(this::mapToReportTypeResponse)
+                .map(reportTypeMapper::mapToReportTypeResponse)
                 .collect(Collectors.toList());
     }
 
@@ -135,32 +136,5 @@ public class DocumentReportService {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         return response.getBody();
-    }
-
-    private ReportResponse mapToResponse(DocumentReport report, MasterData reportType) {
-        TranslationDTO translation = new TranslationDTO();
-        translation.setEn(reportType.getTranslations().getEn());
-        translation.setVi(reportType.getTranslations().getVi());
-
-        return new ReportResponse(
-                report.getId(),
-                report.getDocumentId(),
-                report.getReportTypeCode(),
-                translation,
-                report.getDescription(),
-                report.getCreatedAt()
-        );
-    }
-
-    private ReportTypeResponse mapToReportTypeResponse(MasterData masterData) {
-        TranslationDTO translation = new TranslationDTO();
-        translation.setEn(masterData.getTranslations().getEn());
-        translation.setVi(masterData.getTranslations().getVi());
-
-        return new ReportTypeResponse(
-                masterData.getCode(),
-                translation,
-                masterData.getDescription()
-        );
     }
 }

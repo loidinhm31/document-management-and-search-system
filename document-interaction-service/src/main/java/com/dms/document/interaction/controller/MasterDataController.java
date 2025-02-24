@@ -5,6 +5,7 @@ import com.dms.document.interaction.dto.MasterDataRequest;
 import com.dms.document.interaction.dto.MasterDataResponse;
 import com.dms.document.interaction.dto.ReportTypeResponse;
 import com.dms.document.interaction.enums.MasterDataType;
+import com.dms.document.interaction.service.CommentReportService;
 import com.dms.document.interaction.service.DocumentHistoryService;
 import com.dms.document.interaction.service.DocumentReportService;
 import com.dms.document.interaction.service.MasterDataService;
@@ -23,6 +24,7 @@ import java.util.List;
 public class MasterDataController {
     private final MasterDataService masterDataService;
     private final DocumentReportService documentReportService;
+    private final CommentReportService commentReportService;
 
     @Operation(summary = "Get master data by type",
             description = "Retrieve all master data entries of specified type")
@@ -84,10 +86,17 @@ public class MasterDataController {
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Get available report types",
-            description = "Get list of available report types with translations")
-    @GetMapping("/reports/types")
-    public ResponseEntity<List<ReportTypeResponse>> getReportTypes() {
+    @Operation(summary = "Get available document report types",
+            description = "Get list of available document report types with translations")
+    @GetMapping("/documents/reports/types")
+    public ResponseEntity<List<ReportTypeResponse>> getDocumentReportTypes() {
         return ResponseEntity.ok(documentReportService.getReportTypes());
+    }
+
+    @Operation(summary = "Get available comment report types",
+            description = "Get list of available comment report types with translations")
+    @GetMapping("/comments/reports/types")
+    public ResponseEntity<List<ReportTypeResponse>> getCommentReportTypes() {
+        return ResponseEntity.ok(commentReportService.getReportTypes());
     }
 }

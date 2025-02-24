@@ -1,18 +1,23 @@
 package com.dms.document.interaction.controller;
 
 import com.dms.document.interaction.constant.ApiConstant;
-import com.dms.document.interaction.dto.CommentRequest;
-import com.dms.document.interaction.dto.CommentResponse;
+import com.dms.document.interaction.dto.*;
+import com.dms.document.interaction.service.CommentReportService;
 import com.dms.document.interaction.service.DocumentCommentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping(ApiConstant.API_VERSION + ApiConstant.DOCUMENT_BASE_PATH + ApiConstant.DOCUMENT_ID_PATH + "/comments")
@@ -20,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Document Comments", description = "APIs for managing document comments")
 public class DocumentCommentController {
     private final DocumentCommentService commentService;
+    private final CommentReportService commentReportService;
 
     @Operation(summary = "Create a new comment",
             description = "Add a new comment to a document")
@@ -61,5 +67,28 @@ public class DocumentCommentController {
             @AuthenticationPrincipal Jwt jwt) {
         commentService.deleteComment(id, commentId, jwt.getSubject());
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Report a comment violation",
+            description = "Submit a report for comment violation")
+    @PostMapping("{commentId}")
+    public ResponseEntity<CommentReportResponse> reportComment(
+            @PathVariable String id,
+            @PathVariable Long commentId,
+            @RequestBody CommentReportRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(commentReportService.createReport(id, commentId, request, jwt.getSubject()));
+    }
+
+    @Operation(summary = "Get user's report for comment",
+            description = "Get the current user's report for a specific comment if exists")
+    @GetMapping("{commentId}/user")
+    public ResponseEntity<CommentReportResponse> getUserReport(
+            @PathVariable String id,
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal Jwt jwt) {
+        return commentReportService.getUserReport(id, commentId, jwt.getSubject())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

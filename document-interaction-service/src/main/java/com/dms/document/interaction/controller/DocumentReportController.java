@@ -3,18 +3,14 @@ package com.dms.document.interaction.controller;
 import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.ReportRequest;
 import com.dms.document.interaction.dto.ReportResponse;
-import com.dms.document.interaction.enums.ReportStatus;
 import com.dms.document.interaction.service.DocumentReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping(ApiConstant.API_VERSION + ApiConstant.DOCUMENT_BASE_PATH + ApiConstant.DOCUMENT_ID_PATH + "/reports")
@@ -43,19 +39,5 @@ public class DocumentReportController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    @Operation(summary = "Update report status",
-            description = "Update status of document violation report (Admin only)")
-    @PutMapping("/status")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<Void> updateReportStatus(
-            @PathVariable String id,
-            @RequestParam ReportStatus status,
-            @RequestParam(required = false) String resolutionNote,
-            @AuthenticationPrincipal Jwt jwt) {
-        documentReportService.updateReportStatus(id, status, jwt.getSubject());
-        return ResponseEntity.ok().build();
-    }
-
 
 }

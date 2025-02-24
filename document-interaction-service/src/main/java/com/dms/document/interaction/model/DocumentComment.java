@@ -52,4 +52,7 @@ public class DocumentComment {
 
     @Transient
     private List<DocumentComment> replies = new ArrayList<>();
+
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CommentReport> reports;
 }
