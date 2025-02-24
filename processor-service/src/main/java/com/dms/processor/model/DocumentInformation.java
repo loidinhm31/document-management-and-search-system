@@ -2,6 +2,7 @@ package com.dms.processor.model;
 
 import com.dms.processor.enums.DocumentStatus;
 import com.dms.processor.enums.DocumentType;
+import com.dms.processor.enums.ReportStatus;
 import com.dms.processor.enums.SharingType;
 import lombok.Builder;
 import lombok.Data;
@@ -108,6 +109,9 @@ public class DocumentInformation {
 
     @Field("updated_by")
     private String updatedBy;
+
+    @Field("report_status")
+    private ReportStatus reportStatus;
 
     public Optional<DocumentVersion> getLatestVersion() {
         if (CollectionUtils.isEmpty(versions)) {

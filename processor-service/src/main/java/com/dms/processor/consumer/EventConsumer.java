@@ -35,6 +35,7 @@ public class EventConsumer {
                 case UPDATE_EVENT, UPDATE_EVENT_WITH_FILE -> handleUpdateEvent(syncEventRequest, eventType);
                 case SYNC_EVENT -> handleSyncEvent(syncEventRequest, eventType);
                 case REVERT_EVENT -> handleRevertEvent(syncEventRequest, eventType);
+                case REPORT_PROCESS_EVENT -> handleReportStatus(syncEventRequest);
                 default -> log.warn("Unhandled event type: {}", eventType);
             }
         } catch (IllegalArgumentException e) {
@@ -66,6 +67,11 @@ public class EventConsumer {
     private void handleSyncEvent(SyncEventRequest request, EventType eventType) {
         log.info("Processing sync event for document: {}", request.getDocumentId());
         findAndProcessDocument(request, eventType);
+    }
+
+    private void handleReportStatus(SyncEventRequest request) {
+        log.info("Processing report resolved event for document: {}", request.getDocumentId());
+        documentProcessService.handleReportStatus(request.getDocumentId());
     }
 
     private void findAndProcessDocument(SyncEventRequest request, EventType eventType) {

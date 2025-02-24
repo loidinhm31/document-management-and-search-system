@@ -3,7 +3,10 @@ package com.dms.document.interaction.controller;
 import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.MasterDataRequest;
 import com.dms.document.interaction.dto.MasterDataResponse;
+import com.dms.document.interaction.dto.ReportTypeResponse;
 import com.dms.document.interaction.enums.MasterDataType;
+import com.dms.document.interaction.service.DocumentHistoryService;
+import com.dms.document.interaction.service.DocumentReportService;
 import com.dms.document.interaction.service.MasterDataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +22,7 @@ import java.util.List;
 @Tag(name = "Master Data", description = "APIs for managing system master data like majors, course codes, levels, and categories")
 public class MasterDataController {
     private final MasterDataService masterDataService;
+    private final DocumentReportService documentReportService;
 
     @Operation(summary = "Get master data by type",
             description = "Retrieve all master data entries of specified type")
@@ -78,5 +82,12 @@ public class MasterDataController {
     public ResponseEntity<Void> delete(@PathVariable String id) {
         masterDataService.deleteById(id);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Get available report types",
+            description = "Get list of available report types with translations")
+    @GetMapping("/reports/types")
+    public ResponseEntity<List<ReportTypeResponse>> getReportTypes() {
+        return ResponseEntity.ok(documentReportService.getReportTypes());
     }
 }

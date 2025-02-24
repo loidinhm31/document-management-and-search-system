@@ -1,15 +1,16 @@
 package com.dms.processor.service;
 
 import com.dms.processor.dto.DocumentExtractContent;
-import com.dms.processor.elasticsearch.DocumentIndex;
-import com.dms.processor.elasticsearch.repository.DocumentIndexRepository;
 import com.dms.processor.enums.DocumentStatus;
 import com.dms.processor.enums.EventType;
+import com.dms.processor.enums.ReportStatus;
 import com.dms.processor.exception.DocumentProcessingException;
 import com.dms.processor.mapper.DocumentIndexMapper;
 import com.dms.processor.model.DocumentContent;
 import com.dms.processor.model.DocumentInformation;
 import com.dms.processor.model.DocumentVersion;
+import com.dms.processor.opensearch.DocumentIndex;
+import com.dms.processor.opensearch.repository.DocumentIndexRepository;
 import com.dms.processor.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Date;
 import java.util.Objects;
 
 @Service
@@ -48,7 +48,7 @@ public class DocumentProcessService {
 
             // Download file to temp location if needed
             if (eventType == EventType.SYNC_EVENT ||
-                    eventType == EventType.UPDATE_EVENT_WITH_FILE) {
+                eventType == EventType.UPDATE_EVENT_WITH_FILE) {
                 tempFile = s3Service.downloadToTemp(document.getFilePath());
                 processFullDocument(document, tempFile);
             } else if (eventType == EventType.UPDATE_EVENT) {
@@ -68,6 +68,24 @@ public class DocumentProcessService {
         }
     }
 
+    public void handleReportStatus(String documentId) {
+        try {
+            DocumentInformation document = documentRepository.findById(documentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Document not found"));
+
+            indexDocument(document);
+
+            if (document.getReportStatus() == ReportStatus.RESOLVED) {
+                // TODO Send mail to all favorites and reporter
+            } else if (document.getReportStatus() == ReportStatus.REMOVED) {
+                // TODO Send mail to all favorites
+            }
+        } catch (Exception e) {
+            log.error("Error handling report status for document: {}", documentId, e);
+            throw new DocumentProcessingException("Failed to process report status", e);
+        }
+    }
+
     private void processRevertContent(DocumentInformation document, Integer revertToVersionNumber) {
         // Get the document content for the version we want to revert to
         DocumentContent documentContent = documentContentService.getVersionContent(
@@ -75,7 +93,7 @@ public class DocumentProcessService {
                 revertToVersionNumber
         ).orElseThrow(() -> new DocumentProcessingException(
                 "Content not found for document: " + document.getId() +
-                        " version: " + document.getCurrentVersion()
+                " version: " + document.getCurrentVersion()
         ));
 
         // Get current saved version

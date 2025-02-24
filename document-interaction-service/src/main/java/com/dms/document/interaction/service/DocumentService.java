@@ -136,7 +136,7 @@ public class DocumentService {
                         .userId(userResponse.userId().toString())
                         .documentId(savedDocument.getId())
                         .subject(EventType.SYNC_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
+                        .triggerAt(Instant.now())
                         .build()
         ));
 
@@ -312,7 +312,7 @@ public class DocumentService {
                     .userId(userResponse.userId().toString())
                     .documentId(documentId)
                     .subject(EventType.UPDATE_EVENT.name())
-                    .triggerAt(LocalDateTime.now())
+                    .triggerAt(Instant.now())
                     .build());
         });
 
@@ -399,7 +399,7 @@ public class DocumentService {
                             .userId(document.getUserId())
                             .documentId(documentId)
                             .subject(EventType.UPDATE_EVENT_WITH_FILE.name())
-                            .triggerAt(LocalDateTime.now())
+                            .triggerAt(Instant.now())
                             .build());
 
             // Notify about new file version
@@ -447,7 +447,7 @@ public class DocumentService {
                             .userId(userResponse.userId().toString())
                             .documentId(documentId)
                             .subject(EventType.DELETE_EVENT.name())
-                            .triggerAt(LocalDateTime.now())
+                            .triggerAt(Instant.now())
                             .build()
             );
         });
@@ -572,7 +572,7 @@ public class DocumentService {
                             .documentId(documentId)
                             .versionNumber(versionToRevert.getVersionNumber())
                             .subject(EventType.REVERT_EVENT.name())
-                            .triggerAt(LocalDateTime.now())
+                            .triggerAt(Instant.now())
                             .build()
             );
 

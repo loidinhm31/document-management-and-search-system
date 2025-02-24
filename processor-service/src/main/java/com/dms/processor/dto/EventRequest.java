@@ -1,11 +1,10 @@
 package com.dms.processor.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @NoArgsConstructor
 @SuperBuilder
@@ -17,6 +16,5 @@ public class EventRequest {
 
     private String subject;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'ZZZZZ'")
-    private LocalDateTime triggerAt;
+    private Instant triggerAt;
 }

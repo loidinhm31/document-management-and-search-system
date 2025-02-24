@@ -4,16 +4,16 @@ import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.*;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentVersion;
-import com.dms.document.interaction.service.DocumentFavoriteService;
 import com.dms.document.interaction.service.DocumentHistoryService;
+import com.dms.document.interaction.service.DocumentReportService;
 import com.dms.document.interaction.service.DocumentService;
 import com.dms.document.interaction.service.DocumentShareService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.util.DigestUtils;
@@ -22,7 +22,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +34,7 @@ public class DocumentController {
     private final DocumentService documentService;
     private final DocumentShareService documentShareService;
     private final DocumentHistoryService documentHistoryService;
+    private final DocumentReportService documentReportService;
 
     @Operation(summary = "Upload a new document",
             description = "Upload a document file with metadata like summary, course code, major, etc.")
@@ -221,6 +221,14 @@ public class DocumentController {
     @GetMapping("/{id}/statistics")
     public ResponseEntity<DocumentStatisticsResponse> getDocumentStatistics(@PathVariable String id) {
         return ResponseEntity.ok(documentHistoryService.getDocumentStatistics(id));
+    }
+
+    @Operation(summary = "Get all reports for document",
+            description = "Get all violation reports for a specific document (Admin only)")
+    @GetMapping("/reports")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<Page<ReportResponse>> getAllDocumentReports() {
+        return ResponseEntity.ok(documentReportService.getAllDocumentReports());
     }
 
     private String generateETag(DocumentInformation document) {

@@ -93,7 +93,7 @@ public class DocumentShareService {
                             .userId(doc.getUserId())
                             .documentId(documentId)
                             .subject(EventType.UPDATE_EVENT.name())
-                            .triggerAt(LocalDateTime.now())
+                            .triggerAt(Instant.now())
                             .build());
 
             // Record sharing interaction

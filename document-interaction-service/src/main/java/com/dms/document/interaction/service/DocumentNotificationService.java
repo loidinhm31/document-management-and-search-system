@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
@@ -101,7 +102,7 @@ public class DocumentNotificationService {
                 .notificationType(type)
                 .triggerUsername(triggerUsername)
                 .versionNumber(versionNumber)
-                .triggerAt(LocalDateTime.now())
+                .triggerAt(Instant.now())
                 .subject(EventType.FAVORITE_NOTIFICATION.name())
                 .build();
 

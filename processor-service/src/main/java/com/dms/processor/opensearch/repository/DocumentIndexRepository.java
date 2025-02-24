@@ -1,6 +1,6 @@
-package com.dms.processor.elasticsearch.repository;
+package com.dms.processor.opensearch.repository;
 
-import com.dms.processor.elasticsearch.DocumentIndex;
+import com.dms.processor.opensearch.DocumentIndex;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.action.delete.DeleteRequest;

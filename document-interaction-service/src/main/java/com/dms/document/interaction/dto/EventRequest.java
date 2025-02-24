@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @NoArgsConstructor
@@ -17,6 +18,5 @@ public class EventRequest {
 
     private String subject;
 
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'ZZZZZ'")
-    private LocalDateTime triggerAt;
+    private Instant triggerAt;
 }
