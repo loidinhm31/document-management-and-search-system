@@ -247,6 +247,7 @@ export const CommentSection = ({ documentId }) => {
                 onDelete={handleDeleteComment}
                 onReply={setReplyTo}
                 onEdit={handleEditComment}
+                documentId={documentId}
               />
             ))
           )}

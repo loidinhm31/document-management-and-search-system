@@ -20,12 +20,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { documentReportService } from "@/services/document-report.service";
-import { CreateReportRequest, DocumentReport, ReportType } from "@/types/document-report";
+import { ReportType } from "@/types/document-report";
 
-interface ReportDialogProps {
+interface ReportCommentDialogProps {
   documentId: string;
-  documentName: string;
+  commentId: number;
+  commentAuthor: string;
   iconOnly?: boolean;
+  isReported?: boolean;
+  onReportSuccess?: () => void;
 }
 
 const formSchema = z.object({
@@ -35,45 +38,50 @@ const formSchema = z.object({
   description: z.string().optional(),
 });
 
-export function ReportDialog({ documentId, documentName, iconOnly = false }: ReportDialogProps) {
+export function ReportCommentDialog({
+                                      documentId,
+                                      commentId,
+                                      commentAuthor,
+                                      iconOnly = false,
+                                      isReported = false,
+                                      onReportSuccess,
+                                    }: ReportCommentDialogProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
-  const [existingReport, setExistingReport] = useState<DocumentReport | null>(null);
+  const [existingReport, setExistingReport] = useState<any | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
 
   useEffect(() => {
-    checkExistingReport();
-  }, []);
-
-  useEffect(() => {
     if (open) {
       loadReportTypes();
+
+      checkReportStatus();
     }
   }, [open]);
 
   const loadReportTypes = async () => {
     try {
-      const response = await documentReportService.getReportTypes();
+      const response = await documentReportService.getCommentReportTypes();
       setReportTypes(response.data);
     } catch (error) {
       console.error("Error loading report types:", error);
     }
   };
 
-  const checkExistingReport = async () => {
+  const checkReportStatus = async () => {
     try {
-      const response = await documentReportService.getUserReport(documentId);
+      const response = await documentReportService.getCommentUserReport(documentId, commentId);
       setExistingReport(response.data);
     } catch (error) {
       if (error.response?.status !== 404) {
-        console.error("Error checking existing report:", error);
+        console.error("Error checking report status:", error);
       }
     }
   };
@@ -81,24 +89,29 @@ export function ReportDialog({ documentId, documentName, iconOnly = false }: Rep
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
-      const request: CreateReportRequest = {
+      const request = {
         reportTypeCode: values.reportTypeCode,
         description: values.description,
       };
 
-      const response = await documentReportService.createReport(documentId, request);
+      const response = await documentReportService.createCommentReport(documentId, commentId, request);
       setExistingReport(response.data);
 
       toast({
         title: t("common.success"),
-        description: t("document.report.createSuccess"),
+        description: t("comments.report.createSuccess"),
         variant: "success",
       });
+
+      if (onReportSuccess) {
+        onReportSuccess();
+      }
+
       setOpen(false);
     } catch (error) {
       toast({
         title: t("common.error"),
-        description: t("document.report.createError"),
+        description: t("comments.report.createError"),
         variant: "destructive",
       });
     } finally {
@@ -110,37 +123,39 @@ export function ReportDialog({ documentId, documentName, iconOnly = false }: Rep
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="flex items-center gap-2 px-4">
-            <Flag className={existingReport ? "h-4 w-4 text-orange-400 fill-orange-400" : "h-4 w-4"} />
-            {!iconOnly && (existingReport ? t("document.actions.reported") : t("document.actions.report"))}
+          <Button variant="ghost" size="sm" className={isReported ? "text-orange-500" : ""}>
+            <Flag className={isReported ? "h-4 w-4 text-orange-400 fill-orange-400" : "h-4 w-4"} />
+            {!iconOnly && (isReported ? t("document.comments.actions.reported") : t("document.comments.actions.report"))}
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {existingReport ? t("document.report.alreadyReported.title") : t("document.report.title")}
+              {existingReport  ? t("document.comments.report.alreadyReported.title") : t("document.comments.report.title")}
             </DialogTitle>
-            <DialogDescription>{documentName}</DialogDescription>
+            <DialogDescription>
+              {t("document.comments.report.description", { author: commentAuthor })}
+            </DialogDescription>
           </DialogHeader>
 
           {existingReport ? (
             <div className="grid gap-4 mt-2">
               <div className="grid gap-2">
-                <h4 className="font-medium">{t("document.report.type")}</h4>
+                <h4 className="font-medium">{t("document.comments.report.type")}</h4>
                 <p className="text-sm text-muted-foreground">{existingReport.reportTypeTranslation[i18n.language]}</p>
               </div>
 
               {existingReport.description && (
                 <div className="grid gap-2">
-                  <h4 className="font-medium">{t("document.report.reason", { name: documentName })}</h4>
+                  <h4 className="font-medium">{t("document.comments.report.reason")}</h4>
                   <p className="text-sm text-muted-foreground">{existingReport.description}</p>
                 </div>
               )}
 
               <div className="grid gap-2">
-                <h4 className="font-medium">{t("document.report.statusLabel")}</h4>
+                <h4 className="font-medium">{t("document.comments.report.statusLabel")}</h4>
                 <p className="text-sm text-muted-foreground">
-                  {existingReport.resolved ? t("document.report.status.resolved") : t("document.report.status.pending")}
+                  {existingReport.resolved ? t("document.comments.report.status.resolved") : t("document.comments.report.status.pending")}
                 </p>
               </div>
             </div>
@@ -152,11 +167,11 @@ export function ReportDialog({ documentId, documentName, iconOnly = false }: Rep
                   name="reportTypeCode"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("document.report.form.type.label")}</FormLabel>
+                      <FormLabel>{t("document.comments.report.form.type.label")}</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={t("document.report.form.type.placeholder")} />
+                            <SelectValue placeholder={t("document.comments.report.form.type.placeholder")} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -167,7 +182,7 @@ export function ReportDialog({ documentId, documentName, iconOnly = false }: Rep
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription>{t("document.report.form.type.description")}</FormDescription>
+                      <FormDescription>{t("document.comments.report.form.type.description")}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -178,15 +193,15 @@ export function ReportDialog({ documentId, documentName, iconOnly = false }: Rep
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("document.report.form.description.label")}</FormLabel>
+                      <FormLabel>{t("document.comments.report.form.description.label")}</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder={t("document.report.form.description.placeholder")}
+                          placeholder={t("document.comments.report.form.description.placeholder")}
                           className="resize-none"
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>{t("document.report.form.description.description")}</FormDescription>
+                      <FormDescription>{t("document.comments.report.form.description.description")}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -198,7 +213,7 @@ export function ReportDialog({ documentId, documentName, iconOnly = false }: Rep
                   </Button>
                   <Button type="submit" variant="destructive" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {t("document.report.submit")}
+                    {t("document.comments.report.submit")}
                   </Button>
                 </DialogFooter>
               </form>

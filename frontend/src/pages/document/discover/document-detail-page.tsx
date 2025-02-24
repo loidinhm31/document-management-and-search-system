@@ -7,7 +7,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { CommentSection } from "@/components/document/discover/comment-section";
 import DocumentStats from "@/components/document/discover/document-stats";
 import { RelatedDocuments } from "@/components/document/discover/related-document";
-import { ReportDialog } from "@/components/document/discover/report-dialog";
+import { ReportDocumentDialog } from "@/components/document/discover/report-document-dialog";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
 import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
@@ -199,7 +199,7 @@ export default function DocumentDetailPage() {
                 )}
 
                 {currentUser?.userId !== documentData.userId && !currentUser.roles.includes("ROLE_ADMIN") && (
-                  <ReportDialog documentId={documentId} documentName={documentData.filename} />
+                  <ReportDocumentDialog documentId={documentId} documentName={documentData.filename} />
                 )}
               </div>
 

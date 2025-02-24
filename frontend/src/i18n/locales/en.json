@@ -739,7 +739,7 @@
     },
     "comments": {
       "title": "Comments",
-      "description": "Join the discussion about this document",
+      "description": "Join the discussion about this item",
       "placeholder": "Write a comment...",
       "submit": "Post Comment",
       "reply": "Reply",
@@ -760,7 +760,43 @@
       "editSuccess": "Comment updated successfully",
       "editError": "Failed to update comment",
       "save": "Save",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "actions": {
+        "report": "Report",
+        "reported": "Reported"
+      },
+      "report": {
+        "title": "Report Comment Violation",
+        "description": "Report comment by @{{author}} for violation",
+        "reason": "Reason for reporting",
+        "type": "Report Type",
+        "statusLabel": "Status",
+        "submit": "Submit Report",
+        "removedContent": "This comment has been removed due to a violation of our community guidelines.",
+        "alreadyReported": {
+          "title": "Already Reported",
+          "description": "You have already reported this comment. Here are the details of your report:"
+        },
+        "status": {
+          "resolved": "Resolved",
+          "pending": "Pending Review",
+          "removed": "Removed report"
+        },
+        "form": {
+          "type": {
+            "label": "Violation Type",
+            "placeholder": "Select violation type",
+            "description": "Select the type of violation you want to report"
+          },
+          "description": {
+            "label": "Additional Details",
+            "placeholder": "Provide more details about the violation...",
+            "description": "(Optional) Provide any additional information about the violation"
+          }
+        },
+        "createSuccess": "Report submitted successfully",
+        "createError": "Failed to submit report"
+      }
     },
     "report": {
       "title": "Report Document Violation",
