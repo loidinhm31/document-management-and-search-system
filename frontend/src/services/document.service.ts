@@ -103,7 +103,7 @@ class DocumentService extends BaseService {
 
   getShareableUsersByIds(userIds: string[]) {
     return this.handleApiResponse<UserSearchResponse[]>(
-      axiosInstance.post(`/document-interaction/api/v1/document/sharing/users/details`, userIds),
+      axiosInstance.post(`/document-interaction/api/v1/documents/sharing/users/details`, userIds),
     );
   }
 

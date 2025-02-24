@@ -507,7 +507,9 @@
       "delete": "Delete",
       "share": "Share",
       "favorite": "Favorite",
-      "favorited": "Favorited"
+      "favorited": "Favorited",
+      "report": "Report",
+      "reported": "Reported"
     },
     "viewer": {
       "loading": "Loading document...",
@@ -759,6 +761,36 @@
       "editError": "Failed to update comment",
       "save": "Save",
       "cancel": "Cancel"
+    },
+    "report": {
+      "title": "Report Document Violation",
+      "reason": "Report {{name}} for reason",
+      "type": "Report Type",
+      "statusLabel": "Status",
+      "submit": "Submit Report",
+      "alreadyReported": {
+        "title": "Already Reported",
+        "description": "You have already reported this document. Here are the details of your report:"
+      },
+      "status": {
+        "resolved": "Resolved",
+        "pending": "Pending Review",
+        "removed": "Removed report"
+      },
+      "form": {
+        "type": {
+          "label": "Violation Type",
+          "placeholder": "Select violation type",
+          "description": "Select the type of violation you want to report"
+        },
+        "description": {
+          "label": "Additional Details",
+          "placeholder": "Provide more details about the violation...",
+          "description": "(Optional) Provide any additional information about the violation"
+        }
+      },
+      "createSuccess": "Report submitted successfully",
+      "createError": "Failed to submit report"
     }
   }
 }
