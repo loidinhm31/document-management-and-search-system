@@ -254,7 +254,7 @@ export const CommentSection = ({ documentId }) => {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {totalPages > 1 ? (
           <div className="flex justify-center gap-2 mt-4">
             <Button variant="outline" onClick={handlePreviousPage} disabled={currentPage === 0 || loading}>
               {t("document.comments.previous")}
@@ -263,7 +263,7 @@ export const CommentSection = ({ documentId }) => {
               {t("document.comments.next")}
             </Button>
           </div>
-        )}
+        ) : (<p className="flex justify-center">{t("document.comments.empty")}</p>)}
       </div>
     </div>
   );

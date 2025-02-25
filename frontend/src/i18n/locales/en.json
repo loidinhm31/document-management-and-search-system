@@ -750,6 +750,7 @@
       "cancelReply": "Cancel Reply",
       "previous": "Previous",
       "next": "Next",
+      "empty": "Not found comment",
       "createSuccess": "Comment posted successfully",
       "createError": "Failed to post comment",
       "updateSuccess": "Comment updated successfully",
