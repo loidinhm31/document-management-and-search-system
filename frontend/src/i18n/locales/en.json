@@ -509,7 +509,9 @@
       "favorite": "Favorite",
       "favorited": "Favorited",
       "report": "Report",
-      "reported": "Reported"
+      "reported": "Reported",
+      "recommend": "Recommend",
+      "recommended": "Recommended"
     },
     "viewer": {
       "loading": "Loading document...",
@@ -829,6 +831,11 @@
       },
       "createSuccess": "Report submitted successfully",
       "createError": "Failed to submit report"
+    },
+    "recommendation": {
+      "addSuccess": "Document marked as recommended successfully",
+      "removeSuccess": "Document recommendation removed successfully",
+      "error": "Failed to update recommendation status"
     }
   }
 }

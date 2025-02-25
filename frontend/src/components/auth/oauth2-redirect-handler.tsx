@@ -12,11 +12,10 @@ export default function OAuth2RedirectHandler() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { setAuthData, setRole } = useAuth();
+  const { setAuthData } = useAuth();
   const [tokenResponse, setTokenResponse] = useState<TokenResponse | null>();
   const [requires2FA, setRequires2FA] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
-  const [tempToken, setTempToken] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -33,16 +32,15 @@ export default function OAuth2RedirectHandler() {
           refreshToken: refreshToken,
           tokenType: "Bearer",
           username: decodedToken.sub,
-          roles: decodedToken.roles.split(",")
+          roles: decodedToken.roles,
         };
         setTokenResponse(tokenAuth);
 
         if (decodedToken.is2faEnabled) {
           setRequires2FA(true);
           setUsername(decodedToken.sub);
-          setTempToken(token);
         } else {
-          handleSuccessfulLogin(tokenAuth, decodedToken);
+          handleSuccessfulLogin(tokenAuth);
         }
       } catch (error) {
         console.info("Token decoding failed:", error);
@@ -53,22 +51,20 @@ export default function OAuth2RedirectHandler() {
     }
   }, [location, navigate]);
 
-  const handleSuccessfulLogin = (tokenAuth: TokenResponse, decodedToken: JwtPayload) => {
+  const handleSuccessfulLogin = (tokenAuth: TokenResponse) => {
     setAuthData(tokenAuth);
-    setRole(decodedToken.roles[0]);
 
     toast({
       title: t("common.success"),
       description: t("auth.login.success"),
-      variant: "success"
+      variant: "success",
     });
 
     navigate("/");
   };
 
   const handle2FASuccess = () => {
-    const decodedToken = jwtDecode<JwtPayload>(tempToken);
-    handleSuccessfulLogin(tokenResponse, decodedToken);
+    handleSuccessfulLogin(tokenResponse);
   };
 
   if (!requires2FA || !username) {
