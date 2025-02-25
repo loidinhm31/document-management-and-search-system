@@ -35,4 +35,5 @@ public class DocumentIndex {
     private String language;
     private Instant createdAt;
     private ReportStatus reportStatus;
+    private Integer recommendationCount;
 }

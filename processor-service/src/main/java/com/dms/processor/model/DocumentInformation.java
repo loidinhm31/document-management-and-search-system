@@ -113,6 +113,9 @@ public class DocumentInformation {
     @Field("report_status")
     private ReportStatus reportStatus;
 
+    @Field("recommendation_count")
+    private Integer recommendationCount;
+
     public Optional<DocumentVersion> getLatestVersion() {
         if (CollectionUtils.isEmpty(versions)) {
             return Optional.empty();

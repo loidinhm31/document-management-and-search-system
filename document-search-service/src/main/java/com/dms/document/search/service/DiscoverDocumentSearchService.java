@@ -10,11 +10,14 @@ import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.common.lucene.search.function.CombineFunction;
+import org.opensearch.common.lucene.search.function.FieldValueFactorFunction;
 import org.opensearch.common.unit.Fuzziness;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.MultiMatchQueryBuilder;
 import org.opensearch.index.query.Operator;
 import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.index.query.functionscore.FieldValueFactorFunctionBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.sort.SortBuilders;
 import org.opensearch.search.sort.SortOrder;
@@ -314,6 +317,9 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         if (StringUtils.isNotEmpty(context.originalQuery())) {
             addSuggestionSearchConditions(queryBuilder, request, context);
         }
+
+        // Boost documents based on recommendation count
+        addRecommendationBoost(queryBuilder);
 
         searchSourceBuilder.query(queryBuilder)
                 .size(MAX_SUGGESTIONS)

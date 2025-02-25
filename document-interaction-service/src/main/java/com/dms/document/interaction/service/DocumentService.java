@@ -123,6 +123,7 @@ public class DocumentService {
                 .createdBy(username)
                 .updatedAt(Instant.now())
                 .updatedBy(username)
+                .recommendationCount(0)
                 .build();
 
         // Save data

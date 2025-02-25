@@ -31,7 +31,7 @@ public class ReportController {
     @Operation(summary = "Update report status",
             description = "Update status of document violation report (Admin only)")
     @PutMapping("/documents/{documentId}/status")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateReportStatus(
             @PathVariable String documentId,
             @RequestParam ReportStatus status,

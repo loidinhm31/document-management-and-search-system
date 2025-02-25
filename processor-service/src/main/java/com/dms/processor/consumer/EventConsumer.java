@@ -75,10 +75,7 @@ public class EventConsumer {
     }
 
     private void findAndProcessDocument(SyncEventRequest request, EventType eventType) {
-        Optional<DocumentInformation> documentOpt = documentRepository.findByIdAndUserId(
-                request.getDocumentId(),
-                request.getUserId()
-        );
+        Optional<DocumentInformation> documentOpt = documentRepository.findById(request.getDocumentId());
 
         documentOpt.ifPresentOrElse(
                 document -> {
