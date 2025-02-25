@@ -3,6 +3,7 @@ package com.dms.document.interaction.dto;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,9 +13,11 @@ public class CommentResponse {
     private Long id;
     private String content;
     private String username;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
     private boolean edited;
+    private boolean reportedByUser;
+    private boolean reportResolved;
     private List<CommentResponse> replies;
 
 }

@@ -41,6 +41,7 @@ public class DocumentController {
         DocumentSearchCriteria criteria = DocumentSearchCriteria.builder()
                 .search(request.getSearch())
                 .major(request.getMajor())
+                .courseCode(request.getCourseCode())
                 .level(request.getLevel())
                 .category(request.getCategory())
                 .tags(request.getTags())

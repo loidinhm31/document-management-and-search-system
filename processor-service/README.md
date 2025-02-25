@@ -1,4 +1,17 @@
-docker run -d --hostname rabbitmq --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management-alpine  
+```shell
+docker run -d --hostname rabbitmq \
+    --name rabbitmq \
+    -p 5672:5672 \
+    -p 15672:15672 \
+    rabbitmq:3-management-alpine  
+```
+```shell
+docker run --name localstack \
+   -p 127.0.0.1:4566:4566 \
+   -p 127.0.0.1:4510-4559:4510-4559 \
+   -v /var/run/docker.sock:/var/run/docker.sock \
+   -d localstack/localstack
+```
 
 ```shell
 docker run -p 9200:9200 \
@@ -21,7 +34,8 @@ docker run -p 9200:9200 -p 9600:9600 \
 -e "plugins.security.allow_unsafe_democertificates=true" \
 -e "plugins.security.allow_default_init_securityindex=true" \
 -e "plugins.security.audit.type=internal_opensearch" \
--d opensearchproject/opensearch:2.11.1
+-e "OPENSEARCH_INITIAL_ADMIN_PASSWORD=27H4Gwxb24XGsARfuh3b#" \
+-d opensearchproject/opensearch:2.17.0
 ```
 
 
@@ -34,11 +48,11 @@ curl -X GET "localhost:9200/documents/_count" \
 
 
 ```shell
-curl -X DELETE "localhost:9200/documents" -u "admin:admin"
+curl -X DELETE "localhost:9200/documents" -u "admin:27H4Gwxb24XGsARfuh3b"
 ```
 
 
-curl -X GET "localhost:9200/documents/_search" -H "Content-Type: application/json" -d '{}' -u "admin:your_strong_password#"
+curl -X GET "localhost:9200/documents/_search" -H "Content-Type: application/json" -d '{}' -u "admin:27H4Gwxb24XGsARfuh3b#"
 
 curl -X GET "https://vpc-dms-opensearch-7m6m3jd7mq6uz4r5bh3quasela.ap-southeast-1.es.amazonaws.com/documents/_search" -H "Content-Type: application/json" -d '{}' -u "dms_master:hzE8MYCuBvzkV3KT8kedTyWthea6ar1xC#"
  

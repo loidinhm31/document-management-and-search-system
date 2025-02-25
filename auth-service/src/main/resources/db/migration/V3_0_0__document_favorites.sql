@@ -2,9 +2,9 @@
 CREATE TABLE document_favorites
 (
     id          BIGSERIAL PRIMARY KEY,
-    user_id     UUID    NOT NULL,
-    document_id VARCHAR NOT NULL,
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    user_id     UUID                     NOT NULL,
+    document_id VARCHAR                  NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (user_id),
     -- Composite unique constraint to prevent duplicate favorites
     UNIQUE (user_id, document_id)

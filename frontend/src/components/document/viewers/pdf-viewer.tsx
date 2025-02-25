@@ -12,26 +12,21 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 // Set the worker source
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
 interface PDFViewerProps {
   fileUrl: string;
   onDownload: () => void;
+  isDownloading?: boolean;
+  loading?: boolean;
 }
 
-export const PDFViewer: React.FC<PDFViewerProps> = ({
-                                                      fileUrl,
-                                                      onDownload
-                                                    }) => {
+export const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onDownload, isDownloading, loading }) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [numPages, setNumPages] = useState<number>(0);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(isMobile ? 0.6 : 1);
-  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<boolean>(false);
   const [renderedScale, setRenderedScale] = useState<number>(isMobile ? 0.6 : 1);
 
@@ -52,37 +47,36 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    setLoading(false);
   }, []);
 
   const onDocumentLoadError = useCallback((error: Error) => {
-    console.error("Error loading PDF:", error);
+    console.info("Error loading PDF:", error);
     setError(true);
-    setLoading(false);
   }, []);
 
   const handlePreviousPage = useCallback(() => {
-    setPageNumber(page => Math.max(1, page - 1));
+    setPageNumber((page) => Math.max(1, page - 1));
   }, []);
 
   const handleNextPage = useCallback(() => {
-    setPageNumber(page => Math.min(numPages, page + 1));
+    setPageNumber((page) => Math.min(numPages, page + 1));
   }, [numPages]);
 
   const handleZoomIn = useCallback(() => {
-    setScale(currentScale => Math.min(2, currentScale + 0.1));
+    setScale((currentScale) => Math.min(2, currentScale + 0.1));
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    setScale(currentScale => Math.max(0.5, currentScale - 0.1));
+    setScale((currentScale) => Math.max(0.5, currentScale - 0.1));
   }, []);
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <p className="text-destructive">{t("document.viewer.error.loading")}</p>
-        <Button onClick={onDownload} variant="outline">
-          {t("document.viewer.buttons.downloadInstead")}
+        <Button onClick={onDownload} variant="outline" disabled={isDownloading || loading}>
+          <Download className="h-4 w-4 mr-2" />
+          {!isDownloading ? t("document.viewer.buttons.downloadInstead") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
     );
@@ -92,17 +86,19 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     <div className="h-full flex flex-col">
       {/* Header with download button */}
       <div className="flex justify-end p-2 bg-muted">
-        <Button onClick={onDownload} variant="outline" size="sm">
+        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
           <Download className="h-4 w-4 mr-2" />
-          {t("document.viewer.buttons.download")}
+          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
 
       {/* Controls - Responsive layout */}
-      <div className={cn(
-        "flex p-2 gap-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
-        "flex-col sm:flex-row items-stretch sm:items-center"
-      )}>
+      <div
+        className={cn(
+          "flex p-2 gap-2 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+          "flex-col sm:flex-row items-stretch sm:items-center",
+        )}
+      >
         {/* Page Navigation */}
         <div className="flex items-center gap-2">
           <Button
@@ -117,7 +113,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           <span className="text-sm whitespace-nowrap">
             {t("document.viewer.buttons.pageInfo", {
               current: pageNumber,
-              total: numPages || "?"
+              total: numPages || "?",
             })}
           </span>
           <Button
@@ -133,13 +129,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
         {/* Zoom Controls */}
         <div className="flex items-center gap-2 mt-2 sm:mt-0 sm:ml-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleZoomOut}
-            disabled={scale <= 0.5}
-            className="h-8 w-8"
-          >
+          <Button variant="outline" size="icon" onClick={handleZoomOut} disabled={scale <= 0.5} className="h-8 w-8">
             <ZoomOut className="h-4 w-4" />
           </Button>
           <div className="flex-1 sm:w-32">
@@ -152,18 +142,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
               className="w-full"
             />
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleZoomIn}
-            disabled={scale >= 2}
-            className="h-8 w-8"
-          >
+          <Button variant="outline" size="icon" onClick={handleZoomIn} disabled={scale >= 2} className="h-8 w-8">
             <ZoomIn className="h-4 w-4" />
           </Button>
-          <span className="text-sm whitespace-nowrap ml-2 hidden sm:inline">
-            {Math.round(scale * 100)}%
-          </span>
+          <span className="text-sm whitespace-nowrap ml-2 hidden sm:inline">{Math.round(scale * 100)}%</span>
         </div>
       </div>
 

@@ -5,20 +5,23 @@ import com.dms.document.interaction.dto.ShareSettings;
 import com.dms.document.interaction.dto.SyncEventRequest;
 import com.dms.document.interaction.dto.UpdateShareSettingsRequest;
 import com.dms.document.interaction.dto.UserResponse;
-import com.dms.document.interaction.enums.EventType;
-import com.dms.document.interaction.enums.InteractionType;
-import com.dms.document.interaction.enums.SharingType;
+import com.dms.document.interaction.enums.*;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentInformation;
+import com.dms.document.interaction.model.UserDocumentHistory;
 import com.dms.document.interaction.repository.DocumentRepository;
+import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -32,6 +35,7 @@ public class DocumentShareService {
     private final PublishEventService publishEventService;
     private final DocumentRepository documentRepository;
     private final DocumentPreferencesService documentPreferencesService;
+    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
 
     public ShareSettings getDocumentShareSettings(String documentId, String username) {
 
@@ -64,7 +68,7 @@ public class DocumentShareService {
                 new HashSet<>());
 
         // Update audit fields
-        doc.setUpdatedAt(new Date());
+        doc.setUpdatedAt(Instant.now());
         doc.setUpdatedBy(username);
 
         // Save changes
@@ -73,17 +77,29 @@ public class DocumentShareService {
 
         // Send sync event to indexing document
         CompletableFuture.runAsync(() -> {
+            // Hístory
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(doc.getUserId())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.SHARE)
+                    .version(doc.getCurrentVersion())
+                    .detail(updatedDoc.getSharingType().name())
+                    .createdAt(Instant.now())
+                    .build());
+
             publishEventService.sendSyncEvent(
                     SyncEventRequest.builder()
                             .eventId(UUID.randomUUID().toString())
                             .userId(doc.getUserId())
                             .documentId(documentId)
                             .subject(EventType.UPDATE_EVENT.name())
-                            .triggerAt(LocalDateTime.now())
+                            .triggerAt(Instant.now())
                             .build());
 
             // Record sharing interaction
-            documentPreferencesService.recordInteraction(UUID.fromString(doc.getUserId()), documentId, InteractionType.SHARE);
+            if (updatedDoc.getSharingType() == SharingType.PUBLIC || updatedDoc.getSharingType() == SharingType.SPECIFIC) {
+                documentPreferencesService.recordInteraction(UUID.fromString(doc.getUserId()), documentId, InteractionType.SHARE);
+            }
         });
 
         return updatedDoc;
@@ -115,6 +131,10 @@ public class DocumentShareService {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserResponse userResponse = response.getBody();
+        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
+              Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+            throw new InvalidDataAccessResourceUsageException("Invalid role");
+        }
 
         return documentRepository.findByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found or access denied"));

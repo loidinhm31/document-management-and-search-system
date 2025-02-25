@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       console.log("Token refreshed successfully");
     } catch (error) {
-      console.error("Failed to refresh token:", error);
+      console.info("Failed to refresh token:", error);
       clearAuthData();
       // Optionally redirect to log in
       window.location.href = "/login";
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshAuthToken();
       }
     } catch (error) {
-      console.error("Error starting refresh timer:", error);
+      console.info("Error starting refresh timer:", error);
     }
   };
 
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       localStorage.setItem("ROLE", userData.roles[0]);
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      console.info("Error fetching user data:", error);
       clearAuthData();
     }
   };

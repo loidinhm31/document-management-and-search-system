@@ -11,15 +11,7 @@ export default defineConfig(({ mode }) => {
     const { VITE_BASE_URL, NODE_ENV } = localEnv;
     return {
         plugins: [
-            react(),
-            viteStaticCopy({
-                targets: [
-                    {
-                        src: "node_modules/@mediapipe/tasks-vision/**/*",
-                        dest: "node_modules/@mediapipe/tasks-vision"
-                    }
-                ]
-            })
+            react()
         ],
         resolve: {
             alias: [{find: "@", replacement: path.resolve(__dirname, "src")}]

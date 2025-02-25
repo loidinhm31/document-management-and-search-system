@@ -3,9 +3,9 @@ import { Loader2 } from "lucide-react";
 import React, { Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import { AppSidebar } from "@/components/common/app-sidebar";
 import OAuth2RedirectHandler from "@/components/auth/oauth2-redirect-handler";
 import ProtectedRoute from "@/components/auth/protected-route";
+import { AppSidebar } from "@/components/common/app-sidebar";
 import { DynamicBreadcrumb } from "@/components/common/dynamic-breadcrumb";
 import { ThemeProvider } from "@/components/common/theme-provider";
 import { Card, CardContent } from "@/components/ui/card";

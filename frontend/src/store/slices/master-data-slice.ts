@@ -6,6 +6,7 @@ import { MasterData, MasterDataType } from "@/types/master-data";
 
 export interface MasterDataState {
   majors: MasterData[];
+  courseCodes: MasterData[];
   levels: MasterData[];
   categories: MasterData[];
   loading: boolean;
@@ -14,6 +15,7 @@ export interface MasterDataState {
 
 const initialState: MasterDataState = {
   majors: [],
+  courseCodes: [],
   levels: [],
   categories: [],
   loading: false,
@@ -24,14 +26,16 @@ export const fetchMasterData = createAsyncThunk(
   "masterData/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const [majorsResponse, levelsResponse, categoriesResponse] = await Promise.all([
-        masterDataService.getAllActiveByType(MasterDataType.MAJOR),
-        masterDataService.getAllActiveByType(MasterDataType.COURSE_LEVEL),
-        masterDataService.getAllActiveByType(MasterDataType.DOCUMENT_CATEGORY)
+      const [majorsResponse, courseCodesReponse, levelsResponse, categoriesResponse] = await Promise.all([
+        masterDataService.getAllByType(MasterDataType.MAJOR, true),
+        masterDataService.getAllByType(MasterDataType.COURSE_CODE, true),
+        masterDataService.getAllByType(MasterDataType.COURSE_LEVEL, true),
+        masterDataService.getAllByType(MasterDataType.DOCUMENT_CATEGORY, true)
       ]);
 
       return {
         majors: majorsResponse.data,
+        courseCodes: courseCodesReponse.data,
         levels: levelsResponse.data,
         categories: categoriesResponse.data
       };
@@ -54,6 +58,7 @@ const masterDataSlice = createSlice({
       .addCase(fetchMasterData.fulfilled, (state, action) => {
         state.loading = false;
         state.majors = action.payload.majors;
+        state.courseCodes = action.payload.courseCodes;
         state.levels = action.payload.levels;
         state.categories = action.payload.categories;
       })

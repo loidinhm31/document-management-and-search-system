@@ -40,6 +40,10 @@ export interface TokenResponse {
   tokenType: string;
   username: string;
   roles: string[];
+  enabled: boolean;
+  otpCount: number;
+  locked: boolean;
+  verified: boolean;
 }
 
 export interface RefreshTokenRequest {

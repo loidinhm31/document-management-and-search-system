@@ -66,6 +66,7 @@ public class SecurityConfig {
                 )  // Feign client
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/.well-known/jwks.json").permitAll()
                         .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/login/**").permitAll()
                         .anyRequest().authenticated()

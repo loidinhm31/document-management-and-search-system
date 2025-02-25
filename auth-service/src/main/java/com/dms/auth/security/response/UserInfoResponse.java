@@ -3,6 +3,7 @@ package com.dms.auth.security.response;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -17,14 +18,15 @@ public class UserInfoResponse {
     private boolean accountNonExpired;
     private boolean credentialsNonExpired;
     private boolean enabled;
-    private LocalDate credentialsExpiryDate;
-    private LocalDate accountExpiryDate;
+    private Instant credentialsExpiryDate;
+    private Instant accountExpiryDate;
     private boolean isTwoFactorEnabled;
+    private Instant createdDate;
     private List<String> roles;
 
     public UserInfoResponse(UUID userId, String username, String email, boolean accountNonLocked, boolean accountNonExpired,
-                            boolean credentialsNonExpired, boolean enabled, LocalDate credentialsExpiryDate,
-                            LocalDate accountExpiryDate, boolean isTwoFactorEnabled, List<String> roles) {
+                            boolean credentialsNonExpired, boolean enabled, Instant credentialsExpiryDate,
+                            Instant accountExpiryDate, boolean isTwoFactorEnabled, Instant createdDate, List<String> roles) {
         this.userId = userId;
         this.username = username;
         this.email = email;
@@ -35,6 +37,7 @@ public class UserInfoResponse {
         this.credentialsExpiryDate = credentialsExpiryDate;
         this.accountExpiryDate = accountExpiryDate;
         this.isTwoFactorEnabled = isTwoFactorEnabled;
+        this.createdDate = createdDate;
         this.roles = roles;
     }
 }

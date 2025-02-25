@@ -6,8 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-import java.util.Date;
+import java.time.Instant;
 import java.util.UUID;
 
 
@@ -23,12 +22,12 @@ public class UserDto {
     private boolean accountNonExpired;
     private boolean credentialsNonExpired;
     private boolean enabled;
-    private LocalDate credentialsExpiryDate;
-    private LocalDate accountExpiryDate;
+    private Instant credentialsExpiryDate;
+    private Instant accountExpiryDate;
     private String twoFactorSecret;
     private boolean isTwoFactorEnabled;
     private String signUpMethod;
-    private Role role;
-    private Date createdDate;
-    private Date updatedDate;
+    private RoleDto role;
+    private Instant createdDate;
+    private Instant updatedDate;
 }

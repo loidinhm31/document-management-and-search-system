@@ -1,21 +1,13 @@
 import { Filter, Search, SortAsc, SortDesc } from "lucide-react";
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import DocumentFilter from "@/components/document/my-document/document-filter";
+import DocumentFilter from "@/components/document/document-filter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const sortOptions = [
-  { label: "Created Date (Newest)", value: "createdAt,desc" },
-  { label: "Created Date (Oldest)", value: "createdAt,asc" },
-  { label: "Name (A-Z)", value: "filename,asc" },
-  { label: "Name (Z-A)", value: "filename,desc" },
-  { label: "Size (Largest)", value: "fileSize,desc" },
-  { label: "Size (Smallest)", value: "fileSize,asc" }
-];
 
 export interface SearchFilters {
   search?: string;
@@ -32,6 +24,16 @@ interface AdvancedSearchProps {
 
 export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
   const { t } = useTranslation();
+
+  const sortOptions = [
+    { label: "Created Date (Newest)", value: "createdAt,desc" },
+    { label: "Created Date (Oldest)", value: "createdAt,asc" },
+    { label: "Name (A-Z)", value: "filename,asc" },
+    { label: "Name (Z-A)", value: "filename,desc" },
+    { label: "Size (Largest)", value: "fileSize,desc" },
+    { label: "Size (Smallest)", value: "fileSize,asc" }
+  ];
+
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Search states
@@ -40,6 +42,7 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
 
   // Filter states
   const [selectedMajor, setSelectedMajor] = useState("all");
+  const [selectedCourseCode, setSelectedCourseCode] = useState("all");
   const [selectedLevel, setSelectedLevel] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -60,8 +63,8 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
     setSelectedMajor("all");
     setSelectedLevel("all");
     setSelectedCategory("all");
-    setSelectedSort(sortOptions[0].value);
     setSelectedTags([]);
+    setSelectedSort(sortOptions[0].value);
     onSearch({});
   };
 
@@ -124,7 +127,8 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
             <Filter className="h-4 w-4" />
             {t("document.commonSearch.filters")}
             {getActiveFilterCount() > 0 && (
-              <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs flex items-center justify-center text-primary-foreground">
+              <span
+                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs flex items-center justify-center text-primary-foreground">
                 {getActiveFilterCount()}
               </span>
             )}
@@ -141,6 +145,8 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
             <DocumentFilter
               majorValue={selectedMajor}
               onMajorChange={setSelectedMajor}
+              courseCodeValue={selectedCourseCode}
+              onCourseCodeChange={setSelectedCourseCode}
               levelValue={selectedLevel}
               onLevelChange={setSelectedLevel}
               categoryValue={selectedCategory}

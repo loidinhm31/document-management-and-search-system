@@ -57,7 +57,7 @@ export function ProcessingProvider({ children }: { children: React.ReactNode }) 
         // You can dispatch additional action here to update document details in store if needed
         console.log("Document updated:", response.data);
       } catch (error) {
-        console.error("Error updating document details:", error);
+        console.info("Error updating document details:", error);
       }
     }
   }, [dispatch]);

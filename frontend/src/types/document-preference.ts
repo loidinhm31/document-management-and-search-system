@@ -14,6 +14,7 @@ export interface PreferenceCategory {
 
 export interface DocumentPreferences {
   preferredMajors: Set<string>;
+  preferredCourseCodes: Set<string>;
   preferredLevels: Set<string>;
   preferredCategories: Set<string>;
   preferredTags: Set<string>;

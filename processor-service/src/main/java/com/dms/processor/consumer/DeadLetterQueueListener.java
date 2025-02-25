@@ -9,6 +9,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,8 +49,8 @@ public class DeadLetterQueueListener {
                     .headers(headers)
                     .retryCount(0)
                     .status(FailedMessage.FailedMessageStatus.NEW)
-                    .createdAt(new Date())
-                    .updatedAt(new Date())
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
                     .build();
 
             // Save to MongoDB

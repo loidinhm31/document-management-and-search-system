@@ -13,14 +13,18 @@ interface SpreadsheetViewerProps {
   activeSheet: number;
   onSheetChange: (index: number) => void;
   onDownload: () => void;
+  isDownloading?: boolean;
+  loading?: boolean;
 }
 
 export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
-                                                                      sheets,
-                                                                      activeSheet,
-                                                                      onSheetChange,
-                                                                      onDownload,
-                                                                    }) => {
+  sheets,
+  activeSheet,
+  onSheetChange,
+  onDownload,
+  isDownloading,
+  loading,
+}) => {
   const { t } = useTranslation();
   const currentSheet = sheets[activeSheet];
   const headerRow = currentSheet.data[0] || [];
@@ -51,9 +55,9 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
             </Button>
           ))}
         </div>
-        <Button onClick={onDownload} variant="outline" size="sm">
+        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
           <Download className="h-4 w-4 mr-2" />
-          {t("document.viewer.buttons.download")}
+          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
       <div className="flex-1 overflow-auto">
@@ -71,9 +75,7 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
             {dataRows.map((row, rowIndex) => (
               <TableRow key={rowIndex}>
                 {row.map((cell, cellIndex) => (
-                  <TableCell key={cellIndex}>
-                    {formatCellValue(cell)}
-                  </TableCell>
+                  <TableCell key={cellIndex}>{formatCellValue(cell)}</TableCell>
                 ))}
               </TableRow>
             ))}

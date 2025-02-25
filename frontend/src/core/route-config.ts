@@ -2,7 +2,9 @@ import React, { lazy } from "react";
 
 const Login = lazy(() => import("@/pages/login-page"));
 const Register = lazy(() => import("@/pages/register-page"));
+const OtpVerification = lazy(() => import("@/pages/otp-verification-page"));
 const ForgotPassword = lazy(() => import("@/pages/forgot-password-page"));
+const ResetPassword = lazy(() => import("@/pages/reset-password-page"));
 const Home = lazy(() => import("@/pages/home-page"));
 const Profile = lazy(() => import("@/pages/profile-page"));
 const UserList = lazy(() => import("@/pages/admin/user-list-page"));
@@ -29,7 +31,8 @@ export const RoutePaths = {
   LOGIN: "/login",
   REGISTER: "/register",
   FORGOT_PASSWORD: "/forgot-password",
-  EMPTY: "/empty",
+  RESET_PASSWORD: "/reset-password",
+  VERIFY_OTP: "/verify-otp",
   PROFILE: "/profile",
   MY_DOCUMENT: "/documents/me",
   MY_DOCUMENT_DETAIL: "/documents/me/:documentId",
@@ -56,9 +59,21 @@ export const routes: Route[] = [
     isSecure: false
   },
   {
+    path: RoutePaths.VERIFY_OTP,
+    pageTitle: "pages.verify-otp",
+    component: OtpVerification,
+    isSecure: false
+  },
+  {
     path: RoutePaths.FORGOT_PASSWORD,
     pageTitle: "Forgot Password",
     component: ForgotPassword,
+    isSecure: false
+  },
+  {
+    path: RoutePaths.RESET_PASSWORD,
+    pageTitle: "Reset Password",
+    component: ResetPassword,
     isSecure: false
   },
   {
@@ -80,14 +95,14 @@ export const routes: Route[] = [
     pageTitle: "pages.my-document",
     component: MyDocument,
     isSecure: true,
-    permission: []
+    permission: ["ROLE_MENTOR", "ROLE_USER"]
   },
   {
     path: RoutePaths.MY_DOCUMENT_DETAIL,
     pageTitle: "pages.my-document.detail",
     component: MyDocumentDetail,
     isSecure: true,
-    permission: []
+    permission: ["ROLE_MENTOR", "ROLE_USER"]
   },
   {
     path: RoutePaths.DOCUMENT_DETAIL,

@@ -1,18 +1,17 @@
 package com.dms.auth.service.impl;
 
-import com.dms.auth.constant.AuditActions;
-import com.dms.auth.constant.AuditStatus;
+import com.dms.auth.dto.RoleDto;
 import com.dms.auth.dto.UserDto;
 import com.dms.auth.dto.UserSearchResponse;
 import com.dms.auth.dto.request.*;
+import com.dms.auth.entity.PasswordResetToken;
 import com.dms.auth.entity.RefreshToken;
+import com.dms.auth.entity.Role;
+import com.dms.auth.entity.User;
 import com.dms.auth.enums.AppRole;
 import com.dms.auth.exception.InvalidRequestException;
 import com.dms.auth.exception.ResourceNotFoundException;
 import com.dms.auth.mapper.UserMapper;
-import com.dms.auth.entity.PasswordResetToken;
-import com.dms.auth.entity.Role;
-import com.dms.auth.entity.User;
 import com.dms.auth.repository.PasswordResetTokenRepository;
 import com.dms.auth.repository.RoleRepository;
 import com.dms.auth.repository.UserRepository;
@@ -20,14 +19,13 @@ import com.dms.auth.security.jwt.JwtUtils;
 import com.dms.auth.security.request.Verify2FARequest;
 import com.dms.auth.security.response.TokenResponse;
 import com.dms.auth.security.response.UserInfoResponse;
-import com.dms.auth.security.services.CustomUserDetails;
-import com.dms.auth.service.AdminService;
+import com.dms.auth.security.service.CustomUserDetails;
 import com.dms.auth.service.TotpService;
 import com.dms.auth.service.UserService;
 import com.dms.auth.util.SecurityUtils;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,34 +36,50 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
-@Transactional
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl extends BaseService implements UserService {
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
-    private final AuthenticationManager authenticationManager;
-    private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PasswordResetTokenRepository passwordResetTokenRepository;
-    private final RefreshTokenService refreshTokenService;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtils jwtUtils;
-    private final EmailService emailService;
-    private final TotpService totpService;
-    private final AdminService adminService;
-    private final UserMapper userMapper;
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtils jwtUtils;
+
+    @Autowired
+    private TotpService totpService;
+
+    @Autowired
+    private OtpService otpService;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private PublishEventService publishEventService;
 
     @Override
     public TokenResponse authenticateUser(LoginRequest loginRequest, HttpServletRequest request) {
@@ -75,36 +89,14 @@ public class UserServiceImpl implements UserService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-        // Generate JWT token
-        String jwt = jwtUtils.generateTokenFromUsername(userDetails);
-
         User user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", loginRequest.getUsername()));
 
-        // Create refresh token
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user, request);
-
-        // Create audit log for successful login
-        adminService.createAuditLog(
-                user.getUsername(),
-                AuditActions.LOGIN,
-                "User logged in successfully",
-                request.getRemoteAddr(),
-                AuditStatus.SUCCESS
-        );
-
-        // Get user roles
-        List<String> roles = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-
-        return new TokenResponse(
-                jwt,
-                refreshToken.getToken(),
-                "Bearer",
-                userDetails.getUsername(),
-                roles
-        );
+        if (!user.isEnabled()) {
+            return new TokenResponse()
+                    .withEnabled(user.isEnabled());
+        }
+        return createToken(user, userDetails, request);
     }
 
     @Override
@@ -133,24 +125,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void logout(String refreshToken) {
-        // Find and validate refresh token
-        RefreshToken token = refreshTokenService.findByToken(refreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
-
-        // Get user before revoking token
-        User user = token.getUser();
-
         // Revoke refresh token
         refreshTokenService.revokeToken(refreshToken);
-
-        // Create audit log for logout
-        adminService.createAuditLog(
-                user.getUsername(),
-                AuditActions.LOGOUT,
-                "User logged out successfully",
-                null,
-                AuditStatus.SUCCESS
-        );
 
         // Clear security context
         SecurityContextHolder.clearContext();
@@ -159,11 +135,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public void registerUser(SignupRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username is already taken");
+            throw new IllegalArgumentException("USERNAME_EXISTS");
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email is already in use");
+            throw new IllegalArgumentException("EMAIL_EXISTS");
         }
 
         Role role = roleRepository.findByRoleName(AppRole.ROLE_USER)
@@ -177,15 +153,19 @@ public class UserServiceImpl implements UserService {
         user.setAccountNonLocked(true);
         user.setAccountNonExpired(true);
         user.setCredentialsNonExpired(true);
-        user.setEnabled(true);
-        user.setCredentialsExpiryDate(LocalDate.now().plusYears(1));
-        user.setAccountExpiryDate(LocalDate.now().plusYears(1));
+        user.setEnabled(false); // disabled until verified
+        user.setCredentialsExpiryDate(Instant.now().atZone(ZoneId.systemDefault()).plusYears(1).toInstant());
+        user.setAccountExpiryDate(Instant.now().atZone(ZoneId.systemDefault()).plusYears(1).toInstant());
         user.setTwoFactorEnabled(false);
         user.setSignUpMethod("email");
+        user.setCreatedAt(Instant.now());
         user.setCreatedBy(request.getUsername());
         user.setUpdatedBy(request.getUsername());
 
-        userRepository.save(user);
+        user = userRepository.save(user);
+
+        // Generate and send OTP
+        otpService.generateAndSendOtp(user);
     }
 
     @Override
@@ -208,6 +188,7 @@ public class UserServiceImpl implements UserService {
                 user.getCredentialsExpiryDate(),
                 user.getAccountExpiryDate(),
                 user.isTwoFactorEnabled(),
+                user.getCreatedAt(),
                 roles
         );
     }
@@ -217,27 +198,49 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "email", email));
 
+        // Check if there's a recent token (less than 5 minutes old)
+        Optional<PasswordResetToken> recentToken = passwordResetTokenRepository.findLatestByUserEmail(email);
+        if (recentToken.isPresent()) {
+            Instant fiveMinutesAgo = Instant.now().minus(5, ChronoUnit.MINUTES);
+            if (recentToken.get().getCreatedAt().isAfter(fiveMinutesAgo)) {
+                throw new IllegalStateException("Please wait 5 minutes before requesting another password reset email");
+            }
+        }
+
+        // Mark all others tokens used
+        List<PasswordResetToken> passwordResetTokens = passwordResetTokenRepository.findAllByUserId(user.getUserId());
+        passwordResetTokens.forEach(passwordResetToken -> passwordResetToken.setUsed(true));
+        passwordResetTokenRepository.saveAllAndFlush(passwordResetTokens);
+
         String token = UUID.randomUUID().toString();
-        Instant expiryDate = Instant.now().plus(24, ChronoUnit.HOURS);
+        // Set expiry to 5 hours from now
+        Instant expiryDate = Instant.now().plus(5, ChronoUnit.HOURS);
 
         PasswordResetToken resetToken = new PasswordResetToken(token, expiryDate, user);
-        resetToken.setUpdatedBy(SecurityUtils.getUserIdentifier());
+        resetToken.setCreatedAt(Instant.now());
+        resetToken.setCreatedBy(user.getUsername());
+        resetToken.setUpdatedBy(user.getUsername());
         passwordResetTokenRepository.save(resetToken);
 
-        String resetUrl = String.format("%s/reset-password?token=%s", frontendUrl, token);
-        emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
+        // Send email
+        publishEventService.sendPasswordResetEmail(user, token, 5); // 5 hours expiry
     }
 
     @Override
     public void resetPassword(String token, String newPassword) {
-        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid password reset token"));
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenAndUsed(token, false)
+                .orElseThrow(() -> new IllegalArgumentException("INVALID_PASSWORD_RESET_TOKEN"));
 
-        if (resetToken.isUsed() || resetToken.getExpiryDate().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Password reset token has expired");
+        if (resetToken.isUsed()) {
+            throw new IllegalArgumentException("PASSWORD_RESET_TOKEN_USED");
+        }
+
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
+            throw new IllegalArgumentException("PASSWORD_RESET_TOKEN_EXPIRED");
         }
 
         User user = resetToken.getUser();
+
         user.setPassword(passwordEncoder.encode(newPassword));
         resetToken.setUsed(true);
 
@@ -284,7 +287,7 @@ public class UserServiceImpl implements UserService {
         // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setUpdatedBy(SecurityUtils.getUserIdentifier());
-        user.setCredentialsExpiryDate(LocalDate.now().plusMonths(6)); // Reset credentials expiry
+        user.setCredentialsExpiryDate(Instant.now().plus(6, ChronoUnit.MONTHS)); // Reset credentials expiry
 
         // Optionally invalidate any existing password reset tokens
         passwordResetTokenRepository.findAll().stream()
@@ -295,9 +298,6 @@ public class UserServiceImpl implements UserService {
                 });
 
         userRepository.save(user);
-
-        // Create audit log
-        adminService.createAuditLog(user.getUsername(), AuditActions.PASSWORD_CHANGE, "Password changed successfully", null, AuditStatus.SUCCESS);
     }
 
     // 2FA operations
@@ -416,23 +416,23 @@ public class UserServiceImpl implements UserService {
 
         // Update allowed fields based on role
         if (isAdmin) {
-            if (request.getAccountLocked() != null) {
+            if (Objects.nonNull(request.getAccountLocked())) {
                 user.setAccountNonLocked(!request.getAccountLocked());
             }
-            if (request.getAccountExpired() != null) {
+            if (Objects.nonNull(request.getAccountExpired())) {
                 user.setAccountNonExpired(!request.getAccountExpired());
             }
-            if (request.getCredentialsExpired() != null) {
+            if (Objects.nonNull(request.getCredentialsExpired())) {
                 user.setCredentialsNonExpired(!request.getCredentialsExpired());
             }
-            if (request.getEnabled() != null) {
+            if (Objects.nonNull(request.getEnabled())) {
                 user.setEnabled(request.getEnabled());
             }
-            if (request.getCredentialsExpiryDate() != null) {
-                user.setCredentialsExpiryDate(request.getCredentialsExpiryDate());
+            if (Objects.nonNull(request.getAccountLocked())) {
+                user.setCredentialsExpiryDate(Instant.from(request.getCredentialsExpiryDate()));
             }
-            if (request.getAccountExpiryDate() != null) {
-                user.setAccountExpiryDate(request.getAccountExpiryDate());
+            if (Objects.nonNull(request.getAccountExpiryDate())) {
+                user.setAccountExpiryDate(Instant.from(request.getAccountExpiryDate()));
             }
         }
 
@@ -450,7 +450,7 @@ public class UserServiceImpl implements UserService {
                 .userId(user.getUserId())
                 .username(user.getUsername())
                 .email(user.getEmail())
-                .role(user.getRole())
+                .role(new RoleDto(user.getRole().getRoleId(), user.getRole().getRoleName()))
                 .build();
     }
 
@@ -461,8 +461,8 @@ public class UserServiceImpl implements UserService {
                 .stream()
                 .map(user -> new UserSearchResponse(
                         user.getUserId().toString(),
-                                user.getUsername(),
-                                user.getEmail())
+                        user.getUsername(),
+                        user.getEmail())
                 )
                 .toList();
     }

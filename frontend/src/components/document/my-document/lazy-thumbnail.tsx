@@ -88,7 +88,7 @@ const cleanupCache = async () => {
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error("Error cleaning up cache:", error);
+    console.info("Error cleaning up cache:", error);
   }
 };
 
@@ -121,7 +121,7 @@ const cleanupOldVersions = async (documentId: string, currentVersion: number) =>
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error("Error cleaning up old versions:", error);
+    console.info("Error cleaning up old versions:", error);
   }
 };
 
@@ -138,7 +138,7 @@ const getCachedThumbnail = async (cacheKey: string): Promise<Blob | null> => {
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
-    console.error("Error accessing cache:", error);
+    console.info("Error accessing cache:", error);
     return null;
   }
 };
@@ -174,7 +174,7 @@ const cacheThumbnail = async (
       transaction.onerror = () => reject(transaction.error);
     });
   } catch (error) {
-    console.error("Error caching thumbnail:", error);
+    console.info("Error caching thumbnail:", error);
   }
 };
 
@@ -259,7 +259,7 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
           setThumbnailUrl(URL.createObjectURL(blob));
         }
       } catch (error) {
-        console.error("Error loading thumbnail:", error);
+        console.info("Error loading thumbnail:", error);
         setError(true);
       } finally {
         setLoading(false);

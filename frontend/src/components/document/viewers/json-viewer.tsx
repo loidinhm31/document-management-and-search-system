@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface JsonViewerProps {
   content: string;
   onDownload: () => void;
+  isDownloading?: boolean;
+  loading?: boolean;
 }
 
 type LineElement = {
@@ -15,7 +17,7 @@ type LineElement = {
   indent: number;
 };
 
-export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload }) => {
+export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload, isDownloading, loading }) => {
   const { t } = useTranslation();
 
   const processJsonLine = (line: string): LineElement => {
@@ -30,7 +32,7 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload }) =
     try {
       const obj = JSON.parse(jsonString);
       const formatted = JSON.stringify(obj, null, 2);
-      const lines = formatted.split('\n');
+      const lines = formatted.split("\n");
 
       return (
         <>
@@ -56,7 +58,7 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload }) =
                   paddingLeft: `${indent * 8}px`,
                 }}
                 dangerouslySetInnerHTML={{
-                  __html: highlightedContent
+                  __html: highlightedContent,
                 }}
               />
             );
@@ -64,7 +66,7 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload }) =
         </>
       );
     } catch (error) {
-      console.error("Error parsing JSON:", error);
+      console.info("Error parsing JSON:", error);
       return <>{jsonString}</>;
     }
   };
@@ -72,19 +74,13 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload }) =
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
-        <Button
-          onClick={onDownload}
-          variant="outline"
-          size="sm"
-        >
+        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
           <Download className="h-4 w-4 mr-2" />
-          {t("document.viewer.buttons.download")}
+          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
       <ScrollArea className="flex-1">
-        <div className="p-4 text-sm font-mono whitespace-pre bg-white">
-          {highlightSyntax(content)}
-        </div>
+        <div className="p-4 text-sm font-mono whitespace-pre bg-white">{highlightSyntax(content)}</div>
       </ScrollArea>
     </div>
   );

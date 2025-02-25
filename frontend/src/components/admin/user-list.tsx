@@ -1,21 +1,16 @@
-import { Calendar, Loader2, MoreHorizontal } from "lucide-react";
+import { Calendar, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { adminService } from "@/services/admin.service";
+import { Role } from "@/types/user";
 
 export default function UserList() {
   const { t } = useTranslation();
@@ -29,9 +24,11 @@ export default function UserList() {
   const [roleFilter, setRoleFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [roles, setRoles] = useState<Role[]>([]);
 
   useEffect(() => {
     fetchUsers();
+    fetchRoles();
   }, [searchQuery, statusFilter, roleFilter, currentPage]);
 
   const fetchUsers = async () => {
@@ -59,21 +56,20 @@ export default function UserList() {
     }
   };
 
-  const handleUpdateStatus = async (userId: string, enabled: boolean) => {
+  const fetchRoles = async () => {
     try {
-      const updateData = {
-        enabled: enabled,
-      };
-      await adminService.updateStatus(userId, updateData);
-
-      fetchUsers(); // Refresh the list
+      setLoading(true);
+      const response = await adminService.getAllRoles();
+      setRoles(response.data);
     } catch (error) {
       console.log("Error:", error);
       toast({
         title: t("common.error"),
-        description: t("admin.users.actions.updateStatus.error"),
+        description: t("admin.users.messages.fetchError"),
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -132,9 +128,12 @@ export default function UserList() {
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="ROLE_USER">User</SelectItem>
-              <SelectItem value="ROLE_ADMIN">Admin</SelectItem>
+              <SelectItem value="all">ALL</SelectItem>
+              {roles.map((role) => (
+                <SelectItem key={role.roleId} value={role.roleName}>
+                  {role.roleName.replace("ROLE_", "")}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -143,16 +142,19 @@ export default function UserList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">{t("admin.users.headers.username")}</TableHead>
-                <TableHead className="w-[250px]">{t("admin.users.headers.email")}</TableHead>
-                <TableHead className="w-[200px]">{t("admin.users.headers.createdDate")}</TableHead>
+                <TableHead>{t("admin.users.headers.username")}</TableHead>
+                <TableHead>{t("admin.users.headers.email")}</TableHead>
+                <TableHead>{t("admin.users.headers.createdDate")}</TableHead>
                 <TableHead>{t("admin.users.headers.status")}</TableHead>
-                <TableHead className="w-[100px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.userId}>
+                <TableRow
+                  key={user.userId}
+                  onClick={() => navigate(`${user.userId}`)}
+                  className="cursor-pointer hover:bg-muted"
+                >
                   <TableCell className="font-medium">{user.username}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
@@ -173,50 +175,34 @@ export default function UserList() {
                       {user.enabled ? t("admin.users.status.active") : t("admin.users.status.inactive")}
                     </span>
                   </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`${user.userId}`)}>
-                          {t("admin.users.actions.viewDetails")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleUpdateStatus(user.userId, !user.enabled)}>
-                          {user.enabled
-                            ? t("admin.users.actions.disableAccount")
-                            : t("admin.users.actions.enableAccount")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="mt-4 flex justify-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
-              disabled={currentPage === 0}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
-              disabled={currentPage === totalPages - 1}
-            >
-              Next
-            </Button>
-          </div>
-        )}
+        <div className="mt-4 flex justify-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
+            disabled={currentPage === 0}
+          >
+            Previous
+          </Button>
+          <span className="flex items-center px-4">
+            {t("document.discover.pagination.pageInfo", {
+              current: users.length > 0 ? currentPage + 1 : 0,
+              total: totalPages,
+            })}
+          </span>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
+            disabled={currentPage === totalPages - 1}
+          >
+            Next
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -14,8 +14,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 public class ClearExpiredTokenJob {
     private final RefreshTokenService refreshTokenService;
 
-    @Scheduled(cron = "0 0 * * * *")
-//    @Scheduled(cron = "0 0 */6 * * *")
+//    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 */6 * * *")
     public void clearExpiredToken() {
         log.info("Clear Expired Token Job Start");
         refreshTokenService.removeExpiredTokens();

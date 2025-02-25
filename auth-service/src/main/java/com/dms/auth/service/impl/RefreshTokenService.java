@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +34,7 @@ public class RefreshTokenService {
                 .expiryDate(Instant.now().plusMillis(refreshTokenDurationMs))
                 .userAgent(request.getHeader("User-Agent"))
                 .ipAddress(request.getRemoteAddr())
+                .createdAt(Instant.now())
                 .createdBy(user.getUsername())
                 .updatedBy(user.getUsername())
                 .build();

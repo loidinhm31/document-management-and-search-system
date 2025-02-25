@@ -64,7 +64,7 @@ const TagInputHybrid = ({
       const results = await onSearch(prefix || "");
       setSuggestions(results.filter(tag => !value.includes(tag)));
     } catch (error) {
-      console.error("Error fetching tag suggestions:", error);
+      console.info("Error fetching tag suggestions:", error);
       setSuggestions([]);
     } finally {
       setLoading(false);

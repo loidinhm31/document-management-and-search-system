@@ -1,11 +1,13 @@
-import { ArrowLeft, Calendar, FileBox, Loader2, User } from "lucide-react";
+import { ArrowLeft, Calendar, Languages, Loader2, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MdOutlineFavorite, MdOutlineFavoriteBorder } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { CommentSection } from "@/components/document/discover/comment-section";
+import DocumentStats from "@/components/document/discover/document-stats";
 import { RelatedDocuments } from "@/components/document/discover/related-document";
+import { ReportDocumentDialog } from "@/components/document/discover/report-document-dialog";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
 import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
@@ -17,9 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
+import { setCurrentDocument } from "@/store/slices/document-slice";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
-import { setCurrentDocument } from "@/store/slices/document-slice";
 import { MasterDataType } from "@/types/master-data";
 
 export default function DocumentDetailPage() {
@@ -34,7 +36,13 @@ export default function DocumentDetailPage() {
   const [documentData, setDocumentData] = useState<DocumentInformation | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
 
-  const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
+  const [statistics, setStatistics] = useState<{
+    viewCount: number;
+    downloadCount: number;
+    totalInteractions: number;
+  } | null>(null);
+
+  const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
@@ -50,7 +58,7 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.success"),
           description: t("document.favorite.removeSuccess"),
-          variant: "success"
+          variant: "success",
         });
       } else {
         await documentService.favoriteDocument(documentId);
@@ -58,14 +66,14 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.success"),
           description: t("document.favorite.addSuccess"),
-          variant: "success"
+          variant: "success",
         });
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.favorite.error"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -85,19 +93,22 @@ export default function DocumentDetailPage() {
       if (!documentId) return;
 
       try {
-        const [docResponse, favoriteResponse] = await Promise.all([
-          documentService.getDocumentDetails(documentId),
-          documentService.isDocumentFavorited(documentId)
-        ]);
-
+        const docResponse = await documentService.getDocumentDetails(documentId, true);
         setDocumentData(docResponse.data);
-        setIsFavorited(favoriteResponse.data);
         dispatch(setCurrentDocument(docResponse.data));
-      } catch (error) {
+
+        documentService.isDocumentFavorited(documentId).then((favoriteResponse) => {
+          setIsFavorited(favoriteResponse.data);
+        });
+
+        documentService.getDocumentStatistics(documentId).then((statisticsResponse) => {
+          setStatistics(statisticsResponse.data);
+        });
+      } catch (_error) {
         toast({
           title: t("common.error"),
           description: t("document.detail.fetchError"),
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -121,6 +132,11 @@ export default function DocumentDetailPage() {
 
   if (!documentData) return null;
 
+  const handleDownloadSuccess = async () => {
+    const statisticsResponse = await documentService.getDocumentStatistics(documentId);
+    setStatistics(statisticsResponse.data);
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
@@ -132,20 +148,22 @@ export default function DocumentDetailPage() {
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
           {/* Preview Section */}
-          <Card className="xl:h-[800px] xl:col-span-8">
+          <Card className="xl:h-[880px] xl:col-span-8">
             <CardHeader>
               <CardTitle>{documentData?.filename}</CardTitle>
               <CardDescription>
-                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(2)} KB
+                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(3)} KB
               </CardDescription>
             </CardHeader>
-            <CardContent className="h-full max-h-[700px]">
+            <CardContent className="h-full max-h-[770px]">
               {documentData && (
                 <DocumentViewer
                   documentId={documentData.id}
                   documentType={documentData.documentType}
                   mimeType={documentData.mimeType}
                   fileName={documentData.filename}
+                  history={true}
+                  onDownloadSuccess={handleDownloadSuccess}
                 />
               )}
             </CardContent>
@@ -156,36 +174,42 @@ export default function DocumentDetailPage() {
             <CardContent className="p-4 lg:p-6 space-y-6">
               {/* Document Actions */}
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={handleFavorite}
-                >
-                  {isFavorited ? (
-                    <>
-                      <MdOutlineFavorite className="h-4 w-4 fill-current" />
-                      {t("document.actions.favorited")}
-                    </>
-                  ) : (
-                    <>
-                      <MdOutlineFavoriteBorder className="h-4 w-4" />
-                      {t("document.actions.favorite")}
-                    </>
-                  )}
-                </Button>
+                {!currentUser.roles.includes("ROLE_ADMIN") && (
+                  <Button variant="outline" size="sm" className="gap-2" onClick={handleFavorite}>
+                    {isFavorited ? (
+                      <>
+                        <MdOutlineFavorite className="h-4 w-4 fill-red-500" />
+                        {t("document.actions.favorited")}
+                      </>
+                    ) : (
+                      <>
+                        <MdOutlineFavoriteBorder className="h-4 w-4" />
+                        {t("document.actions.favorite")}
+                      </>
+                    )}
+                  </Button>
+                )}
 
-                {currentUser?.username === documentData.createdBy && (
+                {currentUser?.userId === documentData.userId && (
                   <ShareDocumentDialog
                     documentId={documentData.id}
                     documentName={documentData.filename}
                     isShared={documentData.sharingType === "PUBLIC"}
                   />
                 )}
+
+                {currentUser?.userId !== documentData.userId && !currentUser.roles.includes("ROLE_ADMIN") && (
+                  <ReportDocumentDialog documentId={documentId} documentName={documentData.filename} />
+                )}
               </div>
 
               {/* Document Metadata */}
               <div className="space-y-6">
+                {/* Document Statistics */}
+                {statistics && (
+                  <DocumentStats viewCount={statistics.viewCount} downloadCount={statistics.downloadCount} />
+                )}
+
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <User className="h-4 w-4" />
@@ -194,6 +218,10 @@ export default function DocumentDetailPage() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     {formatDate(documentData.createdAt.toString())}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Languages className="h-4 w-4" />
+                    {documentData.language}
                   </div>
                 </div>
 
@@ -206,11 +234,6 @@ export default function DocumentDetailPage() {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label>{t("document.detail.fields.courseCode")}</Label>
-                    <p className="text-sm text-muted-foreground">{documentData.courseCode}</p>
-                  </div>
-
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.major")}</Label>
@@ -218,6 +241,17 @@ export default function DocumentDetailPage() {
                         {getMasterDataTranslation(documentData.major, MasterDataType.MAJOR, { majors })}
                       </p>
                     </div>
+
+                    {documentData.courseCode && (
+                      <div className="space-y-2">
+                        <Label>{t("document.detail.fields.courseCode")}</Label>
+                        <p className="text-sm text-muted-foreground">
+                          {getMasterDataTranslation(documentData.courseCode, MasterDataType.COURSE_CODE, {
+                            courseCodes,
+                          })}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.level")}</Label>
@@ -230,7 +264,9 @@ export default function DocumentDetailPage() {
                   <div className="space-y-2">
                     <Label>{t("document.detail.fields.category")}</Label>
                     <p className="text-sm text-muted-foreground">
-                      {getMasterDataTranslation(documentData.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
+                      {getMasterDataTranslation(documentData.category, MasterDataType.DOCUMENT_CATEGORY, {
+                        categories,
+                      })}
                     </p>
                   </div>
 
@@ -260,6 +296,8 @@ export default function DocumentDetailPage() {
                   documentCreatorId={documentData.userId}
                   documentId={documentData.id}
                   onVersionUpdate={handleVersionUpdate}
+                  allowRevert={false}
+                  onDownloadSuccess={handleDownloadSuccess}
                 />
               )}
             </CardContent>
@@ -267,10 +305,7 @@ export default function DocumentDetailPage() {
         </div>
 
         {/* Related Documents Section */}
-        <RelatedDocuments
-          documentId={documentId}
-          onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)}
-        />
+        <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
 
         {/* Comments Section */}
         <Card>

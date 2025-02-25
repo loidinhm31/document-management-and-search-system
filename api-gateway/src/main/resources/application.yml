@@ -17,3 +17,25 @@ spring:
     loadbalancer:
       retry:
         enabled: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    filter: true
+    disable-swagger-default-url: true
+    config-url: /v3/api-docs/swagger-config
+    urls:
+      - url: /v3/api-docs
+        name: API Gateway
+      - url: /document-interaction/v3/api-docs
+        name: Document Interaction Service
+      - url: /document-search/v3/api-docs
+        name: Document Search Service
+      - url: /auth/v3/api-docs
+        name: Auth Service
+    default-model-expand-depth: -1
+  cache:
+    disabled: true

@@ -5,14 +5,22 @@ import com.dms.document.interaction.dto.CommentRequest;
 import com.dms.document.interaction.dto.CommentResponse;
 import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.enums.InteractionType;
+import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
+import com.dms.document.interaction.model.CommentReport;
 import com.dms.document.interaction.model.DocumentComment;
 import com.dms.document.interaction.model.DocumentInformation;
+import com.dms.document.interaction.model.UserDocumentHistory;
+import com.dms.document.interaction.repository.CommentReportRepository;
 import com.dms.document.interaction.repository.DocumentCommentRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
+import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,7 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -36,6 +44,8 @@ public class DocumentCommentService {
     private final DocumentRepository documentRepository;
     private final DocumentNotificationService documentNotificationService;
     private final DocumentPreferencesService documentPreferencesService;
+    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
+    private final CommentReportRepository commentReportRepository;
 
     @Transactional(readOnly = true)
     public Page<CommentResponse> getDocumentComments(String documentId, Pageable pageable, String username) {
@@ -62,8 +72,20 @@ public class DocumentCommentService {
         // Batch fetch user data
         Map<UUID, UserResponse> userMap = batchFetchUsers(userIds);
 
-        // Build comment tree structure
-        List<CommentResponse> commentTree = buildCommentTree(allComments, userMap);
+        // Get all comment reports by the current user for this document
+        List<CommentReport> userReports = commentReportRepository.findReportsByUserAndDocument(
+                userResponse.userId(), documentId
+        );
+
+        // Create a map of comment ID to report status
+        Map<Long, CommentReport> commentReportMap = userReports.stream()
+                .collect(Collectors.toMap(
+                        CommentReport::getCommentId,
+                        report -> report
+                ));
+
+        // Build comment tree structure, including report information
+        List<CommentResponse> commentTree = buildCommentTree(allComments, userMap, commentReportMap);
 
         return new PageImpl<>(commentTree, pageable, totalComments);
     }
@@ -75,18 +97,37 @@ public class DocumentCommentService {
         DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
+        // Check parent id is still valid
+        if (Objects.nonNull(request.parentId())) {
+            Optional<DocumentComment> parentComment = documentCommentRepository.findById(request.parentId());
+            if (parentComment.isPresent() && parentComment.get().isDeleted()) {
+                throw new InvalidDocumentException("PARENT_COMMENT_DELETED");
+            }
+        }
+
         DocumentComment comment = new DocumentComment();
         comment.setDocumentId(documentInformation.getId());
         comment.setUserId(userResponse.userId());
         comment.setContent(request.content());
         comment.setParentId(request.parentId());
+        comment.setCreatedAt(Instant.now());
 
         DocumentComment savedComment = documentCommentRepository.save(comment);
 
         // Initialize empty replies list for new comment
-        savedComment.setReplies(new ArrayList<>());
+        savedComment.setReplies(Collections.emptyList());
 
         CompletableFuture.runAsync(() -> {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(userResponse.userId().toString())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.COMMENT)
+                    .version(documentInformation.getCurrentVersion())
+                    .detail(comment.getContent())
+                    .createdAt(Instant.now())
+                    .build());
+
             // Only notify if this is a new commenter
             documentNotificationService.handleCommentNotification(
                     documentId,
@@ -97,14 +138,14 @@ public class DocumentCommentService {
 
             documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.COMMENT);
         });
-        return mapToCommentResponse(savedComment, Collections.singletonMap(userResponse.userId(), userResponse));
+        return mapToCommentResponse(savedComment, Collections.singletonMap(userResponse.userId(), userResponse), Map.of());
     }
 
     @Transactional
-    public CommentResponse updateComment(Long commentId, CommentRequest request, String username) {
+    public CommentResponse updateComment(String documentId, Long commentId, CommentRequest request, String username) {
         UserResponse userResponse = getUserByUsername(username);
 
-        DocumentComment comment = documentCommentRepository.findById(commentId)
+        DocumentComment comment = documentCommentRepository.findByDocumentIdAndId(documentId, commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
         if (!comment.getUserId().equals(userResponse.userId())) {
@@ -113,17 +154,17 @@ public class DocumentCommentService {
 
         comment.setContent(request.content());
         comment.setEdited(true);
-        comment.setUpdatedAt(LocalDateTime.now());
+        comment.setUpdatedAt(Instant.now());
 
         DocumentComment updatedComment = documentCommentRepository.save(comment);
-        return mapToCommentResponse(updatedComment, Collections.singletonMap(userResponse.userId(), userResponse));
+        return mapToCommentResponse(updatedComment, Collections.singletonMap(userResponse.userId(), userResponse), Map.of());
     }
 
     @Transactional
-    public void deleteComment(Long commentId, String username) {
+    public void deleteComment(String documentId, Long commentId, String username) {
         UserResponse userResponse = getUserByUsername(username);
 
-        DocumentComment comment = documentCommentRepository.findById(commentId)
+        DocumentComment comment = documentCommentRepository.findByDocumentIdAndId(documentId, commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
         if (!comment.getUserId().equals(userResponse.userId())) {
@@ -154,14 +195,17 @@ public class DocumentCommentService {
         return new HashMap<>();
     }
 
-    private List<CommentResponse> buildCommentTree(List<DocumentComment> comments, Map<UUID, UserResponse> userMap) {
+    private List<CommentResponse> buildCommentTree(
+            List<DocumentComment> comments,
+            Map<UUID, UserResponse> userMap,
+            Map<Long, CommentReport> commentReportMap) {
         // Use LinkedHashMap to maintain order
         Map<Long, CommentResponse> responseMap = new LinkedHashMap<>();
         List<CommentResponse> rootComments = new ArrayList<>();
 
         // Single pass comment tree building
         for (DocumentComment comment : comments) {
-            CommentResponse response = mapToCommentResponse(comment, userMap);
+            CommentResponse response = mapToCommentResponse(comment, userMap, commentReportMap);
             responseMap.put(comment.getId(), response);
 
             if (comment.getParentId() == null) {
@@ -190,8 +234,15 @@ public class DocumentCommentService {
 
     private CommentResponse mapToCommentResponse(
             DocumentComment comment,
-            Map<UUID, UserResponse> userMap) {
+            Map<UUID, UserResponse> userMap,
+            Map<Long, CommentReport> commentReportMap) {
         UserResponse user = userMap.get(comment.getUserId());
+
+        // Check if this comment has been reported by the current user
+        CommentReport userReport = commentReportMap.get(comment.getId());
+        boolean reportedByUser = userReport != null;
+        boolean reportResolved = reportedByUser && userReport.isResolved();
+
         return CommentResponse.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
@@ -199,6 +250,8 @@ public class DocumentCommentService {
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .edited(comment.isEdited())
+                .reportedByUser(reportedByUser)
+                .reportResolved(reportResolved)
                 .build();
     }
 }

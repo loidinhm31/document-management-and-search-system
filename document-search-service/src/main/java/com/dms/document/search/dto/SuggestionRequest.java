@@ -14,6 +14,7 @@ import java.util.Set;
 public class SuggestionRequest {
     private String query;
     private String major;
+    private String courseCode;
     private String level;
     private String category;
     private Set<String> tags;

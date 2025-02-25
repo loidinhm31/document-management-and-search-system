@@ -26,8 +26,8 @@ class UserService extends BaseService {
     );
   }
 
-  updatePassword(userId: string, data: UpdatePasswordRequest) {
-    return this.handleApiResponse(axiosInstance.put(`/auth/api/v1/users/${userId}/password`, data));
+  async updatePassword(userId: string, data: UpdatePasswordRequest) {
+    return axiosInstance.put(`/auth/api/v1/users/${userId}/password`, data);
   }
 
   getCurrentUser() {

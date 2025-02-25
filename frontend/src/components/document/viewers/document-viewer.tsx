@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { Loader2 } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import mammoth from "mammoth";
 import Papa from "papaparse";
 import React, { useEffect, useState } from "react";
@@ -26,6 +26,9 @@ interface DocumentViewerProps {
   documentType: DocumentType;
   fileName: string;
   versionNumber?: number;
+  fileChange?: boolean;
+  history?: boolean;
+  onDownloadSuccess?: () => void;
 }
 
 export interface ExcelSheet {
@@ -34,15 +37,19 @@ export interface ExcelSheet {
 }
 
 export const DocumentViewer = ({
-                                 documentId,
-                                 mimeType,
-                                 documentType,
-                                 fileName,
-                                 versionNumber
-                               }: DocumentViewerProps) => {
+  documentId,
+  mimeType,
+  documentType,
+  fileName,
+  versionNumber,
+  fileChange,
+  history = false,
+  onDownloadSuccess,
+}: DocumentViewerProps) => {
   const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [wordContent, setWordContent] = useState<string | null>(null);
   const [textContent, setTextContent] = useState<string | null>(null);
@@ -63,14 +70,21 @@ export const DocumentViewer = ({
     };
   }, [documentId, mimeType, documentType]);
 
+  useEffect(() => {
+    if (fileChange) {
+      loadDocument();
+    }
+  }, [fileChange]);
+
   const loadDocument = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = versionNumber !== undefined
-        ? await documentService.downloadDocumentVersion(documentId, versionNumber)
-        : await documentService.downloadDocument(documentId);
+      const response =
+        versionNumber !== undefined
+          ? await documentService.downloadDocumentVersion({ documentId, versionNumber })
+          : await documentService.downloadDocument({ id: documentId });
       const blob = new Blob([response.data], { type: mimeType });
 
       switch (documentType) {
@@ -94,15 +108,17 @@ export const DocumentViewer = ({
           const workbook = XLSX.read(arrayBuffer, {
             type: "array",
             cellDates: true,
-            cellStyles: true
+            cellStyles: true,
           });
 
-          const sheets: ExcelSheet[] = workbook.SheetNames.map(sheetName => {
+          const sheets: ExcelSheet[] = workbook.SheetNames.map((sheetName) => {
             const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as Array<Array<string | number | boolean | Date | null>>;
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as Array<
+              Array<string | number | boolean | Date | null>
+            >;
             return {
               name: sheetName,
-              data: jsonData
+              data: jsonData,
             };
           });
 
@@ -115,23 +131,23 @@ export const DocumentViewer = ({
           Papa.parse(text, {
             complete: (results) => {
               // Transform and type the data properly
-              const typedData = results.data.map(row =>
-                (row as unknown[]).map(cell => {
+              const typedData = results.data.map((row) =>
+                (row as unknown[]).map((cell) => {
                   if (cell instanceof Date) return cell;
                   if (typeof cell === "number") return cell;
                   if (typeof cell === "boolean") return cell;
                   return String(cell);
-                })
+                }),
               ) as Array<Array<string | number | boolean | Date>>;
               setCsvContent(typedData);
             },
             error: (error) => {
-              console.error("Error parsing CSV:", error);
+              console.info("Error parsing CSV:", error);
               setError("Failed to parse CSV file");
             },
             delimiter: ",", // auto-detect delimiter
             dynamicTyping: true, // convert numbers and booleans
-            skipEmptyLines: true
+            skipEmptyLines: true,
           });
           break;
         }
@@ -143,9 +159,9 @@ export const DocumentViewer = ({
           const zip = await JSZip.loadAsync(data);
 
           // Get the slides from pptx
-          const slideFiles = Object.keys(zip.files).filter(
-            fileName => fileName.match(/ppt\/slides\/slide[0-9]+\.xml/)
-          ).sort();
+          const slideFiles = Object.keys(zip.files)
+            .filter((fileName) => fileName.match(/ppt\/slides\/slide[0-9]+\.xml/))
+            .sort();
 
           const slides: string[] = [];
 
@@ -155,9 +171,9 @@ export const DocumentViewer = ({
               // Convert slide XML to HTML (simplified version)
               const parser = new DOMParser();
               const xmlDoc = parser.parseFromString(content, "text/xml");
-              const texts = Array.from(xmlDoc.getElementsByTagName("a:t")).map(t => t.textContent);
+              const texts = Array.from(xmlDoc.getElementsByTagName("a:t")).map((t) => t.textContent);
               const slideHtml = `<div class="slide">
-                ${texts.map(text => `<p>${text}</p>`).join("")}
+                ${texts.map((text) => `<p>${text}</p>`).join("")}
               </div>`;
               slides.push(slideHtml);
             }
@@ -197,12 +213,12 @@ export const DocumentViewer = ({
         }
       }
     } catch (err) {
-      console.error("Error loading document:", err);
+      console.info("Error loading document:", err);
       setError(t("document.viewer.error.loading"));
       toast({
         title: t("document.viewer.error.title"),
         description: t("document.viewer.error.loading"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -211,9 +227,16 @@ export const DocumentViewer = ({
 
   const handleDownload = async () => {
     try {
-      const response = versionNumber !== undefined
-        ? await documentService.downloadDocumentVersion(documentId, versionNumber, "download")
-        : await documentService.downloadDocument(documentId, "download");
+      setIsDownloading(true);
+      const response =
+        versionNumber !== undefined
+          ? await documentService.downloadDocumentVersion({
+              documentId,
+              versionNumber,
+              action: "download",
+              history: history,
+            })
+          : await documentService.downloadDocument({ id: documentId, action: "download", history: history });
       const blob = new Blob([response.data], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -223,12 +246,18 @@ export const DocumentViewer = ({
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-    } catch (err) {
+
+      // Tracking download
+      onDownloadSuccess?.();
+    } catch (error) {
+      console.info("err:", error);
       toast({
         title: t("document.viewer.error.title"),
         description: t("document.viewer.error.download"),
-        variant: "destructive"
+        variant: "destructive",
       });
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -243,10 +272,11 @@ export const DocumentViewer = ({
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4">
+      <div className="flex flex-col items-center h-full gap-4">
         <p className="text-destructive">{error}</p>
-        <Button onClick={handleDownload} variant="outline">
-          {t("document.viewer.buttons.downloadInstead")}
+        <Button onClick={handleDownload} variant="outline" disabled={isDownloading || loading}>
+          <Download className="h-4 w-4 mr-2" />
+          {!isDownloading ? t("document.viewer.buttons.downloadInstead") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
     );
@@ -254,83 +284,113 @@ export const DocumentViewer = ({
 
   switch (documentType) {
     case DocumentType.PDF:
-      return fileUrl && (
-        <PDFViewer
-          fileUrl={fileUrl}
-          onDownload={handleDownload}
-        />
+      return (
+        fileUrl && (
+          <PDFViewer fileUrl={fileUrl} onDownload={handleDownload} isDownloading={isDownloading} loading={loading} />
+        )
       );
 
     case DocumentType.WORD:
     case DocumentType.WORD_DOCX:
-      return wordContent && (
-        <WordViewer
-          content={wordContent}
-          onDownload={handleDownload}
-        />
+      return (
+        wordContent && (
+          <WordViewer
+            content={wordContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
       );
 
     case DocumentType.EXCEL:
     case DocumentType.EXCEL_XLSX:
-      return excelContent.length > 0 && (
-        <SpreadsheetViewer
-          sheets={excelContent}
-          activeSheet={activeSheet}
-          onSheetChange={setActiveSheet}
-          onDownload={handleDownload}
-        />
+      return (
+        excelContent.length > 0 && (
+          <SpreadsheetViewer
+            sheets={excelContent}
+            activeSheet={activeSheet}
+            onSheetChange={setActiveSheet}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
       );
 
     case DocumentType.CSV:
-      return csvContent.length > 0 && (
-        <SpreadsheetViewer
-          sheets={[{ name: "Sheet1", data: csvContent }]}
-          activeSheet={0}
-          onSheetChange={() => {
-          }}
-          onDownload={handleDownload}
-        />
+      return (
+        csvContent.length > 0 && (
+          <SpreadsheetViewer
+            sheets={[{ name: "Sheet1", data: csvContent }]}
+            activeSheet={0}
+            onSheetChange={() => {}}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
       );
 
     case DocumentType.POWERPOINT:
     case DocumentType.POWERPOINT_PPTX:
-      return powerPointContent.length > 0 && (
-        <PowerPointViewer
-          content={powerPointContent}
-          onDownload={handleDownload}
-        />
+      return (
+        powerPointContent.length > 0 && (
+          <PowerPointViewer
+            content={powerPointContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
       );
 
     case DocumentType.TEXT_PLAIN:
-      return textContent && (
-        <TextViewer
-          content={textContent}
-          onDownload={handleDownload}
-        />
+      return (
+        textContent && (
+          <TextViewer
+            content={textContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
       );
 
     case DocumentType.JSON:
-      return textContent && (
-        <JsonViewer
-          content={textContent}
-          onDownload={handleDownload}
-        />
+      return (
+        textContent && (
+          <JsonViewer
+            content={textContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
       );
 
     case DocumentType.XML:
-      return textContent && (
-        <XmlViewer
-          content={textContent}
-          onDownload={handleDownload}
-        />
+      return (
+        textContent && (
+          <XmlViewer
+            content={textContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
       );
 
     case DocumentType.MARKDOWN:
-      return textContent && (
-        <MarkdownViewer
-          content={textContent}
-          onDownload={handleDownload}
-        />
+      return (
+        textContent && (
+          <MarkdownViewer
+            content={textContent}
+            onDownload={handleDownload}
+            isDownloading={isDownloading}
+            loading={loading}
+          />
+        )
       );
 
     default:
@@ -338,6 +398,8 @@ export const DocumentViewer = ({
         <UnsupportedViewer
           documentType={documentType}
           onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
         />
       );
   }

@@ -60,7 +60,7 @@ public class DocumentPreferencesService {
         existing.setPreferredTags(request.preferredTags());
         existing.setLanguagePreferences(request.languagePreferences());
 
-        existing.setUpdatedAt(new Date());
+        existing.setUpdatedAt(Instant.now());
         return documentPreferencesRepository.save(existing);
     }
 
@@ -80,7 +80,7 @@ public class DocumentPreferencesService {
                     newInteraction.setUserId(userId.toString());
                     newInteraction.setDocumentId(documentId);
                     newInteraction.setInteractions(new HashMap<>());
-                    newInteraction.setFirstInteractionDate(new Date());
+                    newInteraction.setFirstInteractionDate(Instant.now());
                     return newInteraction;
                 });
 
@@ -92,8 +92,8 @@ public class DocumentPreferencesService {
         );
 
         typeStats.setCount(typeStats.getCount() + 1);
-        typeStats.setLastUpdate(new Date());
-        interaction.setLastInteractionDate(new Date());
+        typeStats.setLastUpdate(Instant.now());
+        interaction.setLastInteractionDate(Instant.now());
 
         documentInteractionRepository.save(interaction);
 
@@ -121,7 +121,7 @@ public class DocumentPreferencesService {
         Map<String, Double> newWeights = calculateContentTypeWeights(userId);
         preferences.setContentTypeWeights(newWeights);
 
-        preferences.setUpdatedAt(new Date());
+        preferences.setUpdatedAt(Instant.now());
         documentPreferencesRepository.save(preferences);
     }
 
@@ -249,8 +249,8 @@ public class DocumentPreferencesService {
         preferences.setRecentViewedDocuments(new LinkedHashSet<>());
 
         // Set timestamps
-        preferences.setCreatedAt(new Date());
-        preferences.setUpdatedAt(new Date());
+        preferences.setCreatedAt(Instant.now());
+        preferences.setUpdatedAt(Instant.now());
 
         return documentPreferencesRepository.save(preferences);
     }

@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 
@@ -94,10 +94,10 @@ public class DocumentInformation {
     private Integer currentVersion;
 
     @Field("created_at")
-    private Date createdAt;
+    private Instant createdAt;
 
     @Field("updated_at")
-    private Date updatedAt;
+    private Instant updatedAt;
 
     @Field("created_by")
     private String createdBy;

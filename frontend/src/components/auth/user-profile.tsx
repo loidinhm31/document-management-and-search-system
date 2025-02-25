@@ -1,11 +1,12 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+import { Separator } from "@radix-ui/react-dropdown-menu";
 import { jwtDecode } from "jwt-decode";
 import { Loader2 } from "lucide-react";
+import moment from "moment-timezone";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import * as z from "zod";
 
+import Disable2FADialog from "@/components/auth/disable-2fa-dialog";
+import PasswordUpdateForm from "@/components/auth/password-update-form";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -15,20 +16,6 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/user.service";
-import { Separator } from "@radix-ui/react-dropdown-menu";
-import PasswordUpdateForm from "@/components/auth/password-update-form";
-
-const formSchema = z.object({
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters")
-    .regex(
-      /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
-      "Password must contain at least one digit, lowercase, uppercase, and special character",
-    ),
-});
-
-type FormValues = z.infer<typeof formSchema>;
 
 export default function UserProfile() {
   const { t } = useTranslation();
@@ -41,6 +28,7 @@ export default function UserProfile() {
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [step, setStep] = useState(1);
+  const [showDisableDialog, setShowDisableDialog] = useState(false);
 
   // Loading states
   const [loading, setLoading] = useState({
@@ -105,8 +93,13 @@ export default function UserProfile() {
     }
   };
 
+  // Open disable confirmation dialog
+  const handleDisable2FA = () => {
+    setShowDisableDialog(true);
+  };
+
   // Disable 2FA
-  const disable2FA = async () => {
+  const confirmDisable2FA = async () => {
     setLoading((prev) => ({ ...prev, twoFactor: true }));
     try {
       await userService.disable2FA(currentUser?.userId);
@@ -115,7 +108,7 @@ export default function UserProfile() {
       toast({
         title: t("common.success"),
         description: t("profile.twoFactor.messages.disableSuccess"),
-        variant: "success"
+        variant: "success",
       });
     } catch (_error) {
       toast({
@@ -125,6 +118,7 @@ export default function UserProfile() {
       });
     } finally {
       setLoading((prev) => ({ ...prev, twoFactor: false }));
+      setShowDisableDialog(false);
     }
   };
 
@@ -175,6 +169,7 @@ export default function UserProfile() {
         <Card>
           <CardHeader className="space-y-1">
             <div className="flex items-center gap-4">
+
               <Avatar className="h-12 w-12">
                 <AvatarFallback>{currentUser?.username?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
@@ -212,6 +207,10 @@ export default function UserProfile() {
               </AccordionItem>
             </Accordion>
 
+            <div className="rounded-lg border p-4">
+              <h3 className="font-semibold">{t("profile.createdDate.title")}</h3>
+              <p className="text-sm text-muted-foreground"><p>{moment(currentUser.createdDate).format('DD/MM/YYYY, h:mm:ss a')}</p></p>
+            </div>
             {loginSession && (
               <div className="rounded-lg border p-4">
                 <h3 className="font-semibold">{t("profile.lastLogin.title")}</h3>
@@ -239,7 +238,7 @@ export default function UserProfile() {
             <p className="text-sm text-muted-foreground">{t("profile.twoFactor.description")}</p>
 
             <Button
-              onClick={is2faEnabled ? disable2FA : enable2FA}
+              onClick={is2faEnabled ? handleDisable2FA : enable2FA}
               variant={is2faEnabled ? "destructive" : "default"}
               disabled={loading.twoFactor}
             >
@@ -251,12 +250,56 @@ export default function UserProfile() {
               <div className="space-y-4">
                 <div className="rounded-lg border p-4">
                   <img src={qrCodeUrl} alt="2FA QR Code" className="mx-auto" />
+
+                  {/* Extract and display the secret key for manual entry */}
+                  {(() => {
+                    try {
+                      // Parse the secret from the QR URL
+                      const url = new URL(qrCodeUrl);
+                      const data = url.searchParams.get("data");
+                      if (data) {
+                        const decodedData = decodeURIComponent(data);
+                        const secretMatch = decodedData.match(/secret=([A-Z0-9]+)/);
+                        if (secretMatch && secretMatch[1]) {
+                          const secret = secretMatch[1];
+                          return (
+                            <div className="mt-4 text-center">
+                              <p className="text-sm text-muted-foreground mb-2">{t("profile.twoFactor.manualCode")}</p>
+                              <div className="flex items-center justify-center gap-2">
+                                <code className="bg-muted px-2 py-1 rounded text-base font-mono tracking-wider">
+                                  {secret}
+                                </code>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(secret);
+                                    toast({
+                                      title: t("common.success"),
+                                      description: t("profile.twoFactor.codeCopied"),
+                                      variant: "success",
+                                    });
+                                  }}
+                                >
+                                  {t("profile.twoFactor.copy")}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      console.info("Error parsing 2FA QR code URL:", e);
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 <div className="flex gap-2">
                   <Input
                     placeholder={t("profile.twoFactor.verificationCodePlaceholder")}
                     value={verificationCode}
+                    maxLength={6}
                     onChange={(e) => setVerificationCode(e.target.value)}
                   />
                   <Button onClick={verify2FA} disabled={loading.twoFactor}>
@@ -269,6 +312,14 @@ export default function UserProfile() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 2FA Disable Confirmation Dialog */}
+      <Disable2FADialog
+        open={showDisableDialog}
+        onOpenChange={setShowDisableDialog}
+        onConfirm={confirmDisable2FA}
+        loading={loading.twoFactor}
+      />
     </div>
   );
 }

@@ -22,7 +22,7 @@ export function ProcessingStatus() {
           const response = await documentService.getDocumentDetails(item.documentId);
           updateProcessingItem(item.documentId, response.data.status, response.data.processingError);
         } catch (error) {
-          console.error("Failed to check status:", error);
+          console.info("Failed to check status:", error);
         }
       }
     };

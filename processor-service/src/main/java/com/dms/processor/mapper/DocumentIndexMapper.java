@@ -1,6 +1,6 @@
 package com.dms.processor.mapper;
 
-import com.dms.processor.elasticsearch.DocumentIndex;
+import com.dms.processor.opensearch.DocumentIndex;
 import com.dms.processor.model.DocumentInformation;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +27,7 @@ public class DocumentIndexMapper {
                 .status(doc.getStatus())
                 .language(doc.getLanguage())
                 .createdAt(doc.getCreatedAt())
+                .reportStatus(doc.getReportStatus())
                 .build();
     }
 }
