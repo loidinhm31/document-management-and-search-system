@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,6 +22,9 @@ public class DocumentPreferences {
 
     @Field("preferred_majors")
     private Set<String> preferredMajors;
+
+    @Field("preferred_course_codes")
+    private Set<String> preferredCourseCodes;
 
     @Field("preferred_levels")
     private Set<String> preferredLevels;
@@ -56,8 +59,8 @@ public class DocumentPreferences {
     private Set<String> recentViewedDocuments;
 
     @Field("created_at")
-    private Date createdAt;
+    private Instant createdAt;
 
     @Field("updated_at")
-    private Date updatedAt;
+    private Instant updatedAt;
 }

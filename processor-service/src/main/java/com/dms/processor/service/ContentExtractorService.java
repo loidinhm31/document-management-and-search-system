@@ -2,9 +2,10 @@ package com.dms.processor.service;
 
 import com.dms.processor.dto.DocumentExtractContent;
 import com.dms.processor.dto.ExtractedText;
-import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.TesseractException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
@@ -14,51 +15,30 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.unit.DataSize;
 import org.xml.sax.ContentHandler;
-import org.xml.sax.helpers.DefaultHandler;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
-@Slf4j
+
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class ContentExtractorService {
-    private final AutoDetectParser parser;
-    private final ExecutorService executorService;
-    private final SmartPdfExtractor smartPdfExtractor;
-    private final OcrLargeFileProcessor ocrLargeFileProcessor;
-
-    private final AtomicInteger threadCounter = new AtomicInteger(1);
-    private final LargeFileProcessor largeFileProcessor;
 
     @Value("${app.document.max-size-threshold-mb}")
     private DataSize maxSizeThreshold;
 
-    public ContentExtractorService(SmartPdfExtractor smartPdfExtractor, OcrLargeFileProcessor ocrLargeFileProcessor, LargeFileProcessor largeFileProcessor) {
-        this.smartPdfExtractor = smartPdfExtractor;
-        this.ocrLargeFileProcessor = ocrLargeFileProcessor;
-        this.parser = new AutoDetectParser();
-        this.executorService = Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors(),
-                r -> {
-                    Thread thread = new Thread(r);
-                    thread.setName("content-extractor-" + threadCounter.getAndIncrement());
-                    thread.setDaemon(true);
-                    return thread;
-                }
-        );
-        this.largeFileProcessor = largeFileProcessor;
-    }
+    private final AutoDetectParser parser = new AutoDetectParser();
+    private final SmartPdfExtractor smartPdfExtractor;
+    private final OcrLargeFileProcessor ocrLargeFileProcessor;
+
+    private final LargeFileProcessor largeFileProcessor;
 
     public DocumentExtractContent extractContent(Path filePath) {
         try {
@@ -83,23 +63,41 @@ public class ContentExtractorService {
                     return new DocumentExtractContent(content, metadata);
                 } else {
                     // Handle other file types with existing logic
-                    CompletableFuture<String> contentFuture = CompletableFuture.supplyAsync(() ->
-                            extractTextContent(filePath), executorService);
+                    String result = tikaExtractTextContent(filePath);
 
-                    try {
-                        // Wait for the result with a timeout
-                        String result = contentFuture.get(5, TimeUnit.MINUTES); // Add appropriate timeout
-                        return new DocumentExtractContent(result, metadata);
-                    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                        log.error("Error extracting content from file: {}", filePath, e);
-                        return new DocumentExtractContent("", metadata);
+                    // Fallback to basic text extraction if tika cannot handle
+                    if (StringUtils.isBlank(result)) {
+                        result = basicExtractTextContent(filePath);
                     }
+
+                    return new DocumentExtractContent(result, metadata);
                 }
 
             }
         } catch (Exception e) {
             log.error("Error extracting content from file: {}", filePath, e);
             return new DocumentExtractContent("", new HashMap<>());
+        }
+    }
+
+    private String basicExtractTextContent(Path filePath) {
+        // Use larger buffer size for better performance with large files
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(new FileInputStream(filePath.toFile()), StandardCharsets.UTF_8),
+                8192 * 4)) { // 32KB buffer
+
+            StringBuilder content = new StringBuilder();
+            char[] buffer = new char[8192]; // 8KB chunks
+            int numChars;
+
+            while ((numChars = reader.read(buffer)) != -1) {
+                content.append(buffer, 0, numChars);
+            }
+
+            return content.toString();
+        } catch (IOException e) {
+            log.error("Error reading file content from {}: {}", filePath, e.getMessage());
+            return "";
         }
     }
 
@@ -121,10 +119,10 @@ public class ContentExtractorService {
         return result.text();
     }
 
-    private String extractTextContent(Path filePath) {
+    private String tikaExtractTextContent(Path filePath) {
         try (InputStream input = new BufferedInputStream(Files.newInputStream(filePath))) {
             StringWriter writer = new StringWriter();
-            ContentHandler handler = new ToTextContentHandler(writer);
+            ContentHandler handler = new ToTextContentHandler(writer); // Extract text without format
             Metadata metadata = new Metadata();
             ParseContext context = new ParseContext();
 
@@ -141,49 +139,4 @@ public class ContentExtractorService {
         }
     }
 
-    private Map<String, String> extractMetadata(Path filePath) {
-        try (InputStream input = new BufferedInputStream(Files.newInputStream(filePath))) {
-            Metadata metadata = new Metadata();
-            ParseContext context = new ParseContext();
-            ContentHandler handler = new DefaultHandler();
-
-            parser.parse(input, handler, metadata, context);
-
-            return Arrays.stream(metadata.names())
-                    .filter(this::isImportantMetadata)
-                    .collect(Collectors.toMap(
-                            name -> name,
-                            metadata::get,
-                            (v1, v2) -> v1
-                    ));
-
-        } catch (Exception e) {
-            log.error("Error extracting metadata", e);
-            return new HashMap<>();
-        }
-    }
-
-    private boolean isImportantMetadata(String name) {
-        return Set.of(
-                "Content-Type",
-                "Last-Modified",
-                "Creation-Date",
-                "Author",
-                "Page-Count",
-                "Word-Count"
-        ).contains(name);
-    }
-
-    @PreDestroy
-    public void shutdown() {
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executorService.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-    }
 }

@@ -10,8 +10,8 @@ import java.util.Optional;
 
 public interface MasterDataRepository extends MongoRepository<MasterData, String> {
     List<MasterData> findByType(MasterDataType type);
+    List<MasterData> findByTypeAndIsActive(MasterDataType type, boolean isActive);
     Optional<MasterData> findByTypeAndCode(MasterDataType type, String code);
-    List<MasterData> findByTypeAndIsActiveTrue(MasterDataType type);
 
     @Query("""
             { $or: [
@@ -22,4 +22,8 @@ public interface MasterDataRepository extends MongoRepository<MasterData, String
             ] }
             """)
     List<MasterData> searchByText(String searchText);
+
+    List<MasterData> findByTypeAndParentId(MasterDataType type, String parentId);
+    List<MasterData> findByTypeAndParentIdAndIsActive(MasterDataType type, String parentId, boolean isActive);
+    List<MasterData> findByParentId(String parentId);
 }

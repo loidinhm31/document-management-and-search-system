@@ -15,24 +15,20 @@ import java.util.List;
 import java.util.UUID;
 
 public interface UserService {
-    // Authentication operations
     TokenResponse authenticateUser(LoginRequest loginRequest, HttpServletRequest request);
     TokenResponse refreshToken(String refreshToken);
     void logout(String refreshToken);
     void registerUser(SignupRequest signupRequest);
     UserInfoResponse getUserInfo(UserDetails userDetails);
 
-    // Password operations
     void generatePasswordResetToken(String email);
     void resetPassword(String token, String newPassword);
     void updatePassword(UUID userId, UpdatePasswordRequest request, UserDetails currentUser) throws InvalidRequestException;
 
-    // User management operations
     UserDto getUserById(UUID id);
     void updateUserRole(UUID userId, String roleName);
     UserDto getUserByUsername(String username);
 
-    // 2FA operations
     GoogleAuthenticatorKey generate2FASecret(UUID userId);
     void verify2FACode(UUID userId, Verify2FARequest verify2FARequest);
     boolean validate2FACode(Verify2FARequest verify2FARequest);

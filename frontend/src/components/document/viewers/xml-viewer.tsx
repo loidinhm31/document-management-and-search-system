@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface XmlViewerProps {
   content: string;
   onDownload: () => void;
+  isDownloading?: boolean;
+  loading?: boolean;
 }
 
 interface FormattedXmlPart {
@@ -15,7 +17,7 @@ interface FormattedXmlPart {
   content: string;
 }
 
-export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload }) => {
+export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload, isDownloading, loading }) => {
   const { t } = useTranslation();
 
   const formatXml = (xmlString: string): string => {
@@ -82,13 +84,13 @@ export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload }) => 
         return "";
       };
 
-      let formatted = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+      let formatted = '<?xml version="1.0" encoding="UTF-8"?>\n';
       const rootNode = xmlDoc.documentElement;
       formatted += format(rootNode, 0);
 
       return formatted;
     } catch (e) {
-      console.error("Error formatting XML:", e);
+      console.info("Error formatting XML:", e);
       return xmlString;
     }
   };
@@ -121,7 +123,6 @@ export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload }) => 
           pushCurrentPart("comment");
           inComment = false;
           i += 2;
-
         }
       } else if (inCDATA) {
         currentPart += char;
@@ -130,7 +131,6 @@ export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload }) => 
           pushCurrentPart("cdata");
           inCDATA = false;
           i += 2;
-
         }
       } else if (char === "<") {
         if (nextChar === "!") {
@@ -165,7 +165,7 @@ export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload }) => 
         } else {
           currentPart += char;
         }
-      } else if (inAttribute && (char === "\"" || char === "'")) {
+      } else if (inAttribute && (char === '"' || char === "'")) {
         if (!inAttributeValue) {
           pushCurrentPart("attribute");
           quoteChar = char;
@@ -192,9 +192,9 @@ export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload }) => 
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
-        <Button onClick={onDownload} variant="outline" size="sm">
+        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
           <Download className="h-4 w-4 mr-2" />
-          {t("document.viewer.buttons.download")}
+          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
       <ScrollArea className="flex-1">

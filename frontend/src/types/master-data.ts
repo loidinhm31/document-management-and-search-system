@@ -4,9 +4,10 @@ export interface Translation {
 }
 
 export enum MasterDataType {
-  COURSE_LEVEL = "COURSE_LEVEL",
   MAJOR = "MAJOR",
-  DOCUMENT_CATEGORY = "DOCUMENT_CATEGORY"
+  COURSE_CODE = "COURSE_CODE",
+  COURSE_LEVEL = "COURSE_LEVEL",
+  DOCUMENT_CATEGORY = "DOCUMENT_CATEGORY",
 }
 
 export interface MasterData {
@@ -18,4 +19,12 @@ export interface MasterData {
   createdAt?: Date;
   updatedAt?: Date;
   active: boolean;
+  parentId?: string;
 }
+
+export const MASTER_DATA_HIERARCHY = {
+  [MasterDataType.MAJOR]: [],
+  [MasterDataType.COURSE_CODE]: [MasterDataType.MAJOR],
+  [MasterDataType.COURSE_LEVEL]: [],
+  [MasterDataType.DOCUMENT_CATEGORY]: [],
+};

@@ -1,7 +1,10 @@
 package com.dms.auth.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -14,6 +17,7 @@ import java.util.UUID;
 @Setter
 @Getter
 @Entity
+@Table(name = "password_reset_token")
 public class PasswordResetToken extends BaseEntity<String> {
     @Id
     @GeneratedValue
@@ -27,6 +31,7 @@ public class PasswordResetToken extends BaseEntity<String> {
     @Column(nullable = false)
     private Instant expiryDate;
 
+    @Column(nullable = false)
     private boolean used;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -5,11 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import { cn } from "@/lib/utils";
 import { AppDispatch, RootState } from "@/store";
-import {
-  fetchSuggestions,
-  selectSuggestions,
-  setSearchTerm
-} from "@/store/slices/search-slice";
+import { fetchSuggestions, selectSuggestions, setSearchTerm } from "@/store/slices/search-slice";
 
 interface SearchSuggestionsProps {
   onSearch: () => void;
@@ -83,20 +79,34 @@ const SearchSuggestions = ({
   };
 
   const handleSuggestionSelect = (suggestion: string) => {
-    // Remove HTML tags and clean up whitespace
-    const cleanText = suggestion
-      .replace(/<\/?[^>]+(>|$)/g, "")
-      .replace(/[\n\t]+/g, " ")
-      .trim();
+    // Extract only the highlighted words and join them with spaces
+    const regex = /@@HIGHLIGHT@@(.*?)@@E_HIGHLIGHT@@/g;
+    const matches = [...suggestion.matchAll(regex)];
+    const cleanText = matches.map(match => match[1]).join(" ");
 
     dispatch(setSearchTerm(cleanText));
     setShowSuggestions(false);
     onSearch();
+    setSelectedIndex(-1)
   };
 
   const cleanSuggestion = (suggestion: string) => {
-    // Replace newlines and tabs with a single space and trim any excess whitespace
-    return suggestion.replace(/[\n\t]+/g, " ").trim();
+    // Escape any HTML special characters
+    const escaped = suggestion
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+
+    // Then clean up whitespace and add highlight markers
+    const cleaned = escaped
+      .replace(/[\n\t\s]+/g, " ")
+      .replace(/@@HIGHLIGHT@@/g, "<em><b>")
+      .replace(/@@E_HIGHLIGHT@@/g, "</em></b>")
+      .trim();
+
+    return cleaned;
   };
 
   // Reset suggestions visibility when search term changes to empty

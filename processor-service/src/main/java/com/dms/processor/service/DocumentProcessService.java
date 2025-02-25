@@ -1,15 +1,16 @@
 package com.dms.processor.service;
 
 import com.dms.processor.dto.DocumentExtractContent;
-import com.dms.processor.elasticsearch.DocumentIndex;
-import com.dms.processor.elasticsearch.repository.DocumentIndexRepository;
 import com.dms.processor.enums.DocumentStatus;
 import com.dms.processor.enums.EventType;
+import com.dms.processor.enums.ReportStatus;
 import com.dms.processor.exception.DocumentProcessingException;
 import com.dms.processor.mapper.DocumentIndexMapper;
 import com.dms.processor.model.DocumentContent;
 import com.dms.processor.model.DocumentInformation;
 import com.dms.processor.model.DocumentVersion;
+import com.dms.processor.opensearch.DocumentIndex;
+import com.dms.processor.opensearch.repository.DocumentIndexRepository;
 import com.dms.processor.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
+import java.time.Instant;
 import java.util.Objects;
 
 @Service
@@ -47,7 +48,7 @@ public class DocumentProcessService {
 
             // Download file to temp location if needed
             if (eventType == EventType.SYNC_EVENT ||
-                    eventType == EventType.UPDATE_EVENT_WITH_FILE) {
+                eventType == EventType.UPDATE_EVENT_WITH_FILE) {
                 tempFile = s3Service.downloadToTemp(document.getFilePath());
                 processFullDocument(document, tempFile);
             } else if (eventType == EventType.UPDATE_EVENT) {
@@ -67,6 +68,24 @@ public class DocumentProcessService {
         }
     }
 
+    public void handleReportStatus(String documentId) {
+        try {
+            DocumentInformation document = documentRepository.findById(documentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Document not found"));
+
+            indexDocument(document);
+
+            if (document.getReportStatus() == ReportStatus.RESOLVED) {
+                // TODO Send mail to all favorites and reporter
+            } else if (document.getReportStatus() == ReportStatus.REMOVED) {
+                // TODO Send mail to all favorites
+            }
+        } catch (Exception e) {
+            log.error("Error handling report status for document: {}", documentId, e);
+            throw new DocumentProcessingException("Failed to process report status", e);
+        }
+    }
+
     private void processRevertContent(DocumentInformation document, Integer revertToVersionNumber) {
         // Get the document content for the version we want to revert to
         DocumentContent documentContent = documentContentService.getVersionContent(
@@ -74,7 +93,7 @@ public class DocumentProcessService {
                 revertToVersionNumber
         ).orElseThrow(() -> new DocumentProcessingException(
                 "Content not found for document: " + document.getId() +
-                        " version: " + document.getCurrentVersion()
+                " version: " + document.getCurrentVersion()
         ));
 
         // Get current saved version
@@ -94,7 +113,7 @@ public class DocumentProcessService {
         document.setLanguage(documentVersion.getLanguage());
         document.setExtractedMetadata(documentContent.getExtractedMetadata());
         document.setStatus(DocumentStatus.COMPLETED);
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         documentRepository.save(document);
 
         // Index the document
@@ -112,7 +131,7 @@ public class DocumentProcessService {
         DocumentVersion documentVersion = document.getVersion(versionNumber)
                 .orElseThrow(() -> new DocumentProcessingException("Version not found"));
 
-        DocumentExtractContent extractedContent = extractAndProcessContent(documentVersion, tempFile);
+        DocumentExtractContent extractedContent = extractAndProcessContent(tempFile);
         updateDocumentWithContent(document, documentVersion, extractedContent);
         // Generate thumbnail if needed (base on extracted content)
         handleThumbnail(document, documentVersion, tempFile);
@@ -126,7 +145,7 @@ public class DocumentProcessService {
         indexDocument(document);
     }
 
-    private DocumentExtractContent extractAndProcessContent(DocumentVersion documentVersion, Path filePath) {
+    private DocumentExtractContent extractAndProcessContent(Path filePath) {
         DocumentExtractContent extractedContent = contentExtractorService.extractContent(filePath);
 
         if (extractedContent.content().isEmpty()) {
@@ -156,7 +175,7 @@ public class DocumentProcessService {
         document.setStatus(DocumentStatus.COMPLETED);
 
         // Update timestamps
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         documentRepository.save(document);
 
         documentContentService.saveVersionContent(
@@ -189,7 +208,7 @@ public class DocumentProcessService {
         // Update document status
         document.setStatus(DocumentStatus.FAILED);
         document.setProcessingError(e.getMessage());
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
 
         documentRepository.save(document);
     }

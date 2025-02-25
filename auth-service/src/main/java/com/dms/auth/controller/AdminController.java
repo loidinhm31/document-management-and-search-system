@@ -1,8 +1,6 @@
 package com.dms.auth.controller;
 
 import com.dms.auth.dto.UserDto;
-import com.dms.auth.dto.response.AdminStats;
-import com.dms.auth.dto.response.AuditLogEntry;
 import com.dms.auth.entity.Role;
 import com.dms.auth.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -40,25 +38,6 @@ public class AdminController {
     public ResponseEntity<List<Role>> getAllRoles() {
         return ResponseEntity.ok(
                 adminService.getAllRoles()
-        );
-    }
-
-    @GetMapping("/stats")
-    public ResponseEntity<AdminStats> getSystemStats() {
-        return ResponseEntity.ok(
-                adminService.getSystemStats()
-        );
-    }
-
-    @GetMapping("/audit-logs")
-    public ResponseEntity<Page<AuditLogEntry>> getAuditLogs(
-            @RequestParam(required = false) String username,
-            @RequestParam(required = false) String action,
-            @RequestParam(required = false) String fromDate,
-            @RequestParam(required = false) String toDate,
-            @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(
-                adminService.getAuditLogs(username, action, fromDate, toDate, pageable)
         );
     }
 }

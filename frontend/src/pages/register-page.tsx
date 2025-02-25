@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -13,9 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { SignupRequest } from "@/types/auth";
-import { adminService } from "@/services/admin.service";
 import { authService } from "@/services/auth.service";
+import { SignupRequest } from "@/types/auth";
 
 const signupSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -37,6 +36,7 @@ export default function RegisterPage() {
   const { token } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -66,21 +66,27 @@ export default function RegisterPage() {
 
       toast({
         title: t("common.success"),
-        description: t("auth.register.success"),
+        description: t("auth.register.otpSent"),
         variant: "success",
       });
 
-      navigate("/login");
+      // Redirect to OTP verification page after successful registration
+      navigate("/verify-otp", {
+        state: { username: data.username },
+      });
     } catch (error: any) {
-      const message = error?.response?.data?.error?.message;
-      if (message?.includes("Username")) {
-        form.setError("username", {
-          message: t("validation.usernameExists"),
-        });
-      } else if (message?.includes("Email")) {
-        form.setError("email", {
-          message: t("validation.emailExists"),
-        });
+      console.log("error", error?.response);
+
+      if (error?.response?.status === 500) {
+        if (error?.response?.data === "USERNAME_EXISTS") {
+          form.setError("username", {
+            message: t("auth.register.validation.usernameExists"),
+          });
+        } else if (error?.response?.data === "EMAIL_EXISTS") {
+          form.setError("email", {
+            message: t("auth.register.validation.emailExists"),
+          });
+        }
       } else {
         toast({
           title: t("common.error"),
@@ -144,7 +150,27 @@ export default function RegisterPage() {
                     <FormItem>
                       <FormLabel>{t("auth.register.form.password.label")}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t("auth.register.form.password.placeholder")} type="password" {...field} />
+                        <div className="relative">
+                          <Input
+                            placeholder={t("auth.register.form.password.placeholder")}
+                            type={showPassword ? "text" : "password"}
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8 w-8 p-0"
+                            onClick={() => setShowPassword(!showPassword)}
+                            tabIndex={-1}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <Eye className="h-4 w-4" aria-hidden="true" />
+                            )}
+                          </Button>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

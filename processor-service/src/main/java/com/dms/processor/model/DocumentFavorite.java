@@ -2,7 +2,8 @@ package com.dms.processor.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.time.LocalDateTime;
+
+import java.time.Instant;
 import java.util.UUID;
 
 @Data
@@ -20,5 +21,5 @@ public class DocumentFavorite {
     private String documentId;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

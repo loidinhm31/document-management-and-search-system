@@ -1,19 +1,19 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FcGoogle } from "react-icons/fc";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { OAUTH_GOOGLE_REDIRECT_URL } from "@/env";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/services/auth.service";
 import { LoginRequest, TokenResponse } from "@/types/auth";
-import { APP_API_URL, OAUTH_GOOGLE_REDIRECT_URL } from "@/env";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -36,6 +36,8 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,6 +51,14 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     setIsLoading(true);
     try {
       const response = await authService.login(data as LoginRequest);
+      if (!response.data.enabled) {
+        // Redirect to OTP verification if account is not enabled
+        navigate("/verify-otp", {
+          state: { username: data.username },
+        });
+        return;
+      }
+
       onSuccess(response.data);
     } catch (error) {
       console.log("toast", error);
@@ -117,12 +127,28 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
                     </Button>
                   </div>
                   <FormControl>
-                    <Input
-                      {...field}
-                      type="password"
-                      disabled={isLoading}
-                      placeholder={t("auth.login.form.password.placeholder")}
-                    />
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type={showPassword ? "text" : "password"}
+                        disabled={isLoading}
+                        placeholder={t("auth.login.form.password.placeholder")}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-1 top-1 h-8 w-8 p-0"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" aria-hidden="true" />
+                        ) : (
+                          <Eye className="h-4 w-4" aria-hidden="true" />
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

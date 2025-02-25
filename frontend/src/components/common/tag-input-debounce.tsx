@@ -63,7 +63,7 @@ const TagInputDebounce = ({
           .slice(0, 5) // Limit to 5 suggestions
       );
     } catch (error) {
-      console.error("Error fetching tag suggestions:", error);
+      console.info("Error fetching tag suggestions:", error);
       setSuggestions([]);
     } finally {
       setLoading(false);

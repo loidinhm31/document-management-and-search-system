@@ -2,6 +2,7 @@ package com.dms.processor.model;
 
 import com.dms.processor.enums.DocumentStatus;
 import com.dms.processor.enums.DocumentType;
+import com.dms.processor.enums.ReportStatus;
 import com.dms.processor.enums.SharingType;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.time.Instant;
 import java.util.*;
 
 @Data
@@ -97,16 +99,19 @@ public class DocumentInformation {
     private List<DocumentVersion> versions;
 
     @Field("created_at")
-    private Date createdAt;
+    private Instant createdAt;
 
     @Field("updated_at")
-    private Date updatedAt;
+    private Instant updatedAt;
 
     @Field("created_by")
     private String createdBy;
 
     @Field("updated_by")
     private String updatedBy;
+
+    @Field("report_status")
+    private ReportStatus reportStatus;
 
     public Optional<DocumentVersion> getLatestVersion() {
         if (CollectionUtils.isEmpty(versions)) {

@@ -24,7 +24,7 @@ export default function DocumentPreferencesManager() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const dispatch = useAppDispatch();
-  const { majors, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
+  const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,23 +40,26 @@ export default function DocumentPreferencesManager() {
     if (language) return language.display;
 
     // Check in each master data type
-    const majorItem = majors.find(m => m.code === tag);
+    const majorItem = majors?.find(m => m.code === tag);
     if (majorItem) return majorItem.translations[i18n.language] || majorItem.translations.en;
 
-    const levelItem = levels.find(l => l.code === tag);
+    const courseCodeItem = courseCodes?.find(m => m.code === tag);
+    if (courseCodeItem) return courseCodeItem.translations[i18n.language] || courseCodeItem.translations.en;
+
+    const levelItem = levels?.find(l => l.code === tag);
     if (levelItem) return levelItem.translations[i18n.language] || levelItem.translations.en;
 
-    const categoryItem = categories.find(c => c.code === tag);
+    const categoryItem = categories?.find(c => c.code === tag);
     if (categoryItem) return categoryItem.translations[i18n.language] || categoryItem.translations.en;
 
     return tag;
   };
 
   useEffect(() => {
-    if (majors.length === 0 || levels.length === 0 || categories.length === 0) {
+    if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
       dispatch(fetchMasterData());
     }
-  }, [dispatch, majors.length, levels.length, categories.length]);
+  }, [dispatch, majors?.length, courseCodes?.length, levels?.length, categories?.length]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -167,9 +170,24 @@ export default function DocumentPreferencesManager() {
                     ...prev,
                     preferredMajors: new Set(majors)
                   }))}
-                  recommendedTags={majors.map(major => major.code)}
+                  recommendedTags={majors?.map(major => major.code)}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.majorPlaceholder")}
+                />
+              </div>
+
+              {/* Preferred Course Codes */}
+              <div className="space-y-2">
+                <Label>{t("document.preferences.contentPreferences.courseCode.label")}</Label>
+                <TagInputHybrid
+                  value={Array.from(preferences?.preferredCourseCodes || [])}
+                  onChange={(course) => setPreferences(prev => ({
+                    ...prev,
+                    preferredCourseCodes: new Set(course)
+                  }))}
+                  recommendedTags={courseCodes?.map(course => course.code)}
+                  getTagDisplay={getTagDisplay}
+                  placeholder={t("document.commonSearch.courseCodePlaceholder")}
                 />
               </div>
 
@@ -182,7 +200,7 @@ export default function DocumentPreferencesManager() {
                     ...prev,
                     preferredLevels: new Set(levels)
                   }))}
-                  recommendedTags={levels.map(level => level.code)}
+                  recommendedTags={levels?.map(level => level.code)}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.levelPlaceholder")}
                 />
@@ -197,7 +215,7 @@ export default function DocumentPreferencesManager() {
                     ...prev,
                     preferredCategories: new Set(categories)
                   }))}
-                  recommendedTags={categories.map(category => category.code)}
+                  recommendedTags={categories?.map(category => category.code)}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.categoryPlaceholder")}
                 />
@@ -218,7 +236,7 @@ export default function DocumentPreferencesManager() {
                       const response = await documentService.getTagSuggestions(query);
                       return response.data;
                     } catch (error) {
-                      console.error("Error fetching tag suggestions:", error);
+                      console.info("Error fetching tag suggestions:", error);
                       return [];
                     }
                   }}

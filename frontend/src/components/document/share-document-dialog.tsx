@@ -12,7 +12,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,11 +29,11 @@ interface ShareDocumentDialogProps {
 }
 
 export default function ShareDocumentDialog({
-                                              documentId,
-                                              documentName,
-                                              iconOnly,
-                                              isShared
-                                            }: ShareDocumentDialogProps) {
+  documentId,
+  documentName,
+  iconOnly,
+  isShared,
+}: ShareDocumentDialogProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -81,7 +81,7 @@ export default function ShareDocumentDialog({
         }
       }
     } catch (error) {
-      console.error("Error fetching share settings:", error);
+      console.info("Error fetching share settings:", error);
     }
   };
 
@@ -93,7 +93,7 @@ export default function ShareDocumentDialog({
           const userDetailsResponse = await documentService.getShareableUsersByIds(selectedUsers);
           setUsers(userDetailsResponse.data);
         } catch (error) {
-          console.error("Error fetching selected users:", error);
+          console.info("Error fetching selected users:", error);
         }
       } else {
         setUsers([]);
@@ -106,45 +106,22 @@ export default function ShareDocumentDialog({
       const response = await documentService.searchShareableUsers(searchQuery);
       setUsers(response.data);
     } catch (error) {
-      console.error("Error searching users:", error);
+      console.info("Error searching users:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSharingToggle = async () => {
-    setIsUpdating(true);
-    try {
-      await documentService.updateShareSettings(documentId, {
-        isPublic: !isPublic,
-        sharedWith: selectedUsers
-      });
-      setIsPublic(!isPublic);
-      toast({
-        title: t("common.success"),
-        description: !isPublic
-          ? t("document.myDocuments.share.enableSuccess")
-          : t("document.myDocuments.share.disableSuccess"),
-        variant: "success"
-      });
-    } catch (error) {
-      console.log("err", error);
-      toast({
-        title: t("common.error"),
-        description: t("document.myDocuments.share.error"),
-        variant: "destructive"
-      });
-    } finally {
-      setIsUpdating(false);
-    }
+  const handleSharingToggle = () => {
+    setIsPublic(!isPublic);
   };
 
   const toggleUserSelection = (userId: string) => {
-    setSelectedUsers(prev => {
+    setSelectedUsers((prev) => {
       const currentSelected = prev || [];
       const isSelected = currentSelected.includes(userId);
       if (isSelected) {
-        return currentSelected.filter(id => id !== userId);
+        return currentSelected.filter((id) => id !== userId);
       } else {
         return [...currentSelected, userId];
       }
@@ -156,19 +133,19 @@ export default function ShareDocumentDialog({
     try {
       await documentService.updateShareSettings(documentId, {
         isPublic,
-        sharedWith: selectedUsers
+        sharedWith: selectedUsers,
       });
       toast({
         title: t("common.success"),
         description: t("document.myDocuments.share.updateSuccess"),
-        variant: "success"
+        variant: "success",
       });
       setOpen(false);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.share.error"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsUpdating(false);
@@ -178,39 +155,25 @@ export default function ShareDocumentDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2 px-4"
-        >
+        <Button variant="outline" size="sm" className="flex items-center gap-2 px-4">
           <Share2 className="h-4 w-4" />
-          {!iconOnly && (t("document.actions.share"))}
+          {!iconOnly && t("document.actions.share")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t("document.myDocuments.share.title")}</DialogTitle>
-          <DialogDescription>
-            {t("document.myDocuments.share.description", { name: documentName })}
-          </DialogDescription>
+          <DialogDescription>{t("document.myDocuments.share.description", { name: documentName })}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Public Sharing Toggle */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <h4 className="text-sm font-medium">
-                {t("document.myDocuments.share.toggle.title")}
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                {t("document.myDocuments.share.toggle.description")}
-              </p>
+              <h4 className="text-sm font-medium">{t("document.myDocuments.share.toggle.title")}</h4>
+              <p className="text-sm text-muted-foreground">{t("document.myDocuments.share.toggle.description")}</p>
             </div>
-            <Switch
-              checked={isPublic}
-              disabled={isUpdating}
-              onCheckedChange={handleSharingToggle}
-            />
+            <Switch checked={isPublic} disabled={isUpdating} onCheckedChange={handleSharingToggle} />
           </div>
 
           <Separator />
@@ -241,26 +204,17 @@ export default function ShareDocumentDialog({
               ) : (
                 <div className="p-4 space-y-2">
                   {users.map((user) => (
-                    <div
-                      key={user.userId}
-                      className="flex items-center space-x-2 rounded-lg p-2 hover:bg-accent"
-                    >
+                    <div key={user.userId} className="flex items-center space-x-2 rounded-lg p-2 hover:bg-accent">
                       <Checkbox
                         checked={selectedUsers.includes(user.userId)}
                         onCheckedChange={() => toggleUserSelection(user.userId)}
                       />
                       <Avatar className="h-8 w-8">
-                        <AvatarFallback>
-                          {user.username[0].toUpperCase()}
-                        </AvatarFallback>
+                        <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">
-                          {user.username}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {user.email}
-                        </p>
+                        <p className="text-sm font-medium leading-none">{user.username}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
                   ))}
@@ -269,11 +223,7 @@ export default function ShareDocumentDialog({
             </ScrollArea>
           </div>
 
-          <Button
-            onClick={handleUpdateSharing}
-            disabled={isUpdating}
-            className="w-full"
-          >
+          <Button onClick={handleUpdateSharing} disabled={isUpdating} className="w-full">
             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t("document.myDocuments.share.actions.update")}
           </Button>

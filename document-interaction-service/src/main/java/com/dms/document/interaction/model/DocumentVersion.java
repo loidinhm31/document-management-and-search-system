@@ -2,11 +2,12 @@ package com.dms.document.interaction.model;
 
 
 import com.dms.document.interaction.enums.DocumentStatus;
+import com.dms.document.interaction.enums.DocumentType;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.Map;
 
 @Data
@@ -30,6 +31,9 @@ public class DocumentVersion {
     @Field("mime_type")
     private String mimeType;
 
+    @Field("document_type")
+    private DocumentType documentType;
+
     @Field("status")
     private DocumentStatus status;
 
@@ -46,5 +50,5 @@ public class DocumentVersion {
     private String createdBy;
 
     @Field("created_at")
-    private Date createdAt;
+    private Instant createdAt;
 }

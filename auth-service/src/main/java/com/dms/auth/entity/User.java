@@ -7,10 +7,8 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.UUID;
-
-
 
 
 @SuperBuilder
@@ -42,8 +40,8 @@ public class User extends BaseEntity<String> {
     private boolean credentialsNonExpired = true;
     private boolean enabled = true;
 
-    private LocalDate credentialsExpiryDate;
-    private LocalDate accountExpiryDate;
+    private Instant credentialsExpiryDate;
+    private Instant accountExpiryDate;
 
     private String twoFactorSecret;
     private boolean isTwoFactorEnabled = false;

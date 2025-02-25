@@ -10,6 +10,7 @@ interface SearchState {
   searchTerm: string;
   selectedSort: string;
   selectedMajor: string;
+  selectedCourseCode: string;
   selectedLevel: string;
   selectedCategory: string;
   selectedTags: string[];
@@ -44,6 +45,7 @@ const initialState: SearchState = {
   searchTerm: "",
   selectedSort: "created_at,desc",
   selectedMajor: "all",
+  selectedCourseCode: "all",
   selectedLevel: "all",
   selectedCategory: "all",
   selectedTags: [],
@@ -82,10 +84,11 @@ export const fetchSuggestions = createAsyncThunk(
   async (query: string, { getState, rejectWithValue }) => {
     try {
       const state = getState() as RootState;
-      const { selectedMajor, selectedLevel, selectedCategory, selectedTags } = state.search;
+      const { selectedMajor, selectedCourseCode, selectedLevel, selectedCategory, selectedTags } = state.search;
 
       const filters = {
         major: selectedMajor === "all" ? undefined : selectedMajor,
+        courseCodes: selectedCourseCode === "all" ? undefined : selectedCourseCode,
         level: selectedLevel === "all" ? undefined : selectedLevel,
         category: selectedCategory === "all" ? undefined : selectedCategory,
         tags: selectedTags.length > 0 ? selectedTags : undefined
@@ -108,6 +111,7 @@ export const fetchSearchDocuments = createAsyncThunk(
       const {
         searchTerm,
         selectedMajor,
+        selectedCourseCode,
         selectedLevel,
         selectedCategory,
         selectedTags,
@@ -122,6 +126,7 @@ export const fetchSearchDocuments = createAsyncThunk(
       const filters = {
         search: searchTerm,
         major: selectedMajor === "all" ? undefined : selectedMajor,
+        courseCodes: selectedCourseCode === "all" ? undefined : selectedCourseCode,
         level: selectedLevel === "all" ? undefined : selectedLevel,
         category: selectedCategory === "all" ? undefined : selectedCategory,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
@@ -152,6 +157,10 @@ const searchSlice = createSlice({
     },
     setMajor: (state, action: PayloadAction<string>) => {
       state.selectedMajor = action.payload;
+      state.currentPage = 0;
+    },
+    setCourseCode: (state, action: PayloadAction<string>) => {
+      state.selectedCourseCode = action.payload;
       state.currentPage = 0;
     },
     setLevel: (state, action: PayloadAction<string>) => {
@@ -247,6 +256,7 @@ export const {
   setSearchTerm,
   setSort,
   setMajor,
+  setCourseCode,
   setLevel,
   setCategory,
   setTags,

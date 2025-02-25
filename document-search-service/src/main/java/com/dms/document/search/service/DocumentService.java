@@ -2,7 +2,9 @@ package com.dms.document.search.service;
 
 import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.DocumentSearchCriteria;
-import com.dms.document.search.dto.UserDto;
+import com.dms.document.search.dto.UserResponse;
+import com.dms.document.search.enums.AppRole;
+import com.dms.document.search.enums.SharingType;
 import com.dms.document.search.model.DocumentInformation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -27,65 +30,71 @@ public class DocumentService {
     private final UserClient userClient;
 
     public Page<DocumentInformation> getUserDocuments(String username, DocumentSearchCriteria criteria, int page, int size) {
-        ResponseEntity<UserDto> response = userClient.getUserByUsername(username);
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
-        UserDto userDto = response.getBody();
+        UserResponse userResponse = response.getBody();
 
-        // Build the query criteria
-        Criteria baseCriteria = Criteria.where("deleted").ne(true);
+        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
+                Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+            throw new InvalidDataAccessResourceUsageException("Invalid role");
+        }
 
-        // Build access criteria combining owned and shared documents
-        Criteria accessCriteria = new Criteria().orOperator(
-                // Documents owned by user
-                Criteria.where("userId").is(userDto.getUserId().toString()),
+        // Create a list to hold all criteria
+        List<Criteria> criteriaList = new ArrayList<>();
 
-                // Documents specifically shared with user
-                new Criteria().andOperator(
-                        Criteria.where("sharingType").is("SPECIFIC"),
-                        Criteria.where("sharedWith").in(userDto.getUserId().toString())
-                )
+        // Basic criteria for non-deleted documents
+        criteriaList.add(Criteria.where("deleted").ne(true));
+
+        // Access criteria for ownership and sharing
+        Criteria ownedCriteria = Criteria.where("userId").is(userResponse.userId().toString());
+
+        Criteria sharedCriteria = new Criteria().andOperator(
+                Criteria.where("sharingType").is(SharingType.SPECIFIC.name()),
+                Criteria.where("sharedWith").in(userResponse.userId().toString())
         );
 
-        Criteria queryCriteria = new Criteria().andOperator(baseCriteria, accessCriteria);
+        criteriaList.add(new Criteria().orOperator(ownedCriteria, sharedCriteria));
 
         // Add search criteria if provided
         if (StringUtils.isNotBlank(criteria.getSearch())) {
             Criteria searchCriteria = new Criteria().orOperator(
-                    Criteria.where("originalFilename").regex(criteria.getSearch(), "i"),
+                    Criteria.where("filename").regex(criteria.getSearch(), "i"),
                     Criteria.where("content").regex(criteria.getSearch(), "i"),
-                    Criteria.where("courseCode").regex(criteria.getSearch(), "i"),
                     Criteria.where("tags").regex(criteria.getSearch(), "i")
             );
-            queryCriteria.andOperator(searchCriteria);
+            criteriaList.add(searchCriteria);
         }
 
         // Add filters if provided
         if (StringUtils.isNotBlank(criteria.getMajor())) {
-            queryCriteria.and("major").is(criteria.getMajor());
+            criteriaList.add(Criteria.where("major").is(criteria.getMajor()));
         }
         if (StringUtils.isNotBlank(criteria.getLevel())) {
-            queryCriteria.and("courseLevel").is(criteria.getLevel());
+            criteriaList.add(Criteria.where("courseLevel").is(criteria.getLevel()));
         }
         if (StringUtils.isNotBlank(criteria.getCategory())) {
-            queryCriteria.and("category").is(criteria.getCategory());
+            criteriaList.add(Criteria.where("category").is(criteria.getCategory()));
         }
 
         // Add tag filter if provided
         if (CollectionUtils.isNotEmpty(criteria.getTags())) {
-            queryCriteria.and("tags").all(criteria.getTags());
+            criteriaList.add(Criteria.where("tags").all(criteria.getTags()));
         }
+
+        // Combine all criteria with AND
+        Criteria finalCriteria = new Criteria().andOperator(criteriaList.toArray(new Criteria[0]));
 
         // Create pageable with sort
         Sort sort = Sort.by(Sort.Direction.fromString(criteria.getSortDirection()), criteria.getSortField());
         Pageable pageable = PageRequest.of(page, size, sort);
 
         // Execute query
-        Query countQuery = new Query(queryCriteria);
+        Query countQuery = new Query(finalCriteria);
         long total = mongoTemplate.count(countQuery, DocumentInformation.class);
 
-        Query query = new Query(queryCriteria)
+        Query query = new Query(finalCriteria)
                 .with(pageable);
         List<DocumentInformation> documents = mongoTemplate.find(query, DocumentInformation.class);
 

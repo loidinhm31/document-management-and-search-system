@@ -7,10 +7,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface DocumentCommentRepository extends JpaRepository<DocumentComment, Long> {
+    Optional<DocumentComment> findByDocumentIdAndId(String documentId, Long id);
 
     @Query(value = """
         WITH RECURSIVE CommentHierarchy AS (

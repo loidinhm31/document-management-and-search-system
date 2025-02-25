@@ -64,7 +64,7 @@ opensearch:
   host: localhost
   port: 9200
   username: admin
-  password: admin
+  password: 27H4Gwxb24XGsARfuh3b#
   scheme: http
   aws: false
 
@@ -79,15 +79,19 @@ rabbitmq:
     document-sync-dlq: document-sync.dlq
     notification: notification.queue
     notification-dlq: notification.dlq
+    otp: notification.otp.queue
+    password-reset: password-reset.queue
   routing-keys:
     internal-document-sync: internal.document-sync.routing-key
     notification: notification.email.routing-key
     dlq: dead.letter.routing-key
+    otp: notification.otp.email.routing-key
+    password-reset: notification.password-reset.routing-key
 
 aws:
   s3:
-    bucket-name: ${AWS_S3_BUCKET_NAME}
+    bucket-name: ${AWS_S3_BUCKET_NAME:dms-doc-s3-dev}
     region: ${AWS_REGION:ap-southeast-1}
-    access-key: ${AWS_ACCESS_KEY}
-    secret-key: ${AWS_SECRET_KEY}
+    access-key: ${AWS_ACCESS_KEY:test}
+    secret-key: ${AWS_SECRET_KEY:test}
     temp-dir: ${java.io.tmpdir}/dms-processor

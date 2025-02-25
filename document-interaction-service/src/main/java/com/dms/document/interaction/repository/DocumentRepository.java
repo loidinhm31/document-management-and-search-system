@@ -21,12 +21,14 @@ public interface DocumentRepository extends MongoRepository<DocumentInformation,
     List<TagsResponse> findAllTags();
 
     @Query("{ '_id': ?0, '$or': [ " +
-            "{ 'user_id': ?1 }, " +
-            "{ 'sharing_type': 'PUBLIC' }, " +
-            "{ '$and': [ " +
-            "    { 'sharing_type': 'SPECIFIC' }, " +
-            "    { 'shared_with': ?1 } " +
-            "  ] } " +
-            "] }")
+           "{ 'user_id': ?1 }, " +
+           "{ 'sharing_type': 'PUBLIC' }, " +
+           "{ '$and': [ " +
+           "    { 'sharing_type': 'SPECIFIC' }, " +
+           "    { 'shared_with': ?1 } " +
+           "  ] } " +
+           "]," +
+           "report_status: {$ne: 'RESOLVED'} " +
+           "}")
     Optional<DocumentInformation> findAccessibleDocumentByIdAndUserId(String id, String userId);
 }

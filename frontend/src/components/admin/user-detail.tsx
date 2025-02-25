@@ -34,9 +34,7 @@ export default function UserDetail() {
       if (!userId) return;
 
       try {
-        // Get user details - Updated endpoint
         const userResponse = await adminService.getUser(userId);
-        // Get roles - This endpoint remains the same
         const rolesResponse = await adminService.getAllRoles();
 
         const userData = userResponse.data;

@@ -62,7 +62,7 @@ mail-sender:
 
 opensearch:
   host: vpc-dms-opensearch-7m6m3jd7mq6uz4r5bh3quasela.ap-southeast-1.es.amazonaws.com
-  port: 9200
+  port: 443
   username: dms_master
   password: hzE8MYCuBvzkV3KT8kedTyWthea6ar1xC
   scheme: https
@@ -79,10 +79,14 @@ rabbitmq:
     document-sync-dlq: document-sync.dlq
     notification: notification.queue
     notification-dlq: notification.dlq
+    otp: notification.otp.queue
+    password-reset: password-reset.queue
   routing-keys:
     internal-document-sync: internal.document-sync.routing-key
     notification: notification.email.routing-key
     dlq: dead.letter.routing-key
+    otp: notification.otp.email.routing-key
+    password-reset: notification.password-reset.routing-key
 
 aws:
   s3:

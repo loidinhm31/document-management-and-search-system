@@ -14,8 +14,8 @@ class AuthService extends BaseService {
     );
   }
 
-  register(data: SignupRequest) {
-    return this.handleApiResponse(axiosInstance.post("/auth/api/v1/auth/register", data));
+  async register(data: SignupRequest) {
+    return axiosInstance.post("/auth/api/v1/auth/register", data);
   }
 
   logout(refreshToken: string) {
@@ -46,6 +46,14 @@ class AuthService extends BaseService {
         code,
       }),
     );
+  }
+
+  verifyOtp(data: { username: string; otp: string }) {
+    return this.handleApiResponse(axiosInstance.post<TokenResponse>("/auth/api/v1/auth/otp/verify", data));
+  }
+
+  async resendOtp(data: { username: string }) {
+    return axiosInstance.post("/auth/api/v1/auth/otp/resend", data);
   }
 }
 

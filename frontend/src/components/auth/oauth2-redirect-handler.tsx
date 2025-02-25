@@ -45,7 +45,7 @@ export default function OAuth2RedirectHandler() {
           handleSuccessfulLogin(tokenAuth, decodedToken);
         }
       } catch (error) {
-        console.error("Token decoding failed:", error);
+        console.info("Token decoding failed:", error);
         navigate("/login");
       }
     } else {

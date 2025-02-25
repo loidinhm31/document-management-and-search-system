@@ -10,11 +10,14 @@ import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.exception.UnsupportedDocumentTypeException;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentVersion;
+import com.dms.document.interaction.model.UserDocumentHistory;
 import com.dms.document.interaction.repository.DocumentRepository;
+import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
 import com.dms.document.interaction.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -27,8 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -55,6 +57,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final DocumentPreferencesService documentPreferencesService;
     private final UserClient userClient;
+    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
 
     public DocumentInformation uploadDocument(MultipartFile file,
                                               String summary,
@@ -70,7 +73,14 @@ public class DocumentService {
         }
 
         UserResponse userResponse = response.getBody();
+
+        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
+              Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+            throw new InvalidDataAccessResourceUsageException("Invalid role");
+        }
+
         validateDocument(file);
+        DocumentType documentType = DocumentUtils.determineDocumentType(file.getContentType());
 
         // Upload new file to S3
         String s3Key = s3Service.uploadFile(file, "documents");
@@ -83,9 +93,10 @@ public class DocumentService {
                 .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
+                .documentType(documentType)
                 .status(DocumentStatus.PENDING)
                 .createdBy(username)
-                .createdAt(new Date())
+                .createdAt(Instant.now())
                 .build();
 
         // Create document with PENDING status
@@ -95,7 +106,7 @@ public class DocumentService {
                 .filePath(s3Key)
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
-                .documentType(DocumentUtils.determineDocumentType(file.getContentType()))
+                .documentType(documentType)
                 .summary(summary)
                 .major(major)
                 .courseCode(courseCode)
@@ -108,9 +119,9 @@ public class DocumentService {
                 .deleted(false)
                 .currentVersion(nextVersion)
                 .versions(List.of(newVersion))
-                .createdAt(new Date())
+                .createdAt(Instant.now())
                 .createdBy(username)
-                .updatedAt(new Date())
+                .updatedAt(Instant.now())
                 .updatedBy(username)
                 .build();
 
@@ -125,7 +136,7 @@ public class DocumentService {
                         .userId(userResponse.userId().toString())
                         .documentId(savedDocument.getId())
                         .subject(EventType.SYNC_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
+                        .triggerAt(Instant.now())
                         .build()
         ));
 
@@ -145,7 +156,7 @@ public class DocumentService {
         // If document is still being processed, return processing placeholder
         // with a header indicating it's still processing
         if (document.getStatus() == DocumentStatus.PENDING ||
-                document.getStatus() == DocumentStatus.PROCESSING) {
+            document.getStatus() == DocumentStatus.PROCESSING) {
             return ThumbnailResponse.builder()
                     .data(getProcessingPlaceholder())
                     .status(HttpStatus.ACCEPTED)
@@ -190,24 +201,40 @@ public class DocumentService {
         }
     }
 
-    public byte[] getDocumentContent(String documentId, String username, String action) throws IOException {
+    public byte[] getDocumentContent(String documentId, String username, String action, Boolean history) throws IOException {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
+        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
 
-        if (StringUtils.equals(action, "download")) {
-            CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
-        }
+        byte[] fileContent = s3Service.downloadFile(documentInformation.getFilePath());
+        if (Objects.nonNull(fileContent) && StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
+            CompletableFuture.runAsync(() -> {
+                // History
+                userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                        .userId(userResponse.userId().toString())
+                        .documentId(documentId)
+                        .userDocumentActionType(UserDocumentActionType.DOWNLOAD_FILE)
+                        .version(documentInformation.getCurrentVersion())
+                        .detail(String.format("%s - %s - %s KB",
+                                documentInformation.getFilename(),
+                                documentInformation.getLanguage(),
+                                documentInformation.getFileSize())
+                        )
+                        .createdAt(Instant.now())
+                        .build());
 
-        return s3Service.downloadFile(document.getFilePath());
+                documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD);
+            });
+        }
+        return fileContent;
     }
 
-    public DocumentInformation getDocumentDetails(String documentId, String username) {
+    public DocumentInformation getDocumentDetails(String documentId, String username, Boolean history) {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
@@ -218,7 +245,25 @@ public class DocumentService {
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
         documentInformation.setContent(null);
 
-        CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.VIEW));
+        if (BooleanUtils.isTrue(history)) {
+            CompletableFuture.runAsync(() -> {
+                // History
+                userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                        .userId(userResponse.userId().toString())
+                        .documentId(documentId)
+                        .userDocumentActionType(UserDocumentActionType.VIEW_DOCUMENT)
+                        .version(documentInformation.getCurrentVersion())
+                        .detail(String.format("%s - %s - %s KB",
+                                documentInformation.getFilename(),
+                                documentInformation.getLanguage(),
+                                documentInformation.getFileSize()))
+                        .createdAt(Instant.now())
+                        .build());
+
+                // Interaction for pref
+                documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.VIEW);
+            });
+        }
 
         return documentInformation;
     }
@@ -246,21 +291,30 @@ public class DocumentService {
             document.setCategory(documentUpdateRequest.category());
             document.setTags(documentUpdateRequest.tags());
         }
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
 
         DocumentInformation updatedDocument = documentRepository.save(document);
 
-        // Send sync event for elasticsearch update
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(userResponse.userId().toString())
-                        .documentId(documentId)
-                        .subject(EventType.UPDATE_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
+        CompletableFuture.runAsync(() -> {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(document.getUserId())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.UPDATE_DOCUMENT)
+                    .version(document.getCurrentVersion())
+                    .createdAt(Instant.now())
+                    .build());
+
+            // Send sync event for indexing update
+            publishEventService.sendSyncEvent(SyncEventRequest.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .userId(userResponse.userId().toString())
+                    .documentId(documentId)
+                    .subject(EventType.UPDATE_EVENT.name())
+                    .triggerAt(Instant.now())
+                    .build());
+        });
 
         return updatedDocument;
     }
@@ -272,9 +326,11 @@ public class DocumentService {
             String username) throws IOException {
 
         // Get existing document
-        DocumentInformation document = getDocumentDetails(documentId, username);
+        DocumentInformation document = getDocumentDetails(documentId, username, false);
 
         validateDocument(file);
+
+        DocumentType documentType = DocumentUtils.determineDocumentType(file.getContentType());
 
         // Upload new file to S3
         String s3Key = s3Service.uploadFile(file, "documents");
@@ -287,9 +343,10 @@ public class DocumentService {
                 .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
+                .documentType(documentType)
                 .status(DocumentStatus.PENDING)
                 .createdBy(username)
-                .createdAt(new Date())
+                .createdAt(Instant.now())
                 .build();
 
         // Update document information
@@ -299,7 +356,7 @@ public class DocumentService {
         document.setThumbnailPath(null); // Reset thumbnail - will be generated for new version
         document.setFileSize(file.getSize());
         document.setMimeType(file.getContentType());
-        document.setDocumentType(DocumentUtils.determineDocumentType(file.getContentType()));
+        document.setDocumentType(documentType);
 
         // Update metadata
         document.setSummary(documentUpdateRequest.summary());
@@ -308,7 +365,7 @@ public class DocumentService {
         document.setCourseLevel(documentUpdateRequest.level());
         document.setCategory(documentUpdateRequest.category());
         document.setTags(documentUpdateRequest.tags());
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
 
         document.setCurrentVersion(nextVersion);
@@ -318,7 +375,7 @@ public class DocumentService {
         versions.add(newVersion);
         document.setVersions(versions);
 
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
 
         // Save all changes
@@ -326,13 +383,23 @@ public class DocumentService {
 
         // Send sync event for reprocessing
         CompletableFuture.runAsync(() -> {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(document.getUserId())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.UPDATE_DOCUMENT_FILE)
+                    .version(document.getCurrentVersion())
+                    .detail(file.getOriginalFilename())
+                    .createdAt(Instant.now())
+                    .build());
+
             publishEventService.sendSyncEvent(
                     SyncEventRequest.builder()
                             .eventId(UUID.randomUUID().toString())
                             .userId(document.getUserId())
                             .documentId(documentId)
                             .subject(EventType.UPDATE_EVENT_WITH_FILE.name())
-                            .triggerAt(LocalDateTime.now())
+                            .triggerAt(Instant.now())
                             .build());
 
             // Notify about new file version
@@ -358,20 +425,32 @@ public class DocumentService {
 
         // Soft delete in database
         document.setDeleted(true);
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
         documentRepository.save(document);
 
         // Send delete event
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(userResponse.userId().toString())
-                        .documentId(documentId)
-                        .subject(EventType.DELETE_EVENT.name())
-                        .triggerAt(LocalDateTime.now())
-                        .build()
-        ));
+        CompletableFuture.runAsync(() -> {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(document.getUserId())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.DELETE_DOCUMENT)
+                    .version(document.getCurrentVersion())
+                    .detail(String.format("%s - v%s", document.getFilename(), document.getCurrentVersion()))
+                    .createdAt(Instant.now())
+                    .build());
+
+            publishEventService.sendSyncEvent(
+                    SyncEventRequest.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .userId(userResponse.userId().toString())
+                            .documentId(documentId)
+                            .subject(EventType.DELETE_EVENT.name())
+                            .triggerAt(Instant.now())
+                            .build()
+            );
+        });
     }
 
     public Set<String> getPopularTags(String prefix) {
@@ -387,33 +466,45 @@ public class DocumentService {
                 .collect(Collectors.toSet());
     }
 
-    public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username, String action) throws IOException {
+    public byte[] getDocumentVersionContent(String documentId, Integer versionNumber, String username, String action, Boolean history) throws IOException {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         UserResponse userResponse = response.getBody();
 
-        DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
+        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Find the specific version
-        DocumentVersion targetVersion = document.getVersion(versionNumber)
+        DocumentVersion targetVersion = documentInformation.getVersion(versionNumber)
                 .orElseThrow(() -> new InvalidDocumentException("Version not found"));
 
-        if (StringUtils.equals(action, "download")) {
+        byte[] fileContent = s3Service.downloadFile(targetVersion.getFilePath());
+        if (Objects.nonNull(fileContent) && StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(userResponse.userId().toString())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.DOWNLOAD_VERSION)
+                    .version(documentInformation.getCurrentVersion())
+                    .detail(String.format("%s - %s - %s KB - v%s",
+                            targetVersion.getFilename(),
+                            targetVersion.getLanguage(),
+                            targetVersion.getFileSize(),
+                            targetVersion.getVersionNumber())
+                    )
+                    .createdAt(Instant.now())
+                    .build());
+
             CompletableFuture.runAsync(() -> documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.DOWNLOAD));
         }
-
-        // Read and return the file content
-        try (InputStream in = Files.newInputStream(Path.of(targetVersion.getFilePath()))) {
-            return in.readAllBytes();
-        }
+        return fileContent;
     }
 
     public DocumentInformation revertToVersion(String documentId, Integer versionNumber, String username) {
         // Get existing document and validate ownership
-        DocumentInformation document = getDocumentDetails(documentId, username);
+        DocumentInformation document = getDocumentDetails(documentId, username, false);
         if (!StringUtils.equals(document.getCreatedBy(), username)) {
             throw new InvalidDocumentException("Only document creator can revert versions");
         }
@@ -432,11 +523,12 @@ public class DocumentService {
                 .filename(versionToRevert.getFilename())
                 .fileSize(versionToRevert.getFileSize())
                 .mimeType(versionToRevert.getMimeType())
+                .documentType(versionToRevert.getDocumentType())
                 .status(DocumentStatus.COMPLETED)
                 .language(versionToRevert.getLanguage())          // Reuse language detection
                 .extractedMetadata(versionToRevert.getExtractedMetadata()) // Reuse extracted metadata
                 .createdBy(username)
-                .createdAt(new Date())
+                .createdAt(Instant.now())
                 .build();
 
         // Update document information - reuse existing data
@@ -446,10 +538,10 @@ public class DocumentService {
         document.setThumbnailPath(versionToRevert.getThumbnailPath());
         document.setFileSize(versionToRevert.getFileSize());
         document.setMimeType(versionToRevert.getMimeType());
-        document.setDocumentType(DocumentUtils.determineDocumentType(versionToRevert.getMimeType()));
+        document.setDocumentType(versionToRevert.getDocumentType());
         document.setLanguage(versionToRevert.getLanguage());
         document.setExtractedMetadata(versionToRevert.getExtractedMetadata());
-        document.setUpdatedAt(new Date());
+        document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
         document.setCurrentVersion(nextVersion);
 
@@ -462,6 +554,16 @@ public class DocumentService {
         DocumentInformation savedDocument = documentRepository.save(document);
 
         CompletableFuture.runAsync(() -> {
+            // History
+            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                    .userId(document.getUserId())
+                    .documentId(documentId)
+                    .userDocumentActionType(UserDocumentActionType.REVERT_VERSION)
+                    .version(document.getCurrentVersion())
+                    .detail("Version " + versionToRevert.getVersionNumber())
+                    .createdAt(Instant.now())
+                    .build());
+
             // Send sync event for indexing document
             publishEventService.sendSyncEvent(
                     SyncEventRequest.builder()
@@ -470,7 +572,7 @@ public class DocumentService {
                             .documentId(documentId)
                             .versionNumber(versionToRevert.getVersionNumber())
                             .subject(EventType.REVERT_EVENT.name())
-                            .triggerAt(LocalDateTime.now())
+                            .triggerAt(Instant.now())
                             .build()
             );
 

@@ -2,21 +2,104 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Version Notification</title>
+    <!--[if mso]>
+    <style type="text/css">
+        table {border-collapse: collapse; border-spacing: 0; margin: 0;}
+        div, td {padding: 0;}
+        div {margin: 0 !important;}
+    </style>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
 </head>
-<body>
-<p>Hello <span th:text="${recipientName}">User</span>,</p>
-<p>
-    <strong th:text="${triggerUser}">User</strong> has
-    uploaded a new version (v<span th:text="${versionNumber}">1</span>)
-    of the document: <strong th:text="${documentTitle}">Document</strong>
-</p>
-<p>
-    <a th:href="@{${baseUrl} + '/documents/' + ${documentId}}">Click here</a> to view the new version.
-</p>
-<p>
-    Best regards,<br/>
-    DMS Team
-</p>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+<!-- Wrapper for better email client compatibility -->
+<table border="0" cellpadding="0" cellspacing="0" width="100%" style="min-width: 100%; border-collapse: collapse;">
+    <tr>
+        <td align="center" valign="top" style="padding: 20px 10px;">
+            <!-- Main container with fixed width -->
+            <table border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; border-collapse: collapse;">
+                <!-- Header section -->
+                <tr>
+                    <td align="center" valign="top" style="background-color: #fbbf24; padding: 20px; border-radius: 8px 8px 0 0;">
+                        <div style="font-size: 24px; font-weight: bold; color: #1e293b;">DMS</div>
+                    </td>
+                </tr>
+
+                <!-- Content section -->
+                <tr>
+                    <td align="left" valign="top" style="background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                        <!-- Greeting -->
+                        <p style="margin-top: 0;">Hello <span style="font-weight: 600; color: #334155;" th:text="${recipientName}">User</span>,</p>
+
+                        <!-- Notification message -->
+                        <p>
+                            <span style="font-weight: 600; color: #334155;" th:text="${triggerUser}">User</span> has uploaded a new version
+                            <span style="display: inline-block; background-color: #ef4444; color: #ffffff; border-radius: 9999px; padding: 3px 10px; font-size: 14px; font-weight: 600;">v<span th:text="${versionNumber}">1</span></span>
+                            of a document you're following:
+                        </p>
+
+                        <!-- Document info box -->
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 20px 0; border-collapse: collapse;">
+                            <tr>
+                                <td style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px;">
+                                    <h3 style="margin-top: 0; margin-bottom: 10px;" th:text="${documentTitle}">Document Title</h3>
+                                    <p style="margin: 0; color: #64748b;">Last updated: <span th:text="${#dates.format(#dates.createNow(), 'dd MMM yyyy, HH:mm')}">01 Jan 2023</span></p>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p>You can view this new version by clicking the button below:</p>
+
+                        <!-- Button -->
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse;">
+                            <tr>
+                                <td align="center">
+                                    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                                        <tr>
+                                            <td align="center" bgcolor="#fbbf24" style="border-radius: 4px;">
+                                                <a th:href="@{${baseUrl} + '/documents/' + ${documentId}}" target="_blank" style="font-size: 16px; font-weight: 500; color: #1e293b; text-decoration: none; border-radius: 4px; padding: 10px 20px; border: 1px solid #fbbf24; display: inline-block;">View Document</a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p>
+                            If you're having trouble with the button above, you can also copy and paste the following link into your browser:
+                        </p>
+
+                        <p style="word-break: break-all; background-color: #f8fafc; padding: 10px; border-radius: 4px; font-size: 14px;">
+                            <span th:text="${baseUrl} + '/documents/' + ${documentId}">https://example.com/documents/123</span>
+                        </p>
+
+                        <!-- Footer -->
+                        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; border-collapse: collapse;">
+                            <tr>
+                                <td align="center" style="color: #64748b; font-size: 14px;">
+                                    <p style="margin-top: 0;">
+                                        Best regards,<br/>
+                                        DMS Team
+                                    </p>
+                                    <p style="font-size: 12px; color: #94a3b8; margin-bottom: 0;">
+                                        This is an automated message, please do not reply to this email.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 </body>
 </html>
