@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { DeleteDialog } from "@/components/common/delete-dialog";
 import { CommentItem } from "@/components/document/discover/comment-item";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +31,8 @@ export const CommentSection = ({ documentId }) => {
   const [replyTo, setReplyTo] = useState(null);
   const { currentUser } = useAuth();
   const { toast } = useToast();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedCommentId, setSelectedCommentId] = useState(null);
 
   const fetchComments = async (page = 0) => {
     if (!documentId) return;
@@ -151,12 +154,12 @@ export const CommentSection = ({ documentId }) => {
     });
   };
 
-  const handleDeleteComment = async (commentId) => {
+  const handleDeleteComment = async () => {
     try {
-      await documentService.deleteComment(documentId, commentId);
+      await documentService.deleteComment(documentId, selectedCommentId);
 
       // Update state locally
-      setComments((prevComments) => removeCommentFromState(prevComments, commentId));
+      setComments((prevComments) => removeCommentFromState(prevComments, selectedCommentId));
 
       toast({
         title: t("common.success"),
@@ -164,7 +167,7 @@ export const CommentSection = ({ documentId }) => {
         variant: "success",
       });
 
-      if (replyTo?.id === commentId) {
+      if (replyTo?.id === selectedCommentId) {
         setReplyTo(null);
       }
     } catch (error) {
@@ -174,6 +177,9 @@ export const CommentSection = ({ documentId }) => {
         description: t("document.comments.deleteError"),
         variant: "destructive",
       });
+    } finally {
+      setSelectedCommentId(null);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -244,7 +250,10 @@ export const CommentSection = ({ documentId }) => {
                 key={comment.id}
                 comment={comment}
                 currentUser={currentUser}
-                onDelete={handleDeleteComment}
+                onDelete={() => {
+                  setSelectedCommentId(comment.id);
+                  setShowDeleteDialog(true);
+                }}
                 onReply={setReplyTo}
                 onEdit={handleEditComment}
                 documentId={documentId}
@@ -263,8 +272,20 @@ export const CommentSection = ({ documentId }) => {
               {t("document.comments.next")}
             </Button>
           </div>
-        ) : (<p className="flex justify-center">{t("document.comments.empty")}</p>)}
+        ) : (
+          <p className="flex justify-center">{t("document.comments.empty")}</p>
+        )}
       </div>
+
+      {showDeleteDialog && (
+        <DeleteDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={handleDeleteComment}
+          loading={loading}
+          description={t("document.comments.confirmDeleteMessage")}
+        />
+      )}
     </div>
   );
 };
