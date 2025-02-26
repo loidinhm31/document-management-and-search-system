@@ -14,7 +14,7 @@ export function ProcessingStatus() {
   useEffect(() => {
     const checkStatuses = async () => {
       const pendingItems = items.filter(
-        item => item.status === DocumentStatus.PENDING || item.status === DocumentStatus.PROCESSING
+        (item) => item.status === DocumentStatus.PENDING || item.status === DocumentStatus.PROCESSING,
       );
 
       for (const item of pendingItems) {
@@ -34,10 +34,10 @@ export function ProcessingStatus() {
   // Auto-remove completed items after 5 seconds
   useEffect(() => {
     const completedItems = items.filter(
-      item => item.status === DocumentStatus.COMPLETED || item.status === DocumentStatus.FAILED
+      (item) => item.status === DocumentStatus.COMPLETED || item.status === DocumentStatus.FAILED,
     );
 
-    completedItems.forEach(item => {
+    completedItems.forEach((item) => {
       const timer = setTimeout(() => {
         removeProcessingItem(item.id);
       }, 5000);
@@ -71,22 +71,15 @@ export function ProcessingStatus() {
 
             {/* Content */}
             <div className="flex-1 space-y-1">
-              <p className="text-sm font-medium leading-none">
-                {item.filename}
-              </p>
+              <p className="text-sm font-medium leading-none">{item.filename}</p>
               <p className="text-sm text-muted-foreground">
                 {t(`document.upload.processing.status.${item.status.toLowerCase()}`)}
               </p>
-              {item.error && (
-                <p className="text-sm text-destructive">{item.error}</p>
-              )}
+              {item.error && <p className="text-sm text-destructive">{item.error}</p>}
             </div>
 
             {/* Close button */}
-            <button
-              onClick={() => removeProcessingItem(item.id)}
-              className="rounded-md p-1 hover:bg-muted"
-            >
+            <button onClick={() => removeProcessingItem(item.id)} className="rounded-md p-1 hover:bg-muted">
               <X className="h-4 w-4" />
             </button>
           </div>

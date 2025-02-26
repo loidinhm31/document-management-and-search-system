@@ -10,7 +10,7 @@ const logger = createLogger({
   collapsed: true, // Collapse logs by default
   duration: true, // Print the duration of each action
   timestamp: true,
-  predicate: (_getState, _action) => process.env.NODE_ENV === "development"
+  predicate: (_getState, _action) => process.env.NODE_ENV === "development",
 });
 
 export const store = configureStore({
@@ -18,16 +18,16 @@ export const store = configureStore({
     search: searchReducer,
     masterData: masterDataReducer,
     processing: processingReducer,
-    document: documentReducer
+    document: documentReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these action types
-        ignoredActions: ["your-non-serializable-action-type"]
-      }
+        ignoredActions: ["your-non-serializable-action-type"],
+      },
     }).concat(logger),
-  devTools: process.env.NODE_ENV !== "production"
+  devTools: process.env.NODE_ENV !== "production",
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

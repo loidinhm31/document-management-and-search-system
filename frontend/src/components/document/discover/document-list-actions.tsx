@@ -6,9 +6,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 
 export const DocumentListActions = ({ onDownload, onShowPreview }) => {
   const { t } = useTranslation();
@@ -33,10 +32,12 @@ export const DocumentListActions = ({ onDownload, onShowPreview }) => {
             <Eye className="mr-2 h-4 w-4" />
             {t("document.actions.view")}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => {
-            setDropdownOpen(false);
-            onDownload();
-          }}>
+          <DropdownMenuItem
+            onClick={() => {
+              setDropdownOpen(false);
+              onDownload();
+            }}
+          >
             <Download className="mr-2 h-4 w-4" />
             {t("document.actions.download")}
           </DropdownMenuItem>

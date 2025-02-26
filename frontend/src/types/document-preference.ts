@@ -11,7 +11,6 @@ export interface PreferenceCategory {
   weight: number;
 }
 
-
 export interface DocumentPreferences {
   preferredMajors: Set<string>;
   preferredCourseCodes: Set<string>;
@@ -38,5 +37,5 @@ export enum InteractionType {
   DOWNLOAD = "DOWNLOAD",
   FAVORITE = "FAVORITE",
   COMMENT = "COMMENT",
-  SHARE = "SHARE"
+  SHARE = "SHARE",
 }

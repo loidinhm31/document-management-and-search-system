@@ -169,7 +169,6 @@ export default function UserProfile() {
         <Card>
           <CardHeader className="space-y-1">
             <div className="flex items-center gap-4">
-
               <Avatar className="h-12 w-12">
                 <AvatarFallback>{currentUser?.username?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
@@ -209,7 +208,9 @@ export default function UserProfile() {
 
             <div className="rounded-lg border p-4">
               <h3 className="font-semibold">{t("profile.createdDate.title")}</h3>
-              <p className="text-sm text-muted-foreground"><p>{moment(currentUser.createdDate).format('DD/MM/YYYY, h:mm:ss a')}</p></p>
+              <p className="text-sm text-muted-foreground">
+                <p>{moment(currentUser.createdDate).format("DD/MM/YYYY, h:mm:ss a")}</p>
+              </p>
             </div>
             {loginSession && (
               <div className="rounded-lg border p-4">

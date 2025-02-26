@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-
 export interface SearchFilters {
   search?: string;
   major?: string;
@@ -16,6 +15,7 @@ export interface SearchFilters {
   category?: string;
   sort?: string;
   tags?: string[];
+  favoriteOnly?: boolean;
 }
 
 interface AdvancedSearchProps {
@@ -31,7 +31,7 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
     { label: "Name (A-Z)", value: "filename,asc" },
     { label: "Name (Z-A)", value: "filename,desc" },
     { label: "Size (Largest)", value: "fileSize,desc" },
-    { label: "Size (Smallest)", value: "fileSize,asc" }
+    { label: "Size (Smallest)", value: "fileSize,asc" },
   ];
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -54,7 +54,7 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
       level: selectedLevel === "all" ? undefined : selectedLevel,
       category: selectedCategory === "all" ? undefined : selectedCategory,
       sort: selectedSort,
-      tags: selectedTags.length > 0 ? selectedTags : undefined
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
     });
   };
 
@@ -107,10 +107,7 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
               {sortOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   <span className="flex items-center gap-2">
-                    {option.value.endsWith('desc') ?
-                      <SortDesc className="h-4 w-4" /> :
-                      <SortAsc className="h-4 w-4" />
-                    }
+                    {option.value.endsWith("desc") ? <SortDesc className="h-4 w-4" /> : <SortAsc className="h-4 w-4" />}
                     {option.label}
                   </span>
                 </SelectItem>
@@ -119,16 +116,11 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
           </Select>
 
           {/* Advanced Filter Toggle */}
-          <Button
-            variant="outline"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="relative gap-2"
-          >
+          <Button variant="outline" onClick={() => setShowAdvanced(!showAdvanced)} className="relative gap-2">
             <Filter className="h-4 w-4" />
             {t("document.commonSearch.filters")}
             {getActiveFilterCount() > 0 && (
-              <span
-                className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs flex items-center justify-center text-primary-foreground">
+              <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary text-xs flex items-center justify-center text-primary-foreground">
                 {getActiveFilterCount()}
               </span>
             )}

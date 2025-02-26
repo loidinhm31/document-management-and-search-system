@@ -39,13 +39,13 @@ const formSchema = z.object({
 });
 
 export function ReportCommentDialog({
-                                      documentId,
-                                      commentId,
-                                      commentAuthor,
-                                      iconOnly = false,
-                                      isReported = false,
-                                      onReportSuccess,
-                                    }: ReportCommentDialogProps) {
+  documentId,
+  commentId,
+  commentAuthor,
+  iconOnly = false,
+  isReported = false,
+  onReportSuccess,
+}: ReportCommentDialogProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
@@ -125,13 +125,16 @@ export function ReportCommentDialog({
         <DialogTrigger asChild>
           <Button variant="ghost" size="sm" className={isReported ? "text-orange-500" : ""}>
             <Flag className={isReported ? "h-4 w-4 text-orange-400 fill-orange-400" : "h-4 w-4"} />
-            {!iconOnly && (isReported ? t("document.comments.actions.reported") : t("document.comments.actions.report"))}
+            {!iconOnly &&
+              (isReported ? t("document.comments.actions.reported") : t("document.comments.actions.report"))}
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {existingReport  ? t("document.comments.report.alreadyReported.title") : t("document.comments.report.title")}
+              {existingReport
+                ? t("document.comments.report.alreadyReported.title")
+                : t("document.comments.report.title")}
             </DialogTitle>
             <DialogDescription>
               {t("document.comments.report.description", { author: commentAuthor })}
@@ -155,7 +158,9 @@ export function ReportCommentDialog({
               <div className="grid gap-2">
                 <h4 className="font-medium">{t("document.comments.report.statusLabel")}</h4>
                 <p className="text-sm text-muted-foreground">
-                  {existingReport.resolved ? t("document.comments.report.status.resolved") : t("document.comments.report.status.pending")}
+                  {existingReport.resolved
+                    ? t("document.comments.report.status.resolved")
+                    : t("document.comments.report.status.pending")}
                 </p>
               </div>
             </div>

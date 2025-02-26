@@ -439,6 +439,7 @@
         "downloads": "Downloads"
       },
       "empty": "Not found document",
+      "emptyFavorites": "No favorite documents found",
       "pagination": {
         "previous": "Previous",
         "next": "Next",
@@ -541,7 +542,10 @@
       "suggestions": {
         "error": "Error fetching suggestions"
       },
-      "loading": "Loading results..."
+      "loading": "Loading results...",
+      "favorites": {
+        "placeholder": "Search your favorites..."
+      }
     },
     "detail": {
       "title": "Edit Document",
@@ -646,7 +650,8 @@
       "reset": "Reset Filter",
       "apply": "Search",
       "tagLabel": "Tags",
-      "tagsPlaceholder": "Search tags to select..."
+      "tagsPlaceholder": "Search tags to select...",
+      "favoritesOnly": "Favorites"
     },
     "versions": {
       "title": "Version History",
@@ -885,7 +890,7 @@
     },
     "notes": {
       "title": "Mentor Notes",
-      "description": "Guidance notes from mentors to help you understand this document",
+      "description": "Guidance notes from mentors to help you understand this document better",
       "add": "Add Note",
       "addNew": "New Note",
       "edit": "Edit Note",

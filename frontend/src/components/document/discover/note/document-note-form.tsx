@@ -42,9 +42,7 @@ export function DocumentNoteForm({ documentId, currentNote, onSuccess, onCancel 
 
       toast({
         title: t("common.success"),
-        description: isEditing
-          ? t("document.notes.editSuccess")
-          : t("document.notes.addSuccess"),
+        description: isEditing ? t("document.notes.editSuccess") : t("document.notes.addSuccess"),
         variant: "success",
       });
 
@@ -52,9 +50,7 @@ export function DocumentNoteForm({ documentId, currentNote, onSuccess, onCancel 
     } catch (error) {
       toast({
         title: t("common.error"),
-        description: isEditing
-          ? t("document.notes.editError")
-          : t("document.notes.addError"),
+        description: isEditing ? t("document.notes.editError") : t("document.notes.addError"),
         variant: "destructive",
       });
     } finally {
@@ -74,20 +70,11 @@ export function DocumentNoteForm({ documentId, currentNote, onSuccess, onCancel 
       <div className="flex justify-between items-center">
         <div className="text-sm text-muted-foreground">
           {content.length} / {MAX_CHARS} {t("document.notes.characters")}
-          {content.length > MAX_CHARS && (
-            <span className="ml-1 text-destructive">
-              ({t("document.notes.tooLong")})
-            </span>
-          )}
+          {content.length > MAX_CHARS && <span className="ml-1 text-destructive">({t("document.notes.tooLong")})</span>}
         </div>
 
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
+          <Button variant="outline" size="sm" onClick={onCancel} disabled={isSubmitting}>
             <X className="mr-2 h-4 w-4" />
             {t("common.cancel")}
           </Button>
@@ -97,11 +84,7 @@ export function DocumentNoteForm({ documentId, currentNote, onSuccess, onCancel 
             onClick={handleSubmit}
             disabled={!content.trim() || content.length > MAX_CHARS || isSubmitting}
           >
-            {isSubmitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Check className="mr-2 h-4 w-4" />
-            )}
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
             {isEditing ? t("document.notes.update") : t("document.notes.save")}
           </Button>
         </div>

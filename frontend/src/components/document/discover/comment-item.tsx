@@ -1,6 +1,6 @@
 import { Check, Edit2, MoreHorizontal, Reply, Trash, X } from "lucide-react";
 import moment from "moment-timezone";
-import React, { useEffect,useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ReportCommentDialog } from "@/components/document/discover/report-comment-dialog";
@@ -25,24 +25,22 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
   // Local state to override props when report action happens
   const [localReportStatus, setLocalReportStatus] = useState({
     reportedByUser: comment.reportedByUser,
-    reportResolved: comment.reportResolved
+    reportResolved: comment.reportResolved,
   });
 
   // Use either the local state (if set) or the props
-  const isReported = localReportStatus.reportedByUser !== undefined
-    ? localReportStatus.reportedByUser
-    : comment.reportedByUser;
+  const isReported =
+    localReportStatus.reportedByUser !== undefined ? localReportStatus.reportedByUser : comment.reportedByUser;
 
-  const isResolved = localReportStatus.reportResolved !== undefined
-    ? localReportStatus.reportResolved
-    : comment.reportResolved;
+  const isResolved =
+    localReportStatus.reportResolved !== undefined ? localReportStatus.reportResolved : comment.reportResolved;
 
   // Update local state if props change (except after a local report action)
   useEffect(() => {
     if (!localReportStatus.reportedByUser || comment.reportedByUser) {
       setLocalReportStatus({
         reportedByUser: comment.reportedByUser,
-        reportResolved: comment.reportResolved
+        reportResolved: comment.reportResolved,
       });
     }
   }, [comment.reportedByUser, comment.reportResolved]);
@@ -80,7 +78,7 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
     // Update local report status when a report is successful
     setLocalReportStatus({
       reportedByUser: true,
-      reportResolved: false  // A new report is not resolved yet
+      reportResolved: false, // A new report is not resolved yet
     });
 
     toast({

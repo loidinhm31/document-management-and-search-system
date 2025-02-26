@@ -13,7 +13,7 @@ export enum DocumentType {
   MARKDOWN = "MARKDOWN",
 }
 
-export const MAX_FILE_SIZE = 25 * 1024 * 1024 // 10MB in bytes
+export const MAX_FILE_SIZE = 25 * 1024 * 1024; // 10MB in bytes
 
 export interface DocumentInformation {
   id: string;
@@ -69,7 +69,7 @@ export enum DocumentStatus {
   PENDING = "PENDING",
   PROCESSING = "PROCESSING",
   COMPLETED = "COMPLETED",
-  FAILED = "FAILED"
+  FAILED = "FAILED",
 }
 
 export interface DocumentVersion {
@@ -122,4 +122,4 @@ export const ACCEPT_TYPE_MAP = {
   "text/markdown": [".md"],
   "text/x-markdown": [".md"],
   "application/markdown": [".md"],
-}
+};

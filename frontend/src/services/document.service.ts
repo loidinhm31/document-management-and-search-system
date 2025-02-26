@@ -2,17 +2,17 @@ import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
 import { UpdatePreferencesRequest } from "@/types/document-preference";
-import { UserSearchResponse } from "@/types/user";
 import { UserHistoryFilter, UserHistoryPage } from "@/types/document-user-history";
+import { UserSearchResponse } from "@/types/user";
 
 class DocumentService extends BaseService {
   uploadDocument(formData: FormData) {
     return this.handleApiResponse<DocumentInformation>(
       axiosInstance.post("/document-interaction/api/v1/documents", formData, {
         headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      })
+          "Content-Type": "multipart/form-data",
+        },
+      }),
     );
   }
 
@@ -22,9 +22,9 @@ class DocumentService extends BaseService {
         responseType: "blob",
         params: {
           action: payload?.action,
-          history: payload?.history
-        }
-      })
+          history: payload?.history,
+        },
+      }),
     );
   }
 
@@ -35,20 +35,20 @@ class DocumentService extends BaseService {
         headers: {
           "Cache-Control": "no-cache, no-store, must-revalidate",
           Pragma: "no-cache",
-          Expires: "0"
+          Expires: "0",
         },
         params: {
-          [versionInfo]: ""
-        }
-      })
+          [versionInfo]: "",
+        },
+      }),
     );
   }
 
   async getDocumentDetails(id: string, history?: boolean) {
     return axiosInstance.get<DocumentInformation>(`/document-interaction/api/v1/documents/${id}`, {
       params: {
-        history
-      }
+        history,
+      },
     });
   }
 
@@ -64,17 +64,17 @@ class DocumentService extends BaseService {
     return this.handleApiResponse(
       axiosInstance.put(`/document-interaction/api/v1/documents/${id}/file`, formData, {
         headers: {
-          "Content-Type": "multipart/form-data"
-        }
-      })
+          "Content-Type": "multipart/form-data",
+        },
+      }),
     );
   }
 
   getTagSuggestions(prefix?: string) {
     return this.handleApiResponse<string[]>(
       axiosInstance.get(`/document-interaction/api/v1/documents/tags/suggestions`, {
-        params: { prefix }
-      })
+        params: { prefix },
+      }),
     );
   }
 
@@ -87,24 +87,24 @@ class DocumentService extends BaseService {
     settings: {
       isPublic: boolean;
       sharedWith: string[];
-    }
+    },
   ) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/sharing`, settings)
+      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/sharing`, settings),
     );
   }
 
   searchShareableUsers(query: string) {
     return this.handleApiResponse<UserSearchResponse[]>(
       axiosInstance.get(`/document-interaction/api/v1/documents/sharing/users`, {
-        params: { query }
-      })
+        params: { query },
+      }),
     );
   }
 
   getShareableUsersByIds(userIds: string[]) {
     return this.handleApiResponse<UserSearchResponse[]>(
-      axiosInstance.post(`/document-interaction/api/v1/documents/sharing/users/details`, userIds)
+      axiosInstance.post(`/document-interaction/api/v1/documents/sharing/users/details`, userIds),
     );
   }
 
@@ -128,50 +128,50 @@ class DocumentService extends BaseService {
           responseType: "blob",
           params: {
             action: payload?.action,
-            history: payload?.history
-          }
-        }
-      )
+            history: payload?.history,
+          },
+        },
+      ),
     );
   }
 
   revertToVersion(documentId: string, versionNumber: number) {
     return this.handleApiResponse(
       axiosInstance.put<DocumentInformation>(
-        `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}`
-      )
+        `/document-interaction/api/v1/documents/${documentId}/versions/${versionNumber}`,
+      ),
     );
   }
 
-  getRecommendationDocuments(documentId: string, size: number = 6, page: number = 0) {
+  getRecommendationDocuments(documentId: string, size: number = 6, page: number = 0, favoriteOnly: boolean = false) {
     return this.handleApiResponse(
       axiosInstance.get(`/document-search/api/v1/documents/recommendation`, {
-        params: { documentId, size, page }
-      })
+        params: { documentId, size, page, favoriteOnly },
+      }),
     );
   }
 
   getDocumentComments(documentId, params = {}) {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/comments`, { params })
+      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/comments`, { params }),
     );
   }
 
   createComment(documentId, data) {
     return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/comments`, data)
+      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/comments`, data),
     );
   }
 
   updateComment(documentId, commentId, data) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`, data)
+      axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`, data),
     );
   }
 
   deleteComment(documentId, commentId) {
     return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`)
+      axiosInstance.delete(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`),
     );
   }
 
@@ -181,7 +181,7 @@ class DocumentService extends BaseService {
 
   getDocumentContentWeights() {
     return this.handleApiResponse(
-      axiosInstance.get(`/document-interaction/api/v1/documents/preferences/content-weights`)
+      axiosInstance.get(`/document-interaction/api/v1/documents/preferences/content-weights`),
     );
   }
 
@@ -201,9 +201,7 @@ class DocumentService extends BaseService {
     return axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/statistics`);
   }
 
-  async getUserHistory(
-    filters: UserHistoryFilter = {}
-  ): Promise<UserHistoryPage> {
+  async getUserHistory(filters: UserHistoryFilter = {}): Promise<UserHistoryPage> {
     const params = new URLSearchParams();
 
     if (filters.actionType) params.append("actionType", filters.actionType);
@@ -216,7 +214,7 @@ class DocumentService extends BaseService {
 
     const response = await axiosInstance.get(`/document-interaction/api/v1/documents?${params.toString()}`);
     return response.data;
-  };
+  }
 }
 
 export const documentService = new DocumentService();

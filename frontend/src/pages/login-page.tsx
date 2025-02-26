@@ -46,7 +46,7 @@ export default function LoginPage() {
     toast({
       title: t("common.success"),
       description: t("auth.login.success"),
-      variant: "success"
+      variant: "success",
     });
   };
 

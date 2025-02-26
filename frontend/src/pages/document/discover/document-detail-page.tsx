@@ -64,7 +64,7 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.success"),
           description: t("document.favorite.removeSuccess"),
-          variant: "success"
+          variant: "success",
         });
       } else {
         await documentService.favoriteDocument(documentId);
@@ -72,14 +72,14 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.success"),
           description: t("document.favorite.addSuccess"),
-          variant: "success"
+          variant: "success",
         });
       }
     } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.favorite.error"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -114,7 +114,7 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.error"),
           description: t("document.detail.fetchError"),
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -199,9 +199,7 @@ export default function DocumentDetailPage() {
                 )}
 
                 {/* Add Recommendation Button for Mentors */}
-                {isMentor && documentId && (
-                  <RecommendationButton documentId={documentId} />
-                )}
+                {isMentor && documentId && <RecommendationButton documentId={documentId} />}
 
                 {currentUser?.userId === documentData.userId && (
                   <ShareDocumentDialog
@@ -260,7 +258,7 @@ export default function DocumentDetailPage() {
                         <Label>{t("document.detail.fields.courseCode")}</Label>
                         <p className="text-sm text-muted-foreground">
                           {getMasterDataTranslation(documentData.courseCode, MasterDataType.COURSE_CODE, {
-                            courseCodes
+                            courseCodes,
                           })}
                         </p>
                       </div>
@@ -278,7 +276,7 @@ export default function DocumentDetailPage() {
                     <Label>{t("document.detail.fields.category")}</Label>
                     <p className="text-sm text-muted-foreground">
                       {getMasterDataTranslation(documentData.category, MasterDataType.DOCUMENT_CATEGORY, {
-                        categories
+                        categories,
                       })}
                     </p>
                   </div>

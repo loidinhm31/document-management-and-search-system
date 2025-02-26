@@ -10,7 +10,7 @@ export enum UserDocumentActionType {
   FAVORITE = "FAVORITE",
   COMMENT = "COMMENT",
   RECOMMEND = "RECOMMEND",
-  ADD_NOTE = "ADD_NOTE"
+  ADD_NOTE = "ADD_NOTE",
 }
 
 export interface UserHistoryResponse {

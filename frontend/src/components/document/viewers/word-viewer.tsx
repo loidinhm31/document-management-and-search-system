@@ -18,14 +18,11 @@ export const WordViewer: React.FC<WordViewerProps> = ({ content, onDownload, isD
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
         <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
-          <Download className="h-4 w-4 mr-2"/>
+          <Download className="h-4 w-4 mr-2" />
           {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
-      <div
-        className="flex-1 overflow-auto bg-white p-4"
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
+      <div className="flex-1 overflow-auto bg-white p-4" dangerouslySetInnerHTML={{ __html: content }} />
     </div>
   );
 };

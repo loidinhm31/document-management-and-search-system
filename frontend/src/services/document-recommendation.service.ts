@@ -4,13 +4,13 @@ import { BaseService } from "@/services/base.service";
 class DocumentRecommendationService extends BaseService {
   async recommendDocument(documentId: string) {
     return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/recommendations`)
+      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/recommendations`),
     );
   }
 
   async unrecommendDocument(documentId: string) {
     return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/documents/${documentId}/recommendations`)
+      axiosInstance.delete(`/document-interaction/api/v1/documents/${documentId}/recommendations`),
     );
   }
 

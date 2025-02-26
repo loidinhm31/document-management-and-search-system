@@ -127,7 +127,9 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
             <div className="grid gap-4 mt-2">
               <div className="grid gap-2">
                 <h4 className="font-medium">{t("document.report.type")}</h4>
-                <p className="text-sm text-muted-foreground">{existingReport.reportTypeTranslation[i18n.language] || existingReport.reportTypeTranslation.en}</p>
+                <p className="text-sm text-muted-foreground">
+                  {existingReport.reportTypeTranslation[i18n.language] || existingReport.reportTypeTranslation.en}
+                </p>
               </div>
 
               {existingReport.description && (

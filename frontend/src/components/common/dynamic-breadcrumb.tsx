@@ -8,7 +8,7 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { RoutePaths, routes } from "@/core/route-config";
 import { useAppSelector } from "@/store/hook";
@@ -28,13 +28,13 @@ export function DynamicBreadcrumb() {
         {
           path: RoutePaths.HOME,
           label: t("pages.home"),
-          isLast: false
+          isLast: false,
         },
         {
           path: currentPath,
           label: currentDocument?.filename || t("pages.document.detail"),
-          isLast: true
-        }
+          isLast: true,
+        },
       ];
     }
 
@@ -90,9 +90,7 @@ export function DynamicBreadcrumb() {
 
     // For all other routes, return single-level breadcrumb
     const currentRoute = routes.find((route) => {
-      const pathRegex = new RegExp(
-        `^${route.path.replace(/:\w+/g, "[^/]+")}$`
-      );
+      const pathRegex = new RegExp(`^${route.path.replace(/:\w+/g, "[^/]+")}$`);
       return pathRegex.test(currentPath);
     });
 

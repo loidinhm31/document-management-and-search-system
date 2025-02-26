@@ -17,7 +17,7 @@ class MasterDataService extends BaseService {
     );
   }
 
-  getAllByTypeAndParentId(type: MasterDataType, parentId: string, active  ?: boolean) {
+  getAllByTypeAndParentId(type: MasterDataType, parentId: string, active?: boolean) {
     return this.handleApiResponse<MasterData[]>(
       axiosInstance.get(`/document-interaction/api/v1/master-data/${type}/parent/${parentId}`, {
         params: { active },

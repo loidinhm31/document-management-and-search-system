@@ -30,7 +30,7 @@ export default function DocumentUserHistoryPage() {
   // Filter states
   const [filters, setFilters] = useState<UserHistoryFilter>({
     page: 0,
-    size: 20
+    size: 20,
   });
 
   const [selectedFromDate, setSelectedFromDate] = useState<Date | undefined>(undefined);
@@ -42,7 +42,7 @@ export default function DocumentUserHistoryPage() {
     try {
       const response = await documentService.getUserHistory({
         ...filters,
-        page: currentPage
+        page: currentPage,
       });
 
       setHistories(response.content);
@@ -52,7 +52,7 @@ export default function DocumentUserHistoryPage() {
       toast({
         title: t("common.error"),
         description: t("document.history.fetchError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -76,21 +76,26 @@ export default function DocumentUserHistoryPage() {
       // Set fromDate to start of day in UTC
       fromDate: selectedFromDate
         ? new Date(
-          selectedFromDate.getFullYear(),
-          selectedFromDate.getMonth(),
-          selectedFromDate.getDate(),
-          0, 0, 0
-        ).toISOString()
+            selectedFromDate.getFullYear(),
+            selectedFromDate.getMonth(),
+            selectedFromDate.getDate(),
+            0,
+            0,
+            0,
+          ).toISOString()
         : undefined,
       // Set toDate to end of day in UTC
       toDate: selectedToDate
         ? new Date(
-          selectedToDate.getFullYear(),
-          selectedToDate.getMonth(),
-          selectedToDate.getDate(),
-          23, 59, 59, 999
-        ).toISOString()
-        : undefined
+            selectedToDate.getFullYear(),
+            selectedToDate.getMonth(),
+            selectedToDate.getDate(),
+            23,
+            59,
+            59,
+            999,
+          ).toISOString()
+        : undefined,
     };
 
     setFilters(updatedFilters);
@@ -103,7 +108,7 @@ export default function DocumentUserHistoryPage() {
     setCurrentPage(0);
     setFilters({
       page: 0,
-      size: 20
+      size: 20,
     });
   };
 
@@ -119,58 +124,61 @@ export default function DocumentUserHistoryPage() {
 
   // Get action type display text and badge variant
   const getActionTypeDetails = (type: UserDocumentActionType) => {
-    const actionMap: Record<UserDocumentActionType, {
-      label: string,
-      variant: "default" | "secondary" | "outline" | "destructive"
-    }> = {
+    const actionMap: Record<
+      UserDocumentActionType,
+      {
+        label: string;
+        variant: "default" | "secondary" | "outline" | "destructive";
+      }
+    > = {
       [UserDocumentActionType.VIEW_DOCUMENT]: {
         label: t("document.history.actionTypes.view_document"),
-        variant: "default"
+        variant: "default",
       },
       [UserDocumentActionType.UPDATE_DOCUMENT]: {
         label: t("document.history.actionTypes.update_document"),
-        variant: "secondary"
+        variant: "secondary",
       },
       [UserDocumentActionType.UPDATE_DOCUMENT_FILE]: {
         label: t("document.history.actionTypes.update_document_file"),
-        variant: "secondary"
+        variant: "secondary",
       },
       [UserDocumentActionType.DELETE_DOCUMENT]: {
         label: t("document.history.actionTypes.delete_document"),
-        variant: "destructive"
+        variant: "destructive",
       },
       [UserDocumentActionType.DOWNLOAD_FILE]: {
         label: t("document.history.actionTypes.download_file"),
-        variant: "outline"
+        variant: "outline",
       },
       [UserDocumentActionType.DOWNLOAD_VERSION]: {
         label: t("document.history.actionTypes.download_version"),
-        variant: "outline"
+        variant: "outline",
       },
       [UserDocumentActionType.REVERT_VERSION]: {
         label: t("document.history.actionTypes.revert_version"),
-        variant: "secondary"
+        variant: "secondary",
       },
       [UserDocumentActionType.SHARE]: {
         label: t("document.history.actionTypes.share"),
-        variant: "default"
+        variant: "default",
       },
       [UserDocumentActionType.FAVORITE]: {
         label: t("document.history.actionTypes.favorite"),
-        variant: "default"
+        variant: "default",
       },
       [UserDocumentActionType.COMMENT]: {
         label: t("document.history.actionTypes.comment"),
-        variant: "default"
+        variant: "default",
       },
       [UserDocumentActionType.RECOMMEND]: {
         label: t("document.history.actionTypes.recommend"),
-        variant: "default"
+        variant: "default",
       },
       [UserDocumentActionType.ADD_NOTE]: {
         label: t("document.history.actionTypes.add_note"),
-        variant: "default"
-      }
+        variant: "default",
+      },
     };
 
     return actionMap[type] || { label: type, variant: "default" as const };
@@ -189,9 +197,7 @@ export default function DocumentUserHistoryPage() {
             <Activity className="h-5 w-5" />
             {t("document.history.title")}
           </CardTitle>
-          <CardDescription>
-            {t("document.history.description")}
-          </CardDescription>
+          <CardDescription>{t("document.history.description")}</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -314,15 +320,27 @@ export default function DocumentUserHistoryPage() {
               <TableBody>
                 {loading ? (
                   // Loading skeletons
-                  Array(5).fill(0).map((_, index) => (
-                    <TableRow key={`loading-${index}`}>
-                      <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-full" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-12" /></TableCell>
-                      <TableCell><Skeleton className="h-6 w-32" /></TableCell>
-                    </TableRow>
-                  ))
+                  Array(5)
+                    .fill(0)
+                    .map((_, index) => (
+                      <TableRow key={`loading-${index}`}>
+                        <TableCell>
+                          <Skeleton className="h-6 w-24" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-6 w-full" />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <Skeleton className="h-6 w-full" />
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <Skeleton className="h-6 w-12" />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton className="h-6 w-32" />
+                        </TableCell>
+                      </TableRow>
+                    ))
                 ) : histories.length > 0 ? (
                   histories.map((history) => {
                     const { label, variant } = getActionTypeDetails(history.actionType);
@@ -345,8 +363,9 @@ export default function DocumentUserHistoryPage() {
                               </Button>
                             </div>
                           ) : (
-                            <span
-                              className="text-muted-foreground">{history.documentTitle || t("document.history.documentNotAvailable")}</span>
+                            <span className="text-muted-foreground">
+                              {history.documentTitle || t("document.history.documentNotAvailable")}
+                            </span>
                           )}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">{history.detail || "-"}</TableCell>
@@ -375,7 +394,7 @@ export default function DocumentUserHistoryPage() {
                 {t("document.history.pagination.showing", {
                   start: currentPage * 20 + 1,
                   end: Math.min((currentPage + 1) * 20, histories.length + currentPage * 20),
-                  total: totalPages * 20
+                  total: totalPages * 20,
                 })}
               </div>
               <div className="flex items-center space-x-2">
@@ -389,7 +408,7 @@ export default function DocumentUserHistoryPage() {
                 <div className="text-sm">
                   {t("document.history.pagination.page", {
                     current: currentPage + 1,
-                    total: totalPages || 1
+                    total: totalPages || 1,
                   })}
                 </div>
                 <Button

@@ -22,8 +22,10 @@ export default function MyDocumentPage() {
   const { toast } = useToast();
 
   const processingItems = useAppSelector(selectProcessingItems);
-  const latestProcessingItem = useMemo(() =>
-    processingItems.length > 0 ? processingItems[processingItems.length - 1] : null, [processingItems]);
+  const latestProcessingItem = useMemo(
+    () => (processingItems.length > 0 ? processingItems[processingItems.length - 1] : null),
+    [processingItems],
+  );
 
   const fetchUserDocuments = useCallback(async (page: number = 0, filters: SearchFilters = {}) => {
     setLoading(true);
@@ -36,7 +38,7 @@ export default function MyDocumentPage() {
       toast({
         title: t("common.error"),
         description: t("document.myDocuments.search.error"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -75,7 +77,8 @@ export default function MyDocumentPage() {
                 // Reset to first page when new document is uploaded
                 setCurrentPage(0);
                 fetchUserDocuments(0, currentFilters);
-              }} />
+              }}
+            />
           </div>
         </CardHeader>
         <CardContent>

@@ -40,7 +40,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
       toast({
         title: t("common.error"),
         description: t("document.notes.fetchError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -104,12 +104,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
             </div>
 
             {isCurrentUserNote && isMentor && !isEditing && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                className="h-8 w-8 p-0"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="h-8 w-8 p-0">
                 <Pencil className="h-4 w-4" />
                 <span className="sr-only">{t("document.notes.edit")}</span>
               </Button>
@@ -117,11 +112,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
           </div>
           <CardDescription className="text-xs">
             {formatDate(note.createdAt)}
-            {note.edited && (
-              <span className="ml-2 italic">
-                ({t("document.comments.edited")})
-              </span>
-            )}
+            {note.edited && <span className="ml-2 italic">({t("document.comments.edited")})</span>}
           </CardDescription>
         </CardHeader>
 
@@ -151,9 +142,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
           </CardTitle>
           <CardDescription>{t("document.notes.description")}</CardDescription>
         </CardHeader>
-        <CardContent>
-          {renderSkeleton()}
-        </CardContent>
+        <CardContent>{renderSkeleton()}</CardContent>
       </Card>
     );
   }
@@ -171,16 +160,8 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
           </div>
 
           {isMentor && !mentorHasNote && !isAdding && (
-            <Button
-              size="sm"
-              onClick={() => setIsAdding(true)}
-              disabled={checkingStatus}
-            >
-              {checkingStatus ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Pencil className="mr-2 h-4 w-4" />
-              )}
+            <Button size="sm" onClick={() => setIsAdding(true)} disabled={checkingStatus}>
+              {checkingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}
               {t("document.notes.add")}
             </Button>
           )}
@@ -208,9 +189,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
         {notes.length > 0 ? (
           notes.map(renderNoteItem)
         ) : (
-          <p className="text-center text-muted-foreground py-4">
-            {t("document.notes.empty")}
-          </p>
+          <p className="text-center text-muted-foreground py-4">{t("document.notes.empty")}</p>
         )}
       </CardContent>
     </Card>
