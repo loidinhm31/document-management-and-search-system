@@ -1,4 +1,4 @@
-import { Edit2, Loader2, Pencil, LightbulbIcon } from "lucide-react";
+import { LightbulbIcon, Loader2, Pencil } from "lucide-react";
 import moment from "moment-timezone";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,8 +6,7 @@ import { useTranslation } from "react-i18next";
 import { DocumentNoteForm } from "@/components/document/discover/note/document-note-form";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
@@ -101,7 +100,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
   );
 
   const renderNoteItem = (note: NoteResponse) => {
-    const isCurrentUserNote = currentUser?.username === note.mentorUsername;
+    const isCurrentUserNote = currentUser?.userId === note?.mentorId;
 
     return (
       <Card key={note.id} className="mb-4">
@@ -111,7 +110,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
               <Avatar className="h-6 w-6">
                 <AvatarFallback>{note?.mentorUsername[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
-              <CardTitle className="text-sm font-medium">{note.mentorUsername}</CardTitle>
+              <CardTitle className="text-sm font-medium">{note?.mentorUsername}</CardTitle>
             </div>
 
             {isCurrentUserNote && isMentor && !isEditing && (

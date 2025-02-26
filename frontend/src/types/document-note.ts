@@ -7,6 +7,7 @@ export interface NoteResponse {
   documentId: string;
   content: string;
   mentorUsername: string;
+  mentorId: string;
   createdAt: string;
   updatedAt: string;
   edited: boolean;
