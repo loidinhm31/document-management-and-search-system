@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { MdOutlineFavorite, MdOutlineFavoriteBorder } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { CommentSection } from "@/components/document/discover/comment-section";
+import { CommentSection } from "@/components/document/discover/comment/comment-section";
 import DocumentStats from "@/components/document/discover/document-stats";
 import { DocumentNoteList } from "@/components/document/discover/note/document-note-list";
 import { RecommendationButton } from "@/components/document/discover/recommendation-button";

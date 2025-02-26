@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { DeleteDialog } from "@/components/common/delete-dialog";
-import { CommentItem } from "@/components/document/discover/comment-item";
+import { CommentItem } from "@/components/document/discover/comment/comment-item";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,10 +31,17 @@ export const CommentSection = ({ documentId }) => {
   const [replyTo, setReplyTo] = useState(null);
   const { currentUser } = useAuth();
   const { toast } = useToast();
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedCommentId, setSelectedCommentId] = useState(null);
 
-  const fetchComments = async (page = 0) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteInProgress, setDeleteInProgress] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+
+  const commentsRef = useRef(comments);
+  useEffect(() => {
+    commentsRef.current = comments;
+  }, [comments]);
+
+  const fetchComments = useCallback(async (page = 0) => {
     if (!documentId) return;
 
     setLoading(true);
@@ -56,12 +63,12 @@ export const CommentSection = ({ documentId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [documentId, toast, t]);
 
   // Initial load and document change handler
   useEffect(() => {
     fetchComments(0);
-  }, [documentId]);
+  }, [documentId, fetchComments]);
 
   const handlePreviousPage = () => {
     if (currentPage > 0) {
@@ -131,7 +138,7 @@ export const CommentSection = ({ documentId }) => {
         return false;
       }
 
-      // If this comment has replies, recursively filter them\
+      // If this comment has replies, recursively filter them
       if (comment.replies?.length > 0) {
         comment.replies = removeCommentFromState(comment.replies, commentId);
       }
@@ -154,34 +161,67 @@ export const CommentSection = ({ documentId }) => {
     });
   };
 
-  const handleDeleteComment = async () => {
-    try {
-      await documentService.deleteComment(documentId, selectedCommentId);
+  // Handle opening the delete dialog
+  const handleDeleteClick = useCallback((commentId) => {
+    setCommentToDelete(commentId);
+    // Use a timeout to ensure React has processed state changes
+    setTimeout(() => {
+      setDeleteDialogOpen(true);
+    }, 0);
+  }, []);
 
-      // Update state locally
-      setComments((prevComments) => removeCommentFromState(prevComments, selectedCommentId));
+  // Handle the actual deletion after confirmation
+  const handleConfirmDelete = useCallback(async () => {
+    if (!commentToDelete) return;
+
+    setDeleteInProgress(true);
+    try {
+      await documentService.deleteComment(documentId, commentToDelete);
+
+      // Update the comments state
+      setComments(prevComments => removeCommentFromState(prevComments, commentToDelete));
+
+      // Check if we need to clear the reply state
+      if (replyTo?.id === commentToDelete) {
+        setReplyTo(null);
+      }
 
       toast({
         title: t("common.success"),
         description: t("document.comments.deleteSuccess"),
         variant: "success",
       });
-
-      if (replyTo?.id === selectedCommentId) {
-        setReplyTo(null);
-      }
     } catch (error) {
-      console.info(error);
+      console.error("Error deleting comment:", error);
       toast({
         title: t("common.error"),
         description: t("document.comments.deleteError"),
         variant: "destructive",
       });
     } finally {
-      setSelectedCommentId(null);
-      setShowDeleteDialog(false);
+      // Clean up all deletion-related state
+      setDeleteInProgress(false);
+
+      // Close the dialog first
+      setDeleteDialogOpen(false);
+
+      // Then clear the comment ID after a short delay
+      setTimeout(() => {
+        setCommentToDelete(null);
+      }, 100);
     }
-  };
+  }, [commentToDelete, documentId, replyTo, toast, t]);
+
+  // Handle dialog close
+  const handleDialogClose = useCallback((open) => {
+    if (!open) {
+      setDeleteDialogOpen(false);
+      // Clear the comment ID after dialog closes
+      setTimeout(() => {
+        setCommentToDelete(null);
+      }, 100);
+    }
+  }, []);
 
   const handleEditComment = async (commentId, { content }) => {
     try {
@@ -250,10 +290,7 @@ export const CommentSection = ({ documentId }) => {
                 key={comment.id}
                 comment={comment}
                 currentUser={currentUser}
-                onDelete={() => {
-                  setSelectedCommentId(comment.id);
-                  setShowDeleteDialog(true);
-                }}
+                onDelete={handleDeleteClick}
                 onReply={setReplyTo}
                 onEdit={handleEditComment}
                 documentId={documentId}
@@ -273,19 +310,18 @@ export const CommentSection = ({ documentId }) => {
             </Button>
           </div>
         ) : (
-          <p className="flex justify-center">{t("document.comments.empty")}</p>
+          comments.length === 0 && <p className="flex justify-center">{t("document.comments.empty")}</p>
         )}
       </div>
 
-      {showDeleteDialog && (
-        <DeleteDialog
-          open={showDeleteDialog}
-          onOpenChange={setShowDeleteDialog}
-          onConfirm={handleDeleteComment}
-          loading={loading}
-          description={t("document.comments.confirmDeleteMessage")}
-        />
-      )}
+      {/* Delete confirmation dialog - always render it but control visibility with open prop */}
+      <DeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={handleDialogClose}
+        onConfirm={handleConfirmDelete}
+        loading={deleteInProgress}
+        description={t("document.comments.confirmDeleteMessage")}
+      />
     </div>
   );
 };
