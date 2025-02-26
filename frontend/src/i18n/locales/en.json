@@ -19,7 +19,8 @@
       "title": "Application",
       "home": "Discover",
       "document": "My Document",
-      "preferences": "Document Preferences"
+      "preferences": "Document Preferences",
+      "history": "Document Activity History"
     },
     "admin": {
       "title": "Administration",
@@ -33,6 +34,7 @@
     "profile": "Profile",
     "my-document": "My Documents",
     "document-preferences": "Document Preferences",
+    "document-user-history": "Document Activity History",
     "admin": {
       "title": "Admin",
       "users": "User Management",
@@ -738,6 +740,50 @@
       },
       "updateSuccess": "Preferences updated successfully",
       "updateError": "Failed to update preferences"
+    },
+    "history": {
+      "title": "Activity History",
+      "description": "View your document interaction history",
+      "searchPlaceholder": "Search by document name",
+      "documentNotAvailable": "Document unavailable",
+      "loading": "Loading history...",
+      "noResults": "No activity records found",
+      "fetchError": "Failed to fetch activity history",
+      "filters": {
+        "actionType": "Action Type",
+        "allActions": "All Actions",
+        "fromDate": "From Date",
+        "toDate": "To Date",
+        "search": "Search",
+        "reset": "Reset Filters"
+      },
+      "tableHeaders": {
+        "actionType": "Action",
+        "documentTitle": "Document",
+        "details": "Details",
+        "version": "Version",
+        "timestamp": "Timestamp"
+      },
+      "actionTypes": {
+        "view_document": "View Document",
+        "update_document": "Update Metadata",
+        "update_document_file": "Update File",
+        "delete_document": "Delete Document",
+        "download_file": "Download File",
+        "download_version": "Download Version",
+        "revert_version": "Revert to Version",
+        "share": "Share Document",
+        "favorite": "Favorite Document",
+        "comment": "Comment",
+        "recommend": "Recommend Document",
+        "add_note": "Add Note"
+      },
+      "pagination": {
+        "showing": "Showing {{start}} to {{end}} of {{total}} activities",
+        "page": "Page {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next"
+      }
     },
     "comments": {
       "title": "Comments",
