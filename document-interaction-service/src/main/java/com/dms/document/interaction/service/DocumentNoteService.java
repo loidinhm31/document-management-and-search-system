@@ -36,14 +36,6 @@ public class DocumentNoteService {
     private final UserClient userClient;
     private final UserDocumentHistoryRepository userDocumentHistoryRepository;
 
-    /**
-     * Creates or updates a note by a mentor for a document
-     *
-     * @param documentId the document ID
-     * @param request request containing the note content
-     * @param username the username of the mentor
-     * @return the created or updated note response
-     */
     @Transactional
     public NoteResponse createOrUpdateNote(String documentId, NoteRequest request, String username) {
         // Get user info
@@ -115,27 +107,6 @@ public class DocumentNoteService {
         return mapToNoteResponse(savedNote, mentor.username());
     }
 
-    /**
-     * Gets a note by the current mentor for a specific document
-     *
-     * @param documentId the document ID
-     * @param username the username of the mentor
-     * @return the note response if found
-     */
-    @Transactional(readOnly = true)
-    public Optional<NoteResponse> getNoteByMentor(String documentId, String username) {
-        UserResponse mentor = getUserByUsername(username);
-
-        return documentNoteRepository.findByDocumentIdAndMentorId(documentId, mentor.userId())
-                .map(note -> mapToNoteResponse(note, mentor.username()));
-    }
-
-    /**
-     * Gets all notes for a document from all mentors
-     *
-     * @param documentId the document ID
-     * @return list of all notes for the document
-     */
     @Transactional(readOnly = true)
     public List<NoteResponse> getNotesByDocument(String documentId) {
         List<DocumentNote> notes = documentNoteRepository.findByDocumentId(documentId);
@@ -158,13 +129,6 @@ public class DocumentNoteService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Checks if the current mentor has added a note to this document
-     *
-     * @param documentId the document ID
-     * @param username the username of the mentor
-     * @return true if the mentor has added a note, false otherwise
-     */
     @Transactional(readOnly = true)
     public boolean hasNoteForDocument(String documentId, String username) {
         UserResponse mentor = getUserByUsername(username);

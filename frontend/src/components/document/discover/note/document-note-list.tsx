@@ -27,7 +27,6 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
   const [notes, setNotes] = useState<NoteResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [mentorHasNote, setMentorHasNote] = useState(false);
-  const [mentorNote, setMentorNote] = useState<NoteResponse | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
@@ -55,15 +54,6 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
     try {
       const response = await documentNoteService.hasNote(documentId);
       setMentorHasNote(response.data);
-
-      if (response.data) {
-        try {
-          const noteResponse = await documentNoteService.getMentorNote(documentId);
-          setMentorNote(noteResponse.data);
-        } catch (error) {
-          console.error("Error fetching mentor's note:", error);
-        }
-      }
     } catch (error) {
       console.error("Error checking mentor note status:", error);
     } finally {

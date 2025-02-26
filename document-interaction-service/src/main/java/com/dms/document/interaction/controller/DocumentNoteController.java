@@ -33,18 +33,6 @@ public class DocumentNoteController {
         return ResponseEntity.ok(documentNoteService.createOrUpdateNote(id, request, jwt.getSubject()));
     }
 
-    @Operation(summary = "Get mentor's note for document",
-            description = "Get the current mentor's note for a specific document if exists")
-    @GetMapping("/creator")
-    @PreAuthorize("hasRole('MENTOR')")
-    public ResponseEntity<NoteResponse> getMentorNote(
-            @PathVariable String id,
-            @AuthenticationPrincipal Jwt jwt) {
-        return documentNoteService.getNoteByMentor(id, jwt.getSubject())
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
     @Operation(summary = "Check if mentor has added a note",
             description = "Check if the current mentor has already added a note to this document")
     @GetMapping("/status")
