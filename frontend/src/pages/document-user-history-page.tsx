@@ -1,21 +1,21 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { Activity, Calendar, FileText, Filter, Search, X } from "lucide-react";
 import moment from "moment-timezone";
+import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
-import { UserDocumentActionType, UserHistoryFilter, UserHistoryResponse } from "@/types/document-user-history";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
 import { documentService } from "@/services/document.service";
+import { UserDocumentActionType, UserHistoryFilter, UserHistoryResponse } from "@/types/document-user-history";
 
 export default function DocumentUserHistoryPage() {
   const { t } = useTranslation();
@@ -27,12 +27,13 @@ export default function DocumentUserHistoryPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Filter states
   const [filters, setFilters] = useState<UserHistoryFilter>({
     page: 0,
     size: 20,
   });
 
+  const [searchInput, setSearchInput] = useState("");
+  const [selectedActionType, setSelectedActionType] = useState<UserDocumentActionType | undefined>(undefined);
   const [selectedFromDate, setSelectedFromDate] = useState<Date | undefined>(undefined);
   const [selectedToDate, setSelectedToDate] = useState<Date | undefined>(undefined);
 
@@ -64,37 +65,36 @@ export default function DocumentUserHistoryPage() {
     loadHistories();
   }, [loadHistories]);
 
-  // Handle search/filter
   const handleSearch = () => {
     // Reset to first page when applying new filters
     setCurrentPage(0);
 
-    // Update filters with properly formatted date values
+    // Update filters with all temporary values
     const updatedFilters: UserHistoryFilter = {
       ...filters,
       page: 0,
-      // Set fromDate to start of day in UTC
+      documentName: searchInput || undefined,
+      actionType: selectedActionType,
       fromDate: selectedFromDate
         ? new Date(
-            selectedFromDate.getFullYear(),
-            selectedFromDate.getMonth(),
-            selectedFromDate.getDate(),
-            0,
-            0,
-            0,
-          ).toISOString()
+          selectedFromDate.getFullYear(),
+          selectedFromDate.getMonth(),
+          selectedFromDate.getDate(),
+          0,
+          0,
+          0,
+        ).toISOString()
         : undefined,
-      // Set toDate to end of day in UTC
       toDate: selectedToDate
         ? new Date(
-            selectedToDate.getFullYear(),
-            selectedToDate.getMonth(),
-            selectedToDate.getDate(),
-            23,
-            59,
-            59,
-            999,
-          ).toISOString()
+          selectedToDate.getFullYear(),
+          selectedToDate.getMonth(),
+          selectedToDate.getDate(),
+          23,
+          59,
+          59,
+          999,
+        ).toISOString()
         : undefined,
     };
 
@@ -103,6 +103,8 @@ export default function DocumentUserHistoryPage() {
 
   // Handle filter reset
   const handleReset = () => {
+    setSearchInput("");
+    setSelectedActionType(undefined);
     setSelectedFromDate(undefined);
     setSelectedToDate(undefined);
     setCurrentPage(0);
@@ -209,16 +211,16 @@ export default function DocumentUserHistoryPage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder={t("document.history.searchPlaceholder")}
-                    value={filters.documentName || ""}
-                    onChange={(e) => setFilters({ ...filters, documentName: e.target.value })}
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                     className="pl-9"
                   />
                 </div>
               </div>
 
               <Select
-                value={filters.actionType}
-                onValueChange={(value) => setFilters({ ...filters, actionType: value as UserDocumentActionType })}
+                value={selectedActionType}
+                onValueChange={(value) => setSelectedActionType(value as UserDocumentActionType)}
               >
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder={t("document.history.filters.actionType")} />
@@ -319,7 +321,6 @@ export default function DocumentUserHistoryPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  // Loading skeletons
                   Array(5)
                     .fill(0)
                     .map((_, index) => (
