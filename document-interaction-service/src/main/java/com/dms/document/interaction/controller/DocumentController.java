@@ -2,6 +2,7 @@ package com.dms.document.interaction.controller;
 
 import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.*;
+import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentVersion;
 import com.dms.document.interaction.service.DocumentHistoryService;
@@ -12,6 +13,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -221,6 +226,35 @@ public class DocumentController {
     @GetMapping("/{id}/statistics")
     public ResponseEntity<DocumentStatisticsResponse> getDocumentStatistics(@PathVariable String id) {
         return ResponseEntity.ok(documentHistoryService.getDocumentStatistics(id));
+    }
+
+    @Operation(
+            summary = "Get user's document history",
+            description = "Retrieve paginated list of user's document interaction history with filtering options. " +
+                    "Results are sorted by most recent first. Supports filtering by action type, date range, and document name."
+    )
+    @GetMapping
+    public ResponseEntity<Page<UserHistoryResponse>> getUserHistory(
+            @RequestParam(required = false) UserDocumentActionType actionType,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant toDate,
+            @RequestParam(required = false) String documentName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return ResponseEntity.ok(
+                documentHistoryService.getUserHistory(
+                        jwt.getSubject(),
+                        actionType,
+                        fromDate,
+                        toDate,
+                        documentName,
+                        pageable
+                )
+        );
     }
 
     @Operation(summary = "Get all reports for document",

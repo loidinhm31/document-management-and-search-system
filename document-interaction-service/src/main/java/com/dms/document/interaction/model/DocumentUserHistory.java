@@ -11,8 +11,8 @@ import java.time.Instant;
 
 @Data
 @Builder
-@Document(collection = "user_document_histories")
-public class UserDocumentHistory {
+@Document(collection = "document_user_histories")
+public class DocumentUserHistory {
     @Id
     private String id;
 

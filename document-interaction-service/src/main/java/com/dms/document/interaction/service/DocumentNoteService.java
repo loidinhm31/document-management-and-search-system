@@ -10,10 +10,10 @@ import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentNote;
-import com.dms.document.interaction.model.UserDocumentHistory;
+import com.dms.document.interaction.model.DocumentUserHistory;
 import com.dms.document.interaction.repository.DocumentNoteRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
-import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
+import com.dms.document.interaction.repository.DocumentUserHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
@@ -34,7 +34,7 @@ public class DocumentNoteService {
     private final DocumentNoteRepository documentNoteRepository;
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
-    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
+    private final DocumentUserHistoryRepository documentUserHistoryRepository;
 
     @Transactional
     public NoteResponse createOrUpdateNote(String documentId, NoteRequest request, String username) {
@@ -94,7 +94,7 @@ public class DocumentNoteService {
         // Record this action in history
         final boolean isNewNote = isNew;
         CompletableFuture.runAsync(() -> {
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(mentor.userId().toString())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.NOTE)

@@ -9,10 +9,10 @@ import com.dms.document.interaction.enums.*;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.exception.UnsupportedDocumentTypeException;
 import com.dms.document.interaction.model.DocumentInformation;
+import com.dms.document.interaction.model.DocumentUserHistory;
 import com.dms.document.interaction.model.DocumentVersion;
-import com.dms.document.interaction.model.UserDocumentHistory;
 import com.dms.document.interaction.repository.DocumentRepository;
-import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
+import com.dms.document.interaction.repository.DocumentUserHistoryRepository;
 import com.dms.document.interaction.utils.DocumentUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -57,7 +56,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final DocumentPreferencesService documentPreferencesService;
     private final UserClient userClient;
-    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
+    private final DocumentUserHistoryRepository documentUserHistoryRepository;
 
     public DocumentInformation uploadDocument(MultipartFile file,
                                               String summary,
@@ -216,7 +215,7 @@ public class DocumentService {
         if (Objects.nonNull(fileContent) && StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
             CompletableFuture.runAsync(() -> {
                 // History
-                userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                documentUserHistoryRepository.save(DocumentUserHistory.builder()
                         .userId(userResponse.userId().toString())
                         .documentId(documentId)
                         .userDocumentActionType(UserDocumentActionType.DOWNLOAD_FILE)
@@ -249,7 +248,7 @@ public class DocumentService {
         if (BooleanUtils.isTrue(history)) {
             CompletableFuture.runAsync(() -> {
                 // History
-                userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+                documentUserHistoryRepository.save(DocumentUserHistory.builder()
                         .userId(userResponse.userId().toString())
                         .documentId(documentId)
                         .userDocumentActionType(UserDocumentActionType.VIEW_DOCUMENT)
@@ -299,7 +298,7 @@ public class DocumentService {
 
         CompletableFuture.runAsync(() -> {
             // History
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(document.getUserId())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.UPDATE_DOCUMENT)
@@ -385,7 +384,7 @@ public class DocumentService {
         // Send sync event for reprocessing
         CompletableFuture.runAsync(() -> {
             // History
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(document.getUserId())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.UPDATE_DOCUMENT_FILE)
@@ -433,7 +432,7 @@ public class DocumentService {
         // Send delete event
         CompletableFuture.runAsync(() -> {
             // History
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(document.getUserId())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.DELETE_DOCUMENT)
@@ -484,7 +483,7 @@ public class DocumentService {
         byte[] fileContent = s3Service.downloadFile(targetVersion.getFilePath());
         if (Objects.nonNull(fileContent) && StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
             // History
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(userResponse.userId().toString())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.DOWNLOAD_VERSION)
@@ -556,7 +555,7 @@ public class DocumentService {
 
         CompletableFuture.runAsync(() -> {
             // History
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(document.getUserId())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.REVERT_VERSION)

@@ -9,15 +9,13 @@ import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentRecommendation;
-import com.dms.document.interaction.model.UserDocumentHistory;
+import com.dms.document.interaction.model.DocumentUserHistory;
 import com.dms.document.interaction.repository.DocumentRecommendationRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
-import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
+import com.dms.document.interaction.repository.DocumentUserHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -35,7 +32,7 @@ public class DocumentRecommendationService {
     private final DocumentRecommendationRepository recommendationRepository;
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
-    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
+    private final DocumentUserHistoryRepository documentUserHistoryRepository;
     private final PublishEventService publishEventService;
 
     @Transactional
@@ -69,7 +66,7 @@ public class DocumentRecommendationService {
 
         // Record history asynchronously
         CompletableFuture.runAsync(() -> {
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(userResponse.userId().toString())
                     .documentId(documentId)
                     .userDocumentActionType(com.dms.document.interaction.enums.UserDocumentActionType.RECOMMENDATION)
@@ -116,7 +113,7 @@ public class DocumentRecommendationService {
 
         // Record history asynchronously
         CompletableFuture.runAsync(() -> {
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(userResponse.userId().toString())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.RECOMMENDATION)
