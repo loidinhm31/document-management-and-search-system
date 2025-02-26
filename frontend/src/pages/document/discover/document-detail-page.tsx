@@ -1,3 +1,4 @@
+// src/pages/document/discover/document-detail-page.tsx
 import { ArrowLeft, Calendar, Languages, Loader2, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -6,6 +7,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { CommentSection } from "@/components/document/discover/comment-section";
 import DocumentStats from "@/components/document/discover/document-stats";
+import { DocumentNoteList } from "@/components/document/discover/note/document-note-list";
 import { RecommendationButton } from "@/components/document/discover/recommendation-button";
 import { RelatedDocuments } from "@/components/document/discover/related-document";
 import { ReportDocumentDialog } from "@/components/document/discover/report-document-dialog";
@@ -49,7 +51,7 @@ export default function DocumentDetailPage() {
     return new Date(dateString).toLocaleString();
   };
 
-  const {role} = useAuth();
+  const { role } = useAuth();
   console.log("Role", role);
 
   const handleFavorite = async () => {
@@ -62,7 +64,7 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.success"),
           description: t("document.favorite.removeSuccess"),
-          variant: "success",
+          variant: "success"
         });
       } else {
         await documentService.favoriteDocument(documentId);
@@ -70,14 +72,14 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.success"),
           description: t("document.favorite.addSuccess"),
-          variant: "success",
+          variant: "success"
         });
       }
     } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.favorite.error"),
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -112,7 +114,7 @@ export default function DocumentDetailPage() {
         toast({
           title: t("common.error"),
           description: t("document.detail.fetchError"),
-          variant: "destructive",
+          variant: "destructive"
         });
       } finally {
         setLoading(false);
@@ -258,7 +260,7 @@ export default function DocumentDetailPage() {
                         <Label>{t("document.detail.fields.courseCode")}</Label>
                         <p className="text-sm text-muted-foreground">
                           {getMasterDataTranslation(documentData.courseCode, MasterDataType.COURSE_CODE, {
-                            courseCodes,
+                            courseCodes
                           })}
                         </p>
                       </div>
@@ -276,7 +278,7 @@ export default function DocumentDetailPage() {
                     <Label>{t("document.detail.fields.category")}</Label>
                     <p className="text-sm text-muted-foreground">
                       {getMasterDataTranslation(documentData.category, MasterDataType.DOCUMENT_CATEGORY, {
-                        categories,
+                        categories
                       })}
                     </p>
                   </div>
@@ -317,6 +319,9 @@ export default function DocumentDetailPage() {
 
         {/* Related Documents Section */}
         <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
+
+        {/* Mentor Notes Section */}
+        <DocumentNoteList documentId={documentId} />
 
         {/* Comments Section */}
         <Card>

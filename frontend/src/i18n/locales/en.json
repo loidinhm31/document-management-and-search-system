@@ -836,6 +836,27 @@
       "addSuccess": "Document marked as recommended successfully",
       "removeSuccess": "Document recommendation removed successfully",
       "error": "Failed to update recommendation status"
+    },
+    "notes": {
+      "title": "Mentor Notes",
+      "description": "Guidance notes from mentors to help you understand this document",
+      "add": "Add Note",
+      "addNew": "New Note",
+      "edit": "Edit Note",
+      "save": "Save Note",
+      "update": "Update Note",
+      "placeholder": "Add your guidance note here (max 200 characters)...",
+      "characters": "characters",
+      "tooLong": "Too many characters",
+      "empty": "No mentor notes for this document yet",
+      "addSuccess": "Note added successfully",
+      "editSuccess": "Note updated successfully",
+      "addError": "Failed to add note",
+      "editError": "Failed to update note",
+      "fetchError": "Failed to fetch notes",
+      "error": {
+        "tooLong": "Note cannot exceed {{max}} characters"
+      }
     }
   }
 }
