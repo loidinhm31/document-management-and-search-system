@@ -749,7 +749,7 @@
     "history": {
       "title": "Activity History",
       "description": "View your document interaction history",
-      "searchPlaceholder": "Search by document name",
+      "searchPlaceholder": "Search by document file name or details",
       "documentNotAvailable": "Document unavailable",
       "loading": "Loading history...",
       "noResults": "No activity records found",
