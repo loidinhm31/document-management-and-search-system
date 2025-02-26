@@ -99,7 +99,7 @@ public class DocumentNoteService {
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.NOTE)
                     .version(document.getCurrentVersion())
-                    .detail(isNewNote ? "ADD_NOTE" : "UPDATE_NOTE")
+                    .detail(isNewNote ? "ADD" : "UPDATE")
                     .createdAt(Instant.now())
                     .build());
         });

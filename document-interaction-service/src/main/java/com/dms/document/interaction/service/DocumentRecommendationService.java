@@ -71,7 +71,7 @@ public class DocumentRecommendationService {
                     .documentId(documentId)
                     .userDocumentActionType(com.dms.document.interaction.enums.UserDocumentActionType.RECOMMENDATION)
                     .version(document.getCurrentVersion())
-                    .detail("ADD_RECOMMENDATION")
+                    .detail("ADD")
                     .createdAt(Instant.now())
                     .build());
 
@@ -118,7 +118,7 @@ public class DocumentRecommendationService {
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.RECOMMENDATION)
                     .version(document.getCurrentVersion())
-                    .detail("REMOVE_RECOMMENDATION")
+                    .detail("REMOVE")
                     .createdAt(Instant.now())
                     .build());
 

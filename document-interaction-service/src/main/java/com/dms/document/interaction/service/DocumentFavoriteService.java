@@ -97,7 +97,7 @@ public class DocumentFavoriteService {
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.FAVORITE)
                     .version(doc.getCurrentVersion())
-                    .detail("REMOVE")
+                    .detail("-")
                     .createdAt(Instant.now())
                     .build());
         });
