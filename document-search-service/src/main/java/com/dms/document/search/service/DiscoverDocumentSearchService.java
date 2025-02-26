@@ -10,14 +10,11 @@ import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
-import org.opensearch.common.lucene.search.function.CombineFunction;
-import org.opensearch.common.lucene.search.function.FieldValueFactorFunction;
 import org.opensearch.common.unit.Fuzziness;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.MultiMatchQueryBuilder;
 import org.opensearch.index.query.Operator;
 import org.opensearch.index.query.QueryBuilders;
-import org.opensearch.index.query.functionscore.FieldValueFactorFunctionBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.sort.SortBuilders;
 import org.opensearch.search.sort.SortOrder;
@@ -32,6 +29,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +37,7 @@ import java.util.Objects;
 public class DiscoverDocumentSearchService extends OpenSearchBaseService {
     private final RestHighLevelClient openSearchClient;
     private final UserClient userClient;
+    private final DocumentFavoriteService documentFavoriteService;
 
     private static final int MIN_SEARCH_LENGTH = 2;
     private static final int MAX_SUGGESTIONS = 10;
@@ -81,7 +80,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
                 return Page.empty(Pageable.unpaged());
             }
 
-            SearchRequest searchRequest = buildSearchRequest(request, searchContext, userResponse.userId().toString());
+            SearchRequest searchRequest = buildSearchRequest(request, searchContext, userResponse.userId());
             SearchResponse searchResponse = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
 
             return processSearchResults(
@@ -95,13 +94,18 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         }
     }
 
-    private SearchRequest buildSearchRequest(DocumentSearchRequest request, SearchContext context, String userId) {
+    private SearchRequest buildSearchRequest(DocumentSearchRequest request, SearchContext context, UUID userId) {
         SearchRequest searchRequest = new SearchRequest(INDEX_NAME);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Add sharing access filter
-        addSharingAccessFilter(queryBuilder, userId);
+        addSharingAccessFilter(queryBuilder, userId.toString());
+
+        // Add favorite filter if requested
+        if (Boolean.TRUE.equals(request.getFavoriteOnly())) {
+            documentFavoriteService.addFavoriteFilter(queryBuilder, userId);
+        }
 
         // Add filter conditions
         addFilterConditions(queryBuilder, request.getMajor(), request.getCourseCode(), request.getLevel(), request.getCategory(), request.getTags());

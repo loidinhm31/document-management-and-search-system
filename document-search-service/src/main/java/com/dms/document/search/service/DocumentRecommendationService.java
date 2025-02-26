@@ -43,12 +43,13 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
     private final RestHighLevelClient openSearchClient;
     private final UserClient userClient;
     private final DocumentPreferencesRepository documentPreferencesRepository;
+    private final DocumentFavoriteService documentFavoriteService;
 
     private static final float MAX_INTERACTION_BOOST = 3.0f;
     private static final float INTERACTION_WEIGHT_MULTIPLIER = 0.5f;
     private static final float PREFERENCE_BOOST_MULTIPLIER = 2.0f;
 
-    public Page<DocumentResponseDto> getRecommendations(String documentId, String username, Pageable pageable) {
+    public Page<DocumentResponseDto> getRecommendations(String documentId, Boolean favoriteOnly, String username, Pageable pageable) {
         try {
             ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
             if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
@@ -60,7 +61,7 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
 
             return StringUtils.isNotEmpty(documentId)
                     ? getContentBasedRecommendations(documentId, userResponse.userId().toString(), preferences, pageable)
-                    : getPreferenceBasedRecommendations(userResponse.userId().toString(), preferences, pageable);
+                    : getPreferenceBasedRecommendations(userResponse.userId(), preferences, favoriteOnly, pageable);
         } catch (IOException e) {
             log.error("Error getting recommendations: {}", e.getMessage());
             throw new RuntimeException("Failed to get recommendations", e);
@@ -281,8 +282,9 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
     }
 
     private Page<DocumentResponseDto> getPreferenceBasedRecommendations(
-            String userId,
+            UUID userId,
             DocumentPreferences preferences,
+            Boolean favoriteOnly,
             Pageable pageable) throws IOException {
 
         SearchRequest searchRequest = new SearchRequest(INDEX_NAME);
@@ -290,7 +292,12 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Add sharing access filter
-        addSharingAccessFilter(queryBuilder, userId);
+        addSharingAccessFilter(queryBuilder, userId.toString());
+
+        // Add favorite filter if requested
+        if (Boolean.TRUE.equals(favoriteOnly)) {
+            documentFavoriteService.addFavoriteFilter(queryBuilder, userId);
+        }
 
         // Add preference-based boosts
         addPreferenceBoosts(queryBuilder, preferences);

@@ -45,9 +45,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl extends BaseService implements UserService {
-    @Value("${app.frontend.url}")
-    private String frontendUrl;
-
     @Autowired
     private AuthenticationManager authenticationManager;
 
