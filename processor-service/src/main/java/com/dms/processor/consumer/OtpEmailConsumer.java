@@ -1,6 +1,6 @@
 package com.dms.processor.consumer;
 
-import com.dms.processor.dto.OtpEmailRequest;
+import com.dms.processor.dto.EmailNotificationPayload;
 import com.dms.processor.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ public class OtpEmailConsumer {
     private final EmailService emailService;
 
     @RabbitListener(queues = "${rabbitmq.queues.otp}")
-    public void consumeOtpEmail(OtpEmailRequest emailRequest) {
+    public void consumeOtpEmail(EmailNotificationPayload emailRequest) {
         log.info("Received OTP email request for user: {}", emailRequest.getUsername());
         try {
             emailService.sendOtpEmail(

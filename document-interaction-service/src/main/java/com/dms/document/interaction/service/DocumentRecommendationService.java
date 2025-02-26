@@ -57,6 +57,7 @@ public class DocumentRecommendationService {
         DocumentRecommendation recommendation = new DocumentRecommendation();
         recommendation.setDocumentId(documentId);
         recommendation.setMentorId(userResponse.userId());
+        recommendation.setCreatedAt(Instant.now());
         recommendationRepository.save(recommendation);
 
         // Update document recommendation count

@@ -3,14 +3,17 @@ package com.dms.processor.consumer;
 import com.dms.processor.model.FailedMessage;
 import com.dms.processor.repository.FailedMessageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,7 +23,6 @@ import java.util.Map;
 public class DeadLetterQueueListener {
 
     private final FailedMessageRepository failedMessageRepository;
-    private final ObjectMapper objectMapper;
 
     @RabbitListener(queues = "${rabbitmq.queues.document-sync-dlq}")
     public void processFailedMessages(Message failedMessage) {
@@ -34,6 +36,7 @@ public class DeadLetterQueueListener {
 
             // Convert message body to string
             String messageBody = new String(failedMessage.getBody());
+            log.info("Processing failed message. Body: {}", messageBody);
 
             // Create headers map
             Map<String, Object> headers = new HashMap<>(failedMessage.getMessageProperties().getHeaders());
