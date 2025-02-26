@@ -4,8 +4,10 @@ import com.dms.document.interaction.enums.DocumentStatus;
 import com.dms.document.interaction.enums.DocumentType;
 import com.dms.document.interaction.enums.ReportStatus;
 import com.dms.document.interaction.enums.SharingType;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -15,9 +17,12 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import java.time.Instant;
 import java.util.*;
 
+
+@Document(collection = "documents")
 @Data
 @Builder
-@Document(collection = "documents")
+@NoArgsConstructor
+@AllArgsConstructor
 public class DocumentInformation {
     @Id
     private String id;

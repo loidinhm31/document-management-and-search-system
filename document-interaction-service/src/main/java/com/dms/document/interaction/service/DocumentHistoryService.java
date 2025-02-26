@@ -82,24 +82,29 @@ public class DocumentHistoryService {
             UserDocumentActionType actionType,
             Instant fromDate,
             Instant toDate,
-            String documentName,
+            String searchTerm,
             Pageable pageable) {
 
         // Get user info
         UserResponse user = getUserFromUsername(username);
         String userId = user.userId().toString();
 
-        // Build dynamic query with criteria
-        Query query = buildHistoryQuery(userId, actionType, fromDate, toDate, documentName);
+        // Find document IDs matching the search term in filename (if provided)
+        List<String> matchingDocumentIds = StringUtils.isNotEmpty(searchTerm)
+                ? findDocumentIdsByName(searchTerm)
+                : Collections.emptyList();
 
-        // Set pagination
+        // Build dynamic query with criteria for history
+        Query query = buildHistoryQuery(userId, actionType, fromDate, toDate, searchTerm, matchingDocumentIds);
+
+        // Set pagination and sorting
         query.with(pageable);
 
         // Execute query
         List<DocumentUserHistory> histories = mongoTemplate.find(query, DocumentUserHistory.class);
 
         // Count query for total elements (without pagination)
-        Query countQuery = buildHistoryQuery(userId, actionType, fromDate, toDate, documentName);
+        Query countQuery = buildHistoryQuery(userId, actionType, fromDate, toDate, searchTerm, matchingDocumentIds);
 
         // Enrich with document titles
         List<UserHistoryResponse> responses = enrichWithDocumentTitles(histories);
@@ -117,7 +122,8 @@ public class DocumentHistoryService {
             UserDocumentActionType actionType,
             Instant fromDate,
             Instant toDate,
-            String documentName) {
+            String searchTerm,
+            List<String> matchingDocumentIds) {
 
         // Start with base criteria for user
         Criteria criteria = Criteria.where("userId").is(userId);
@@ -136,15 +142,19 @@ public class DocumentHistoryService {
             criteria.and("createdAt").lte(toDate);
         }
 
-        // Add document name filter if provided
-        if (StringUtils.isNotEmpty(documentName)) {
-            List<String> documentIds = findDocumentIdsByName(documentName);
-            if (!documentIds.isEmpty()) {
-                criteria.and("documentId").in(documentIds);
-            } else {
-                // No matching documents - force empty result
-                criteria.and("documentId").is("non-existent-id");
+        // Add search term filter for filename (via document IDs) and detail
+        if (StringUtils.isNotEmpty(searchTerm)) {
+            List<Criteria> orCriteria = new ArrayList<>();
+
+            // Match documents by IDs from filename search
+            if (!matchingDocumentIds.isEmpty()) {
+                orCriteria.add(Criteria.where("documentId").in(matchingDocumentIds));
             }
+
+            // Match detail field with regex (case-insensitive)
+            orCriteria.add(Criteria.where("detail").regex(searchTerm, "i"));
+
+            criteria.andOperator(new Criteria().orOperator(orCriteria.toArray(new Criteria[0])));
         }
 
         // Create and return query with sort by createdAt descending
@@ -204,17 +214,17 @@ public class DocumentHistoryService {
         return response.getBody();
     }
 
-    private List<String> findDocumentIdsByName(String documentName) {
-        Criteria criteria = Criteria.where("filename").regex(documentName, "i")
+    private List<String> findDocumentIdsByName(String searchTerm) {
+        Criteria criteria = Criteria.where("filename").regex(searchTerm, "i")
                 .and("deleted").ne(true);
 
         Query query = Query.query(criteria);
         query.fields().include("_id");
 
-        List<DocumentInformation> documents = mongoTemplate.find(query, DocumentInformation.class);
-
-        return documents.stream()
-                .map(DocumentInformation::getId)
+        // Use raw Document to avoid instantiation issues
+        return mongoTemplate.find(query, org.bson.Document.class, "documents")
+                .stream()
+                .map(doc -> doc.get("_id").toString())
                 .collect(Collectors.toList());
     }
 }
