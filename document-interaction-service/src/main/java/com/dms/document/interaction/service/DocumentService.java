@@ -130,15 +130,30 @@ public class DocumentService {
         log.info("Saved document: {}", savedDocument.getFilename());
 
         // Send sync event for processing
-        CompletableFuture.runAsync(() -> publishEventService.sendSyncEvent(
-                SyncEventRequest.builder()
-                        .eventId(UUID.randomUUID().toString())
-                        .userId(userResponse.userId().toString())
-                        .documentId(savedDocument.getId())
-                        .subject(EventType.SYNC_EVENT.name())
-                        .triggerAt(Instant.now())
-                        .build()
-        ));
+        CompletableFuture.runAsync(() -> {
+            // History
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
+                    .userId(userResponse.userId().toString())
+                    .documentId(savedDocument.getId())
+                    .userDocumentActionType(UserDocumentActionType.UPLOAD_DOCUMENT)
+                    .version(savedDocument.getCurrentVersion())
+                    .detail(String.format("%s - %s KB",
+                            savedDocument.getFilename(),
+                            savedDocument.getFileSize())
+                    )
+                    .createdAt(Instant.now())
+                    .build());
+
+            publishEventService.sendSyncEvent(
+                    SyncEventRequest.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .userId(userResponse.userId().toString())
+                            .documentId(savedDocument.getId())
+                            .subject(EventType.SYNC_EVENT.name())
+                            .triggerAt(Instant.now())
+                            .build()
+            );
+        });
 
         return savedDocument;
     }

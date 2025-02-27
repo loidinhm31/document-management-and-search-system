@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
@@ -22,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { reportService } from "@/services/report.service";
 import { ReportType } from "@/types/document-report";
+import { Badge } from "@/components/ui/badge";
 
 interface CommentReport {
   id: number;
@@ -427,11 +427,18 @@ export default function CommentReportsTab() {
                     <Badge variant="secondary">{report.reportCount}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={report.resolved ? "default" : "destructive"}>
-                      {report.resolved
-                        ? t("admin.reports.comments.status.resolved")
-                        : t("admin.reports.comments.status.pending")}
-                    </Badge>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset 
+                        ${
+                        report.resolved
+                          ? "bg-green-50 text-green-700 ring-green-600/20"
+                          : "bg-red-50 text-red-700 ring-red-600/20"
+                      }`}
+                    >
+                       {report.resolved
+                         ? t("admin.reports.comments.status.resolved")
+                         : t("admin.reports.comments.status.pending")}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
@@ -442,19 +449,13 @@ export default function CommentReportsTab() {
                       <Button
                         variant={report.resolved ? "secondary" : "destructive"}
                         size="sm"
+                        disabled={report.resolved}
                         onClick={() => handleResolveClick(report)}
                       >
-                        {report.resolved ? (
-                          <>
-                            <AlertTriangle className="h-4 w-4 mr-1" />
-                            {t("admin.reports.comments.actions.pending")}
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            {t("admin.reports.comments.actions.resolve")}
-                          </>
-                        )}
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        {report.resolved
+                          ? t("admin.reports.comments.actions.resolved")
+                          : t("admin.reports.comments.actions.resolve")}
                       </Button>
                     </div>
                   </TableCell>
@@ -549,11 +550,18 @@ export default function CommentReportsTab() {
                 <div className="bg-muted rounded-md p-3 flex flex-col gap-2">
                   <div className="text-sm">
                     {t("admin.reports.comments.dialogs.reasons.status")}:
-                    <Badge className="ml-2" variant={reportDetail.resolved ? "default" : "destructive"}>
-                      {reportDetail.resolved
-                        ? t("admin.reports.comments.status.resolved")
-                        : t("admin.reports.comments.status.pending")}
-                    </Badge>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset 
+                        ${
+                        reportDetail.resolved
+                          ? "bg-green-50 text-green-700 ring-green-600/20"
+                          : "bg-red-50 text-red-700 ring-red-600/20"
+                      }`}
+                    >
+                       {reportDetail.resolved
+                         ? t("admin.reports.comments.status.resolved")
+                         : t("admin.reports.comments.status.pending")}
+                    </span>
                   </div>
 
                   {reportDetail.resolved && reportDetail.resolvedByUsername && (

@@ -519,7 +519,7 @@
         "actions": {
           "viewReasons": "View Reasons",
           "resolve": "Resolve",
-          "unresolve": "Unresolve"
+          "resolved": "Resolved"
         },
         "pagination": {
           "previous": "Previous",
@@ -533,7 +533,8 @@
             "reportedBy": "Reported by: {{user}}",
             "noReasons": "No report reasons found",
             "comment": "Comment content",
-            "status": "Report status"
+            "status": "Report status",
+            "resolvedBy": "Resolved by {{user}}"
           },
           "resolve": {
             "title": "Resolve Comment Report",
@@ -905,18 +906,19 @@
         "timestamp": "Timestamp"
       },
       "actionTypes": {
-        "view_document": "View Document",
-        "update_document": "Update Metadata",
-        "update_document_file": "Update File",
-        "delete_document": "Delete Document",
-        "download_file": "Download File",
-        "download_version": "Download Version",
-        "revert_version": "Revert to Version",
+        "uploadDocument": "Upload Document",
+        "viewDocument": "View Document",
+        "updateDocument": "Update Metadata",
+        "updateDocumentFile": "Update File",
+        "deleteDocument": "Delete Document",
+        "downloadFile": "Download File",
+        "downloadVersion": "Download Version",
+        "revertVersion": "Revert to Version",
         "share": "Share Document",
         "favorite": "Favorite Document",
         "comment": "Comment",
         "recommend": "Recommend Document",
-        "add_note": "Add Note"
+        "addNote": "Add Note"
       },
       "pagination": {
         "showing": "Showing {{start}} to {{end}} of {{total}} activities",

@@ -3,8 +3,6 @@ import moment from "moment-timezone";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { UserDocumentActionType, UserHistoryFilter, UserHistoryResponse } from "@/types/document-user-history";
+import { cn } from "@/lib/utils";
 
 export default function DocumentUserHistoryPage() {
   const { t } = useTranslation();
@@ -130,56 +129,60 @@ export default function DocumentUserHistoryPage() {
       UserDocumentActionType,
       {
         label: string;
-        variant: "default" | "secondary" | "outline" | "destructive";
+        variant: string;
       }
     > = {
+      [UserDocumentActionType.UPLOAD_DOCUMENT]: {
+        label: t("document.history.actionTypes.uploadDocument"),
+        variant: "bg-cyan-200 text-cyan-700 ring-cyan-600/20",
+      },
       [UserDocumentActionType.VIEW_DOCUMENT]: {
-        label: t("document.history.actionTypes.view_document"),
-        variant: "default",
+        label: t("document.history.actionTypes.viewDocument"),
+        variant: "bg-green-100 text-green-700 ring-green-600/20",
       },
       [UserDocumentActionType.UPDATE_DOCUMENT]: {
-        label: t("document.history.actionTypes.update_document"),
-        variant: "secondary",
+        label: t("document.history.actionTypes.updateDocument"),
+        variant: "bg-green-200 text-green-700 ring-green-600/20",
       },
       [UserDocumentActionType.UPDATE_DOCUMENT_FILE]: {
-        label: t("document.history.actionTypes.update_document_file"),
-        variant: "secondary",
+        label: t("document.history.actionTypes.updateDocumentFile"),
+        variant: "bg-green-300 text-green-800 ring-green-800/20",
       },
       [UserDocumentActionType.DELETE_DOCUMENT]: {
-        label: t("document.history.actionTypes.delete_document"),
-        variant: "destructive",
+        label: t("document.history.actionTypes.deleteDocument"),
+        variant: "bg-red-100 text-red-800 ring-red-800/20",
       },
       [UserDocumentActionType.DOWNLOAD_FILE]: {
-        label: t("document.history.actionTypes.download_file"),
-        variant: "outline",
+        label: t("document.history.actionTypes.downloadFile"),
+        variant: "bg-yellow-100 text-yellow-800 ring-yellow-800/20",
       },
       [UserDocumentActionType.DOWNLOAD_VERSION]: {
-        label: t("document.history.actionTypes.download_version"),
-        variant: "outline",
+        label: t("document.history.actionTypes.downloadVersion"),
+        variant: "bg-yellow-200 text-yellow-500 ring-yellow-600/20",
       },
       [UserDocumentActionType.REVERT_VERSION]: {
-        label: t("document.history.actionTypes.revert_version"),
-        variant: "secondary",
+        label: t("document.history.actionTypes.revertVersion"),
+        variant: "bg-orange-200 text-orange-500 ring-orange-600/20",
       },
       [UserDocumentActionType.SHARE]: {
         label: t("document.history.actionTypes.share"),
-        variant: "default",
+        variant: "bg-blue-200 text-blue-500 ring-blue-600/20",
       },
       [UserDocumentActionType.FAVORITE]: {
         label: t("document.history.actionTypes.favorite"),
-        variant: "default",
+        variant: "bg-pink-200 text-pink-500 ring-pink-600/20",
       },
       [UserDocumentActionType.COMMENT]: {
         label: t("document.history.actionTypes.comment"),
-        variant: "default",
+        variant: "bg-purple-200 text-purple-500 ring-purple-600/20",
       },
       [UserDocumentActionType.RECOMMEND]: {
         label: t("document.history.actionTypes.recommend"),
-        variant: "default",
+        variant: "bg-lime-50 text-lime-500 ring-lime-600/20",
       },
       [UserDocumentActionType.ADD_NOTE]: {
-        label: t("document.history.actionTypes.add_note"),
-        variant: "default",
+        label: t("document.history.actionTypes.addNote"),
+        variant: "bg-amber-50 text-amber-500 ring-amber-600/20",
       },
     };
 
@@ -226,7 +229,7 @@ export default function DocumentUserHistoryPage() {
                   <SelectValue placeholder={t("document.history.filters.actionType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={undefined}>{t("document.history.filters.allActions")}</SelectItem>
+                  <SelectItem value="all">{t("document.history.filters.allActions")}</SelectItem>
                   {Object.values(UserDocumentActionType).map((type) => (
                     <SelectItem key={type} value={type}>
                       {getActionTypeDetails(type).label}
@@ -349,7 +352,14 @@ export default function DocumentUserHistoryPage() {
                     return (
                       <TableRow key={history.id}>
                         <TableCell>
-                          <Badge variant={variant}>{label}</Badge>
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset",
+                              variant,
+                            )}
+                          >
+                            {label}
+                          </span>
                         </TableCell>
                         <TableCell className="font-medium">
                           {history.documentId ? (

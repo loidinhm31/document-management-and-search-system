@@ -1,10 +1,11 @@
-import { AlertTriangle, Calendar, Eye, Filter, Loader2, Search, User, X } from "lucide-react";
+import { AlertTriangle, Calendar, Eye, Filter, Loader2, Search, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -15,13 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { reportService } from "@/services/report.service";
 import { ReportType } from "@/types/document-report";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export interface DocumentReport {
   documentId: string;
@@ -255,7 +256,7 @@ export default function DocumentReportsTab() {
                       className="ml-auto h-4 w-4 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFilters(prev => ({ ...prev, fromDate: null }));
+                        setFilters((prev) => ({ ...prev, fromDate: null }));
                       }}
                     />
                   )}
@@ -265,7 +266,7 @@ export default function DocumentReportsTab() {
                 <CalendarComponent
                   mode="single"
                   selected={filters.fromDate}
-                  onSelect={(date) => setFilters(prev => ({ ...prev, fromDate: date }))}
+                  onSelect={(date) => setFilters((prev) => ({ ...prev, fromDate: date }))}
                   initialFocus
                 />
               </PopoverContent>
@@ -283,7 +284,7 @@ export default function DocumentReportsTab() {
                       className="ml-auto h-4 w-4 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFilters(prev => ({ ...prev, toDate: null }));
+                        setFilters((prev) => ({ ...prev, toDate: null }));
                       }}
                     />
                   )}
@@ -293,7 +294,7 @@ export default function DocumentReportsTab() {
                 <CalendarComponent
                   mode="single"
                   selected={filters.toDate}
-                  onSelect={(date) => setFilters(prev => ({ ...prev, toDate: date }))}
+                  onSelect={(date) => setFilters((prev) => ({ ...prev, toDate: date }))}
                   initialFocus
                 />
               </PopoverContent>
@@ -408,17 +409,18 @@ export default function DocumentReportsTab() {
                     <Badge variant="secondary">{report.reportCount}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        report.status === "PENDING"
-                          ? "destructive"
-                          : report.status === "RESOLVED"
-                            ? "outline"
-                            : "secondary"
-                      }
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset 
+                        ${
+                          report.status === "RESOLVED"
+                            ? "bg-green-50 text-green-700 ring-green-600/20"
+                            : report.status === "UNRESOLVED"
+                              ? "bg-yellow-50 text-orange-700 ring-orange-600/2"
+                              : "bg-red-50 text-red-700 ring-red-600/20"
+                        }`}
                     >
                       {t(`admin.reports.documents.status.${report.status.toLowerCase()}`)}
-                    </Badge>
+                    </span>
                   </TableCell>
                   <TableCell>{report.resolvedByUsername || "-"}</TableCell>
                   <TableCell>
@@ -548,11 +550,11 @@ export default function DocumentReportsTab() {
                 ? t("admin.reports.documents.dialogs.process.description", { document: selectedReport?.documentTitle })
                 : selectedReport?.status === "RESOLVED"
                   ? t("admin.reports.documents.dialogs.unresolve.description", {
-                    document: selectedReport?.documentTitle,
-                  })
+                      document: selectedReport?.documentTitle,
+                    })
                   : t("admin.reports.documents.dialogs.resolve.description", {
-                    document: selectedReport?.documentTitle,
-                  })}
+                      document: selectedReport?.documentTitle,
+                    })}
             </DialogDescription>
           </DialogHeader>
 
