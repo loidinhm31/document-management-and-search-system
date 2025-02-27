@@ -77,24 +77,24 @@ export default function DocumentUserHistoryPage() {
       actionType: selectedActionType,
       fromDate: selectedFromDate
         ? new Date(
-          selectedFromDate.getFullYear(),
-          selectedFromDate.getMonth(),
-          selectedFromDate.getDate(),
-          0,
-          0,
-          0,
-        ).toISOString()
+            selectedFromDate.getFullYear(),
+            selectedFromDate.getMonth(),
+            selectedFromDate.getDate(),
+            0,
+            0,
+            0,
+          ).toISOString()
         : undefined,
       toDate: selectedToDate
         ? new Date(
-          selectedToDate.getFullYear(),
-          selectedToDate.getMonth(),
-          selectedToDate.getDate(),
-          23,
-          59,
-          59,
-          999,
-        ).toISOString()
+            selectedToDate.getFullYear(),
+            selectedToDate.getMonth(),
+            selectedToDate.getDate(),
+            23,
+            59,
+            59,
+            999,
+          ).toISOString()
         : undefined,
     };
 

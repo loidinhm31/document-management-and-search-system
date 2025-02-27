@@ -257,14 +257,6 @@ public class DocumentController {
         );
     }
 
-    @Operation(summary = "Get all reports for document",
-            description = "Get all violation reports for a specific document (Admin only)")
-    @GetMapping("/reports")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<ReportResponse>> getAllDocumentReports() {
-        return ResponseEntity.ok(documentReportService.getAllDocumentReports());
-    }
-
     private String generateETag(DocumentInformation document) {
         // Include the current version number and specific version's thumbnail path
         String contentKey = String.format("%s_%s_%s_%s_%s_%s",

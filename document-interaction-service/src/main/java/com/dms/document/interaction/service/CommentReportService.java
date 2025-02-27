@@ -16,16 +16,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -93,25 +92,8 @@ public class CommentReportService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public Page<AdminCommentReportResponse> getAdminCommentReports(
-            CommentReportSearchRequest searchRequest,
-            Pageable pageable) {
-
-        Page<CommentReport> reports = commentReportRepository.findAllWithFilters(
-                searchRequest.commentContent(),
-                searchRequest.reportTypeCode(),
-                searchRequest.createdFrom(),
-                searchRequest.createdTo(),
-                searchRequest.resolved(),
-                pageable
-        );
-
-        return reports.map(this::mapToAdminResponse);
-    }
-
     @Transactional
-    public AdminCommentReportResponse resolveCommentReport(
+    public void resolveCommentReport(
             Long reportId,
             boolean resolved,
             String adminUsername) {
@@ -127,8 +109,7 @@ public class CommentReportService {
         report.setResolvedBy(admin.userId());
         report.setResolvedAt(Instant.now());
 
-        CommentReport savedReport = commentReportRepository.save(report);
-
+        commentReportRepository.save(report);
 
         // Resolve actual comment
         documentCommentRepository.findByDocumentIdAndId(report.getDocumentId(), report.getCommentId())
@@ -136,7 +117,173 @@ public class CommentReportService {
                     document.setContent("[deleted]");
                     document.setUpdatedAt(Instant.now());
                 });
-        return mapToAdminResponse(savedReport);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AdminCommentReportResponse> getAdminCommentReports(
+            Instant fromDate,
+            Instant toDate,
+            String commentContent,
+            String reportTypeCode,
+            Boolean resolved,
+            Pageable pageable) {
+
+        // Fetch comment reports with pagination and filters
+        Page<CommentReport> reports = commentReportRepository.findAllWithFilters(
+                fromDate,
+                toDate,
+                commentContent,
+                reportTypeCode,
+                resolved,
+                pageable
+        );
+
+        List<CommentReport> reportsList = reports.getContent();
+        if (reportsList.isEmpty()) {
+            return new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
+
+        // Extract all comment IDs for batch loading
+        Set<Long> commentIds = reportsList.stream()
+                .map(CommentReport::getCommentId)
+                .collect(Collectors.toSet());
+
+        // Batch fetch all comments
+        List<DocumentComment> comments = documentCommentRepository.findAllById(commentIds);
+        Map<Long, DocumentComment> commentsMap = comments.stream()
+                .collect(Collectors.toMap(
+                        DocumentComment::getId,
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
+
+        // Extract all user IDs (reporters, comment creators, resolvers)
+        Set<UUID> userIds = new HashSet<>();
+
+        // Add reporter user IDs
+        reportsList.forEach(report -> {
+            userIds.add(report.getUserId()); // Reporter
+            if (report.getResolvedBy() != null) {
+                userIds.add(report.getResolvedBy()); // Resolver if exists
+            }
+        });
+
+        // Add comment author user IDs
+        comments.forEach(comment -> userIds.add(comment.getUserId()));
+
+        // Batch fetch all user information
+        Map<UUID, String> usernamesMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            try {
+                ResponseEntity<List<UserResponse>> usersResponse = userClient.getUsersByIds(new ArrayList<>(userIds));
+                if (usersResponse.getBody() != null) {
+                    usernamesMap = usersResponse.getBody().stream()
+                            .collect(Collectors.toMap(
+                                    UserResponse::userId,
+                                    UserResponse::username,
+                                    (existing, replacement) -> existing
+                            ));
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch user details: {}", e.getMessage());
+            }
+        }
+
+        // Map to response objects using the pre-loaded data
+        Map<UUID, String> finalUsernamesMap = usernamesMap;
+        List<AdminCommentReportResponse> responseList = reportsList.stream()
+                .map(report -> {
+                    DocumentComment comment = commentsMap.get(report.getCommentId());
+                    String commentContentObj = comment != null ? comment.getContent() : "[Comment not found]";
+                    UUID commentUserId = comment != null ? comment.getUserId() : null;
+
+                    return new AdminCommentReportResponse(
+                            report.getId(),
+                            report.getDocumentId(),
+                            report.getCommentId(),
+                            commentContentObj,
+                            report.getUserId(),
+                            finalUsernamesMap.getOrDefault(report.getUserId(), "Unknown"),
+                            commentUserId,
+                            commentUserId != null ? finalUsernamesMap.getOrDefault(commentUserId, "Unknown") : "Unknown",
+                            report.getReportTypeCode(),
+                            report.getDescription(),
+                            report.isResolved(),
+                            report.getResolvedBy(),
+                            report.getResolvedBy() != null ?
+                                    finalUsernamesMap.getOrDefault(report.getResolvedBy(), "Unknown") : null,
+                            report.getCreatedAt(),
+                            report.getResolvedAt()
+                    );
+                })
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(responseList, pageable, reports.getTotalElements());
+    }
+
+    private Map<UUID, String> batchFetchUsernames(Set<UUID> userIds) {
+        try {
+            ResponseEntity<List<UserResponse>> response = userClient.getUsersByIds(new ArrayList<>(userIds));
+            if (response.getBody() != null) {
+                return response.getBody().stream()
+                        .collect(Collectors.toMap(
+                                UserResponse::userId,
+                                UserResponse::username,
+                                (existing, replacement) -> existing // In case of duplicates
+                        ));
+            }
+        } catch (Exception e) {
+            log.error("Error batch fetching usernames", e);
+        }
+        return new HashMap<>();
+    }
+
+    private AdminCommentReportResponse mapToAdminResponse(
+            CommentReport report,
+            Map<Long, DocumentComment> commentsMap) {
+
+        DocumentComment comment = commentsMap.getOrDefault(report.getCommentId(), null);
+
+        // If comment not found, handle gracefully
+        if (comment == null) {
+            return new AdminCommentReportResponse(
+                    report.getId(),
+                    report.getDocumentId(),
+                    report.getCommentId(),
+                    "[Comment not found]",
+                    report.getUserId(),
+                    new HashMap<UUID, String>().getOrDefault(report.getUserId(), "Unknown"),
+                    null,
+                    "Unknown",
+                    report.getReportTypeCode(),
+                    report.getDescription(),
+                    report.isResolved(),
+                    report.getResolvedBy(),
+                    report.getResolvedBy() != null ?
+                            (new HashMap<UUID, String>().getOrDefault(report.getResolvedBy(), "Unknown")) : null,
+                    report.getCreatedAt(),
+                    report.getResolvedAt()
+            );
+        }
+
+        return new AdminCommentReportResponse(
+                report.getId(),
+                report.getDocumentId(),
+                report.getCommentId(),
+                comment.getContent(),
+                report.getUserId(),
+                new HashMap<UUID, String>().getOrDefault(report.getUserId(), "Unknown"),
+                comment.getUserId(),
+                new HashMap<UUID, String>().getOrDefault(report.getUserId(), "Unknown"),
+                report.getReportTypeCode(),
+                report.getDescription(),
+                report.isResolved(),
+                report.getResolvedBy(),
+                report.getResolvedBy() != null ?
+                        (new HashMap<UUID, String>().getOrDefault(report.getResolvedBy(), "Unknown")) : null,
+                report.getCreatedAt(),
+                report.getResolvedAt()
+        );
     }
 
     private UserResponse getUserFromUsername(String username) {
@@ -145,58 +292,5 @@ public class CommentReportService {
             throw new InvalidDataAccessResourceUsageException("User not found");
         }
         return response.getBody();
-    }
-
-    private AdminCommentReportResponse mapToAdminResponse(CommentReport report) {
-        // Get master data for report type
-        MasterData reportType = masterDataRepository.findByTypeAndCode(
-                MasterDataType.REPORT_COMMENT_TYPE,
-                report.getReportTypeCode()
-        ).orElseThrow(() -> new IllegalStateException("Report type not found"));
-
-        // Get comment details
-        DocumentComment comment = documentCommentRepository.findById(report.getCommentId())
-                .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
-
-        // Get usernames (in a real application, consider batching these requests)
-        String reporterUsername = getUsernameById(report.getUserId());
-        String commentUsername = getUsernameById(comment.getUserId());
-        String resolvedByUsername = report.getResolvedBy() != null ?
-                getUsernameById(report.getResolvedBy()) : null;
-
-        // Create translation DTO
-        TranslationDTO translation = new TranslationDTO();
-        translation.setEn(reportType.getTranslations().getEn());
-        translation.setVi(reportType.getTranslations().getVi());
-
-        return new AdminCommentReportResponse(
-                report.getId(),
-                report.getDocumentId(),
-                report.getCommentId(),
-                comment.getContent(),
-                report.getUserId(),
-                reporterUsername,
-                comment.getUserId(),
-                commentUsername,
-                report.getReportTypeCode(),
-                translation,
-                report.getDescription(),
-                report.isResolved(),
-                report.getResolvedBy(),
-                resolvedByUsername,
-                report.getCreatedAt(),
-                report.getResolvedAt()
-        );
-    }
-
-    private String getUsernameById(UUID userId) {
-        try {
-            // In a real application, consider implementing caching or batch fetching
-            List<UserResponse> users = userClient.getUsersByIds(List.of(userId)).getBody();
-            return users != null && !users.isEmpty() ? users.get(0).username() : "Unknown";
-        } catch (Exception e) {
-            log.warn("Failed to fetch username for user ID: {}", userId, e);
-            return "Unknown";
-        }
     }
 }

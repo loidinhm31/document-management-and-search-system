@@ -13,22 +13,26 @@ import com.dms.document.interaction.model.MasterData;
 import com.dms.document.interaction.repository.DocumentReportRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
 import com.dms.document.interaction.repository.MasterDataRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DocumentReportService {
     private final DocumentReportRepository documentReportRepository;
@@ -97,7 +101,6 @@ public class DocumentReportService {
                                 .build()
                 )
         );
-
     }
 
     @Transactional(readOnly = true)
@@ -125,9 +128,118 @@ public class DocumentReportService {
                 .collect(Collectors.toList());
     }
 
-    public Page<ReportResponse> getAllDocumentReports() {
-        // TODO
-        return Page.empty();
+    @Transactional(readOnly = true)
+    public Page<AdminDocumentReportResponse> getAdminDocumentReports(
+            String documentTitle,
+            Instant fromDate,
+            Instant toDate,
+            ReportStatus status,
+            String reportTypeCode,
+            Pageable pageable) {
+
+        // 1. First, get unique document IDs with pagination
+        String statusStr = status != null ? status.name() : null;
+        Page<String> documentIdPage = documentReportRepository.findDistinctDocumentIdsWithFilters(statusStr, fromDate, toDate, reportTypeCode, pageable);
+
+        List<String> documentIds = documentIdPage.getContent();
+        if (documentIds.isEmpty()) {
+            return new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
+
+        // Load all documents for these IDs
+        List<DocumentInformation> documents = documentRepository.findAllById(documentIds);
+
+        // Filter by document title and uploader if specified
+        if (StringUtils.isNotEmpty(documentTitle)) {
+            documents = documents.stream()
+                    .filter(doc -> (StringUtils.isEmpty(documentTitle) ||
+                                    StringUtils.containsIgnoreCase(doc.getFilename(), documentTitle)))
+                    .toList();
+
+            // Update document IDs to only include filtered documents
+            documentIds = documents.stream()
+                    .map(DocumentInformation::getId)
+                    .collect(Collectors.toList());
+
+            if (documentIds.isEmpty()) {
+                return new PageImpl<>(Collections.emptyList(), pageable, 0);
+            }
+        }
+
+        // Create a map of document ID to document for easy lookup
+        Map<String, DocumentInformation> documentMap = documents.stream()
+                .collect(Collectors.toMap(DocumentInformation::getId, Function.identity()));
+
+        // Load all reports
+        List<DocumentReport> allReports = documentReportRepository.findByDocumentIdIn(documentIds);
+
+        // Group reports by document ID
+        Map<String, List<DocumentReport>> reportsByDocumentId = allReports.stream()
+                .collect(Collectors.groupingBy(DocumentReport::getDocumentId));
+
+        List<AdminDocumentReportResponse> responses = new ArrayList<>();
+
+        for (String docId : documentIds) {
+            DocumentInformation doc = documentMap.get(docId);
+            if (doc == null) continue;
+
+            List<DocumentReport> reports = reportsByDocumentId.getOrDefault(docId, Collections.emptyList());
+            if (reports.isEmpty()) continue;
+
+            // Sort reports by creation date (newest first)
+            reports.sort(Comparator.comparing(DocumentReport::getCreatedAt).reversed());
+
+            // Use the newest report for status and resolution information
+            DocumentReport primaryReport = reports.get(0);
+
+            // Map all reports to report details
+            List<DocumentReportDetail> reportDetails = reports.stream()
+                    .map(this::mapToReportDetail)
+                    .collect(Collectors.toList());
+
+            responses.add(new AdminDocumentReportResponse(
+                    docId,
+                    doc.getFilename(),
+                    UUID.fromString(doc.getUserId()),
+                    getUsernameById(UUID.fromString(doc.getUserId())),
+                    primaryReport.getStatus(),
+                    reports.size(),
+                    primaryReport.getResolvedBy(),
+                    primaryReport.getResolvedBy() != null ?
+                            getUsernameById(primaryReport.getResolvedBy()) : null,
+                    primaryReport.getResolvedAt(),
+                    reportDetails
+            ));
+        }
+
+        // Get total distinct document IDs that match criteria
+        statusStr = status != null ? status.name() : null;
+        long totalDocuments = documentReportRepository.countDistinctDocumentIdsWithFilters(statusStr, fromDate, toDate, reportTypeCode);
+
+        return new PageImpl<>(responses, pageable, totalDocuments);
+    }
+
+    private DocumentReportDetail mapToReportDetail(DocumentReport report) {
+        return new DocumentReportDetail(
+                report.getId(),
+                report.getUserId(),
+                getUsernameById(report.getUserId()),
+                report.getReportTypeCode(),
+                report.getDescription(),
+                report.getStatus(),
+                report.getCreatedAt()
+        );
+    }
+
+    private String getUsernameById(UUID userId) {
+        try {
+            ResponseEntity<List<UserResponse>> response = userClient.getUsersByIds(List.of(userId));
+            List<UserResponse> users = response.getBody();
+            return users != null && !users.isEmpty() ? users.get(0).username() : "Unknown";
+        } catch (Exception e) {
+            log.warn("Failed to fetch username for user ID: {}", userId, e);
+            return "Unknown";
+        }
     }
 
     private UserResponse getUserFromUsername(String username) {

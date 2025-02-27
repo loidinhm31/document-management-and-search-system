@@ -26,7 +26,7 @@
       "title": "Administration",
       "userManagement": "User Management",
       "masterData": "Master Data",
-      "roles": "Roles"
+      "reports": "Reports Management"
     }
   },
   "pages": {
@@ -40,7 +40,8 @@
       "users": "User Management",
       "userDetail": "User Details",
       "masterData": "Master Data",
-      "roles": "Role Management"
+      "roles": "Role Management",
+      "reports": "Reports Management"
     }
   },
   "auth": {
@@ -411,6 +412,141 @@
       "deleteError": "Failed to delete master data",
       "fetchError": "Failed to fetch master data",
       "searchError": "Failed to search master data"
+    },
+    "reports": {
+      "title": "Reports Management",
+      "description": "Manage reported content violations",
+      "tabs": {
+        "documents": "Document Reports",
+        "comments": "Comment Reports"
+      },
+      "documents": {
+        "fetchError": "Failed to fetch document reports",
+        "processError": "Failed to process report",
+        "processSuccess": "Report processed successfully",
+        "noReports": "No document reports found",
+        "filters": {
+          "documentTitle": "Search by document title",
+          "uploaderUsername": "Search by uploader",
+          "status": "Status",
+          "allStatuses": "All statuses",
+          "search": "Search",
+          "reset": "Reset",
+          "fromDate": "Reported from",
+          "toDate": "Reported to"
+        },
+        "table": {
+          "documentTitle": "Document Title",
+          "uploader": "Uploader",
+          "reportCount": "Reports",
+          "status": "Status",
+          "resolvedBy": "Resolved By",
+          "actions": "Actions"
+        },
+        "status": {
+          "allStatuses": "All statuses",
+          "pending": "Pending",
+          "resolved": "Resolved",
+          "unresolved": "Unresolved"
+        },
+        "actions": {
+          "viewReasons": "View Reasons",
+          "process": "Process",
+          "resolve": "Resolve",
+          "unresolve": "Unresolve"
+        },
+        "pagination": {
+          "previous": "Previous",
+          "next": "Next",
+          "pageInfo": "Page {{current}} of {{total}}"
+        },
+        "dialogs": {
+          "reasons": {
+            "title": "Report Reasons for \"{{document}}\"",
+            "description": "List of all report reasons for this document",
+            "reportedBy": "Reported by: {{user}}",
+            "noReasons": "No report reasons found"
+          },
+          "process": {
+            "title": "Process Violation Report",
+            "description": "Update status for \"{{document}}\"",
+            "selectStatus": "Select new status",
+            "resolvedDescription": "Hide document and prevent access",
+            "unresolvedDescription": "Allow document to remain visible"
+          },
+          "resolve": {
+            "title": "Resolve Report",
+            "description": "Hide document \"{{document}}\" due to violation"
+          },
+          "unresolve": {
+            "title": "Unresolve Report",
+            "description": "Make document \"{{document}}\" visible again"
+          }
+        }
+      },
+      "comments": {
+        "fetchError": "Failed to fetch comment reports",
+        "reasonsError": "Failed to fetch report reasons",
+        "resolveError": "Failed to update comment status",
+        "resolveSuccess": "Comment marked as resolved",
+        "unresolveSuccess": "Comment resolution removed",
+        "noReports": "No comment reports found",
+        "contentRemoved": "Content removed due to policy violation",
+        "filters": {
+          "commentContent": "Search by comment content",
+          "reportType": "Report type",
+          "allTypes": "All types",
+          "status": "Status",
+          "allStatuses": "All statuses",
+          "search": "Search",
+          "reset": "Reset",
+          "fromDate": "Reported from",
+          "toDate": "Reported to"
+        },
+        "table": {
+          "comment": "Comment",
+          "commenter": "Commenter",
+          "document": "Document",
+          "commentDate": "Comment Date",
+          "reportCount": "Reports",
+          "status": "Status",
+          "actions": "Actions"
+        },
+        "status": {
+          "resolved": "Resolved",
+          "unresolved": "Unresolved"
+        },
+        "actions": {
+          "viewReasons": "View Reasons",
+          "resolve": "Resolve",
+          "unresolve": "Unresolve"
+        },
+        "pagination": {
+          "previous": "Previous",
+          "next": "Next",
+          "pageInfo": "Page {{current}} of {{total}}"
+        },
+        "dialogs": {
+          "reasons": {
+            "title": "Comment Report Reasons",
+            "description": "List of all report reasons for this comment",
+            "reportedBy": "Reported by: {{user}}",
+            "noReasons": "No report reasons found"
+          },
+          "resolve": {
+            "title": "Resolve Comment Report",
+            "description": "Hide this comment due to violation",
+            "warning": "This will remove the comment content and mark it as resolved. Users will no longer be able to see the content.",
+            "confirm": "Resolve"
+          },
+          "unresolve": {
+            "title": "Unresolve Comment Report",
+            "description": "Mark this comment as unresolved",
+            "warning": "This is not recommended for comments that violate community guidelines. Are you sure you want to proceed?",
+            "confirm": "Unresolve"
+          }
+        }
+      }
     }
   },
   "document": {
@@ -438,7 +574,7 @@
         "views": "Views",
         "downloads": "Downloads"
       },
-      "empty": "Not found document",
+      "empty": "Not document found",
       "emptyFavorites": "No favorite documents found",
       "pagination": {
         "previous": "Previous",

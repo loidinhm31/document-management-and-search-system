@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -21,21 +22,21 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
     @Query("SELECT cr FROM CommentReport cr WHERE cr.userId = :userId AND cr.documentId = :documentId")
     List<CommentReport> findReportsByUserAndDocument(@Param("userId") UUID userId, @Param("documentId") String documentId);
 
-    @Query("""
-           SELECT cr FROM CommentReport cr
-           JOIN DocumentComment dc ON cr.commentId = dc.id
-           WHERE (:commentContent IS NULL OR LOWER(dc.content) LIKE LOWER(CONCAT('%', :commentContent, '%')))
-           AND (:reportTypeCode IS NULL OR cr.reportTypeCode = :reportTypeCode)
-           AND (:createdFrom IS NULL OR cr.createdAt >= :createdFrom)
-           AND (:createdTo IS NULL OR cr.createdAt <= :createdTo)
-           AND (:resolved IS NULL OR cr.resolved = :resolved)
-           ORDER BY cr.createdAt DESC
-           """)
+    @Query(value = """
+            SELECT cr.* FROM comment_reports cr
+            JOIN document_comments dc ON cr.comment_id = dc.id
+            WHERE (:commentContent IS NULL OR dc.content::text LIKE CONCAT('%', :commentContent, '%'))
+            AND (:reportTypeCode IS NULL OR cr.report_type_code = :reportTypeCode)
+            AND (:resolved IS NULL OR cr.resolved = :resolved)
+            AND (CAST(:fromDate AS timestamp) IS NULL OR cr.created_at >= :fromDate)
+            AND (CAST(:toDate AS timestamp) IS NULL OR cr.created_at <= :toDate)
+            ORDER BY cr.created_at DESC
+            """, nativeQuery = true)
     Page<CommentReport> findAllWithFilters(
+            @Param("fromDate") Instant fromDate,
+            @Param("toDate") Instant toDate,
             @Param("commentContent") String commentContent,
             @Param("reportTypeCode") String reportTypeCode,
-            @Param("createdFrom") Instant createdFrom,
-            @Param("createdTo") Instant createdTo,
             @Param("resolved") Boolean resolved,
             Pageable pageable);
 }

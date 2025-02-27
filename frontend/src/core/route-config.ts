@@ -15,6 +15,7 @@ const MyDocumentDetail = lazy(() => import("@/pages/document/my-document/my-docu
 const DocumentDetail = lazy(() => import("@/pages/document/discover/document-detail-page"));
 const DocumentPreference = lazy(() => import("@/pages/document/document-preferences-page"));
 const DocumentUserHistory = lazy(() => import("@/pages/document-user-history-page"));
+const ReportsManagement = lazy(() => import("@/pages/admin/reports-management-page"));
 
 export interface Route {
   path: string;
@@ -43,6 +44,7 @@ export const RoutePaths = {
     USERS: "/admin/users",
     USER_DETAILS: "/admin/users/:userId",
     MASTER_DATA: "/admin/master-data",
+    REPORTS: "/admin/reports",
   },
 } as const;
 
@@ -145,6 +147,13 @@ export const routes: Route[] = [
     path: RoutePaths.ADMIN.MASTER_DATA,
     pageTitle: "pages.admin.masterData",
     component: MasterData,
+    isSecure: true,
+    permission: ["ROLE_ADMIN"],
+  },
+  {
+    path: RoutePaths.ADMIN.REPORTS,
+    pageTitle: "pages.admin.reports",
+    component: ReportsManagement,
     isSecure: true,
     permission: ["ROLE_ADMIN"],
   },

@@ -1,5 +1,4 @@
 export interface DocumentReport {
-  id: number;
   documentId: string;
   reportTypeCode: string;
   reportTypeTranslation: {

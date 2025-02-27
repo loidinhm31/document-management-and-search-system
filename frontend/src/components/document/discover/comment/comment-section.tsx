@@ -41,29 +41,32 @@ export const CommentSection = ({ documentId }) => {
     commentsRef.current = comments;
   }, [comments]);
 
-  const fetchComments = useCallback(async (page = 0) => {
-    if (!documentId) return;
+  const fetchComments = useCallback(
+    async (page = 0) => {
+      if (!documentId) return;
 
-    setLoading(true);
-    try {
-      const response = await documentService.getDocumentComments(documentId, {
-        page,
-        size: 10,
-        sort: "createdAt,desc",
-      });
-      setComments(response.data.content);
-      setTotalPages(response.data.totalPages);
-      setCurrentPage(page);
-    } catch (error) {
-      toast({
-        title: t("common.error"),
-        description: t("document.comments.fetchError"),
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [documentId, toast, t]);
+      setLoading(true);
+      try {
+        const response = await documentService.getDocumentComments(documentId, {
+          page,
+          size: 10,
+          sort: "createdAt,desc",
+        });
+        setComments(response.data.content);
+        setTotalPages(response.data.totalPages);
+        setCurrentPage(page);
+      } catch (error) {
+        toast({
+          title: t("common.error"),
+          description: t("document.comments.fetchError"),
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [documentId, toast, t],
+  );
 
   // Initial load and document change handler
   useEffect(() => {
@@ -179,7 +182,7 @@ export const CommentSection = ({ documentId }) => {
       await documentService.deleteComment(documentId, commentToDelete);
 
       // Update the comments state
-      setComments(prevComments => removeCommentFromState(prevComments, commentToDelete));
+      setComments((prevComments) => removeCommentFromState(prevComments, commentToDelete));
 
       // Check if we need to clear the reply state
       if (replyTo?.id === commentToDelete) {

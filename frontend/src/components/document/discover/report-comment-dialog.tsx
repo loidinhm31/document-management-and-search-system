@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { documentReportService } from "@/services/document-report.service";
 import { ReportType } from "@/types/document-report";
+import { reportService } from "@/services/report.service";
 
 interface ReportCommentDialogProps {
   documentId: string;
@@ -68,7 +69,7 @@ export function ReportCommentDialog({
 
   const loadReportTypes = async () => {
     try {
-      const response = await documentReportService.getCommentReportTypes();
+      const response = await reportService.getCommentReportTypes();
       setReportTypes(response.data);
     } catch (error) {
       console.error("Error loading report types:", error);

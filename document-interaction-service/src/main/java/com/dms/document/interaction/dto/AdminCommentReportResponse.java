@@ -13,7 +13,6 @@ public record AdminCommentReportResponse(
         UUID commentUserId,
         String commentUsername,
         String reportTypeCode,
-        TranslationDTO reportTypeTranslation,
         String description,
         boolean resolved,
         UUID resolvedBy,
