@@ -23,64 +23,59 @@ import java.util.Map;
 @Slf4j
 public class RabbitMQConfig {
 
-    @Value("${rabbitmq.exchanges.internal}")
-    private String internalExchange;
-
-    @Value("${rabbitmq.exchanges.dlx}")
-    private String deadLetterExchange;
+    // Exchange names
+    @Value("${rabbitmq.exchanges.document}")
+    private String documentExchange;
 
     @Value("${rabbitmq.exchanges.notification}")
     private String notificationExchange;
 
-    @Value("${rabbitmq.queues.document-sync}")
-    private String documentSyncQueue;
+    @Value("${rabbitmq.exchanges.dlx}")
+    private String deadLetterExchange;
 
-    @Value("${rabbitmq.queues.document-sync-dlq}")
-    private String documentSyncDlq;
+    // Queue names
+    @Value("${rabbitmq.queues.document-process}")
+    private String documentProcessQueue;
 
-    @Value("${rabbitmq.queues.notification}")
-    private String notificationQueue;
+    @Value("${rabbitmq.queues.document-process-dlq}")
+    private String documentProcessDlq;
 
-    @Value("${rabbitmq.queues.notification-dlq}")
-    private String notificationDlq;
+    @Value("${rabbitmq.queues.email-document}")
+    private String emailDocumentQueue;
 
-    @Value("${rabbitmq.routing-keys.internal-document-sync}")
-    private String internalNotificationRoutingKey;
+    @Value("${rabbitmq.queues.email-document-dlq}")
+    private String emailDocumentDlq;
 
-    @Value("${rabbitmq.routing-keys.notification}")
-    private String notificationRoutingKey;
+    @Value("${rabbitmq.queues.email-auth}")
+    private String emailAuthQueue;
 
-    @Value("${rabbitmq.routing-keys.dlq}")
+    @Value("${rabbitmq.queues.email-auth-dlq}")
+    private String emailAuthDlq;
+
+    // Routing key
+    @Value("${rabbitmq.routing-keys.document-process}")
+    private String documentProcessRoutingKey;
+
+    @Value("${rabbitmq.routing-keys.email-auth}")
+    private String emailAuthRoutingKey;
+
+    @Value("${rabbitmq.routing-keys.dead-letter}")
     private String deadLetterRoutingKey;
-
-    @Value("${rabbitmq.queues.otp}")
-    private String otpQueue;
-
-    @Value("${rabbitmq.routing-keys.otp}")
-    private String otpRoutingKey;
-
-    @Value("${rabbitmq.queues.password-reset}")
-    private String passwordResetQueue;
-
-    @Value("${rabbitmq.routing-keys.password-reset}")
-    private String passwordResetRoutingKey;
 
     private final ConnectionFactory connectionFactory;
     private final ObjectMapper objectMapper;
 
-    public RabbitMQConfig(ConnectionFactory connectionFactory, ObjectMapper objectMapper) {
+    public RabbitMQConfig(ConnectionFactory connectionFactory,
+                          ObjectMapper objectMapper) {
         this.connectionFactory = connectionFactory;
         this.objectMapper = objectMapper;
     }
 
-    @Bean
-    public TopicExchange internalTopicExchange() {
-        return new TopicExchange(this.internalExchange);
-    }
+    // Exchanges
 
     @Bean
-    public TopicExchange deadLetterExchange() {
-        return new TopicExchange(this.deadLetterExchange);
+    public TopicExchange documentExchange() {
+        return new TopicExchange(this.documentExchange);
     }
 
     @Bean
@@ -89,103 +84,109 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue documentSyncQueue() {
+    public TopicExchange deadLetterExchange() {
+        return new TopicExchange(this.deadLetterExchange);
+    }
+
+    // Queues
+    @Bean
+    public Queue documentProcessQueue() {
         Map<String, Object> args = new HashMap<>();
         args.put("x-dead-letter-exchange", deadLetterExchange);
-        args.put("x-dead-letter-routing-key", deadLetterRoutingKey);
+        args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".document");
         args.put("x-message-ttl", 300000); // 5 minutes
         args.put("x-max-length", 10000);
-        return new Queue(documentSyncQueue, true, false, false, args);
+        return new Queue(documentProcessQueue, true, false, false, args);
     }
 
     @Bean
-    public Queue deadLetterQueue() {
-        return new Queue(documentSyncDlq);
+    public Queue documentProcessDlq() {
+        return new Queue(documentProcessDlq);
     }
 
     @Bean
-    public Queue notificationQueue() {
+    public Queue emailDocumentQueue() {
         Map<String, Object> args = new HashMap<>();
         args.put("x-dead-letter-exchange", deadLetterExchange);
-        args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".notification");
+        args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".email-document");
         args.put("x-message-ttl", 300000); // 5 minutes
         args.put("x-max-length", 10000);
-        return new Queue(notificationQueue, true, false, false, args);
+        return new Queue(emailDocumentQueue, true, false, false, args);
     }
 
     @Bean
-    public Queue notificationDeadLetterQueue() {
-        return new Queue(notificationDlq);
+    public Queue emailDocumentDlq() {
+        return new Queue(emailDocumentDlq);
+    }
+
+
+    @Bean
+    public Queue emailAuthQueue() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("x-dead-letter-exchange", deadLetterExchange);
+        args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".email-auth");
+        args.put("x-message-ttl", 300000); // 5 minutes
+        args.put("x-max-length", 10000);
+        return new Queue(emailAuthQueue, true, false, false, args);
     }
 
     @Bean
-    public Binding internalToNotificationBinding() {
+    public Queue emailAuthDlq() {
+        return new Queue(emailAuthDlq);
+    }
+
+    // Bindings
+
+    @Bean
+    public Binding documentProcessBinding() {
         return BindingBuilder
-                .bind(documentSyncQueue())
-                .to(internalTopicExchange())
-                .with(internalNotificationRoutingKey);
+                .bind(documentProcessQueue())
+                .to(documentExchange())
+                .with(documentProcessRoutingKey);
     }
 
     @Bean
-    public Binding deadLetterBinding() {
+    public Binding emailDocumentBinding() {
         return BindingBuilder
-                .bind(deadLetterQueue())
+                .bind(emailDocumentQueue())
+                .to(notificationExchange())
+                .with(documentProcessRoutingKey);
+    }
+
+    @Bean
+    public Binding emailAuthBinding() {
+        return BindingBuilder
+                .bind(emailAuthQueue())
+                .to(notificationExchange())
+                .with(emailAuthRoutingKey);
+    }
+
+
+    @Bean
+    public Binding documentProcessDlqBinding() {
+        return BindingBuilder
+                .bind(documentProcessDlq())
                 .to(deadLetterExchange())
-                .with(deadLetterRoutingKey);
+                .with(deadLetterRoutingKey + ".document");
     }
 
     @Bean
-    public Binding notificationBinding() {
+    public Binding emailDocumentDlqBinding() {
         return BindingBuilder
-                .bind(notificationQueue())
-                .to(notificationExchange())
-                .with(notificationRoutingKey);
-    }
-
-    @Bean
-    public Binding notificationDeadLetterBinding() {
-        return BindingBuilder
-                .bind(notificationDeadLetterQueue())
+                .bind(emailAuthDlq())
                 .to(deadLetterExchange())
-                .with(deadLetterRoutingKey + ".notification");
-    }
-
-
-    @Bean
-    public Queue otpQueue() {
-        Map<String, Object> args = new HashMap<>();
-        args.put("x-dead-letter-exchange", deadLetterExchange);
-        args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".otp");
-        args.put("x-message-ttl", 300000); // 5 minutes
-        args.put("x-max-length", 10000);
-        return new Queue(otpQueue, true, false, false, args);
+                .with(deadLetterRoutingKey + ".email-document");
     }
 
     @Bean
-    public Binding otpBinding() {
+    public Binding emailAuthDlqBinding() {
         return BindingBuilder
-                .bind(otpQueue())
-                .to(notificationExchange())
-                .with(otpRoutingKey);
+                .bind(emailAuthDlq())
+                .to(deadLetterExchange())
+                .with(deadLetterRoutingKey + ".email-auth");
     }
 
-    @Bean
-    public Queue passwordResetQueue() {
-        Map<String, Object> args = new HashMap<>();
-        args.put("x-dead-letter-exchange", deadLetterExchange);
-        args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".password-reset");
-        args.put("x-message-ttl", 300000); // 5 minutes
-        args.put("x-max-length", 10000);
-        return new Queue(passwordResetQueue, true, false, false, args);
-    }
-
-    @Bean
-    public Binding passwordResetBinding() {
-        return BindingBuilder
-                .bind(passwordResetQueue())
-                .to(notificationExchange())
-                .with(passwordResetRoutingKey);
-    }
+    // Retry configuration
 
     @Bean
     public RetryOperationsInterceptor retryInterceptor() {

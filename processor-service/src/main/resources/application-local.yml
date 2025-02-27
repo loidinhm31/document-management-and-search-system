@@ -64,29 +64,27 @@ opensearch:
   host: localhost
   port: 9200
   username: admin
-  password: 27H4Gwxb24XGsARfuh3b#
+  password: 27H4Gwxb24XGsARfuh3b
   scheme: http
   aws: false
 
 # RabbitMQ
 rabbitmq:
   exchanges:
-    internal: internal.exchange
-    dlx: dead.letter.exchange
+    document: document.exchange
     notification: notification.exchange
+    dlx: dead.letter.exchange
   queues:
-    document-sync: document-sync.queue
-    document-sync-dlq: document-sync.dlq
-    notification: notification.queue
-    notification-dlq: notification.dlq
-    otp: notification.otp.queue
-    password-reset: password-reset.queue
+    document-process: document.process.queue
+    document-process-dlq: document.process.dlq
+    email-document: notification.email.document.queue
+    email-document-dlq: notification.email.document.dlq
+    email-auth: notification.email.auth.queue
+    email-auth-dlq: notification.email.auth.dlq
   routing-keys:
-    internal-document-sync: internal.document-sync.routing-key
-    notification: notification.email.routing-key
-    dlq: dead.letter.routing-key
-    otp: notification.otp.email.routing-key
-    password-reset: notification.password-reset.routing-key
+    document-process: document.process.routing-key
+    email-auth: notification.email.auth.routing-key
+    dead-letter: dead.letter.routing-key
 
 aws:
   s3:

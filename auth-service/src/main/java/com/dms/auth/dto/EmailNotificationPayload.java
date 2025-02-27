@@ -11,4 +11,7 @@ public class EmailNotificationPayload {
     private String otp;
     private int expiryMinutes;
     private int maxAttempts;
+    private String token;
+    private String eventType;
+    private String templateName;
 }

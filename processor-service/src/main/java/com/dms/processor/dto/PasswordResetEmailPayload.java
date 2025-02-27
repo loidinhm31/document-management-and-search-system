@@ -11,14 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class EmailNotificationPayload {
+public class PasswordResetEmailPayload {
     private String to;
     private String username;
-    private String otp;
-    private int expiryMinutes;
-    private int maxAttempts;
-    private String subject;
-    private String templateName;
     private String token;
-    private String eventType;
+    private int expiryHours;
 }

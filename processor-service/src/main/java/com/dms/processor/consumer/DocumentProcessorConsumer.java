@@ -17,31 +17,31 @@ import java.util.Optional;
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class EventConsumer {
+public class DocumentProcessorConsumer {
     private final DocumentProcessService documentProcessService;
     private final DocumentRepository documentRepository;
 
-    @RabbitListener(queues = "${rabbitmq.queues.document-sync}")
-    public void consumeSyncEvent(SyncEventRequest syncEventRequest) {
-        log.info("Consumed event: [ID: {}, Type: {}, Version: {}]",
-                syncEventRequest.getEventId(),
-                syncEventRequest.getSubject(),
-                syncEventRequest.getVersionNumber());
+    @RabbitListener(queues = "${rabbitmq.queues.document-process}")
+    public void processDocumentEvent(SyncEventRequest request) {
+        log.info("Processing document event: [ID: {}, Type: {}, Version: {}]",
+                request.getEventId(),
+                request.getSubject(),
+                request.getVersionNumber());
 
         try {
-            EventType eventType = EventType.valueOf(syncEventRequest.getSubject());
+            EventType eventType = EventType.valueOf(request.getSubject());
             switch (eventType) {
-                case DELETE_EVENT -> handleDeleteEvent(syncEventRequest);
-                case UPDATE_EVENT, UPDATE_EVENT_WITH_FILE -> handleUpdateEvent(syncEventRequest, eventType);
-                case SYNC_EVENT -> handleSyncEvent(syncEventRequest, eventType);
-                case REVERT_EVENT -> handleRevertEvent(syncEventRequest, eventType);
-                case REPORT_PROCESS_EVENT -> handleReportStatus(syncEventRequest);
+                case DELETE_EVENT -> handleDeleteEvent(request);
+                case UPDATE_EVENT, UPDATE_EVENT_WITH_FILE -> handleUpdateEvent(request, eventType);
+                case SYNC_EVENT -> handleSyncEvent(request, eventType);
+                case REVERT_EVENT -> handleRevertEvent(request, eventType);
+                case REPORT_PROCESS_EVENT -> handleReportStatus(request);
                 default -> log.warn("Unhandled event type: {}", eventType);
             }
         } catch (IllegalArgumentException e) {
-            log.error("Invalid event type: {}", syncEventRequest.getSubject());
+            log.error("Invalid event type: {}", request.getSubject());
         } catch (Exception e) {
-            log.error("Error processing event: {}", syncEventRequest.getEventId(), e);
+            log.error("Error processing event: {}", request.getEventId(), e);
         }
     }
 
@@ -54,7 +54,7 @@ public class EventConsumer {
         log.info("Processing delete event for document: {}", request.getDocumentId());
         DocumentInformation document = documentRepository.findById(request.getDocumentId()).orElse(null);
         if (Objects.nonNull(document) &&
-                StringUtils.isNotEmpty(document.getThumbnailPath())) {
+            StringUtils.isNotEmpty(document.getThumbnailPath())) {
             documentProcessService.deleteDocumentFromIndex(document.getId());
         }
     }
@@ -80,8 +80,6 @@ public class EventConsumer {
         documentOpt.ifPresentOrElse(
                 document -> {
                     log.info("Processing document: {}", document.getId());
-
-                    // Index document
                     documentProcessService.processDocument(document, request.getVersionNumber(), eventType);
                 },
                 () -> log.warn("Document not found: {}", request.getDocumentId())

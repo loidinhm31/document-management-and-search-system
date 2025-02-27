@@ -60,3 +60,10 @@ aws:
     region: ${AWS_REGION:ap-southeast-1}
     access-key: ${AWS_ACCESS_KEY:test}
     secret-key: ${AWS_SECRET_KEY:test}
+
+rabbitmq:
+  exchanges:
+    document: document.exchange
+    notification: notification.exchange
+  routing-keys:
+    document-process: document.process.routing-key
