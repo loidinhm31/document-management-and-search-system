@@ -46,8 +46,8 @@ class ReportService extends BaseService {
     );
   }
 
-  getDocumentReportReasons(documentId: string) {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/reports`));
+  getDocumentReportDetail(documentId: string) {
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/documents/${documentId}/details`));
   }
 
   getCommentReports(filters: CommentReportFilter = {}) {

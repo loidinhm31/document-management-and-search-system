@@ -3,7 +3,6 @@ package com.dms.document.interaction.dto;
 import com.dms.document.interaction.enums.ReportStatus;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 public record AdminDocumentReportResponse(
@@ -15,6 +14,5 @@ public record AdminDocumentReportResponse(
         int reportCount,
         UUID resolvedBy,
         String resolvedByUsername,
-        Instant resolvedAt,
-        List<DocumentReportDetail> reportDetails
+        Instant resolvedAt
 ) {}

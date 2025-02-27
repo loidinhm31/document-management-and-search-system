@@ -13,7 +13,6 @@ import com.dms.document.interaction.model.MasterData;
 import com.dms.document.interaction.repository.DocumentReportRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
 import com.dms.document.interaction.repository.MasterDataRepository;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -149,11 +148,10 @@ public class DocumentReportService {
         // Load all documents for these IDs
         List<DocumentInformation> documents = documentRepository.findAllById(documentIds);
 
-        // Filter by document title and uploader if specified
+        // Filter by document title if specified
         if (StringUtils.isNotEmpty(documentTitle)) {
             documents = documents.stream()
-                    .filter(doc -> (StringUtils.isEmpty(documentTitle) ||
-                                    StringUtils.containsIgnoreCase(doc.getFilename(), documentTitle)))
+                    .filter(doc -> StringUtils.containsIgnoreCase(doc.getFilename(), documentTitle))
                     .toList();
 
             // Update document IDs to only include filtered documents
@@ -170,32 +168,33 @@ public class DocumentReportService {
         Map<String, DocumentInformation> documentMap = documents.stream()
                 .collect(Collectors.toMap(DocumentInformation::getId, Function.identity()));
 
-        // Load all reports
-        List<DocumentReport> allReports = documentReportRepository.findByDocumentIdIn(documentIds);
+        // Load primary reports to get status and resolved info (only one per document)
+        List<DocumentReport> primaryReports = new ArrayList<>();
+        Map<String, DocumentReport> primaryReportMap = new HashMap<>();
 
-        // Group reports by document ID
-        Map<String, List<DocumentReport>> reportsByDocumentId = allReports.stream()
-                .collect(Collectors.groupingBy(DocumentReport::getDocumentId));
+        // For each document ID, find the latest report
+        for (String docId : documentIds) {
+            List<DocumentReport> reports = documentReportRepository.findByDocumentIdIn(Collections.singletonList(docId));
+            if (!reports.isEmpty()) {
+                // Sort reports by creation date (newest first)
+                reports.sort(Comparator.comparing(DocumentReport::getCreatedAt).reversed());
+                DocumentReport primaryReport = reports.get(0);
+                primaryReports.add(primaryReport);
+                primaryReportMap.put(docId, primaryReport);
+            }
+        }
 
+        // Create response without report details
         List<AdminDocumentReportResponse> responses = new ArrayList<>();
-
         for (String docId : documentIds) {
             DocumentInformation doc = documentMap.get(docId);
             if (doc == null) continue;
 
-            List<DocumentReport> reports = reportsByDocumentId.getOrDefault(docId, Collections.emptyList());
-            if (reports.isEmpty()) continue;
+            DocumentReport primaryReport = primaryReportMap.get(docId);
+            if (primaryReport == null) continue;
 
-            // Sort reports by creation date (newest first)
-            reports.sort(Comparator.comparing(DocumentReport::getCreatedAt).reversed());
-
-            // Use the newest report for status and resolution information
-            DocumentReport primaryReport = reports.get(0);
-
-            // Map all reports to report details
-            List<DocumentReportDetail> reportDetails = reports.stream()
-                    .map(this::mapToReportDetail)
-                    .collect(Collectors.toList());
+            // Count reports for this document
+            int reportCount = documentReportRepository.findByDocumentIdIn(Collections.singletonList(docId)).size();
 
             responses.add(new AdminDocumentReportResponse(
                     docId,
@@ -203,20 +202,34 @@ public class DocumentReportService {
                     UUID.fromString(doc.getUserId()),
                     getUsernameById(UUID.fromString(doc.getUserId())),
                     primaryReport.getStatus(),
-                    reports.size(),
+                    reportCount,
                     primaryReport.getResolvedBy(),
                     primaryReport.getResolvedBy() != null ?
                             getUsernameById(primaryReport.getResolvedBy()) : null,
-                    primaryReport.getResolvedAt(),
-                    reportDetails
+                    primaryReport.getResolvedAt()
             ));
         }
 
         // Get total distinct document IDs that match criteria
-        statusStr = status != null ? status.name() : null;
         long totalDocuments = documentReportRepository.countDistinctDocumentIdsWithFilters(statusStr, fromDate, toDate, reportTypeCode);
 
         return new PageImpl<>(responses, pageable, totalDocuments);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DocumentReportDetail> getDocumentReportDetails(String documentId) {
+        List<DocumentReport> reports = documentReportRepository.findByDocumentIdIn(Collections.singletonList(documentId));
+
+        if (reports.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Sort reports by creation date (newest first)
+        reports.sort(Comparator.comparing(DocumentReport::getCreatedAt).reversed());
+
+        return reports.stream()
+                .map(this::mapToReportDetail)
+                .collect(Collectors.toList());
     }
 
     private DocumentReportDetail mapToReportDetail(DocumentReport report) {

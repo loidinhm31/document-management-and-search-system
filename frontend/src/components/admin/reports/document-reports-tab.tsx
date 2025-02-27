@@ -33,7 +33,6 @@ export interface DocumentReport {
   resolvedBy?: string;
   resolvedByUsername?: string;
   resolvedAt?: string;
-  reportDetails: ReportDetail[];
 }
 
 export interface ReportDetail {
@@ -53,7 +52,9 @@ export default function DocumentReportsTab() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [reports, setReports] = useState<DocumentReport[]>([]);
+  const [reportDetails, setReportDetails] = useState<ReportDetail[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedReport, setSelectedReport] = useState<DocumentReport | null>(null);
@@ -103,6 +104,24 @@ export default function DocumentReportsTab() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReportDetails = async (documentId: string) => {
+    setLoadingDetails(true);
+    try {
+      const response = await reportService.getDocumentReportDetail(documentId);
+      setReportDetails(response.data);
+    } catch (error) {
+      console.error("Error fetching report details:", error);
+      toast({
+        title: t("common.error"),
+        description: t("admin.reports.documents.fetchDetailsError"),
+        variant: "destructive",
+      });
+      setReportDetails([]);
+    } finally {
+      setLoadingDetails(false);
     }
   };
 
@@ -164,9 +183,11 @@ export default function DocumentReportsTab() {
     setCurrentPage(page);
   };
 
-  const handleViewReasons = (report: DocumentReport) => {
+  const handleViewReasons = async (report: DocumentReport) => {
     setSelectedReport(report);
     setShowReasonsDialog(true);
+    // Fetch report details when opening the dialog
+    await fetchReportDetails(report.documentId);
   };
 
   const handleProcessClick = (report: DocumentReport) => {
@@ -470,8 +491,22 @@ export default function DocumentReportsTab() {
           </DialogHeader>
 
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-            {selectedReport?.reportDetails && selectedReport.reportDetails.length > 0 ? (
-              selectedReport.reportDetails.map((reason, index) => (
+            {loadingDetails ? (
+              // Loading skeleton for report details
+              Array(3)
+                .fill(null)
+                .map((_, index) => (
+                  <div key={`loading-detail-${index}`} className="border rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-5 w-24" />
+                    </div>
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ))
+            ) : reportDetails && reportDetails.length > 0 ? (
+              reportDetails.map((reason, index) => (
                 <div key={index} className="border rounded-lg p-4 space-y-2">
                   <div className="flex justify-between">
                     <div className="font-medium">
@@ -513,11 +548,11 @@ export default function DocumentReportsTab() {
                 ? t("admin.reports.documents.dialogs.process.description", { document: selectedReport?.documentTitle })
                 : selectedReport?.status === "RESOLVED"
                   ? t("admin.reports.documents.dialogs.unresolve.description", {
-                      document: selectedReport?.documentTitle,
-                    })
+                    document: selectedReport?.documentTitle,
+                  })
                   : t("admin.reports.documents.dialogs.resolve.description", {
-                      document: selectedReport?.documentTitle,
-                    })}
+                    document: selectedReport?.documentTitle,
+                  })}
             </DialogDescription>
           </DialogHeader>
 

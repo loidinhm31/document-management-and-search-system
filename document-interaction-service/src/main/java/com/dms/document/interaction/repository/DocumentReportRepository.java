@@ -27,10 +27,10 @@ public interface DocumentReportRepository extends JpaRepository<DocumentReport, 
 
     @Query(value = """
             SELECT DISTINCT r.document_id FROM document_reports r
-            WHERE (CAST(:fromDate AS timestamp) IS NULL OR r.created_at >= :fromDate)
-            AND (CAST(:toDate AS timestamp) IS NULL OR r.created_at <= :toDate)
+            WHERE (CAST(:status AS varchar) IS NULL OR r.status = :status)
+            AND (CAST(:fromDate AS date) IS NULL OR DATE(r.created_at) >= DATE(:fromDate))
+            AND (CAST(:toDate AS date) IS NULL OR DATE(r.created_at) <= DATE(:toDate))
             AND (CAST(:reportTypeCode AS varchar) IS NULL OR r.report_type_code = :reportTypeCode)
-            AND (CAST(:status AS varchar) IS NULL OR r.status = :status)
             ORDER BY r.document_id
             """,
             nativeQuery = true)
@@ -43,10 +43,10 @@ public interface DocumentReportRepository extends JpaRepository<DocumentReport, 
 
     @Query(value = """
             SELECT COUNT(DISTINCT r.document_id) FROM document_reports r
-            WHERE (CAST(:fromDate AS timestamp) IS NULL OR r.created_at >= :fromDate)
-            AND (CAST(:toDate AS timestamp) IS NULL OR r.created_at <= :toDate)
+            WHERE (CAST(:status AS varchar) IS NULL OR r.status = :status)
+            AND (CAST(:fromDate AS date) IS NULL OR DATE(r.created_at) >= DATE(:fromDate))
+            AND (CAST(:toDate AS date) IS NULL OR DATE(r.created_at) <= DATE(:toDate))
             AND (CAST(:reportTypeCode AS varchar) IS NULL OR r.report_type_code = :reportTypeCode)
-            AND (CAST(:status AS varchar) IS NULL OR r.status = :status)
             """,
             nativeQuery = true)
     long countDistinctDocumentIdsWithFilters(

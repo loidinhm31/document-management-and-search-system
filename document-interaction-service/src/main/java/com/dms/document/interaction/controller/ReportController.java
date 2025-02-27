@@ -3,6 +3,7 @@ package com.dms.document.interaction.controller;
 import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.AdminCommentReportResponse;
 import com.dms.document.interaction.dto.AdminDocumentReportResponse;
+import com.dms.document.interaction.dto.DocumentReportDetail;
 import com.dms.document.interaction.enums.ReportStatus;
 import com.dms.document.interaction.service.CommentReportService;
 import com.dms.document.interaction.service.DocumentReportService;
@@ -19,6 +20,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping(ApiConstant.API_VERSION + "/reports")
@@ -54,6 +56,15 @@ public class ReportController {
 
         return ResponseEntity.ok(documentReportService.getAdminDocumentReports(
                 documentTitle, fromDate, toDate, status, reportTypeCode, pageable));
+    }
+
+    @Operation(summary = "Get report details for a specific document",
+            description = "Admin endpoint to retrieve detailed reports for a specific document")
+    @GetMapping("/documents/{documentId}/details")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<DocumentReportDetail>> getDocumentReportDetails(
+            @PathVariable String documentId) {
+        return ResponseEntity.ok(documentReportService.getDocumentReportDetails(documentId));
     }
 
     @Operation(summary = "Resolve a comment report",
