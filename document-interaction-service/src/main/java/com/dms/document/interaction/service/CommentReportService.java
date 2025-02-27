@@ -94,7 +94,7 @@ public class CommentReportService {
 
     @Transactional
     public void resolveCommentReport(
-            Long reportId,
+            Long commentId,
             boolean resolved,
             String adminUsername) {
         UserResponse admin = getUserFromUsername(adminUsername);
@@ -102,21 +102,28 @@ public class CommentReportService {
             throw new IllegalStateException("Only administrators can resolve reports");
         }
 
-        CommentReport report = commentReportRepository.findById(reportId)
-                .orElseThrow(() -> new EntityNotFoundException("Report not found"));
+        List<CommentReport> commentReports = commentReportRepository.findByCommentId(commentId);
+        if (commentReports.isEmpty()) {
+            throw new EntityNotFoundException("Comment report not found");
+        }
 
-        report.setResolved(resolved);
-        report.setResolvedBy(admin.userId());
-        report.setResolvedAt(Instant.now());
-
-        commentReportRepository.save(report);
+        Instant resolvedAt = Instant.now();
+        commentReports.forEach(report -> {
+            report.setResolved(resolved);
+            report.setResolvedBy(admin.userId());
+            report.setResolvedAt(resolvedAt);
+        });
+        commentReportRepository.saveAll(commentReports);
 
         // Resolve actual comment
-        documentCommentRepository.findByDocumentIdAndId(report.getDocumentId(), report.getCommentId())
-                .ifPresent(document -> {
-                    document.setContent("[deleted]");
-                    document.setUpdatedAt(Instant.now());
+        documentCommentRepository.findByDocumentIdAndId(commentReports.get(0).getDocumentId(), commentId)
+                .ifPresent(documentComment -> {
+                    documentComment.setContent("[deleted]");
+                    documentComment.setFlag(-1);
+                    documentComment.setUpdatedAt(Instant.now());
                 });
+
+        // TODO: Notify user of resolution
     }
 
     @Transactional(readOnly = true)
@@ -239,49 +246,58 @@ public class CommentReportService {
     }
 
     @Transactional(readOnly = true)
-    public CommentReportDetailResponse getCommentReportDetail(Long reportId) {
-        CommentReport report = commentReportRepository.findById(reportId)
-                .orElseThrow(() -> new EntityNotFoundException("Comment report not found"));
+    public List<CommentReportDetailResponse> getCommentReportsByCommentId(Long commentId) {
+        // Lấy comment từ repository
+        DocumentComment comment = documentCommentRepository.findById(commentId)
+                .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        // Get comment content
-        DocumentComment comment = documentCommentRepository.findById(report.getCommentId())
-                .orElse(null);
+        // Lấy tất cả các báo cáo cho comment này
+        List<CommentReport> reports = commentReportRepository.findByCommentId(commentId);
 
-        String commentContent = comment != null ? comment.getContent() : "[Comment not found]";
+        if (reports.isEmpty()) {
+            return Collections.emptyList();
+        }
 
-        // Get usernames for reporter and resolver (if applicable)
+        // Thu thập tất cả user ID liên quan để batch fetch
         Set<UUID> userIds = new HashSet<>();
-        userIds.add(report.getUserId()); // Reporter
 
-        if (comment != null) {
-            userIds.add(comment.getUserId()); // Comment author
-        }
+        // Thêm user ID của reporter và resolver
+        reports.forEach(report -> {
+            userIds.add(report.getUserId()); // Reporter
+            if (report.getResolvedBy() != null) {
+                userIds.add(report.getResolvedBy()); // Resolver nếu có
+            }
+        });
 
-        if (report.getResolvedBy() != null) {
-            userIds.add(report.getResolvedBy());
-        }
+        // Thêm user ID của người tạo comment
+        userIds.add(comment.getUserId());
 
+        // Batch fetch tất cả thông tin người dùng
         Map<UUID, String> usernames = batchFetchUsernames(userIds);
 
-        return CommentReportDetailResponse.builder()
-                .id(report.getId())
-                .documentId(report.getDocumentId())
-                .commentId(report.getCommentId())
-                .commentContent(commentContent)
-                .reporterUserId(report.getUserId())
-                .reporterUsername(usernames.getOrDefault(report.getUserId(), "Unknown"))
-                .commentUserId(comment != null ? comment.getUserId() : null)
-                .commentUsername(comment != null ? usernames.getOrDefault(comment.getUserId(), "Unknown") : "Unknown")
-                .reportTypeCode(report.getReportTypeCode())
-                .description(report.getDescription())
-                .resolved(report.isResolved())
-                .resolvedBy(report.getResolvedBy())
-                .resolvedByUsername(report.getResolvedBy() != null ?
-                        usernames.getOrDefault(report.getResolvedBy(), "Unknown") : null)
-                .createdAt(report.getCreatedAt())
-                .resolvedAt(report.getResolvedAt())
-                .build();
+        // Map báo cáo thành response DTO
+        return reports.stream()
+                .map(report -> CommentReportDetailResponse.builder()
+                        .id(report.getId())
+                        .documentId(report.getDocumentId())
+                        .commentId(report.getCommentId())
+                        .commentContent(comment.getContent())
+                        .reporterUserId(report.getUserId())
+                        .reporterUsername(usernames.getOrDefault(report.getUserId(), "Unknown"))
+                        .commentUserId(comment.getUserId())
+                        .commentUsername(usernames.getOrDefault(comment.getUserId(), "Unknown"))
+                        .reportTypeCode(report.getReportTypeCode())
+                        .description(report.getDescription())
+                        .resolved(report.isResolved())
+                        .resolvedBy(report.getResolvedBy())
+                        .resolvedByUsername(report.getResolvedBy() != null ?
+                                usernames.getOrDefault(report.getResolvedBy(), "Unknown") : null)
+                        .createdAt(report.getCreatedAt())
+                        .resolvedAt(report.getResolvedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
+
 
     private Map<UUID, String> batchFetchUsernames(Set<UUID> userIds) {
         try {

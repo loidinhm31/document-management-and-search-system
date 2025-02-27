@@ -59,9 +59,9 @@ public class ReportController {
                 documentTitle, fromDate, toDate, status, reportTypeCode, pageable));
     }
 
-    @Operation(summary = "Get report details for a specific document",
-            description = "Admin endpoint to retrieve detailed reports for a specific document")
-    @GetMapping("/documents/{documentId}/details")
+    @Operation(summary = "Get all report details for a specific document",
+            description = "Admin endpoint to retrieve all detailed reports for a specific document")
+    @GetMapping("/documents/{documentId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<DocumentReportDetail>> getDocumentReportDetails(
             @PathVariable String documentId) {
@@ -96,12 +96,12 @@ public class ReportController {
         return ResponseEntity.ok(commentReportService.getAdminCommentReports(fromDate, toDate, commentContent, reportTypeCode, resolved, pageable));
     }
 
-    @Operation(summary = "Get comment report details",
-            description = "Admin endpoint to retrieve detailed information about a specific comment report")
-    @GetMapping("/comments/{reportId}/details")
+    @Operation(summary = "Get all reports for a specific comment",
+            description = "Admin endpoint to retrieve all reports for a specific comment")
+    @GetMapping("/comments/{commentId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<CommentReportDetailResponse> getCommentReportDetails(
-            @PathVariable Long reportId) {
-        return ResponseEntity.ok(commentReportService.getCommentReportDetail(reportId));
+    public ResponseEntity<List<CommentReportDetailResponse>> getCommentReportsByCommentId(
+            @PathVariable Long commentId) {
+        return ResponseEntity.ok(commentReportService.getCommentReportsByCommentId(commentId));
     }
 }

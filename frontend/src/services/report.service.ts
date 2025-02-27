@@ -47,7 +47,7 @@ class ReportService extends BaseService {
   }
 
   getDocumentReportDetail(documentId: string) {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/documents/${documentId}/details`));
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/documents/${documentId}`));
   }
 
   getCommentReports(filters: CommentReportFilter = {}) {
@@ -70,7 +70,7 @@ class ReportService extends BaseService {
   }
 
   getCommentReportDetail(reportId: number) {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/comments/${reportId}/details`));
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/comments/${reportId}`));
   }
 
   resolveCommentReport(reportId: number, resolved: boolean) {

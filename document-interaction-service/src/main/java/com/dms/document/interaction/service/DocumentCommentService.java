@@ -97,7 +97,7 @@ public class DocumentCommentService {
         // Check parent id is still valid
         if (Objects.nonNull(request.parentId())) {
             Optional<DocumentComment> parentComment = documentCommentRepository.findById(request.parentId());
-            if (parentComment.isPresent() && parentComment.get().isDeleted()) {
+            if (parentComment.isPresent() && parentComment.get().getFlag() == 0) {
                 throw new InvalidDocumentException("PARENT_COMMENT_DELETED");
             }
         }
@@ -107,6 +107,7 @@ public class DocumentCommentService {
         comment.setUserId(userResponse.userId());
         comment.setContent(request.content());
         comment.setParentId(request.parentId());
+        comment.setFlag(1);
         comment.setCreatedAt(Instant.now());
 
         DocumentComment savedComment = documentCommentRepository.save(comment);
@@ -238,7 +239,6 @@ public class DocumentCommentService {
         // Check if this comment has been reported by the current user
         CommentReport userReport = commentReportMap.get(comment.getId());
         boolean reportedByUser = userReport != null;
-        boolean reportResolved = reportedByUser && userReport.isResolved();
 
         return CommentResponse.builder()
                 .id(comment.getId())
@@ -247,8 +247,8 @@ public class DocumentCommentService {
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .edited(comment.isEdited())
+                .flag(comment.getFlag())
                 .reportedByUser(reportedByUser)
-                .reportResolved(reportResolved)
                 .build();
     }
 }

@@ -44,8 +44,8 @@ public class DocumentComment {
     @Column(name = "edited")
     private boolean edited;
 
-    @Column(name = "deleted")
-    private boolean deleted;
+    @Column(name = "flag")
+    private Integer flag;
 
     @Version
     private Long version;

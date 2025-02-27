@@ -22,28 +22,15 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(comment.content);
 
-  // Local state to override props when report action happens
-  const [localReportStatus, setLocalReportStatus] = useState({
-    reportedByUser: comment.reportedByUser,
-    reportResolved: comment.reportResolved,
-  });
+  const [isReportedByUser, setIsReportedByUser] = useState(false);
 
-  // Use either the local state (if set) or the props
-  const isReported =
-    localReportStatus.reportedByUser !== undefined ? localReportStatus.reportedByUser : comment.reportedByUser;
+  const isCommentResolved = comment.flag === -1;
 
-  const isResolved =
-    localReportStatus.reportResolved !== undefined ? localReportStatus.reportResolved : comment.reportResolved;
-
-  // Update local state if props change (except after a local report action)
   useEffect(() => {
-    if (!localReportStatus.reportedByUser || comment.reportedByUser) {
-      setLocalReportStatus({
-        reportedByUser: comment.reportedByUser,
-        reportResolved: comment.reportResolved,
-      });
+    if (!isReportedByUser) {
+      setIsReportedByUser(comment.reportedByUser);
     }
-  }, [comment.reportedByUser, comment.reportResolved]);
+  }, [comment.reportedByUser]);
 
   const formatDate = (date) => {
     return moment(date).format("DD/MM/YYYY, h:mm a");
@@ -75,11 +62,7 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
   };
 
   const handleReportSuccess = () => {
-    // Update local report status when a report is successful
-    setLocalReportStatus({
-      reportedByUser: true,
-      reportResolved: false, // A new report is not resolved yet
-    });
+    setIsReportedByUser(true);
 
     toast({
       title: t("common.success"),
@@ -87,9 +70,6 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
       variant: "success",
     });
   };
-
-  // Determine if the comment should be displayed as reported and resolved
-  const isCommentResolved = isReported && isResolved;
 
   return (
     <div className="space-y-4">
@@ -105,7 +85,7 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
             {comment.edited && <span className="text-xs text-muted-foreground">({t("document.comments.edited")})</span>}
             {isCommentResolved && (
               <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">
-                {t("comments.report.status.resolved")}
+                {t("document.comments.report.status.resolved")}
               </span>
             )}
           </div>
@@ -134,7 +114,9 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
               </div>
             </div>
           ) : (
-            <p className="text-sm">{isCommentResolved ? t("comments.report.removedContent") : comment.content}</p>
+            <p className="text-sm">
+              {isCommentResolved ? t("document.comments.report.removedContent") : comment.content}
+            </p>
           )}
 
           {!isEditing && !isCommentResolved && (
@@ -149,7 +131,7 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
                   documentId={documentId}
                   commentId={comment.id}
                   commentAuthor={comment.username}
-                  isReported={isReported}
+                  isReported={isReportedByUser}
                   onReportSuccess={handleReportSuccess}
                 />
               )}

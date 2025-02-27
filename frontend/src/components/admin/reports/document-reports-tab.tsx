@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import TableSkeleton from "@/components/common/table-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -362,30 +363,7 @@ export default function DocumentReportsTab() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              Array(5)
-                .fill(null)
-                .map((_, index) => (
-                  <TableRow key={`loading-${index}`}>
-                    <TableCell>
-                      <Skeleton className="h-6 w-full" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-16" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-24" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-6 w-32" />
-                    </TableCell>
-                  </TableRow>
-                ))
+              <TableSkeleton rows={5} cells={6} />
             ) : reports.length > 0 ? (
               reports.map((report) => (
                 <TableRow key={report.documentId}>

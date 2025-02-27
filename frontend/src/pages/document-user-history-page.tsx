@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { UserDocumentActionType, UserHistoryFilter, UserHistoryResponse } from "@/types/document-user-history";
 import { cn } from "@/lib/utils";
+import TableSkeleton from "@/components/common/table-skeleton";
 
 export default function DocumentUserHistoryPage() {
   const { t } = useTranslation();
@@ -324,31 +325,10 @@ export default function DocumentUserHistoryPage() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  Array(5)
-                    .fill(0)
-                    .map((_, index) => (
-                      <TableRow key={`loading-${index}`}>
-                        <TableCell>
-                          <Skeleton className="h-6 w-24" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-full" />
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <Skeleton className="h-6 w-full" />
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <Skeleton className="h-6 w-12" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-6 w-32" />
-                        </TableCell>
-                      </TableRow>
-                    ))
+                  <TableSkeleton rows={5} cells={5} />
                 ) : histories.length > 0 ? (
                   histories.map((history) => {
                     const { label, variant } = getActionTypeDetails(history.actionType);
-
                     return (
                       <TableRow key={history.id}>
                         <TableCell>

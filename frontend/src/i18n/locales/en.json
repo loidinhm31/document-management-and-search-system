@@ -510,7 +510,8 @@
           "commentDate": "Comment Date",
           "reportCount": "Reports",
           "status": "Status",
-          "actions": "Actions"
+          "actions": "Actions",
+          "resolvedBy": "Resolved By"
         },
         "status": {
           "resolved": "Resolved",
@@ -964,15 +965,14 @@
         "type": "Report Type",
         "statusLabel": "Status",
         "submit": "Submit Report",
-        "removedContent": "This comment has been removed due to a violation of our community guidelines.",
+        "removedContent": "This comment has been removed due to a violation.",
         "alreadyReported": {
           "title": "Already Reported",
           "description": "You have already reported this comment. Here are the details of your report:"
         },
         "status": {
-          "resolved": "Resolved",
-          "pending": "Pending Review",
-          "removed": "Removed report"
+          "resolved": "Violation Resolved",
+          "pending": "Pending Review"
         },
         "form": {
           "type": {

@@ -22,6 +22,8 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
     @Query("SELECT cr FROM CommentReport cr WHERE cr.userId = :userId AND cr.documentId = :documentId")
     List<CommentReport> findReportsByUserAndDocument(@Param("userId") UUID userId, @Param("documentId") String documentId);
 
+    List<CommentReport> findByCommentId(Long commentId);
+
     @Query(value = """
             SELECT cr.* FROM comment_reports cr
             JOIN document_comments dc ON cr.comment_id = dc.id
