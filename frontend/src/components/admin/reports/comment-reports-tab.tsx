@@ -1,10 +1,11 @@
+import { AlertTriangle, Calendar, CheckCircle, Eye, FileText, Filter, Loader2, Search, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, Calendar, CheckCircle, Eye, FileText, Filter, Loader2, Search, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -14,14 +15,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { reportService } from "@/services/report.service";
 import { ReportType } from "@/types/document-report";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 interface CommentReport {
   id: number;
@@ -33,18 +33,28 @@ interface CommentReport {
   createdAt: string;
   reportCount: number;
   resolved: boolean;
-  reasons?: CommentReportReason[];
 }
 
-interface CommentReportReason {
+interface CommentReportDetail {
+  id: number;
+  documentId: string;
+  commentId: number;
+  commentContent: string;
+  reporterUserId: string;
+  reporterUsername: string;
+  commentUserId: string;
+  commentUsername: string;
   reportTypeCode: string;
   reportTypeTranslation: {
     en: string;
     vi: string;
   };
   description?: string;
-  reporterUsername: string;
+  resolved: boolean;
+  resolvedBy?: string;
+  resolvedByUsername?: string;
   createdAt: string;
+  resolvedAt?: string;
 }
 
 export default function CommentReportsTab() {
@@ -53,7 +63,9 @@ export default function CommentReportsTab() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [reports, setReports] = useState<CommentReport[]>([]);
+  const [reportDetail, setReportDetail] = useState<CommentReportDetail | null>(null);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedReport, setSelectedReport] = useState<CommentReport | null>(null);
@@ -107,6 +119,24 @@ export default function CommentReportsTab() {
     }
   };
 
+  const fetchReportDetail = async (reportId: number) => {
+    setLoadingDetail(true);
+    try {
+      const response = await reportService.getCommentReportDetail(reportId);
+      setReportDetail(response.data);
+    } catch (error) {
+      console.error("Error fetching report detail:", error);
+      toast({
+        title: t("common.error"),
+        description: t("admin.reports.comments.fetchDetailError"),
+        variant: "destructive",
+      });
+      setReportDetail(null);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
+
   const resolveCommentReport = async () => {
     if (!selectedReport) return;
 
@@ -143,13 +173,11 @@ export default function CommentReportsTab() {
     }
   };
 
-  // Handle search
   const handleSearch = () => {
     setCurrentPage(0);
     fetchReports();
   };
 
-  // Handle reset filters
   const handleResetFilters = () => {
     setFilters({
       commentContent: "",
@@ -163,29 +191,26 @@ export default function CommentReportsTab() {
     setCurrentPage(0);
   };
 
-  // Handle pagination
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  // Handle view reasons click
-  const handleViewReasons = (report: CommentReport) => {
+  const handleViewReasons = async (report: CommentReport) => {
     setSelectedReport(report);
     setShowReasonsDialog(true);
+    // Fetch report details
+    await fetchReportDetail(report.id);
   };
 
-  // Handle resolve/unresolve click
   const handleResolveClick = (report: CommentReport) => {
     setSelectedReport(report);
     setShowResolveDialog(true);
   };
 
-  // Handle document click
   const handleDocumentClick = (documentId: string) => {
     navigate(`/discover/${documentId}`);
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(undefined, {
       year: "numeric",
@@ -194,6 +219,10 @@ export default function CommentReportsTab() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
+
+  const mapReportType = (reportTypeCode: string) => {
+    return reportTypes?.find((type) => type?.code === reportTypeCode);
   };
 
   // Initial fetch
@@ -233,7 +262,7 @@ export default function CommentReportsTab() {
                       className="ml-auto h-4 w-4 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFilters((prev) => ({ ...prev, createdFrom: null }));
+                        setFilters((prev) => ({ ...prev, fromDate: null }));
                       }}
                     />
                   )}
@@ -243,7 +272,7 @@ export default function CommentReportsTab() {
                 <CalendarComponent
                   mode="single"
                   selected={filters.fromDate}
-                  onSelect={(date) => setFilters((prev) => ({ ...prev, createdFrom: date }))}
+                  onSelect={(date) => setFilters((prev) => ({ ...prev, fromDate: date }))}
                   initialFocus
                 />
               </PopoverContent>
@@ -261,7 +290,7 @@ export default function CommentReportsTab() {
                       className="ml-auto h-4 w-4 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFilters((prev) => ({ ...prev, createdTo: null }));
+                        setFilters((prev) => ({ ...prev, toDate: null }));
                       }}
                     />
                   )}
@@ -271,7 +300,7 @@ export default function CommentReportsTab() {
                 <CalendarComponent
                   mode="single"
                   selected={filters.toDate}
-                  onSelect={(date) => setFilters((prev) => ({ ...prev, createdTo: date }))}
+                  onSelect={(date) => setFilters((prev) => ({ ...prev, toDate: date }))}
                   initialFocus
                 />
               </PopoverContent>
@@ -310,8 +339,8 @@ export default function CommentReportsTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("admin.reports.comments.filters.allStatuses")}</SelectItem>
+              <SelectItem value="false">{t("admin.reports.comments.status.pending")}</SelectItem>
               <SelectItem value="true">{t("admin.reports.comments.status.resolved")}</SelectItem>
-              <SelectItem value="false">{t("admin.reports.comments.status.unresolved")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -382,7 +411,7 @@ export default function CommentReportsTab() {
                       onClick={() => handleDocumentClick(report.documentId)}
                     >
                       <FileText className="h-3.5 w-3.5" />
-                      {report.documentId}
+                      {report.documentTitle || report.documentId}
                     </Button>
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate">
@@ -401,7 +430,7 @@ export default function CommentReportsTab() {
                     <Badge variant={report.resolved ? "default" : "destructive"}>
                       {report.resolved
                         ? t("admin.reports.comments.status.resolved")
-                        : t("admin.reports.comments.status.unresolved")}
+                        : t("admin.reports.comments.status.pending")}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -418,7 +447,7 @@ export default function CommentReportsTab() {
                         {report.resolved ? (
                           <>
                             <AlertTriangle className="h-4 w-4 mr-1" />
-                            {t("admin.reports.comments.actions.unresolve")}
+                            {t("admin.reports.comments.actions.pending")}
                           </>
                         ) : (
                           <>
@@ -476,28 +505,75 @@ export default function CommentReportsTab() {
             <DialogDescription>{t("admin.reports.comments.dialogs.reasons.description")}</DialogDescription>
           </DialogHeader>
 
-          {/*<div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">*/}
-          {/*  {reportReasons.map((reason, index) => (*/}
-          {/*    <div key={index} className="border rounded-lg p-4 space-y-2">*/}
-          {/*      <div className="flex justify-between">*/}
-          {/*        <div className="font-medium">*/}
-          {/*          {reason.reportTypeTranslation[i18n.language] || reason.reportTypeTranslation.en}*/}
-          {/*        </div>*/}
-          {/*        <div className="text-sm text-muted-foreground">{formatDate(reason.createdAt)}</div>*/}
-          {/*      </div>*/}
-          {/*      <div className="text-sm text-muted-foreground">*/}
-          {/*        {t("admin.reports.comments.dialogs.reasons.reportedBy", { user: reason.reporterUsername })}*/}
-          {/*      </div>*/}
-          {/*      {reason.description && <div className="mt-2 text-sm p-2 bg-muted rounded-md">{reason.description}</div>}*/}
-          {/*    </div>*/}
-          {/*  ))}*/}
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+            {loadingDetail ? (
+              // Loading skeleton for report details
+              Array(3)
+                .fill(null)
+                .map((_, index) => (
+                  <div key={`loading-detail-${index}`} className="border rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-5 w-24" />
+                    </div>
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-16 w-full" />
+                  </div>
+                ))
+            ) : reportDetail ? (
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex justify-between">
+                  <div className="font-medium">
+                    {mapReportType(reportDetail.reportTypeCode)?.translations[i18n.language] || mapReportType(reportDetail.reportTypeCode)?.translations.en}
+                  </div>
+                  <div className="text-sm text-muted-foreground">{formatDate(reportDetail.createdAt)}</div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {t("admin.reports.comments.dialogs.reasons.reportedBy", { user: reportDetail.reporterUsername })}
+                </div>
 
-          {/*  {reportReasons.length === 0 && (*/}
-          {/*    <div className="text-center py-6 text-muted-foreground">*/}
-          {/*      {t("admin.reports.comments.dialogs.reasons.noReasons")}*/}
-          {/*    </div>*/}
-          {/*  )}*/}
-          {/*</div>*/}
+                <div className="bg-muted rounded-md p-3">
+                  <div className="text-sm font-medium mb-2">{t("admin.reports.comments.dialogs.reasons.comment")}:</div>
+                  <div className="text-sm p-2 bg-background rounded-md">{reportDetail.commentContent}</div>
+                </div>
+
+                {reportDetail.description && (
+                  <div className="mt-2">
+                    <div className="text-sm font-medium mb-1">
+                      {t("admin.reports.comments.dialogs.reasons.description")}:
+                    </div>
+                    <div className="text-sm p-2 bg-muted rounded-md">{reportDetail.description}</div>
+                  </div>
+                )}
+
+                <div className="bg-muted rounded-md p-3 flex flex-col gap-2">
+                  <div className="text-sm">
+                    {t("admin.reports.comments.dialogs.reasons.status")}:
+                    <Badge className="ml-2" variant={reportDetail.resolved ? "default" : "destructive"}>
+                      {reportDetail.resolved
+                        ? t("admin.reports.comments.status.resolved")
+                        : t("admin.reports.comments.status.pending")}
+                    </Badge>
+                  </div>
+
+                  {reportDetail.resolved && reportDetail.resolvedByUsername && (
+                    <div className="text-sm">
+                      {t("admin.reports.comments.dialogs.reasons.resolvedBy", {
+                        user: reportDetail.resolvedByUsername,
+                      })}
+                      {reportDetail.resolvedAt && (
+                        <span className="ml-2 text-muted-foreground">({formatDate(reportDetail.resolvedAt)})</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                {t("admin.reports.comments.dialogs.reasons.noReasons")}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -506,27 +582,17 @@ export default function CommentReportsTab() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedReport?.resolved
-                ? t("admin.reports.comments.dialogs.unresolve.title")
-                : t("admin.reports.comments.dialogs.resolve.title")}
+              {t("admin.reports.comments.dialogs.resolve.title")}
             </DialogTitle>
             <DialogDescription>
-              {selectedReport?.resolved
-                ? t("admin.reports.comments.dialogs.unresolve.description")
-                : t("admin.reports.comments.dialogs.resolve.description")}
+              {t("admin.reports.comments.dialogs.resolve.description")}
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4">
-            {selectedReport?.resolved ? (
-              <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md">
-                {t("admin.reports.comments.dialogs.unresolve.warning")}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md">
-                {t("admin.reports.comments.dialogs.resolve.warning")}
-              </div>
-            )}
+            <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md">
+              {t("admin.reports.comments.dialogs.pending.warning")}
+            </div>
           </div>
 
           <DialogFooter>
@@ -534,14 +600,12 @@ export default function CommentReportsTab() {
               {t("common.cancel")}
             </Button>
             <Button
-              variant={selectedReport?.resolved ? "secondary" : "destructive"}
+              variant="default"
               onClick={resolveCommentReport}
               disabled={isProcessingReport}
             >
               {isProcessingReport && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {selectedReport?.resolved
-                ? t("admin.reports.comments.dialogs.unresolve.confirm")
-                : t("admin.reports.comments.dialogs.resolve.confirm")}
+              {t("admin.reports.comments.dialogs.resolve.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

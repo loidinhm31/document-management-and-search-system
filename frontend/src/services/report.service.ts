@@ -69,6 +69,10 @@ class ReportService extends BaseService {
     );
   }
 
+  getCommentReportDetail(reportId: number) {
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/comments/${reportId}/details`));
+  }
+
   resolveCommentReport(reportId: number, resolved: boolean) {
     return this.handleApiResponse(
       axiosInstance.put(`/document-interaction/api/v1/reports/comments/${reportId}/resolve?resolved=${resolved}`),

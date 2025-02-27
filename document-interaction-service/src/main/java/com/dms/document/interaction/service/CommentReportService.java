@@ -157,6 +157,10 @@ public class CommentReportService {
                         (existing, replacement) -> existing
                 ));
 
+        // Group reports by comment ID to ensure uniqueness and count reports
+        Map<Long, List<CommentReport>> reportsByCommentId = reportsList.stream()
+                .collect(Collectors.groupingBy(CommentReport::getCommentId));
+
         // Extract all user IDs (reporters, comment creators, resolvers)
         Set<UUID> userIds = new HashSet<>();
 
@@ -191,34 +195,92 @@ public class CommentReportService {
 
         // Map to response objects using the pre-loaded data
         Map<UUID, String> finalUsernamesMap = usernamesMap;
-        List<AdminCommentReportResponse> responseList = reportsList.stream()
-                .map(report -> {
-                    DocumentComment comment = commentsMap.get(report.getCommentId());
-                    String commentContentObj = comment != null ? comment.getContent() : "[Comment not found]";
-                    UUID commentUserId = comment != null ? comment.getUserId() : null;
+        List<AdminCommentReportResponse> responseList = new ArrayList<>();
 
-                    return new AdminCommentReportResponse(
-                            report.getId(),
-                            report.getDocumentId(),
-                            report.getCommentId(),
-                            commentContentObj,
-                            report.getUserId(),
-                            finalUsernamesMap.getOrDefault(report.getUserId(), "Unknown"),
-                            commentUserId,
-                            commentUserId != null ? finalUsernamesMap.getOrDefault(commentUserId, "Unknown") : "Unknown",
-                            report.getReportTypeCode(),
-                            report.getDescription(),
-                            report.isResolved(),
-                            report.getResolvedBy(),
-                            report.getResolvedBy() != null ?
-                                    finalUsernamesMap.getOrDefault(report.getResolvedBy(), "Unknown") : null,
-                            report.getCreatedAt(),
-                            report.getResolvedAt()
-                    );
-                })
-                .collect(Collectors.toList());
+        // Process each comment ID with its associated reports
+        for (Map.Entry<Long, List<CommentReport>> entry : reportsByCommentId.entrySet()) {
+            Long commentId = entry.getKey();
+            List<CommentReport> commentReports = entry.getValue();
+
+            // Use the most recent report as the representative (for details like status)
+            CommentReport primaryReport = commentReports.stream()
+                    .max(Comparator.comparing(CommentReport::getCreatedAt))
+                    .orElse(commentReports.get(0));
+
+            DocumentComment comment = commentsMap.get(commentId);
+            String commentContentObj = comment != null ? comment.getContent() : "[Comment not found]";
+            UUID commentUserId = comment != null ? comment.getUserId() : null;
+
+            // Create response with report count
+            AdminCommentReportResponse response = new AdminCommentReportResponse(
+                    primaryReport.getId(),
+                    primaryReport.getDocumentId(),
+                    primaryReport.getCommentId(),
+                    commentContentObj,
+                    primaryReport.getUserId(),
+                    finalUsernamesMap.getOrDefault(primaryReport.getUserId(), "Unknown"),
+                    commentUserId,
+                    commentUserId != null ? finalUsernamesMap.getOrDefault(commentUserId, "Unknown") : "Unknown",
+                    primaryReport.getReportTypeCode(),
+                    primaryReport.getDescription(),
+                    primaryReport.isResolved(),
+                    primaryReport.getResolvedBy(),
+                    primaryReport.getResolvedBy() != null ?
+                            finalUsernamesMap.getOrDefault(primaryReport.getResolvedBy(), "Unknown") : null,
+                    primaryReport.getCreatedAt(),
+                    primaryReport.getResolvedAt(),
+                    commentReports.size()
+            );
+
+            responseList.add(response);
+        }
 
         return new PageImpl<>(responseList, pageable, reports.getTotalElements());
+    }
+
+    @Transactional(readOnly = true)
+    public CommentReportDetailResponse getCommentReportDetail(Long reportId) {
+        CommentReport report = commentReportRepository.findById(reportId)
+                .orElseThrow(() -> new EntityNotFoundException("Comment report not found"));
+
+        // Get comment content
+        DocumentComment comment = documentCommentRepository.findById(report.getCommentId())
+                .orElse(null);
+
+        String commentContent = comment != null ? comment.getContent() : "[Comment not found]";
+
+        // Get usernames for reporter and resolver (if applicable)
+        Set<UUID> userIds = new HashSet<>();
+        userIds.add(report.getUserId()); // Reporter
+
+        if (comment != null) {
+            userIds.add(comment.getUserId()); // Comment author
+        }
+
+        if (report.getResolvedBy() != null) {
+            userIds.add(report.getResolvedBy());
+        }
+
+        Map<UUID, String> usernames = batchFetchUsernames(userIds);
+
+        return CommentReportDetailResponse.builder()
+                .id(report.getId())
+                .documentId(report.getDocumentId())
+                .commentId(report.getCommentId())
+                .commentContent(commentContent)
+                .reporterUserId(report.getUserId())
+                .reporterUsername(usernames.getOrDefault(report.getUserId(), "Unknown"))
+                .commentUserId(comment != null ? comment.getUserId() : null)
+                .commentUsername(comment != null ? usernames.getOrDefault(comment.getUserId(), "Unknown") : "Unknown")
+                .reportTypeCode(report.getReportTypeCode())
+                .description(report.getDescription())
+                .resolved(report.isResolved())
+                .resolvedBy(report.getResolvedBy())
+                .resolvedByUsername(report.getResolvedBy() != null ?
+                        usernames.getOrDefault(report.getResolvedBy(), "Unknown") : null)
+                .createdAt(report.getCreatedAt())
+                .resolvedAt(report.getResolvedAt())
+                .build();
     }
 
     private Map<UUID, String> batchFetchUsernames(Set<UUID> userIds) {
@@ -238,53 +300,6 @@ public class CommentReportService {
         return new HashMap<>();
     }
 
-    private AdminCommentReportResponse mapToAdminResponse(
-            CommentReport report,
-            Map<Long, DocumentComment> commentsMap) {
-
-        DocumentComment comment = commentsMap.getOrDefault(report.getCommentId(), null);
-
-        // If comment not found, handle gracefully
-        if (comment == null) {
-            return new AdminCommentReportResponse(
-                    report.getId(),
-                    report.getDocumentId(),
-                    report.getCommentId(),
-                    "[Comment not found]",
-                    report.getUserId(),
-                    new HashMap<UUID, String>().getOrDefault(report.getUserId(), "Unknown"),
-                    null,
-                    "Unknown",
-                    report.getReportTypeCode(),
-                    report.getDescription(),
-                    report.isResolved(),
-                    report.getResolvedBy(),
-                    report.getResolvedBy() != null ?
-                            (new HashMap<UUID, String>().getOrDefault(report.getResolvedBy(), "Unknown")) : null,
-                    report.getCreatedAt(),
-                    report.getResolvedAt()
-            );
-        }
-
-        return new AdminCommentReportResponse(
-                report.getId(),
-                report.getDocumentId(),
-                report.getCommentId(),
-                comment.getContent(),
-                report.getUserId(),
-                new HashMap<UUID, String>().getOrDefault(report.getUserId(), "Unknown"),
-                comment.getUserId(),
-                new HashMap<UUID, String>().getOrDefault(report.getUserId(), "Unknown"),
-                report.getReportTypeCode(),
-                report.getDescription(),
-                report.isResolved(),
-                report.getResolvedBy(),
-                report.getResolvedBy() != null ?
-                        (new HashMap<UUID, String>().getOrDefault(report.getResolvedBy(), "Unknown")) : null,
-                report.getCreatedAt(),
-                report.getResolvedAt()
-        );
-    }
 
     private UserResponse getUserFromUsername(String username) {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);

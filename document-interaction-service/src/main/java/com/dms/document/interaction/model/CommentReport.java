@@ -18,7 +18,6 @@ public class CommentReport {
     @Column(name = "document_id", nullable = false)
     private String documentId;
 
-    // Remove or make insertable=false, updatable=false to avoid duplicate column
     @Column(name = "comment_id", nullable = false, insertable = false, updatable = false)
     private Long commentId;
 

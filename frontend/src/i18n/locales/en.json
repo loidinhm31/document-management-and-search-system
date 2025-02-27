@@ -514,7 +514,7 @@
         },
         "status": {
           "resolved": "Resolved",
-          "unresolved": "Unresolved"
+          "pending": "Pending"
         },
         "actions": {
           "viewReasons": "View Reasons",
@@ -531,7 +531,9 @@
             "title": "Comment Report Reasons",
             "description": "List of all report reasons for this comment",
             "reportedBy": "Reported by: {{user}}",
-            "noReasons": "No report reasons found"
+            "noReasons": "No report reasons found",
+            "comment": "Comment content",
+            "status": "Report status"
           },
           "resolve": {
             "title": "Resolve Comment Report",
@@ -539,11 +541,8 @@
             "warning": "This will remove the comment content and mark it as resolved. Users will no longer be able to see the content.",
             "confirm": "Resolve"
           },
-          "unresolve": {
-            "title": "Unresolve Comment Report",
-            "description": "Mark this comment as unresolved",
-            "warning": "This is not recommended for comments that violate community guidelines. Are you sure you want to proceed?",
-            "confirm": "Unresolve"
+          "pending": {
+            "warning": "Are you sure you want to proceed?"
           }
         }
       }

@@ -411,9 +411,9 @@ export default function DocumentReportsTab() {
                     <Badge
                       variant={
                         report.status === "PENDING"
-                          ? "outline"
+                          ? "destructive"
                           : report.status === "RESOLVED"
-                            ? "destructive"
+                            ? "outline"
                             : "secondary"
                       }
                     >

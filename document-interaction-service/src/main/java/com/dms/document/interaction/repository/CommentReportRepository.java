@@ -28,8 +28,8 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
             WHERE (:commentContent IS NULL OR dc.content::text LIKE CONCAT('%', :commentContent, '%'))
             AND (:reportTypeCode IS NULL OR cr.report_type_code = :reportTypeCode)
             AND (:resolved IS NULL OR cr.resolved = :resolved)
-            AND (CAST(:fromDate AS timestamp) IS NULL OR cr.created_at >= :fromDate)
-            AND (CAST(:toDate AS timestamp) IS NULL OR cr.created_at <= :toDate)
+            AND (CAST(:fromDate AS date) IS NULL OR DATE(cr.created_at) >= DATE(:fromDate))
+            AND (CAST(:toDate AS date) IS NULL OR DATE(cr.created_at) <= DATE(:toDate))
             ORDER BY cr.created_at DESC
             """, nativeQuery = true)
     Page<CommentReport> findAllWithFilters(

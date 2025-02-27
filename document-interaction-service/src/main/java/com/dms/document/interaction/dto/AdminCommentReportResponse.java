@@ -18,5 +18,6 @@ public record AdminCommentReportResponse(
         UUID resolvedBy,
         String resolvedByUsername,
         Instant createdAt,
-        Instant resolvedAt
+        Instant resolvedAt,
+        int reportCount
 ) {}

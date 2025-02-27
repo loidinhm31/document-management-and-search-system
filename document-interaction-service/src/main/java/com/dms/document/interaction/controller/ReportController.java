@@ -3,6 +3,7 @@ package com.dms.document.interaction.controller;
 import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.AdminCommentReportResponse;
 import com.dms.document.interaction.dto.AdminDocumentReportResponse;
+import com.dms.document.interaction.dto.CommentReportDetailResponse;
 import com.dms.document.interaction.dto.DocumentReportDetail;
 import com.dms.document.interaction.enums.ReportStatus;
 import com.dms.document.interaction.service.CommentReportService;
@@ -93,5 +94,14 @@ public class ReportController {
             Pageable pageable) {
 
         return ResponseEntity.ok(commentReportService.getAdminCommentReports(fromDate, toDate, commentContent, reportTypeCode, resolved, pageable));
+    }
+
+    @Operation(summary = "Get comment report details",
+            description = "Admin endpoint to retrieve detailed information about a specific comment report")
+    @GetMapping("/comments/{reportId}/details")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CommentReportDetailResponse> getCommentReportDetails(
+            @PathVariable Long reportId) {
+        return ResponseEntity.ok(commentReportService.getCommentReportDetail(reportId));
     }
 }

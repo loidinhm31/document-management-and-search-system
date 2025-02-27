@@ -77,7 +77,7 @@ public class DocumentProcessService {
 
             if (document.getReportStatus() == ReportStatus.RESOLVED) {
                 // TODO Send mail to all favorites and reporter
-            } else if (document.getReportStatus() == ReportStatus.REMOVED) {
+            } else if (document.getReportStatus() == ReportStatus.UNRESOLVED) {
                 // TODO Send mail to all favorites
             }
         } catch (Exception e) {
