@@ -3,6 +3,7 @@ package com.dms.processor.consumer;
 import com.dms.processor.dto.EmailNotificationPayload;
 import com.dms.processor.dto.NotificationEventRequest;
 import com.dms.processor.dto.PasswordResetEmailPayload;
+import com.dms.processor.enums.EventType;
 import com.dms.processor.service.AuthEmailService;
 import com.dms.processor.service.DocumentEmailService;
 import jakarta.mail.MessagingException;
@@ -25,7 +26,12 @@ public class EmailNotificationConsumer {
                 notificationEvent.getDocumentId());
 
         try {
-            documentEmailService.sendNotifyForRelatedUserInDocument(notificationEvent);
+            if (notificationEvent.getSubject().equals(EventType.FAVORITE_NOTIFICATION.name())) {
+                documentEmailService.sendNotifyForRelatedUserInDocument(notificationEvent);
+            } else if (notificationEvent.getSubject().equals(EventType.COMMENT_REPORT_PROCESS_EVENT.name())) {
+                // Send mail to commenter and reporters of the comment
+                documentEmailService.sendCommentReportProcessNotification(notificationEvent);
+            }
         } catch (Exception e) {
             log.error("Failed to send notification emails for document: {}", notificationEvent.getDocumentId(), e);
             throw e; // Retry will be handled by RabbitMQ configuration

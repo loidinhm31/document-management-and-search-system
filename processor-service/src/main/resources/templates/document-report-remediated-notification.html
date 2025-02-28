@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Reverted Notification</title>
+    <title>Document Remediated Notification</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc;">
 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="min-width: 100%; background-color: #f8fafc;">
@@ -20,10 +20,10 @@
                 <!-- Content -->
                 <tr>
                     <td align="left" valign="top" style="background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                        <p>Hello <span style="font-weight: 600; color: #334155;" th:text="${recipientName}">User</span>,</p>
+                        <p>Hello <span style="font-weight: 600; color: #334155;" th:text="${recipientMap.get(#ctx.supervisorVariables.get('current_user')?.name ?: '').username ?: 'User'}">User</span>,</p>
 
                         <p>
-                            <span style="font-weight: 600; color: #334155;" th:text="${triggerUser}">User</span> has reverted a document to a previous version:
+                            <span style="font-weight: 600; color: #334155;" th:text="${actionUser}">Administrator</span> has remediated a document you favorited:
                         </p>
 
                         <!-- Document info box -->
@@ -31,37 +31,33 @@
                             <tr>
                                 <td style="padding: 15px;">
                                     <h3 style="margin-top: 0; margin-bottom: 10px;" th:text="${documentTitle}">Document Title</h3>
-                                    <p style="margin: 0; color: #64748b;">Reverted on: <span th:text="${#dates.format(#dates.createNow(), 'dd MMM yyyy, HH:mm')}">01 Jan 2023</span></p>
+                                    <p style="margin: 0; color: #64748b;">Remediated on: <span th:text="${#dates.format(#dates.createNow(), 'dd MMM yyyy, HH:mm')}">01 Jan 2023</span></p>
                                 </td>
                             </tr>
                         </table>
 
-                        <!-- Reversion box -->
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #fff7ed; border: 1px solid #ffedd5; border-left: 4px solid #f97316; border-radius: 6px; margin: 20px 0;">
+                        <!-- Remediation box -->
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #ecfdf5; border: 1px solid #d1fae5; border-left: 4px solid #10b981; border-radius: 6px; margin: 20px 0;">
                             <tr>
                                 <td style="padding: 15px;">
                                     <p style="margin-top: 0;">
-                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: #f97316; border-radius: 50%; position: relative; top: 2px; margin-right: 5px; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.3);"></span>
-                                        Document has been reverted to:
-                                    </p>
-                                    <p style="text-align: center; margin: 15px 0;">
-                                        <span style="display: inline-block; background-color: #f97316; color: #ffffff; border-radius: 9999px; padding: 3px 10px; font-size: 14px; font-weight: 600;">Version <span th:text="${revertedToVersion}">1</span></span>
+                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; position: relative; top: 2px; margin-right: 5px; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);"></span>
+                                        Document has been remediated:
                                     </p>
                                     <p style="margin-bottom: 0; font-style: italic; color: #64748b; font-size: 14px;">
-                                        All changes made after this version have been replaced with the content from version
-                                        <span th:text="${revertedToVersion}">1</span>.
+                                        The reported issue with this document has been corrected and the document is now available with improvements.
                                     </p>
                                 </td>
                             </tr>
                         </table>
 
-                        <p>You can view the document in its reverted state by clicking the button below:</p>
+                        <p>You can view the remediated document by clicking the button below:</p>
 
                         <!-- Button (made with table for better email compatibility) -->
                         <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 15px auto;">
                             <tr>
                                 <td align="center" style="background-color: #fbbf24; border-radius: 4px;">
-                                    <a th:href="@{${baseUrl} + '/documents/' + ${documentId}}" style="display: inline-block; padding: 10px 20px; color: #1e293b; text-decoration: none; font-weight: 500;">View Reverted Document</a>
+                                    <a th:href="${baseUrl + '/discover/' + documentId}" style="display: inline-block; padding: 10px 20px; color: #1e293b; text-decoration: none; font-weight: 500;">View Remediated Document</a>
                                 </td>
                             </tr>
                         </table>
@@ -71,7 +67,7 @@
                         </p>
 
                         <p style="word-break: break-all; background-color: #f8fafc; padding: 10px; border-radius: 4px; font-size: 14px;">
-                            <span th:text="${baseUrl} + '/discover/' + ${documentId}">https://example.com/documents/123</span>
+                            <span th:text="${baseUrl + '/discover/' + documentId}">https://example.com/discover/123</span>
                         </p>
 
                         <!-- Footer -->

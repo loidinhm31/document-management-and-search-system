@@ -2,12 +2,10 @@ package com.dms.processor.service;
 
 import com.dms.processor.dto.NotificationEventRequest;
 import com.dms.processor.enums.NotificationType;
+import com.dms.processor.model.DocumentComment;
 import com.dms.processor.model.DocumentInformation;
 import com.dms.processor.model.User;
-import com.dms.processor.repository.DocumentFavoriteRepository;
-import com.dms.processor.repository.DocumentReportRepository;
-import com.dms.processor.repository.DocumentRepository;
-import com.dms.processor.repository.UserRepository;
+import com.dms.processor.repository.*;
 import jakarta.mail.MessagingException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -44,13 +42,19 @@ public class DocumentEmailService extends EmailService {
 
     @Autowired
     private DocumentReportRepository documentReportRepository;
+    @Autowired
+    private CommentReportRepository commentReportRepository;
+    @Autowired
+    private DocumentCommentRepository documentCommentRepository;
 
     public void sendNotifyForRelatedUserInDocument(NotificationEventRequest notificationEvent) {
         DocumentInformation document = findDocument(notificationEvent.getDocumentId());
-        Set<User> usersToNotify = findUsersToNotify(document, notificationEvent.getTriggerUsername());
+        User triggerUser = userRepository.findByUsername(notificationEvent.getTriggerUserId())
+                .orElseThrow(() -> new RuntimeException("Trigger user not found"));
+        Set<User> usersToNotify = findUsersToNotify(document, triggerUser);
 
         if (CollectionUtils.isNotEmpty(usersToNotify)) {
-            sendNotifications(usersToNotify, document, notificationEvent);
+            sendNotifications(usersToNotify, triggerUser, document, notificationEvent);
             log.info("Sent notification emails to {} users for document: {}",
                     usersToNotify.size(), document.getId());
         } else {
@@ -94,6 +98,89 @@ public class DocumentEmailService extends EmailService {
         }
     }
 
+    public void sendCommentReportProcessNotification(NotificationEventRequest notificationEvent) {
+        // Get the document information
+        DocumentInformation document = findDocument(notificationEvent.getDocumentId());
+
+        // Get comment reporters
+        Set<UUID> reporterUserIds = commentReportRepository.findReporterUserIdsByCommentId(notificationEvent.getCommentId());
+        Set<User> reporters = new HashSet<>(userRepository.findUsersByUserIdIn(reporterUserIds));
+
+        // Get commenter - Note: Comment content may have been removed/moderated already
+        DocumentComment documentComment = documentCommentRepository.findByDocumentIdAndId(document.getId(), notificationEvent.getCommentId())
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+        // Even if comment content was removed, we still need the user who made it
+        User commenter = userRepository.findById(documentComment.getUserId())
+                .orElseThrow(() -> new RuntimeException("Commenter user not found"));
+
+        // Trigger user
+        User triggerUser = userRepository.findById(UUID.fromString(notificationEvent.getTriggerUserId()))
+                .orElseThrow(() -> new RuntimeException("Trigger user not found"));
+
+        // Send notification to reporters
+        if (CollectionUtils.isNotEmpty(reporters)) {
+            sendCommentReportEmails(reporters, triggerUser, document, notificationEvent);
+            log.info("Sent comment report notification emails to {} reporters for comment: {}",
+                    reporters.size(), notificationEvent.getCommentId());
+        } else {
+            log.info("No reporters found for comment report notification for comment: {}", notificationEvent.getCommentId());
+        }
+
+        // Send notification to the commenter
+        sendCommenterNotificationEmail(commenter, triggerUser, document, notificationEvent, documentComment);
+        log.info("Sent comment report notification email to commenter: {}", commenter.getUsername());
+    }
+
+    private void sendCommenterNotificationEmail(User commenter, User triggerUser,
+                                                DocumentInformation document,
+                                                NotificationEventRequest event,
+                                                DocumentComment documentComment) {
+        if (commenter == null || commenter.getEmail() == null || commenter.getEmail().isEmpty()) {
+            log.warn("Cannot send commenter notification: invalid commenter or email");
+            return;
+        }
+
+        String subject = "Your comment has been moderated in document: " + document.getFilename();
+
+        Map<String, User> emailToUserMap = new HashMap<>();
+        emailToUserMap.put(commenter.getEmail(), commenter);
+
+        Map<String, Object> templateVars = buildCommenterNotificationTemplateVariables(
+                event, document, emailToUserMap, triggerUser.getUsername());
+
+        try {
+            // Create a copy of template vars for this specific recipient
+            Map<String, Object> personalizedVars = new HashMap<>(templateVars);
+            personalizedVars.put("recipientName", commenter.getUsername());
+
+            // Prepare email content
+            Context context = new Context();
+            context.setVariables(personalizedVars);
+            String htmlContent = templateEngine.process("comment-report-moderation-notification", context);
+
+            sendEmail(commenter.getEmail(), subject, htmlContent);
+            log.info("Successfully sent moderation notification to commenter: {}", commenter.getUsername());
+        } catch (MessagingException e) {
+            log.error("Failed to send email to commenter: {}", commenter.getEmail(), e);
+        }
+    }
+
+    private Map<String, Object> buildCommenterNotificationTemplateVariables(NotificationEventRequest event,
+                                                                            DocumentInformation document,
+                                                                            Map<String, User> emailToUserMap,
+                                                                            String triggerUsername) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("baseUrl", baseUrl);
+        vars.put("documentTitle", document.getFilename());
+        vars.put("moderatorUser", triggerUsername);
+        vars.put("documentId", document.getId());
+        vars.put("commentId", event.getCommentId());
+        vars.put("recipientMap", emailToUserMap);
+
+        return vars;
+    }
+
     private void sendBatchNotificationEmails(Collection<String> toEmails, String subject,
                                              String templateName, Map<String, Object> templateVars) {
         if (toEmails == null || toEmails.isEmpty()) {
@@ -134,19 +221,20 @@ public class DocumentEmailService extends EmailService {
                 .orElseThrow(() -> new RuntimeException("Document not found"));
     }
 
-    private Set<User> findUsersToNotify(DocumentInformation document, String triggerUsername) {
+    private Set<User> findUsersToNotify(DocumentInformation document, User triggerrUser) {
         // Get user IDs from document favorites
         Set<UUID> favoriteUserIds = documentFavoriteRepository.findUserIdsByDocumentId(document.getId());
 
         // Remove the trigger user from notifications if they favorited the document
-        userRepository.findByUsername(triggerUsername)
-                .ifPresent(user -> favoriteUserIds.remove(user.getUserId()));
+        if (Objects.nonNull(triggerrUser)) {
+            favoriteUserIds.removeIf(userId -> userId.equals(triggerrUser.getUserId()));
+        }
 
         // Fetch all users that need to be notified
         return new HashSet<>(userRepository.findUsersByUserIdIn(favoriteUserIds));
     }
 
-    private void sendNotifications(Set<User> users, DocumentInformation document,
+    private void sendNotifications(Set<User> users, User triggerUser, DocumentInformation document,
                                    NotificationEventRequest event) {
         Map<String, User> emailToUserMap = users.stream()
                 .filter(user -> user.getEmail() != null && !user.getEmail().isEmpty())
@@ -160,7 +248,7 @@ public class DocumentEmailService extends EmailService {
                     emailToUserMap.keySet(),
                     subject,
                     template,
-                    buildTemplateVariables(event, document, emailToUserMap)
+                    buildTemplateVariables(event, document, emailToUserMap, triggerUser.getUsername())
             );
         }
     }
@@ -183,11 +271,12 @@ public class DocumentEmailService extends EmailService {
 
     private Map<String, Object> buildTemplateVariables(NotificationEventRequest event,
                                                        DocumentInformation document,
-                                                       Map<String, User> emailToUserMap) {
+                                                       Map<String, User> emailToUserMap,
+                                                       String triggerUsername) {
         Map<String, Object> vars = new HashMap<>();
         vars.put("baseUrl", baseUrl);
         vars.put("documentTitle", document.getFilename());
-        vars.put("triggerUser", event.getTriggerUsername());
+        vars.put("triggerUser", triggerUsername);
         vars.put("documentId", document.getId());
         vars.put("recipientMap", emailToUserMap);
 
@@ -283,8 +372,8 @@ public class DocumentEmailService extends EmailService {
 
     private String determineReportStatusTemplate(String actionType) {
         return switch (actionType) {
-            case "resolved" -> "report-resolved-notification";
-            case "remediated" -> "document-remediated-notification";
+            case "resolved" -> "document-report-resolved-notification";
+            case "remediated" -> "document-report-remediated-notification";
             default -> "report-status-notification";
         };
     }
@@ -300,6 +389,40 @@ public class DocumentEmailService extends EmailService {
         vars.put("documentId", document.getId());
         vars.put("recipientMap", emailToUserMap);
         vars.put("actionType", actionType);
+
+        return vars;
+    }
+
+    private void sendCommentReportEmails(Set<User> reporters, User triggerUser,
+                                         DocumentInformation document,
+                                         NotificationEventRequest event) {
+        Map<String, User> emailToUserMap = reporters.stream()
+                .filter(user -> user.getEmail() != null && !user.getEmail().isEmpty())
+                .collect(Collectors.toMap(User::getEmail, user -> user));
+
+        if (!emailToUserMap.isEmpty()) {
+            String subject = "Comment report processed for document: " + document.getFilename();
+
+            sendBatchNotificationEmails(
+                    emailToUserMap.keySet(),
+                    subject,
+                    "comment-report-processed-notification",
+                    buildCommentReportTemplateVariables(event, document, emailToUserMap, triggerUser.getUsername())
+            );
+        }
+    }
+
+    private Map<String, Object> buildCommentReportTemplateVariables(NotificationEventRequest event,
+                                                                    DocumentInformation document,
+                                                                    Map<String, User> emailToUserMap,
+                                                                    String triggerUsername) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("baseUrl", baseUrl);
+        vars.put("documentTitle", document.getFilename());
+        vars.put("resolverUser", triggerUsername);
+        vars.put("documentId", document.getId());
+        vars.put("commentId", event.getCommentId());
+        vars.put("recipientMap", emailToUserMap);
 
         return vars;
     }

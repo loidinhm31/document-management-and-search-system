@@ -9,6 +9,7 @@
     "cancel": "Cancel",
     "save": "Save",
     "create": "Create",
+    "confirm": "Confirm",
     "confirmDelete": {
       "title": "Confirm Delete",
       "description": "Are you sure you want to delete this item? This action cannot be undone."

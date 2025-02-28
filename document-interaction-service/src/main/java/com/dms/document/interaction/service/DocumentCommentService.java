@@ -128,7 +128,7 @@ public class DocumentCommentService {
 
             // Only notify if this is a new commenter
             documentNotificationService.handleCommentNotification(
-                    documentId,
+                    documentInformation,
                     username,
                     userResponse.userId(),
                     savedComment.getId()

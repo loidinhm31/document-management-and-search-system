@@ -543,11 +543,11 @@ export default function DocumentReportsTab() {
                 <SelectValue placeholder={t("admin.reports.documents.dialogs.process.selectStatus")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="RESOLVED">
+                <SelectItem value="RESOLVED" disabled={selectedReport?.status !== "REMEDIATED" && selectedReport?.status !== "PENDING"}>
                   {t("admin.reports.documents.status.resolved")} -{" "}
                   {t("admin.reports.documents.dialogs.process.resolvedDescription")}
                 </SelectItem>
-                <SelectItem value="REMEDIATED">
+                <SelectItem value="REMEDIATED" disabled={selectedReport?.status === "RESOLVED" || selectedReport?.status === "PENDING"}>
                   {t("admin.reports.documents.status.remediated")} -{" "}
                   {t("admin.reports.documents.dialogs.process.remediatedDescription")}
                 </SelectItem>

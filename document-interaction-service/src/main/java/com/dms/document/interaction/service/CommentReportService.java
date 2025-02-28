@@ -24,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -36,6 +38,7 @@ public class CommentReportService {
     private final MasterDataRepository masterDataRepository;
     private final UserClient userClient;
     private final ReportTypeMapper reportTypeMapper;
+    private final DocumentNotificationService documentNotificationService;
 
     @Transactional
     public CommentReportResponse createReport(String documentId, Long commentId, CommentReportRequest request, String username) {
@@ -116,14 +119,19 @@ public class CommentReportService {
         commentReportRepository.saveAll(commentReports);
 
         // Resolve actual comment
+        AtomicReference<String> documentId = new AtomicReference<>();
         documentCommentRepository.findByDocumentIdAndId(commentReports.get(0).getDocumentId(), commentId)
-                .ifPresent(documentComment -> {
-                    documentComment.setContent("[deleted]");
-                    documentComment.setFlag(-1);
-                    documentComment.setUpdatedAt(Instant.now());
+                .ifPresent(dc -> {
+                    documentId.set(dc.getDocumentId());
+                    dc.setContent("[deleted]");
+                    dc.setFlag(-1);
+                    dc.setUpdatedAt(Instant.now());
                 });
 
-        // TODO: Notify user of resolution
+        CompletableFuture.runAsync(() -> {
+            // Notify user of resolution
+             documentNotificationService.sendCommentReportResolvedNotification(documentId.get(), commentId, resolved, admin.userId());
+        });
     }
 
     @Transactional(readOnly = true)
