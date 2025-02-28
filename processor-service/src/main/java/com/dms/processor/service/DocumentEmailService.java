@@ -42,8 +42,10 @@ public class DocumentEmailService extends EmailService {
 
     @Autowired
     private DocumentReportRepository documentReportRepository;
+
     @Autowired
     private CommentReportRepository commentReportRepository;
+
     @Autowired
     private DocumentCommentRepository documentCommentRepository;
 
@@ -66,20 +68,31 @@ public class DocumentEmailService extends EmailService {
         Optional<User> resolver = userRepository.findById(UUID.fromString(resolverId));
         String resolvedByUsername = resolver.map(User::getUsername).orElse("Unknown");
 
+        User creator = userRepository.findById(UUID.fromString(document.getUserId()))
+                .orElse(null);
         Set<User> favoriters = findFavoriters(document);
         Set<User> reporters = findReporters(document);
 
-        // Combine both sets while avoiding duplicates
-        Set<User> allRecipients = new HashSet<>();
-        allRecipients.addAll(favoriters);
-        allRecipients.addAll(reporters);
+        if (Objects.nonNull(creator)) {
+            sendMailToCreator("Your document has been removed", "document-report-resolved-creator-notification",
+                    creator, document, resolvedByUsername);
+            log.info("Sent report resolved notification emails to creator for document: {}", document.getId());
+        }
 
-        if (CollectionUtils.isNotEmpty(allRecipients)) {
-            sendReportStatusEmails(allRecipients, document, resolvedByUsername, "resolved");
-            log.info("Sent report resolved notification emails to {} users for document: {}",
-                    allRecipients.size(), document.getId());
-        } else {
-            log.info("No recipients found for report status notification for document: {}", document.getId());
+        if (CollectionUtils.isNotEmpty(reporters)) {
+            sendReportStatusEmails(reporters, document, resolvedByUsername,
+                    String.format("Report resolved for document: %s", document.getFilename()),
+                    "document-report-resolved-reporter-notification");
+            log.info("Sent report resolved notification emails to {} reporters for document: {}",
+                    reporters.size(), document.getId());
+        }
+
+        if (CollectionUtils.isNotEmpty(favoriters)) {
+            sendReportStatusEmails(reporters, document, resolvedByUsername,
+                    String.format("Favorite document removed: %s No Longer Available", document.getFilename()),
+                    "document-report-resolved-favoriter-notification");
+            log.info("Sent report removed notification emails to {} favoriters for document: {}",
+                    favoriters.size(), document.getId());
         }
     }
 
@@ -87,14 +100,22 @@ public class DocumentEmailService extends EmailService {
         Optional<User> remediator = userRepository.findById(UUID.fromString(remediatorId));
         String remediatedByUsername = remediator.map(User::getUsername).orElse("Unknown");
 
+        User creator = userRepository.findById(UUID.fromString(document.getUserId()))
+                .orElse(null);
         Set<User> favoriters = findFavoriters(document);
 
+        if (Objects.nonNull(creator)) {
+            sendMailToCreator("Your document is now available", "document-report-remediated-creator-notification",
+                    creator, document, remediatedByUsername);
+            log.info("Sent report remediation notification emails to creator for document: {}", document.getId());
+        }
+
         if (CollectionUtils.isNotEmpty(favoriters)) {
-            sendReportStatusEmails(favoriters, document, remediatedByUsername, "remediated");
-            log.info("Sent report remediation notification emails to {} users for document: {}",
+            sendReportStatusEmails(favoriters, document, remediatedByUsername,
+                    String.format("Document remediated: %s", document.getFilename()),
+                    "document-report-remediated-notification");
+            log.info("Sent report remediation notification emails to {} favoriters for document: {}",
                     favoriters.size(), document.getId());
-        } else {
-            log.info("No recipients found for remediation notification for document: {}", document.getId());
         }
     }
 
@@ -128,14 +149,13 @@ public class DocumentEmailService extends EmailService {
         }
 
         // Send notification to the commenter
-        sendCommenterNotificationEmail(commenter, triggerUser, document, notificationEvent, documentComment);
+        sendCommenterNotificationEmail(commenter, triggerUser, document, notificationEvent);
         log.info("Sent comment report notification email to commenter: {}", commenter.getUsername());
     }
 
     private void sendCommenterNotificationEmail(User commenter, User triggerUser,
                                                 DocumentInformation document,
-                                                NotificationEventRequest event,
-                                                DocumentComment documentComment) {
+                                                NotificationEventRequest event) {
         if (commenter == null || commenter.getEmail() == null || commenter.getEmail().isEmpty()) {
             log.warn("Cannot send commenter notification: invalid commenter or email");
             return;
@@ -143,20 +163,12 @@ public class DocumentEmailService extends EmailService {
 
         String subject = "Your comment has been moderated in document: " + document.getFilename();
 
-        Map<String, User> emailToUserMap = new HashMap<>();
-        emailToUserMap.put(commenter.getEmail(), commenter);
-
         Map<String, Object> templateVars = buildCommenterNotificationTemplateVariables(
-                event, document, emailToUserMap, triggerUser.getUsername());
-
+                event, document, commenter, triggerUser.getUsername());
         try {
-            // Create a copy of template vars for this specific recipient
-            Map<String, Object> personalizedVars = new HashMap<>(templateVars);
-            personalizedVars.put("recipientName", commenter.getUsername());
-
             // Prepare email content
             Context context = new Context();
-            context.setVariables(personalizedVars);
+            context.setVariables(templateVars);
             String htmlContent = templateEngine.process("comment-report-moderation-notification", context);
 
             sendEmail(commenter.getEmail(), subject, htmlContent);
@@ -168,7 +180,7 @@ public class DocumentEmailService extends EmailService {
 
     private Map<String, Object> buildCommenterNotificationTemplateVariables(NotificationEventRequest event,
                                                                             DocumentInformation document,
-                                                                            Map<String, User> emailToUserMap,
+                                                                            User commenter,
                                                                             String triggerUsername) {
         Map<String, Object> vars = new HashMap<>();
         vars.put("baseUrl", baseUrl);
@@ -176,7 +188,7 @@ public class DocumentEmailService extends EmailService {
         vars.put("moderatorUser", triggerUsername);
         vars.put("documentId", document.getId());
         vars.put("commentId", event.getCommentId());
-        vars.put("recipientMap", emailToUserMap);
+        vars.put("recipientName", commenter.getUsername());
 
         return vars;
     }
@@ -344,51 +356,48 @@ public class DocumentEmailService extends EmailService {
     }
 
     private void sendReportStatusEmails(Set<User> recipients, DocumentInformation document,
-                                        String actionUsername, String actionType) {
+                                        String actionUsername, String subject, String emailTemplate) {
         Map<String, User> emailToUserMap = recipients.stream()
                 .filter(user -> user.getEmail() != null && !user.getEmail().isEmpty())
                 .collect(Collectors.toMap(User::getEmail, user -> user));
 
         if (!emailToUserMap.isEmpty()) {
-            String subject = buildReportStatusEmailSubject(document, actionType);
-            String template = determineReportStatusTemplate(actionType);
 
             sendBatchNotificationEmails(
                     emailToUserMap.keySet(),
                     subject,
-                    template,
-                    buildReportStatusTemplateVariables(document, actionUsername, emailToUserMap, actionType)
+                    emailTemplate,
+                    buildReportStatusTemplateVariables(document, actionUsername, emailToUserMap)
             );
         }
     }
 
-    private String buildReportStatusEmailSubject(DocumentInformation document, String actionType) {
-        return switch (actionType) {
-            case "resolved" -> String.format("Report resolved for document: %s", document.getFilename());
-            case "remediated" -> String.format("Document remediated: %s", document.getFilename());
-            default -> String.format("Document report status updated: %s", document.getFilename());
-        };
-    }
+    private void sendMailToCreator(String subject, String templateName, User creator, DocumentInformation document, String resolvedByUsername) {
+        try {
+            Context context = new Context();
+            context.setVariable("baseUrl", baseUrl);
+            context.setVariable("documentTitle", document.getFilename());
+            context.setVariable("actionUser", resolvedByUsername);
+            context.setVariable("documentId", document.getId());
+            context.setVariable("recipientName", creator.getUsername());
 
-    private String determineReportStatusTemplate(String actionType) {
-        return switch (actionType) {
-            case "resolved" -> "document-report-resolved-notification";
-            case "remediated" -> "document-report-remediated-notification";
-            default -> "report-status-notification";
-        };
+            String htmlContent = templateEngine.process(templateName, context);
+
+            sendEmail(creator.getEmail(), subject, htmlContent);
+        } catch (MessagingException e) {
+            log.error("Failed to send email to creator: {}", creator.getEmail(), e);
+        }
     }
 
     private Map<String, Object> buildReportStatusTemplateVariables(DocumentInformation document,
                                                                    String actionUsername,
-                                                                   Map<String, User> emailToUserMap,
-                                                                   String actionType) {
+                                                                   Map<String, User> emailToUserMap) {
         Map<String, Object> vars = new HashMap<>();
         vars.put("baseUrl", baseUrl);
         vars.put("documentTitle", document.getFilename());
         vars.put("actionUser", actionUsername);
         vars.put("documentId", document.getId());
         vars.put("recipientMap", emailToUserMap);
-        vars.put("actionType", actionType);
 
         return vars;
     }

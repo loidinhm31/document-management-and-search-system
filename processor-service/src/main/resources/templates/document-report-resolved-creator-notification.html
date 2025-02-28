@@ -3,21 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Resolved Notification</title>
-    <!--[if mso]>
-    <style type="text/css">
-        table {border-collapse: collapse; border-spacing: 0; margin: 0;}
-        div, td {padding: 0;}
-        div {margin: 0 !important;}
-    </style>
-    <noscript>
-        <xml>
-            <o:OfficeDocumentSettings>
-                <o:PixelsPerInch>96</o:PixelsPerInch>
-            </o:OfficeDocumentSettings>
-        </xml>
-    </noscript>
-    <![endif]-->
+    <title>Important Notice About Your Document</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="min-width: 100%; background-color: #f8fafc;">
@@ -34,10 +20,9 @@
                 <!-- Content -->
                 <tr>
                     <td align="left" valign="top" style="background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                        <p>Hello <span style="font-weight: 600; color: #334155;" th:text="${recipientMap.get(#ctx.supervisorVariables.get('current_user')?.name ?: '').username ?: 'User'}">User</span>,</p>
-
+                        <p>Hello <span style="font-weight: 600; color: #334155;" th:text="${recipientName ?: 'User'}">User</span>,</p>
                         <p>
-                            A report for document has been resolved:
+                            We're writing to inform you that a document you created has been reviewed following a report:
                         </p>
 
                         <!-- Document info box -->
@@ -45,50 +30,39 @@
                             <tr>
                                 <td style="padding: 15px;">
                                     <h3 style="margin-top: 0; margin-bottom: 10px;" th:text="${documentTitle}">Document Title</h3>
-                                    <p style="margin: 0; color: #64748b;">Resolved by: <span style="font-weight: 600;" th:text="${actionUser}">Administrator</span></p>
-                                    <p style="margin: 0; color: #64748b;">Resolved on: <span th:text="${#dates.format(#dates.createNow(), 'dd MMM yyyy, HH:mm')}">01 Jan 2023</span></p>
+                                    <p style="margin: 0; color: #64748b;">Reviewed by: <span style="font-weight: 600;" th:text="${actionUser}">Administrator</span></p>
+                                    <p style="margin: 0; color: #64748b;">Decision date: <span th:text="${#dates.format(#dates.createNow(), 'dd MMM yyyy, HH:mm')}">01 Jan 2023</span></p>
                                 </td>
                             </tr>
                         </table>
 
-                        <!-- Resolution notice box -->
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f0fdfa; border: 1px solid #d1fae5; border-left: 4px solid #10b981; border-radius: 6px; margin: 20px 0;">
+                        <!-- Violation notice box -->
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #dc2626; border-radius: 6px; margin: 20px 0;">
                             <tr>
                                 <td style="padding: 15px;">
                                     <p style="margin-top: 0;">
-                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; position: relative; top: 2px; margin-right: 5px; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);"></span>
-                                        Resolution status:
+                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: #dc2626; border-radius: 50%; position: relative; top: 2px; margin-right: 5px; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.3);"></span>
+                                        Document status:
                                     </p>
                                     <p style="text-align: center; margin: 15px 0;">
-                                        <span style="display: inline-block; background-color: #10b981; color: #ffffff; border-radius: 9999px; padding: 3px 10px; font-size: 14px; font-weight: 600;">Resolved</span>
+                                        <span style="display: inline-block; background-color: #dc2626; color: #ffffff; border-radius: 9999px; padding: 3px 10px; font-size: 14px; font-weight: 600;">Removed</span>
                                     </p>
                                     <p style="margin-bottom: 0; font-style: italic; color: #64748b; font-size: 14px;">
-                                        The document has been reviewed and the report has been marked as resolved. The document is now available again in the system.
+                                        Following our review, this document has been found to violate our content policies and has been removed from the system.
                                     </p>
                                 </td>
                             </tr>
                         </table>
 
-                        <p>You can view the document by clicking the button below:</p>
+                        <p>What this means:</p>
+                        <ul style="margin-top: 5px; color: #475569;">
+                            <li>The document is no longer accessible to any users</li>
+                            <li>It has been removed from all favorites lists</li>
+                        </ul>
 
-                        <!-- Button (made with table for better email compatibility) -->
-                        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 15px auto;">
-                            <tr>
-                                <td align="center" style="background-color: #fbbf24; border-radius: 4px;">
-                                    <a th:href="${baseUrl + '/discover/' + documentId}" style="display: inline-block; padding: 10px 20px; color: #1e293b; text-decoration: none; font-weight: 500;">View Document</a>
-                                </td>
-                            </tr>
-                        </table>
+                        <p>If you believe this decision was made in error or have any questions about this action, please contact an administrator directly for further assistance.</p>
 
-                        <p>
-                            If you're having trouble with the button above, you can also copy and paste the following link into your browser:
-                        </p>
 
-                        <p style="word-break: break-all; background-color: #f8fafc; padding: 10px; border-radius: 4px; font-size: 14px;">
-                            <span th:text="${baseUrl + '/discover/' + documentId}">https://example.com/documents/123</span>
-                        </p>
-
-                        <p>Thank you for your contribution to maintaining the quality of our document repository.</p>
 
                         <!-- Footer -->
                         <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px; border-top: 1px solid #e2e8f0;">

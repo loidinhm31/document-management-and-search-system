@@ -1,4 +1,3 @@
-// src/pages/document/discover/document-detail-page.tsx
 import { ArrowLeft, Calendar, Languages, Loader2, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -51,8 +50,6 @@ export default function DocumentDetailPage() {
     return new Date(dateString).toLocaleString();
   };
 
-  const { role } = useAuth();
-  console.log("Role", role);
 
   const handleFavorite = async () => {
     if (!documentId) return;

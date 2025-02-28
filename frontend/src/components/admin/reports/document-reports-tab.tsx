@@ -393,7 +393,7 @@ export default function DocumentReportsTab() {
                           report.status === "RESOLVED"
                             ? "bg-green-50 text-green-700 ring-green-600/20"
                             : report.status === "REMEDIATED"
-                              ? "bg-yellow-50 text-orange-700 ring-orange-600/2"
+                              ? "bg-amber-50 text-amber-700 ring-amber-600/20"
                               : "bg-red-50 text-red-700 ring-red-600/20"
                         }`}
                     >
@@ -547,7 +547,7 @@ export default function DocumentReportsTab() {
                   {t("admin.reports.documents.status.resolved")} -{" "}
                   {t("admin.reports.documents.dialogs.process.resolvedDescription")}
                 </SelectItem>
-                <SelectItem value="REMEDIATED" disabled={selectedReport?.status === "RESOLVED" || selectedReport?.status === "PENDING"}>
+                <SelectItem value="REMEDIATED" disabled={selectedReport?.status === "REMEDIATED" || selectedReport?.status === "PENDING"}>
                   {t("admin.reports.documents.status.remediated")} -{" "}
                   {t("admin.reports.documents.dialogs.process.remediatedDescription")}
                 </SelectItem>

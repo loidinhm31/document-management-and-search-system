@@ -269,6 +269,7 @@
       "notFound": "Resource not found",
       "serverError": "Internal server error occurred",
       "networkError": "Network error. Please check your connection",
+      "badRequest": "Bad request. Please check your input",
       "unknown": "An unknown error occurred"
     }
   },

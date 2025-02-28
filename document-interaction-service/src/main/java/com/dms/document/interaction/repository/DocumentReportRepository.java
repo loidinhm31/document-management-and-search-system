@@ -25,6 +25,10 @@ public interface DocumentReportRepository extends JpaRepository<DocumentReport, 
 
     List<DocumentReport> findByDocumentIdIn(Collection<String> documentIds);
 
+    int countByDocumentId(String documentId);
+
+    List<DocumentReport> findByDocumentId(String documentId);
+
     @Query(value = """
             SELECT DISTINCT r.document_id FROM document_reports r
             WHERE (:status IS NULL OR r.status = :status)

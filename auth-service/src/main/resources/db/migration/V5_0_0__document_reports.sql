@@ -5,11 +5,10 @@ CREATE TABLE document_reports
     user_id          UUID                     NOT NULL,
     report_type_code VARCHAR(50)              NOT NULL,
     description      VARCHAR(1000),
-    resolved         BOOLEAN DEFAULT FALSE,
     created_at       TIMESTAMP WITH TIME ZONE NOT NULL,
     status           VARCHAR(50)              NOT NULL,
-    updated_by      VARCHAR(100),
-    updated_at      TIMESTAMP WITH TIME ZONE,
+    updated_by       UUID,
+    updated_at       TIMESTAMP WITH TIME ZONE,
     CONSTRAINT uk_document_reports_user UNIQUE (document_id, user_id)
 );
 

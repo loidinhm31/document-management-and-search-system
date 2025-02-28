@@ -174,7 +174,7 @@ public class DocumentReportService {
 
         // For each document ID, find the latest report
         for (String docId : documentIds) {
-            List<DocumentReport> reports = documentReportRepository.findByDocumentIdIn(Collections.singletonList(docId));
+            List<DocumentReport> reports = documentReportRepository.findByDocumentId(docId);
             if (!reports.isEmpty()) {
                 // Sort reports by creation date (newest first)
                 reports.sort(Comparator.comparing(DocumentReport::getCreatedAt).reversed());
@@ -194,7 +194,7 @@ public class DocumentReportService {
             if (primaryReport == null) continue;
 
             // Count reports for this document
-            int reportCount = documentReportRepository.findByDocumentIdIn(Collections.singletonList(docId)).size();
+            int reportCount = documentReportRepository.countByDocumentId(docId);
 
             responses.add(new AdminDocumentReportResponse(
                     docId,
@@ -218,7 +218,7 @@ public class DocumentReportService {
 
     @Transactional(readOnly = true)
     public List<DocumentReportDetail> getDocumentReportDetails(String documentId) {
-        List<DocumentReport> reports = documentReportRepository.findByDocumentIdIn(Collections.singletonList(documentId));
+        List<DocumentReport> reports = documentReportRepository.findByDocumentId(documentId);
 
         if (reports.isEmpty()) {
             return Collections.emptyList();
