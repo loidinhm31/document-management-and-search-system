@@ -1,11 +1,11 @@
+import { AlertCircle } from "lucide-react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import DocumentReportsTab from "@/components/admin/reports/document-reports-tab";
 import CommentReportsTab from "@/components/admin/reports/comment-reports-tab";
+import DocumentReportsTab from "@/components/admin/reports/document-reports-tab";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle } from "lucide-react";
 
 export default function ReportsManagementPage() {
   const { t } = useTranslation();

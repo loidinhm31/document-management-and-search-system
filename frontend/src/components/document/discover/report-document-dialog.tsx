@@ -143,7 +143,7 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
               <div className="grid gap-2">
                 <h4 className="font-medium">{t("document.report.statusLabel")}</h4>
                 <p className="text-sm text-muted-foreground">
-                  {existingReport.resolved ? t("document.report.status.resolved") : t("document.report.status.pending")}
+                  {existingReport.status === "RESOLVED" ? t("document.report.status.resolved") : existingReport.status === "PENDING" ? t("document.report.status.pending") : ""}
                 </p>
               </div>
             </div>

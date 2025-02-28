@@ -2,7 +2,7 @@ package com.dms.document.interaction.model;
 
 import com.dms.document.interaction.enums.DocumentStatus;
 import com.dms.document.interaction.enums.DocumentType;
-import com.dms.document.interaction.enums.ReportStatus;
+import com.dms.document.interaction.enums.DocumentReportStatus;
 import com.dms.document.interaction.enums.SharingType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -118,7 +118,7 @@ public class DocumentInformation {
     private String updatedBy;
 
     @Field("report_status")
-    private ReportStatus reportStatus;
+    private DocumentReportStatus documentReportStatus;
 
     @Field("recommendation_count")
     private Integer recommendationCount;

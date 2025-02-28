@@ -1,7 +1,9 @@
 package com.dms.processor.service;
 
 import com.dms.processor.dto.NotificationEventRequest;
+import com.dms.processor.enums.CommentReportStatus;
 import com.dms.processor.enums.NotificationType;
+import com.dms.processor.model.CommentReport;
 import com.dms.processor.model.DocumentComment;
 import com.dms.processor.model.DocumentInformation;
 import com.dms.processor.model.User;
@@ -64,7 +66,25 @@ public class DocumentEmailService extends EmailService {
         }
     }
 
-    public void sendReportStatusNotifications(DocumentInformation document, String resolverId) {
+    public void sendDocumentReportRejectionNotifications(DocumentInformation document, String rejecterId) {
+        Optional<User> rejecter = userRepository.findById(UUID.fromString(rejecterId));
+        String rejectedByUsername = rejecter.map(User::getUsername).orElse("Unknown");
+
+        Set<User> reporters = findReporters(document);
+
+        if (CollectionUtils.isNotEmpty(reporters)) {
+            sendReportStatusEmails(reporters, document, rejectedByUsername,
+                    String.format("Update on your report for document: %s", document.getFilename()),
+                    "document-report-rejected-reporter-notification");
+
+            log.info("Sent report rejection notification emails to {} reporters for document: {}",
+                    reporters.size(), document.getId());
+        } else {
+            log.info("No reporters found for document: {}", document.getId());
+        }
+    }
+
+    public void sendResolveNotifications(DocumentInformation document, String resolverId) {
         Optional<User> resolver = userRepository.findById(UUID.fromString(resolverId));
         String resolvedByUsername = resolver.map(User::getUsername).orElse("Unknown");
 
@@ -77,6 +97,8 @@ public class DocumentEmailService extends EmailService {
             sendMailToCreator("Your document has been removed", "document-report-resolved-creator-notification",
                     creator, document, resolvedByUsername);
             log.info("Sent report resolved notification emails to creator for document: {}", document.getId());
+        } else {
+            log.info("No creator found for report notification for document: {}", document.getId());
         }
 
         if (CollectionUtils.isNotEmpty(reporters)) {
@@ -85,6 +107,8 @@ public class DocumentEmailService extends EmailService {
                     "document-report-resolved-reporter-notification");
             log.info("Sent report resolved notification emails to {} reporters for document: {}",
                     reporters.size(), document.getId());
+        } else {
+            log.info("No reporters found for report notification for document: {}", document.getId());
         }
 
         if (CollectionUtils.isNotEmpty(favoriters)) {
@@ -93,10 +117,12 @@ public class DocumentEmailService extends EmailService {
                     "document-report-resolved-favoriter-notification");
             log.info("Sent report removed notification emails to {} favoriters for document: {}",
                     favoriters.size(), document.getId());
+        } else {
+            log.info("No favoriter found for report notification for document: {}", document.getId());
         }
     }
 
-    public void sendRemediationNotifications(DocumentInformation document, String remediatorId) {
+    public void sendReportRemediationNotifications(DocumentInformation document, String remediatorId) {
         Optional<User> remediator = userRepository.findById(UUID.fromString(remediatorId));
         String remediatedByUsername = remediator.map(User::getUsername).orElse("Unknown");
 
@@ -124,14 +150,13 @@ public class DocumentEmailService extends EmailService {
         DocumentInformation document = findDocument(notificationEvent.getDocumentId());
 
         // Get comment reporters
-        Set<UUID> reporterUserIds = commentReportRepository.findReporterUserIdsByCommentId(notificationEvent.getCommentId());
+        Set<UUID> reporterUserIds = commentReportRepository.findReporterUserIdsByCommentIdAndProcessed(notificationEvent.getCommentId(), Boolean.FALSE);
         Set<User> reporters = new HashSet<>(userRepository.findUsersByUserIdIn(reporterUserIds));
 
-        // Get commenter - Note: Comment content may have been removed/moderated already
+        // Get commenter
         DocumentComment documentComment = documentCommentRepository.findByDocumentIdAndId(document.getId(), notificationEvent.getCommentId())
                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
-        // Even if comment content was removed, we still need the user who made it
         User commenter = userRepository.findById(documentComment.getUserId())
                 .orElseThrow(() -> new RuntimeException("Commenter user not found"));
 
@@ -139,23 +164,45 @@ public class DocumentEmailService extends EmailService {
         User triggerUser = userRepository.findById(UUID.fromString(notificationEvent.getTriggerUserId()))
                 .orElseThrow(() -> new RuntimeException("Trigger user not found"));
 
-        // Send notification to reporters
-        if (CollectionUtils.isNotEmpty(reporters)) {
-            sendCommentReportEmails(reporters, triggerUser, document, notificationEvent);
-            log.info("Sent comment report notification emails to {} reporters for comment: {}",
-                    reporters.size(), notificationEvent.getCommentId());
-        } else {
-            log.info("No reporters found for comment report notification for comment: {}", notificationEvent.getCommentId());
-        }
+        if (documentComment.getFlag() == -1) {
+            // Send notification to reporters
+            if (CollectionUtils.isNotEmpty(reporters)) {
+                sendCommentResolveReporterNotifications(reporters, triggerUser, document, notificationEvent);
+                log.info("Sent comment report notification emails to {} reporters for comment: {}",
+                        reporters.size(), notificationEvent.getCommentId());
+            } else {
+                log.info("No reporters found for comment report notification for comment: {}", notificationEvent.getCommentId());
+            }
 
-        // Send notification to the commenter
-        sendCommenterNotificationEmail(commenter, triggerUser, document, notificationEvent);
-        log.info("Sent comment report notification email to commenter: {}", commenter.getUsername());
+            if (Objects.nonNull(commenter)) {
+                // Send notification to the commenter
+                sendCommentResolveCommenterNotifications(commenter, triggerUser, document, notificationEvent);
+                log.info("Sent comment report notification email to commenter: {}", commenter.getUsername());
+            } else {
+                log.info("No commenter found for comment report notification for comment: {}", notificationEvent.getCommentId());
+            }
+        } else if (documentComment.getFlag() == 1) {
+            List<CommentReport> commentReports = commentReportRepository.findByCommentIdAndProcessed(notificationEvent.getCommentId(), Boolean.FALSE);
+            Set<UUID> reporterUUIDs = commentReports.stream()
+                    .filter(cr -> cr.getStatus() == CommentReportStatus.REJECTED)
+                    .map(CommentReport::getUserId)
+                    .collect(Collectors.toSet());
+
+            // Send reject mail to reporters
+            if (CollectionUtils.isNotEmpty(reporterUUIDs)) {
+                Set<User> rejectedReporters = new HashSet<>(userRepository.findUsersByUserIdIn(reporterUUIDs));
+                sendCommentRejectionReporterNotifications(rejectedReporters, triggerUser, document, notificationEvent, documentComment);
+                log.info("Sent comment report rejection notification emails to {} reporters for comment: {}",
+                        rejectedReporters.size(), notificationEvent.getCommentId());
+            } else {
+                log.info("No reporters with rejected status found for comment: {}", notificationEvent.getCommentId());
+            }
+        }
     }
 
-    private void sendCommenterNotificationEmail(User commenter, User triggerUser,
-                                                DocumentInformation document,
-                                                NotificationEventRequest event) {
+    private void sendCommentResolveCommenterNotifications(User commenter, User triggerUser,
+                                                          DocumentInformation document,
+                                                          NotificationEventRequest event) {
         if (commenter == null || commenter.getEmail() == null || commenter.getEmail().isEmpty()) {
             log.warn("Cannot send commenter notification: invalid commenter or email");
             return;
@@ -189,6 +236,44 @@ public class DocumentEmailService extends EmailService {
         vars.put("documentId", document.getId());
         vars.put("commentId", event.getCommentId());
         vars.put("recipientName", commenter.getUsername());
+
+        return vars;
+    }
+
+    private void sendCommentRejectionReporterNotifications(Set<User> reporters, User triggerUser,
+                                                           DocumentInformation document,
+                                                           NotificationEventRequest event,
+                                                           DocumentComment comment) {
+        Map<String, User> emailToUserMap = reporters.stream()
+                .filter(user -> user.getEmail() != null && !user.getEmail().isEmpty())
+                .collect(Collectors.toMap(User::getEmail, user -> user));
+
+        if (!emailToUserMap.isEmpty()) {
+            String subject = "Comment Report Decision: Report Rejected";
+
+            sendBatchNotificationEmails(
+                    emailToUserMap.keySet(),
+                    subject,
+                    "comment-report-rejected-reporter-notification",
+                    buildCommentReportRejectionTemplateVariables(event, document, emailToUserMap,
+                            triggerUser.getUsername(), comment)
+            );
+        }
+    }
+
+    private Map<String, Object> buildCommentReportRejectionTemplateVariables(NotificationEventRequest event,
+                                                                             DocumentInformation document,
+                                                                             Map<String, User> emailToUserMap,
+                                                                             String triggerUsername,
+                                                                             DocumentComment comment) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("baseUrl", baseUrl);
+        vars.put("documentTitle", document.getFilename());
+        vars.put("resolverUser", triggerUsername);
+        vars.put("documentId", document.getId());
+        vars.put("commentId", event.getCommentId());
+        vars.put("commentContent", comment.getContent());
+        vars.put("recipientMap", emailToUserMap);
 
         return vars;
     }
@@ -336,7 +421,7 @@ public class DocumentEmailService extends EmailService {
     }
 
     private Set<User> findReporters(DocumentInformation document) {
-        Set<UUID> reporterUserIds = documentReportRepository.findReporterUserIdsByDocumentId(document.getId());
+        Set<UUID> reporterUserIds = documentReportRepository.findReporterUserIdsByDocumentIdAndProcessed(document.getId(), Boolean.FALSE);
 
         if (CollectionUtils.isEmpty(reporterUserIds)) {
             return new HashSet<>();
@@ -402,9 +487,9 @@ public class DocumentEmailService extends EmailService {
         return vars;
     }
 
-    private void sendCommentReportEmails(Set<User> reporters, User triggerUser,
-                                         DocumentInformation document,
-                                         NotificationEventRequest event) {
+    private void sendCommentResolveReporterNotifications(Set<User> reporters, User triggerUser,
+                                                         DocumentInformation document,
+                                                         NotificationEventRequest event) {
         Map<String, User> emailToUserMap = reporters.stream()
                 .filter(user -> user.getEmail() != null && !user.getEmail().isEmpty())
                 .collect(Collectors.toMap(User::getEmail, user -> user));
@@ -415,7 +500,7 @@ public class DocumentEmailService extends EmailService {
             sendBatchNotificationEmails(
                     emailToUserMap.keySet(),
                     subject,
-                    "comment-report-processed-notification",
+                    "comment-report-resolved-reporter-notification",
                     buildCommentReportTemplateVariables(event, document, emailToUserMap, triggerUser.getUsername())
             );
         }

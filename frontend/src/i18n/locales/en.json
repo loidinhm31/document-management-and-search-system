@@ -10,6 +10,7 @@
     "save": "Save",
     "create": "Create",
     "confirm": "Confirm",
+    "close": "Close",
     "confirmDelete": {
       "title": "Confirm Delete",
       "description": "Are you sure you want to delete this item? This action cannot be undone."
@@ -431,6 +432,8 @@
           "documentTitle": "Search by document title",
           "uploaderUsername": "Search by uploader",
           "status": "Status",
+          "reportType": "Report Type",
+          "allTypes": "All types",
           "allStatuses": "All statuses",
           "search": "Search",
           "reset": "Reset",
@@ -442,13 +445,14 @@
           "uploader": "Uploader",
           "reportCount": "Reports",
           "status": "Status",
-          "resolvedBy": "Resolved By",
+          "resolvedBy": "Updated By",
           "actions": "Actions"
         },
         "status": {
           "allStatuses": "All statuses",
           "pending": "Pending",
           "resolved": "Resolved",
+          "rejected": "Rejected",
           "remediated": "Violation Removed"
         },
         "actions": {
@@ -474,24 +478,20 @@
             "description": "Update status for \"{{document}}\"",
             "selectStatus": "Select new status",
             "resolvedDescription": "Hide document and prevent access",
-            "remediatedDescription": "Allow document to remain visible"
+            "remediatedDescription": "Allow document to remain visible",
+            "rejectedDescription": "Dismiss the report as invalid or not requiring action"
           },
           "resolve": {
             "title": "Resolve Report",
             "description": "Hide document \"{{document}}\" due to violation"
-          },
-          "remdiate": {
-            "title": "Remediate Report",
-            "description": "Make document \"{{document}}\" visible again"
           }
         }
       },
       "comments": {
         "fetchError": "Failed to fetch comment reports",
         "reasonsError": "Failed to fetch report reasons",
-        "resolveError": "Failed to update comment status",
-        "resolveSuccess": "Comment marked as resolved",
-        "remediateSuccess": "Comment marked as remediated",
+        "processError": "Failed to update comment status",
+        "processSuccess": "Comment Report processed successfully",
         "noReports": "No comment reports found",
         "contentRemoved": "Content removed due to policy violation",
         "filters": {
@@ -513,11 +513,12 @@
           "reportCount": "Reports",
           "status": "Status",
           "actions": "Actions",
-          "resolvedBy": "Resolved By"
+          "resolvedBy": "Updated By"
         },
         "status": {
           "resolved": "Resolved",
-          "pending": "Pending"
+          "pending": "Pending",
+          "rejected": "Rejected"
         },
         "actions": {
           "viewReasons": "View Reasons",
@@ -537,13 +538,20 @@
             "noReasons": "No report reasons found",
             "comment": "Comment content",
             "status": "Report status",
-            "resolvedBy": "Resolved by {{user}}"
+            "resolvedBy": "Resolved by {{user}}",
+            "resolvedDescription": "Remove comment content",
+            "rejectedDescription": "Dismiss the report as invalid or not requiring action"
+
           },
-          "resolve": {
+          "process": {
             "title": "Resolve Comment Report",
             "description": "Hide this comment due to violation",
             "warning": "This will remove the comment content and mark it as resolved. Users will no longer be able to see the content.",
-            "confirm": "Resolve"
+            "resolve": "Resolve",
+            "reject": "Reject",
+            "selectStatus": "Select new status",
+            "resolvedDescription": "Remove comment content",
+            "rejectedDescription": "Dismiss the report as invalid or not requiring action"
           },
           "pending": {
             "warning": "Are you sure you want to proceed?"

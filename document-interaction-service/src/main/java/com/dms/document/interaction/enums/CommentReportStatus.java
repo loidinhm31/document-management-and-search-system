@@ -1,8 +1,7 @@
 package com.dms.document.interaction.enums;
 
-public enum ReportStatus {
+public enum CommentReportStatus {
     PENDING,
-    REJECT,
+    REJECTED,
     RESOLVED,
-    REMEDIATED,
 }

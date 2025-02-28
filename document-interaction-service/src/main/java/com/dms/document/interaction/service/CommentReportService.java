@@ -3,11 +3,13 @@ package com.dms.document.interaction.service;
 import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.*;
 import com.dms.document.interaction.enums.AppRole;
+import com.dms.document.interaction.enums.CommentReportStatus;
 import com.dms.document.interaction.enums.MasterDataType;
 import com.dms.document.interaction.mapper.ReportTypeMapper;
 import com.dms.document.interaction.model.CommentReport;
 import com.dms.document.interaction.model.DocumentComment;
 import com.dms.document.interaction.model.MasterData;
+import com.dms.document.interaction.model.projection.CommentReportProjection;
 import com.dms.document.interaction.repository.CommentReportRepository;
 import com.dms.document.interaction.repository.DocumentCommentRepository;
 import com.dms.document.interaction.repository.MasterDataRepository;
@@ -26,7 +28,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,7 +55,7 @@ public class CommentReportService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid report type"));
 
         // Check if user has already reported this comment
-        if (commentReportRepository.existsByCommentIdAndUserId(commentId, userResponse.userId())) {
+        if (commentReportRepository.existsByCommentIdAndUserIdAndProcessed(commentId, userResponse.userId(), Boolean.FALSE)) {
             throw new IllegalStateException("You have already reported this comment");
         }
 
@@ -65,7 +66,8 @@ public class CommentReportService {
         report.setUserId(userResponse.userId());
         report.setReportTypeCode(reportType.getCode());
         report.setDescription(request.description());
-        report.setResolved(false);
+        report.setStatus(CommentReportStatus.PENDING);
+        report.setProcessed(Boolean.FALSE);
         report.setCreatedAt(Instant.now());
         report.setComment(documentComment);
 
@@ -78,7 +80,7 @@ public class CommentReportService {
     public Optional<CommentReportResponse> getUserReport(String documentId, Long commentId, String username) {
         UserResponse userResponse = getUserFromUsername(username);
 
-        return commentReportRepository.findByDocumentIdAndCommentIdAndUserId(documentId, commentId, userResponse.userId())
+        return commentReportRepository.findByDocumentIdAndCommentIdAndUserIdAndProcessed(documentId, commentId, userResponse.userId(), Boolean.FALSE)
                 .map(report -> {
                     MasterData reportType = masterDataRepository.findByTypeAndCode(
                             MasterDataType.REPORT_COMMENT_TYPE,
@@ -98,7 +100,7 @@ public class CommentReportService {
     @Transactional
     public void resolveCommentReport(
             Long commentId,
-            boolean resolved,
+            CommentReportStatus newStatus,
             String adminUsername) {
         UserResponse admin = getUserFromUsername(adminUsername);
         if (!admin.role().roleName().equals(AppRole.ROLE_ADMIN)) {
@@ -110,27 +112,33 @@ public class CommentReportService {
             throw new EntityNotFoundException("Comment report not found");
         }
 
-        Instant resolvedAt = Instant.now();
+        Instant updatedAt = Instant.now();
         commentReports.forEach(report -> {
-            report.setResolved(resolved);
-            report.setResolvedBy(admin.userId());
-            report.setResolvedAt(resolvedAt);
+            report.setStatus(newStatus);
+            report.setUpdatedBy(admin.userId());
+            report.setUpdatedAt(updatedAt);
+            if (newStatus == CommentReportStatus.RESOLVED || newStatus == CommentReportStatus.REJECTED) {
+                report.setProcessed(Boolean.TRUE);
+            }
         });
-        commentReportRepository.saveAll(commentReports);
 
         // Resolve actual comment
         AtomicReference<String> documentId = new AtomicReference<>();
         documentCommentRepository.findByDocumentIdAndId(commentReports.get(0).getDocumentId(), commentId)
                 .ifPresent(dc -> {
-                    documentId.set(dc.getDocumentId());
-                    dc.setContent("[deleted]");
-                    dc.setFlag(-1);
-                    dc.setUpdatedAt(Instant.now());
+                    if (newStatus == CommentReportStatus.RESOLVED) {
+                        documentId.set(dc.getDocumentId());
+                        dc.setContent("[deleted]");
+                        dc.setFlag(-1); // Flag -1 is deleted by reporter
+                        dc.setUpdatedAt(Instant.now());
+                    } else if (newStatus == CommentReportStatus.REJECTED) {
+                        dc.setFlag(1);
+                    }
                 });
 
         CompletableFuture.runAsync(() -> {
             // Notify user of resolution
-             documentNotificationService.sendCommentReportResolvedNotification(documentId.get(), commentId, resolved, admin.userId());
+            documentNotificationService.sendCommentReportResolvedNotification(documentId.get(), commentId, admin.userId());
         });
     }
 
@@ -140,117 +148,76 @@ public class CommentReportService {
             Instant toDate,
             String commentContent,
             String reportTypeCode,
-            Boolean resolved,
+            CommentReportStatus status,
             Pageable pageable) {
 
-        // Fetch comment reports with pagination and filters
-        Page<CommentReport> reports = commentReportRepository.findAllWithFilters(
+        String statusStr = status != null ? status.name() : null;
+
+        // Get comment reports grouped by comment ID, processed flag, and status
+        Page<CommentReportProjection> reportProjections = commentReportRepository.findCommentReportsGroupedByProcessed(
                 fromDate,
                 toDate,
                 commentContent,
                 reportTypeCode,
-                resolved,
+                statusStr,
                 pageable
         );
 
-        List<CommentReport> reportsList = reports.getContent();
-        if (reportsList.isEmpty()) {
+        List<CommentReportProjection> projections = reportProjections.getContent();
+        if (projections.isEmpty()) {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
-        // Extract all comment IDs for batch loading
-        Set<Long> commentIds = reportsList.stream()
-                .map(CommentReport::getCommentId)
-                .collect(Collectors.toSet());
-
-        // Batch fetch all comments
-        List<DocumentComment> comments = documentCommentRepository.findAllById(commentIds);
-        Map<Long, DocumentComment> commentsMap = comments.stream()
-                .collect(Collectors.toMap(
-                        DocumentComment::getId,
-                        Function.identity(),
-                        (existing, replacement) -> existing
-                ));
-
-        // Group reports by comment ID to ensure uniqueness and count reports
-        Map<Long, List<CommentReport>> reportsByCommentId = reportsList.stream()
-                .collect(Collectors.groupingBy(CommentReport::getCommentId));
-
-        // Extract all user IDs (reporters, comment creators, resolvers)
+        // Extract all user IDs that we need to fetch usernames for
         Set<UUID> userIds = new HashSet<>();
 
-        // Add reporter user IDs
-        reportsList.forEach(report -> {
-            userIds.add(report.getUserId()); // Reporter
-            if (report.getResolvedBy() != null) {
-                userIds.add(report.getResolvedBy()); // Resolver if exists
+        projections.forEach(proj -> {
+            // Reporter user ID
+            if (proj.getReporterId() != null) {
+                userIds.add(proj.getReporterId());
+            }
+
+            // Comment owner user ID
+            if (proj.getCommentUserId() != null) {
+                userIds.add(proj.getCommentUserId());
+            }
+
+            // Resolver user ID
+            if (proj.getUpdatedBy() != null) {
+                userIds.add(proj.getUpdatedBy());
             }
         });
 
-        // Add comment author user IDs
-        comments.forEach(comment -> userIds.add(comment.getUserId()));
-
         // Batch fetch all user information
-        Map<UUID, String> usernamesMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            try {
-                ResponseEntity<List<UserResponse>> usersResponse = userClient.getUsersByIds(new ArrayList<>(userIds));
-                if (usersResponse.getBody() != null) {
-                    usernamesMap = usersResponse.getBody().stream()
-                            .collect(Collectors.toMap(
-                                    UserResponse::userId,
-                                    UserResponse::username,
-                                    (existing, replacement) -> existing
-                            ));
-                }
-            } catch (Exception e) {
-                log.warn("Failed to fetch user details: {}", e.getMessage());
-            }
-        }
+        Map<UUID, String> usernamesMap = batchFetchUsernames(userIds);
 
-        // Map to response objects using the pre-loaded data
-        Map<UUID, String> finalUsernamesMap = usernamesMap;
-        List<AdminCommentReportResponse> responseList = new ArrayList<>();
+        // Map projections to response objects
+        List<AdminCommentReportResponse> responseList = projections.stream()
+                .map(proj -> new AdminCommentReportResponse(
+                        proj.getDocumentId(),
+                        proj.getCommentId(),
+                        proj.getCommentContent(),
+                        proj.getReporterId(),
+                        usernamesMap.getOrDefault(proj.getReporterId(), "Unknown"),
+                        proj.getCommentUserId(),
+                        usernamesMap.getOrDefault(proj.getCommentUserId(), "Unknown"),
+                        proj.getReportTypeCode(),
+                        proj.getDescription(),
+                        proj.getProcessed() != null && proj.getProcessed(),
+                        proj.getStatus(),
+                        proj.getUpdatedBy(),
+                        proj.getUpdatedBy() != null ?
+                                usernamesMap.getOrDefault(proj.getUpdatedBy(), "Unknown") : null,
+                        proj.getCreatedAt(),
+                        proj.getUpdatedAt(),
+                        proj.getReportCount()
+                ))
+                .collect(Collectors.toList());
 
-        // Process each comment ID with its associated reports
-        for (Map.Entry<Long, List<CommentReport>> entry : reportsByCommentId.entrySet()) {
-            Long commentId = entry.getKey();
-            List<CommentReport> commentReports = entry.getValue();
-
-            // Use the most recent report as the representative (for details like status)
-            CommentReport primaryReport = commentReports.stream()
-                    .max(Comparator.comparing(CommentReport::getCreatedAt))
-                    .orElse(commentReports.get(0));
-
-            DocumentComment comment = commentsMap.get(commentId);
-            String commentContentObj = comment != null ? comment.getContent() : "[Comment not found]";
-            UUID commentUserId = comment != null ? comment.getUserId() : null;
-
-            // Create response with report count
-            AdminCommentReportResponse response = new AdminCommentReportResponse(
-                    primaryReport.getId(),
-                    primaryReport.getDocumentId(),
-                    primaryReport.getCommentId(),
-                    commentContentObj,
-                    primaryReport.getUserId(),
-                    finalUsernamesMap.getOrDefault(primaryReport.getUserId(), "Unknown"),
-                    commentUserId,
-                    commentUserId != null ? finalUsernamesMap.getOrDefault(commentUserId, "Unknown") : "Unknown",
-                    primaryReport.getReportTypeCode(),
-                    primaryReport.getDescription(),
-                    primaryReport.isResolved(),
-                    primaryReport.getResolvedBy(),
-                    primaryReport.getResolvedBy() != null ?
-                            finalUsernamesMap.getOrDefault(primaryReport.getResolvedBy(), "Unknown") : null,
-                    primaryReport.getCreatedAt(),
-                    primaryReport.getResolvedAt(),
-                    commentReports.size()
-            );
-
-            responseList.add(response);
-        }
-
-        return new PageImpl<>(responseList, pageable, reports.getTotalElements());
+        // Return paginated results
+        return new PageImpl<>(responseList, pageable,
+                commentReportRepository.countCommentReportsGroupedByProcessed(
+                        fromDate, toDate, commentContent, reportTypeCode, statusStr));
     }
 
     @Transactional(readOnly = true)
@@ -259,31 +226,25 @@ public class CommentReportService {
         DocumentComment comment = documentCommentRepository.findById(commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        // Lấy tất cả các báo cáo cho comment này
         List<CommentReport> reports = commentReportRepository.findByCommentId(commentId);
 
         if (reports.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // Thu thập tất cả user ID liên quan để batch fetch
         Set<UUID> userIds = new HashSet<>();
 
-        // Thêm user ID của reporter và resolver
         reports.forEach(report -> {
             userIds.add(report.getUserId()); // Reporter
-            if (report.getResolvedBy() != null) {
-                userIds.add(report.getResolvedBy()); // Resolver nếu có
+            if (report.getUpdatedBy() != null) {
+                userIds.add(report.getUpdatedBy()); // Resolver nếu có
             }
         });
 
-        // Thêm user ID của người tạo comment
         userIds.add(comment.getUserId());
 
-        // Batch fetch tất cả thông tin người dùng
         Map<UUID, String> usernames = batchFetchUsernames(userIds);
 
-        // Map báo cáo thành response DTO
         return reports.stream()
                 .map(report -> CommentReportDetailResponse.builder()
                         .id(report.getId())
@@ -296,12 +257,12 @@ public class CommentReportService {
                         .commentUsername(usernames.getOrDefault(comment.getUserId(), "Unknown"))
                         .reportTypeCode(report.getReportTypeCode())
                         .description(report.getDescription())
-                        .resolved(report.isResolved())
-                        .resolvedBy(report.getResolvedBy())
-                        .resolvedByUsername(report.getResolvedBy() != null ?
-                                usernames.getOrDefault(report.getResolvedBy(), "Unknown") : null)
+                        .processed(report.getProcessed())
+                        .resolvedBy(report.getUpdatedBy())
+                        .resolvedByUsername(report.getUpdatedBy() != null ?
+                                usernames.getOrDefault(report.getUpdatedBy(), "Unknown") : null)
                         .createdAt(report.getCreatedAt())
-                        .resolvedAt(report.getResolvedAt())
+                        .resolvedAt(report.getUpdatedAt())
                         .build())
                 .collect(Collectors.toList());
     }

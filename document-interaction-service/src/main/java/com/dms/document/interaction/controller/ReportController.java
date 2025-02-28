@@ -5,7 +5,8 @@ import com.dms.document.interaction.dto.AdminCommentReportResponse;
 import com.dms.document.interaction.dto.AdminDocumentReportResponse;
 import com.dms.document.interaction.dto.CommentReportDetailResponse;
 import com.dms.document.interaction.dto.DocumentReportDetail;
-import com.dms.document.interaction.enums.ReportStatus;
+import com.dms.document.interaction.enums.CommentReportStatus;
+import com.dms.document.interaction.enums.DocumentReportStatus;
 import com.dms.document.interaction.service.CommentReportService;
 import com.dms.document.interaction.service.DocumentReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +38,7 @@ public class ReportController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateReportStatus(
             @PathVariable String documentId,
-            @RequestParam ReportStatus status,
+            @RequestParam DocumentReportStatus status,
             @AuthenticationPrincipal Jwt jwt) {
         documentReportService.updateReportStatus(documentId, status, jwt.getSubject());
         return ResponseEntity.ok().build();
@@ -51,7 +52,7 @@ public class ReportController {
             @RequestParam(required = false) String documentTitle,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant toDate,
-            @RequestParam(required = false) ReportStatus status,
+            @RequestParam(required = false) DocumentReportStatus status,
             @RequestParam(required = false) String reportTypeCode,
             Pageable pageable) {
 
@@ -64,20 +65,20 @@ public class ReportController {
     @GetMapping("/documents/{documentId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<DocumentReportDetail>> getDocumentReportDetails(
-            @PathVariable String documentId) {
-        return ResponseEntity.ok(documentReportService.getDocumentReportDetails(documentId));
+            @PathVariable String documentId, @RequestParam Boolean processed) {
+        return ResponseEntity.ok(documentReportService.getDocumentReportDetails(documentId, processed));
     }
 
-    @Operation(summary = "Resolve a comment report",
-            description = "Admin endpoint to mark a comment report as resolved or unresolved")
-    @PutMapping("/comments/{reportId}/resolve")
+    @Operation(summary = "Update a comment report status",
+            description = "Admin endpoint to update a comment report status")
+    @PutMapping("/comments/{commentId}/resolve")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AdminCommentReportResponse> resolveCommentReport(
-            @PathVariable Long reportId,
-            @RequestParam boolean resolved,
+            @PathVariable Long commentId,
+            @RequestParam CommentReportStatus status,
             @AuthenticationPrincipal Jwt jwt) {
         commentReportService.resolveCommentReport(
-                reportId, resolved, jwt.getSubject());
+                commentId, status, jwt.getSubject());
         return ResponseEntity.ok().build();
     }
 
@@ -90,10 +91,10 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant toDate,
             @RequestParam(required = false) String commentContent,
             @RequestParam(required = false) String reportTypeCode,
-            @RequestParam(required = false) Boolean resolved,
+            @RequestParam(required = false) CommentReportStatus status,
             Pageable pageable) {
 
-        return ResponseEntity.ok(commentReportService.getAdminCommentReports(fromDate, toDate, commentContent, reportTypeCode, resolved, pageable));
+        return ResponseEntity.ok(commentReportService.getAdminCommentReports(fromDate, toDate, commentContent, reportTypeCode, status, pageable));
     }
 
     @Operation(summary = "Get all reports for a specific comment",

@@ -28,7 +28,7 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
 
   useEffect(() => {
     if (!isReportedByUser) {
-      setIsReportedByUser(comment.reportedByUser);
+      setIsReportedByUser(comment.reportedByUser && comment.flag !== 1);
     }
   }, [comment.reportedByUser]);
 

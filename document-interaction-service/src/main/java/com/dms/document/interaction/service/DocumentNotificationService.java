@@ -1,6 +1,7 @@
 package com.dms.document.interaction.service;
 
 import com.dms.document.interaction.dto.NotificationEventRequest;
+import com.dms.document.interaction.enums.CommentReportStatus;
 import com.dms.document.interaction.enums.EventType;
 import com.dms.document.interaction.enums.NotificationType;
 import com.dms.document.interaction.model.DocumentFavorite;
@@ -79,19 +80,17 @@ public class DocumentNotificationService {
         }
     }
 
-    public void sendCommentReportResolvedNotification(String documentId, Long commentId, boolean resolved, UUID adminId) {
-        if (resolved) {
-            NotificationEventRequest notificationEvent = NotificationEventRequest.builder()
-                    .eventId(UUID.randomUUID().toString())
-                    .documentId(documentId)
-                    .commentId(commentId)
-                    .triggerUserId(adminId.toString())
-                    .triggerAt(Instant.now())
-                    .subject(EventType.COMMENT_REPORT_PROCESS_EVENT.name())
-                    .build();
+    public void sendCommentReportResolvedNotification(String documentId, Long commentId, UUID adminId) {
+        NotificationEventRequest notificationEvent = NotificationEventRequest.builder()
+                .eventId(UUID.randomUUID().toString())
+                .documentId(documentId)
+                .commentId(commentId)
+                .triggerUserId(adminId.toString())
+                .triggerAt(Instant.now())
+                .subject(EventType.COMMENT_REPORT_PROCESS_EVENT.name())
+                .build();
 
-            publishEventService.sendNotificationEvent(notificationEvent);
-        }
+        publishEventService.sendNotificationEvent(notificationEvent);
     }
 
     private boolean isNewCommenter(String documentId, UUID userId, Long newCommentId) {

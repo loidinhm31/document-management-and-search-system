@@ -3,18 +3,20 @@ package com.dms.document.interaction.service;
 import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.*;
 import com.dms.document.interaction.enums.AppRole;
+import com.dms.document.interaction.enums.DocumentReportStatus;
 import com.dms.document.interaction.enums.EventType;
 import com.dms.document.interaction.enums.MasterDataType;
-import com.dms.document.interaction.enums.ReportStatus;
 import com.dms.document.interaction.mapper.ReportTypeMapper;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentReport;
 import com.dms.document.interaction.model.MasterData;
+import com.dms.document.interaction.model.projection.DocumentReportProjection;
 import com.dms.document.interaction.repository.DocumentReportRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
 import com.dms.document.interaction.repository.MasterDataRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Page;
@@ -64,7 +66,8 @@ public class DocumentReportService {
         report.setUserId(userResponse.userId());
         report.setReportTypeCode(reportType.getCode());
         report.setDescription(request.description());
-        report.setStatus(ReportStatus.PENDING);
+        report.setStatus(DocumentReportStatus.PENDING);
+        report.setProcessed(Boolean.FALSE);
         report.setCreatedAt(Instant.now());
 
         DocumentReport savedReport = documentReportRepository.save(report);
@@ -72,21 +75,39 @@ public class DocumentReportService {
     }
 
     @Transactional
-    public void updateReportStatus(String documentId, ReportStatus newStatus, String username) {
+    public void updateReportStatus(String documentId, DocumentReportStatus newStatus, String username) {
         UserResponse resolver = getUserFromUsername(username);
         if (!resolver.role().roleName().equals(AppRole.ROLE_ADMIN)) {
             throw new IllegalStateException("Only administrators can update report status");
         }
 
+        // Find current status of report
+        DocumentReport currentReport = documentReportRepository.findByDocumentIdAndProcessed(documentId, false)
+                .stream()
+                .max(Comparator.comparing(DocumentReport::getCreatedAt))
+                .orElseThrow(() -> new IllegalArgumentException("Report not found"));
+
+        if (currentReport.getStatus() == DocumentReportStatus.REJECTED || BooleanUtils.isTrue(currentReport.getProcessed())) {
+            throw new IllegalStateException("Report has already been processed");
+        }
+
         // Update status for related reports
-        documentReportRepository.updateStatusForDocument(documentId, newStatus,
-                resolver.userId(), Instant.now());
+        Instant updatedAt = Instant.now();
+        List<DocumentReport> documentReports = documentReportRepository.findByDocumentIdAndProcessed(documentId, false);
+        documentReports.forEach((dr) -> {
+            dr.setStatus(newStatus);
+            dr.setUpdatedBy(resolver.userId());
+            dr.setUpdatedAt(updatedAt);
+
+            if (newStatus == DocumentReportStatus.REJECTED) {
+                dr.setProcessed(Boolean.TRUE);
+            }
+        });
 
         // Update main document status
         DocumentInformation document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new IllegalArgumentException("Document not found"));
-        document.setReportStatus(newStatus);
-        documentRepository.save(document);
+        document.setDocumentReportStatus(newStatus);
 
         // Send sync event
         CompletableFuture.runAsync(() ->
@@ -110,7 +131,7 @@ public class DocumentReportService {
         }
         UserResponse userResponse = response.getBody();
 
-        return documentReportRepository.findByDocumentIdAndUserId(documentId, userResponse.userId())
+        return documentReportRepository.findByDocumentIdAndUserIdAndProcessed(documentId, userResponse.userId(), false)
                 .map(report -> {
                     MasterData reportType = masterDataRepository.findByTypeAndCode(
                             MasterDataType.REPORT_DOCUMENT_TYPE,
@@ -132,93 +153,83 @@ public class DocumentReportService {
             String documentTitle,
             Instant fromDate,
             Instant toDate,
-            ReportStatus status,
+            DocumentReportStatus status,
             String reportTypeCode,
             Pageable pageable) {
 
-        // 1. First, get unique document IDs with pagination
+        // Get document reports grouped by document_id and processed flag
         String statusStr = status != null ? status.name() : null;
-        Page<String> documentIdPage = documentReportRepository.findDistinctDocumentIdsWithFilters(statusStr, fromDate, toDate, reportTypeCode, pageable);
+        Page<DocumentReportProjection> reportProjections = documentReportRepository.findDocumentReportsGroupedByProcessed(
+                statusStr, fromDate, toDate, reportTypeCode, pageable);
 
-        List<String> documentIds = documentIdPage.getContent();
-        if (documentIds.isEmpty()) {
+        List<DocumentReportProjection> projections = reportProjections.getContent();
+        if (projections.isEmpty()) {
             return new PageImpl<>(Collections.emptyList(), pageable, 0);
         }
 
+        // Extract the document IDs to load the documents
+        List<String> documentIds = projections.stream()
+                .map(DocumentReportProjection::getDocumentId)
+                .distinct()
+                .collect(Collectors.toList());
+
         // Load all documents for these IDs
-        List<DocumentInformation> documents = documentRepository.findAllById(documentIds);
+        Map<String, DocumentInformation> documentMap = documentRepository.findAllById(documentIds).stream()
+                .collect(Collectors.toMap(DocumentInformation::getId, Function.identity()));
 
         // Filter by document title if specified
         if (StringUtils.isNotEmpty(documentTitle)) {
-            documents = documents.stream()
+            Set<String> filteredDocIds = documentMap.values().stream()
                     .filter(doc -> StringUtils.containsIgnoreCase(doc.getFilename(), documentTitle))
+                    .map(DocumentInformation::getId)
+                    .collect(Collectors.toSet());
+
+            // Filter projections to keep only those with matching document titles
+            projections = projections.stream()
+                    .filter(p -> filteredDocIds.contains(p.getDocumentId()))
                     .toList();
 
-            // Update document IDs to only include filtered documents
-            documentIds = documents.stream()
-                    .map(DocumentInformation::getId)
-                    .collect(Collectors.toList());
-
-            if (documentIds.isEmpty()) {
+            if (projections.isEmpty()) {
                 return new PageImpl<>(Collections.emptyList(), pageable, 0);
             }
         }
 
-        // Create a map of document ID to document for easy lookup
-        Map<String, DocumentInformation> documentMap = documents.stream()
-                .collect(Collectors.toMap(DocumentInformation::getId, Function.identity()));
+        // Map projection to response
+        List<AdminDocumentReportResponse> responses = projections.stream()
+                .map(projection -> {
+                    DocumentInformation doc = documentMap.get(projection.getDocumentId());
 
-        // Load primary reports to get status and resolved info (only one per document)
-        List<DocumentReport> primaryReports = new ArrayList<>();
-        Map<String, DocumentReport> primaryReportMap = new HashMap<>();
+                    // Skip if document not found or doesn't match title filter
+                    if (doc == null) return null;
 
-        // For each document ID, find the latest report
-        for (String docId : documentIds) {
-            List<DocumentReport> reports = documentReportRepository.findByDocumentId(docId);
-            if (!reports.isEmpty()) {
-                // Sort reports by creation date (newest first)
-                reports.sort(Comparator.comparing(DocumentReport::getCreatedAt).reversed());
-                DocumentReport primaryReport = reports.get(0);
-                primaryReports.add(primaryReport);
-                primaryReportMap.put(docId, primaryReport);
-            }
-        }
+                    return new AdminDocumentReportResponse(
+                            projection.getDocumentId(),
+                            doc.getFilename(),
+                            UUID.fromString(doc.getUserId()),
+                            getUsernameById(UUID.fromString(doc.getUserId())),
+                            projection.getStatus(),
+                            projection.getProcessed() != null ? projection.getProcessed() : false,
+                            projection.getReportCount(),
+                            projection.getUpdatedBy(),
+                            projection.getUpdatedBy() != null ?
+                                    getUsernameById(projection.getUpdatedBy()) : null,
+                            projection.getUpdatedAt()
+                    );
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
 
-        // Create response without report details
-        List<AdminDocumentReportResponse> responses = new ArrayList<>();
-        for (String docId : documentIds) {
-            DocumentInformation doc = documentMap.get(docId);
-            if (doc == null) continue;
+        // Count the total records for pagination
+        long totalElements = documentTitle == null ?
+                documentReportRepository.countDocumentReportsGroupedByProcessed(statusStr, fromDate, toDate, reportTypeCode) :
+                responses.size();
 
-            DocumentReport primaryReport = primaryReportMap.get(docId);
-            if (primaryReport == null) continue;
-
-            // Count reports for this document
-            int reportCount = documentReportRepository.countByDocumentId(docId);
-
-            responses.add(new AdminDocumentReportResponse(
-                    docId,
-                    doc.getFilename(),
-                    UUID.fromString(doc.getUserId()),
-                    getUsernameById(UUID.fromString(doc.getUserId())),
-                    primaryReport.getStatus(),
-                    reportCount,
-                    primaryReport.getUpdatedBy(),
-                    primaryReport.getUpdatedBy() != null ?
-                            getUsernameById(primaryReport.getUpdatedBy()) : null,
-                    primaryReport.getUpdatedAt()
-            ));
-        }
-
-        // Get total distinct document IDs that match criteria
-        long totalDocuments = documentReportRepository.countDistinctDocumentIdsWithFilters(statusStr, fromDate, toDate, reportTypeCode);
-
-        return new PageImpl<>(responses, pageable, totalDocuments);
+        return new PageImpl<>(responses, pageable, totalElements);
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentReportDetail> getDocumentReportDetails(String documentId) {
-        List<DocumentReport> reports = documentReportRepository.findByDocumentId(documentId);
+    public List<DocumentReportDetail> getDocumentReportDetails(String documentId, Boolean processed) {
+        List<DocumentReport> reports = documentReportRepository.findByDocumentIdAndProcessed(documentId, processed);
 
         if (reports.isEmpty()) {
             return Collections.emptyList();

@@ -1,7 +1,8 @@
 package com.dms.processor.enums;
 
-public enum ReportStatus {
+public enum DocumentReportStatus {
     PENDING,
+    REJECTED,
     RESOLVED,
     REMEDIATED,
 }

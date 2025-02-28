@@ -1,94 +1,62 @@
-import { Calendar, CheckCircle, Eye, FileText, Filter, Loader2, Search, X } from "lucide-react";
+import { Calendar, FileText, Search, User, X } from "lucide-react";
+import moment from "moment-timezone";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import CommentReportProcessDialog from "@/components/admin/reports/comment-report-process-dialog";
+import CommentReportReasonsDialog from "@/components/admin/reports/comment-report-reasons-dialog";
 import TableSkeleton from "@/components/common/table-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { reportService } from "@/services/report.service";
-import { ReportType } from "@/types/document-report";
+import { CommentReport, ReportStatus, ReportStatusValues, ReportType } from "@/types/document-report";
 
-interface CommentReport {
-  id: number;
-  commentId: number;
-  commentContent: string;
-  commentUsername: string;
-  documentId: string;
-  documentTitle: string;
-  createdAt: string;
-  reportCount: number;
-  resolved: boolean;
+interface CommentReportsResponse {
+  content: CommentReport[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
 }
 
-interface CommentReportDetail {
-  id: number;
-  documentId: string;
-  commentId: number;
-  commentContent: string;
-  reporterUserId: string;
-  reporterUsername: string;
-  commentUserId: string;
-  commentUsername: string;
-  reportTypeCode: string;
-  reportTypeTranslation: {
-    en: string;
-    vi: string;
-  };
-  description?: string;
-  resolved: boolean;
-  resolvedBy?: string;
-  resolvedByUsername?: string;
-  createdAt: string;
-  resolvedAt?: string;
-}
-
-export default function CommentReportsTab() {
+const CommentReportsTab = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [loadingDetail, setLoadingDetail] = useState(false);
   const [reports, setReports] = useState<CommentReport[]>([]);
-  const [reportDetails, setReportDetails] = useState<CommentReportDetail[]>([]);
+  const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
+
+  const [commentContent, setCommentContent] = useState("");
+  const [reportType, setReportType] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
+  const [toDate, setToDate] = useState<Date | undefined>(undefined);
+
   const [selectedReport, setSelectedReport] = useState<CommentReport | null>(null);
-  const [isProcessingReport, setIsProcessingReport] = useState(false);
-
-  const [filters, setFilters] = useState({
-    commentContent: "",
-    reportTypeCode: "",
-    fromDate: null,
-    toDate: null,
-    resolved: null,
-    page: 0,
-    size: 10,
-  });
-
   const [showReasonsDialog, setShowReasonsDialog] = useState(false);
   const [showResolveDialog, setShowResolveDialog] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
 
   useEffect(() => {
     loadReportTypes();
   }, []);
+
+  // Fetch reports on initial load and when filters change
+  useEffect(() => {
+    fetchReports();
+  }, [currentPage]);
 
   const loadReportTypes = async () => {
     try {
@@ -102,14 +70,22 @@ export default function CommentReportsTab() {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const response = await reportService.getCommentReports({
-        ...filters,
+      const filters = {
+        commentContent: commentContent || undefined,
+        reportTypeCode: reportType === "all" ? undefined : reportType,
+        resolved: status === "all" ? undefined : status === "resolved",
+        fromDate: fromDate,
+        toDate: toDate,
         page: currentPage,
-      });
-      setReports(response.data.content);
-      setTotalPages(response.data.totalPages);
+        size: 10,
+      };
+
+      const response = await reportService.getCommentReports(filters);
+      const data = response.data as CommentReportsResponse;
+
+      setReports(data.content);
+      setTotalPages(data.totalPages);
     } catch (error) {
-      console.error("Error fetching comment reports:", error);
       toast({
         title: t("common.error"),
         description: t("admin.reports.comments.fetchError"),
@@ -120,246 +96,206 @@ export default function CommentReportsTab() {
     }
   };
 
-  const fetchReportDetail = async (commentId: number) => {
-    setLoadingDetail(true);
-    try {
-      const response = await reportService.getCommentReportDetail(commentId);
-      setReportDetails(response.data);
-    } catch (error) {
-      console.error("Error fetching report detail:", error);
-      toast({
-        title: t("common.error"),
-        description: t("admin.reports.comments.fetchDetailError"),
-        variant: "destructive",
-      });
-      setReportDetails(null);
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
-
-  const resolveCommentReport = async () => {
-    if (!selectedReport) return;
-
-    setIsProcessingReport(true);
-    try {
-      const newResolvedStatus = !selectedReport.resolved;
-      await reportService.resolveCommentReport(selectedReport.commentId, newResolvedStatus);
-
-      // Update report in list
-      setReports((prevReports) =>
-        prevReports.map((report) =>
-          report.id === selectedReport.id ? { ...report, resolved: newResolvedStatus } : report,
-        ),
-      );
-
-      toast({
-        title: t("common.success"),
-        description: newResolvedStatus
-          ? t("admin.reports.comments.resolveSuccess")
-          : t("admin.reports.comments.remediateSuccess"),
-        variant: "success",
-      });
-
-      setShowResolveDialog(false);
-    } catch (error) {
-      console.error("Error resolving comment report:", error);
-      toast({
-        title: t("common.error"),
-        description: t("admin.reports.comments.resolveError"),
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessingReport(false);
-    }
-  };
-
   const handleSearch = () => {
     setCurrentPage(0);
     fetchReports();
   };
 
-  const handleResetFilters = () => {
-    setFilters({
-      commentContent: "",
-      reportTypeCode: "",
-      fromDate: null,
-      toDate: null,
-      resolved: null,
-      page: 0,
-      size: 10,
-    });
+  const handleReset = () => {
+    setCommentContent("");
+    setReportType("all");
+    setStatus("all");
+    setFromDate(undefined);
+    setToDate(undefined);
     setCurrentPage(0);
+    fetchReports();
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
   };
 
-  const handleViewReasons = async (report: CommentReport) => {
+  const handleViewReasons = (report: CommentReport) => {
     setSelectedReport(report);
     setShowReasonsDialog(true);
-    // Fetch report details
-    await fetchReportDetail(report.commentId);
   };
 
-  const handleResolveClick = (report: CommentReport) => {
+  const handleResolveComment = (report: CommentReport) => {
     setSelectedReport(report);
     setShowResolveDialog(true);
   };
 
-  const handleDocumentClick = (documentId: string) => {
-    navigate(`/discover/${documentId}`);
+  const handleResolveReport = async (report: CommentReport, status: string) => {
+    setResolving(true);
+    try {
+      await reportService.resolveCommentReport(report.commentId, status);
+      toast({
+        title: t("common.success"),
+        description: t("admin.reports.comments.processSuccess"),
+        variant: "success",
+      });
+      fetchReports();
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("admin.reports.comments.processError"),
+        variant: "destructive",
+      });
+    } finally {
+      setResolving(false);
+      setShowResolveDialog(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return moment(dateString).format("DD/MM/YYYY, h:mm a");
   };
 
-  const mapReportType = (reportTypeCode: string) => {
-    return reportTypes?.find((type) => type?.code === reportTypeCode);
+  const truncateContent = (content: string, maxLength = 50) => {
+    if (content?.length <= maxLength) return content;
+    return content?.substring(0, maxLength) + "...";
   };
 
-  // Initial fetch
-  useEffect(() => {
-    fetchReports();
-  }, [currentPage]);
+  const canResolve = (report: CommentReport) => {
+    return !report.processed;
+  };
+
+  const getStatusBadgeClasses = (status: ReportStatus) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800 ring-yellow-600/20";
+      case "RESOLVED":
+        return "bg-red-100 text-red-800 ring-red-600/20";
+      case "REJECTED":
+        return "bg-gray-100 text-gray-800 ring-gray-600/20";
+      default:
+        return "bg-gray-100 text-gray-800 ring-gray-600/20";
+    }
+  };
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row">
-          {/* Comment Content */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t("admin.reports.comments.filters.commentContent")}
-                value={filters.commentContent}
-                onChange={(e) => setFilters((prev) => ({ ...prev, commentContent: e.target.value }))}
-                className="pl-9"
-              />
-            </div>
+      {/* Filter Section */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <Label>{t("admin.reports.comments.filters.commentContent")}</Label>
+          <div className="mt-1">
+            <Input
+              value={commentContent}
+              onChange={(e) => setCommentContent(e.target.value)}
+              placeholder={t("admin.reports.comments.filters.commentContent")}
+            />
           </div>
+        </div>
 
-          {/* Date Range */}
-          <div className="flex gap-2">
+        <div>
+          <Label>{t("admin.reports.comments.filters.reportType")}</Label>
+          <div className="mt-1">
+            <Select value={reportType} onValueChange={setReportType}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("admin.reports.comments.filters.allTypes")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("admin.reports.comments.filters.allTypes")}</SelectItem>
+                {reportTypes.map((type) => (
+                  <SelectItem key={type.code} value={type.code}>
+                    {type.translations[i18n.language] || type.translations.en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div>
+          <Label>{t("admin.reports.comments.filters.status")}</Label>
+          <div className="mt-1">
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("admin.reports.comments.filters.allStatuses")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("admin.reports.comments.filters.allStatuses")}</SelectItem>
+                <SelectItem value="pending">{t("admin.reports.comments.status.pending")}</SelectItem>
+                <SelectItem value="resolved">{t("admin.reports.comments.status.resolved")}</SelectItem>
+                <SelectItem value="rejected">{t("admin.reports.comments.status.rejected")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div>
+          <Label>{t("admin.reports.comments.filters.fromDate")}</Label>
+          <div className="mt-1">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="flex-1 justify-start text-left">
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
                   <Calendar className="mr-2 h-4 w-4" />
-                  {filters.fromDate
-                    ? new Date(filters.fromDate).toLocaleDateString()
-                    : t("admin.reports.comments.filters.fromDate")}
-                  {filters.fromDate && (
+                  {fromDate ? (
+                    formatDate(fromDate.toISOString())
+                  ) : (
+                    <span>{t("admin.reports.comments.filters.fromDate")}</span>
+                  )}
+                  {fromDate && (
                     <X
                       className="ml-auto h-4 w-4 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFilters((prev) => ({ ...prev, fromDate: null }));
+                        setFromDate(undefined);
                       }}
                     />
                   )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={filters.fromDate}
-                  onSelect={(date) => setFilters((prev) => ({ ...prev, fromDate: date }))}
-                  initialFocus
-                />
+                <CalendarComponent mode="single" selected={fromDate} onSelect={setFromDate} initialFocus />
               </PopoverContent>
             </Popover>
+          </div>
+        </div>
 
+        <div>
+          <Label>{t("admin.reports.comments.filters.toDate")}</Label>
+          <div className="mt-1">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="flex-1 justify-start text-left">
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
                   <Calendar className="mr-2 h-4 w-4" />
-                  {filters.toDate
-                    ? new Date(filters.toDate).toLocaleDateString()
-                    : t("admin.reports.comments.filters.toDate")}
-                  {filters.toDate && (
+                  {toDate ? (
+                    formatDate(toDate.toISOString())
+                  ) : (
+                    <span>{t("admin.reports.comments.filters.toDate")}</span>
+                  )}
+                  {toDate && (
                     <X
                       className="ml-auto h-4 w-4 cursor-pointer"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFilters((prev) => ({ ...prev, toDate: null }));
+                        setToDate(undefined);
                       }}
                     />
                   )}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent
-                  mode="single"
-                  selected={filters.toDate}
-                  onSelect={(date) => setFilters((prev) => ({ ...prev, toDate: date }))}
-                  initialFocus
-                />
+                <CalendarComponent mode="single" selected={toDate} onSelect={setToDate} initialFocus />
               </PopoverContent>
             </Popover>
           </div>
+        </div>
 
-          {/* Report Type */}
-          <Select
-            value={filters.reportTypeCode}
-            onValueChange={(value) => setFilters((prev) => ({ ...prev, reportTypeCode: value }))}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder={t("admin.reports.comments.filters.reportType")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("admin.reports.comments.filters.allTypes")}</SelectItem>
-
-              {reportTypes.map((type) => (
-                <SelectItem key={type.code} value={type.code}>
-                  {type.translations[i18n.language] || type.translations.en}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Resolved Status */}
-          <Select
-            value={filters.resolved === null ? "" : filters.resolved.toString()}
-            onValueChange={(value) => {
-              const resolvedValue = value === "" ? null : value === "true";
-              setFilters((prev) => ({ ...prev, resolved: resolvedValue }));
-            }}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder={t("admin.reports.comments.filters.status")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("admin.reports.comments.filters.allStatuses")}</SelectItem>
-              <SelectItem value="false">{t("admin.reports.comments.status.pending")}</SelectItem>
-              <SelectItem value="true">{t("admin.reports.comments.status.resolved")}</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Search and Reset Buttons */}
-          <div className="flex gap-2">
-            <Button onClick={handleSearch}>
-              <Search className="mr-2 h-4 w-4" />
-              {t("admin.reports.comments.filters.search")}
-            </Button>
-            <Button variant="outline" onClick={handleResetFilters}>
-              <Filter className="mr-2 h-4 w-4" />
-              {t("admin.reports.comments.filters.reset")}
-            </Button>
-          </div>
+        <div className="flex items-end gap-2">
+          <Button onClick={handleSearch} className="flex-1">
+            <Search className="mr-2 h-4 w-4" />
+            {t("admin.reports.comments.filters.search")}
+          </Button>
+          <Button variant="outline" onClick={handleReset}>
+            {t("admin.reports.comments.filters.reset")}
+          </Button>
         </div>
       </div>
 
-      {/* Comments Reports Table */}
+      {/* Reports Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -367,9 +303,9 @@ export default function CommentReportsTab() {
               <TableHead>{t("admin.reports.comments.table.document")}</TableHead>
               <TableHead>{t("admin.reports.comments.table.comment")}</TableHead>
               <TableHead>{t("admin.reports.comments.table.commenter")}</TableHead>
+              <TableHead>{t("admin.reports.comments.table.commentDate")}</TableHead>
               <TableHead>{t("admin.reports.comments.table.reportCount")}</TableHead>
               <TableHead>{t("admin.reports.comments.table.status")}</TableHead>
-              <TableHead>{t("admin.reports.comments.table.resolvedBy")}</TableHead>
               <TableHead>{t("admin.reports.comments.table.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -377,70 +313,64 @@ export default function CommentReportsTab() {
             {loading ? (
               <TableSkeleton rows={5} cells={7} />
             ) : reports.length > 0 ? (
-              reports.map((report) => (
-                <TableRow key={report.id}>
+              reports.map((report, index) => (
+                <TableRow key={`${report.commentId}-${index}`}>
                   <TableCell>
-                    <Button
-                      variant="link"
-                      className="p-0 h-auto flex items-center gap-1"
-                      onClick={() => handleDocumentClick(report.documentId)}
-                    >
-                      <FileText className="h-3.5 w-3.5" />
-                      {report.documentTitle || report.documentId}
-                    </Button>
+                    <div className="flex items-center">
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto flex items-center gap-1"
+                        onClick={() => navigate(`/discover/${report.documentId}`)}
+                      >
+                        <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+                        {truncateContent(report.documentTitle || report.documentId, 30)}
+                      </Button>
+                    </div>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate">
-                    {report.resolved ? (
-                      <span className="italic text-muted-foreground">{t("admin.reports.comments.contentRemoved")}</span>
+                  <TableCell>
+                    {report.processed && report.status === ReportStatusValues.RESOLVED ? (
+                      <span className="text-muted-foreground italic">{t("admin.reports.comments.contentRemoved")}</span>
                     ) : (
-                      report.commentContent
+                      truncateContent(report.commentContent)
                     )}
                   </TableCell>
-                  <TableCell>{report.commentUsername}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                      {report.commentUsername}
+                    </div>
+                  </TableCell>
+                  <TableCell>{formatDate(report.commentDate)}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{report.reportCount}</Badge>
                   </TableCell>
                   <TableCell>
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset 
-                        ${
-                          report.resolved
-                            ? "bg-green-50 text-green-700 ring-green-600/20"
-                            : "bg-red-50 text-red-700 ring-red-600/20"
-                        }`}
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${getStatusBadgeClasses(
+                        report.status,
+                      )}`}
                     >
-                      {report.resolved
-                        ? t("admin.reports.comments.status.resolved")
-                        : t("admin.reports.comments.status.pending")}
+                      {t(`admin.reports.documents.status.${report.status.toLowerCase()}`)}
                     </span>
                   </TableCell>
                   <TableCell>
-                    {report.resolved ? report.resolvedByUsername || report.commentUsername : "-"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex space-x-2">
                       <Button variant="outline" size="sm" onClick={() => handleViewReasons(report)}>
-                        <Eye className="h-4 w-4 mr-1" />
                         {t("admin.reports.comments.actions.viewReasons")}
                       </Button>
-                      <Button
-                        variant={report.resolved ? "secondary" : "destructive"}
-                        size="sm"
-                        disabled={report.resolved}
-                        onClick={() => handleResolveClick(report)}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        {report.resolved
-                          ? t("admin.reports.comments.actions.resolved")
-                          : t("admin.reports.comments.actions.resolve")}
-                      </Button>
+
+                      {canResolve(report) && (
+                        <Button variant="outline" size="sm" onClick={() => handleResolveComment(report)}>
+                          {t("admin.reports.comments.actions.resolve")}
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6">
+                <TableCell colSpan={7} className="h-24 text-center">
                   {t("admin.reports.comments.noReports")}
                 </TableCell>
               </TableRow>
@@ -450,8 +380,8 @@ export default function CommentReportsTab() {
       </div>
 
       {/* Pagination */}
-      {reports.length > 0 && (
-        <div className="flex justify-center gap-2 mt-4">
+      {reports?.length > 0 && (
+        <div className="flex justify-center gap-2">
           <Button
             variant="outline"
             onClick={() => handlePageChange(currentPage - 1)}
@@ -459,103 +389,47 @@ export default function CommentReportsTab() {
           >
             {t("admin.reports.comments.pagination.previous")}
           </Button>
-          <span className="flex items-center px-4">
-            {t("admin.reports.comments.pagination.pageInfo", {
-              current: currentPage + 1,
-              total: totalPages,
-            })}
-          </span>
+          <div className="flex items-center">
+            <span>
+              {t("admin.reports.comments.pagination.pageInfo", {
+                current: currentPage + 1,
+                total: totalPages,
+              })}
+            </span>
+          </div>
           <Button
             variant="outline"
             onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages - 1 || loading}
+            disabled={currentPage >= totalPages - 1 || loading}
           >
             {t("admin.reports.comments.pagination.next")}
           </Button>
         </div>
       )}
 
-      {/* Reasons Dialog */}
-      <Dialog open={showReasonsDialog} onOpenChange={setShowReasonsDialog}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{t("admin.reports.comments.dialogs.reasons.title")}</DialogTitle>
-            <DialogDescription>{t("admin.reports.comments.dialogs.reasons.description")}</DialogDescription>
-          </DialogHeader>
+      {/* Dialogs */}
+      {selectedReport && (
+        <>
+          <CommentReportReasonsDialog
+            open={showReasonsDialog}
+            onOpenChange={setShowReasonsDialog}
+            commentId={selectedReport.commentId}
+            commentContent={selectedReport.commentContent}
+            isResolved={selectedReport.processed}
+            reportTypes={reportTypes}
+          />
 
-          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-            {loadingDetail ? (
-              // Loading skeleton for report details
-              Array(3)
-                .fill(null)
-                .map((_, index) => (
-                  <div key={`loading-detail-${index}`} className="border rounded-lg p-4 space-y-2">
-                    <div className="flex justify-between">
-                      <Skeleton className="h-5 w-32" />
-                      <Skeleton className="h-5 w-24" />
-                    </div>
-                    <Skeleton className="h-4 w-48" />
-                    <Skeleton className="h-16 w-full" />
-                  </div>
-                ))
-            ) : reportDetails && reportDetails.length > 0 ? (
-              reportDetails.map((reportDetail, index) => {
-                const reportType = mapReportType(reportDetail.reportTypeCode);
-                return (
-                  <div key={index} className="border rounded-lg p-4 space-y-2">
-                    <div className="flex justify-between">
-                      <div className="text-sm font-medium">
-                        {reportType?.translations[i18n.language] || reportType?.translations.en}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {reportDetail.resolved ? (
-                          <span>
-                            {t("admin.reports.comments.dialogs.reasons.resolvedBy")}{" "}
-                            {reportDetail.resolvedByUsername || reportDetail.resolvedBy}
-                          </span>
-                        ) : (
-                          formatDate(reportDetail.createdAt)
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground">{reportDetail.description}</div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-6 text-muted-foreground">
-                {t("admin.reports.comments.dialogs.reasons.noReasons")}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Resolve Dialog */}
-      <Dialog open={showResolveDialog} onOpenChange={setShowResolveDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("admin.reports.comments.dialogs.resolve.title")}</DialogTitle>
-            <DialogDescription>{t("admin.reports.comments.dialogs.resolve.description")}</DialogDescription>
-          </DialogHeader>
-
-          <div className="py-4">
-            <div className="text-sm text-muted-foreground bg-muted p-4 rounded-md">
-              {t("admin.reports.comments.dialogs.pending.warning")}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowResolveDialog(false)} disabled={isProcessingReport}>
-              {t("common.cancel")}
-            </Button>
-            <Button variant="default" onClick={resolveCommentReport} disabled={isProcessingReport}>
-              {isProcessingReport && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("admin.reports.comments.dialogs.resolve.confirm")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <CommentReportProcessDialog
+            open={showResolveDialog}
+            onOpenChange={setShowResolveDialog}
+            report={selectedReport}
+            onResolve={(resolve) => handleResolveReport(selectedReport, resolve)}
+            resolving={resolving}
+          />
+        </>
+      )}
     </div>
   );
-}
+};
+
+export default CommentReportsTab;

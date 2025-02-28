@@ -1,7 +1,7 @@
 package com.dms.processor.model;
 
 
-import com.dms.processor.enums.ReportStatus;
+import com.dms.processor.enums.DocumentReportStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -34,12 +34,15 @@ public class DocumentReport {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private ReportStatus status;
+    private DocumentReportStatus status = DocumentReportStatus.PENDING;
 
-    @Column(name = "resolved_by")
-    private UUID resolvedBy;
+    @Column(name = "processed")
+    private Boolean processed;
 
-    @Column(name = "resolved_at")
-    private Instant resolvedAt;
+    @Column(name = "updated_by")
+    private UUID updatedBy;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
 }

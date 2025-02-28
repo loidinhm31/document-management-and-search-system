@@ -1,5 +1,6 @@
 package com.dms.document.interaction.model;
 
+import com.dms.document.interaction.enums.CommentReportStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -30,17 +31,21 @@ public class CommentReport {
     @Column(name = "description", length = 1000)
     private String description;
 
-    @Column(name = "resolved")
-    private boolean resolved;
+    @Column(name = "processed")
+    private Boolean processed;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private CommentReportStatus status;
 
     @Column(name = "created_at")
     private Instant createdAt;
 
-    @Column(name = "resolved_at")
-    private Instant resolvedAt;
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
-    @Column(name = "resolved_by")
-    private UUID resolvedBy;
+    @Column(name = "updated_by")
+    private UUID updatedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "comment_id", nullable = false)

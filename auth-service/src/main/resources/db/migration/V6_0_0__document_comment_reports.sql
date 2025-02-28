@@ -7,11 +7,11 @@ CREATE TABLE comment_reports
     user_id          UUID                     NOT NULL,
     report_type_code VARCHAR(50)              NOT NULL,
     description      VARCHAR(1000),
-    resolved         BOOLEAN DEFAULT FALSE,
+    processed        BOOLEAN DEFAULT FALSE,
+    status           VARCHAR(50)              NOT NULL,
     created_at       TIMESTAMP WITH TIME ZONE NOT NULL,
-    resolved_by      UUID,
-    resolved_at      TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT uk_comment_reports_user UNIQUE (comment_id, user_id),
+    updated_by       UUID,
+    updated_at      TIMESTAMP WITH TIME ZONE,
     CONSTRAINT fk_comment_reports_comment FOREIGN KEY (comment_id) REFERENCES document_comments (id)
 );
 

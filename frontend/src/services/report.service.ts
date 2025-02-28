@@ -7,6 +7,7 @@ interface DocumentReportFilter {
   uploaderUsername?: string;
   fromDate?: Date;
   toDate?: Date;
+  reportTypeCode?: string;
   status?: string;
   page?: number;
   size?: number;
@@ -28,6 +29,8 @@ class ReportService extends BaseService {
 
     if (filters.documentTitle) params.append("documentTitle", filters.documentTitle);
     if (filters.uploaderUsername) params.append("uploaderUsername", filters.uploaderUsername);
+    if (filters.reportTypeCode && filters.reportTypeCode !== "all")
+      params.append("reportTypeCode", filters.reportTypeCode);
     if (filters.status && filters.status !== "all") params.append("status", filters.status);
     if (filters.fromDate) params.append("fromDate", filters.fromDate.toISOString());
     if (filters.toDate) params.append("toDate", filters.toDate.toISOString());
@@ -46,8 +49,14 @@ class ReportService extends BaseService {
     );
   }
 
-  getDocumentReportDetail(documentId: string) {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/documents/${documentId}`));
+  getDocumentReportDetail(documentId: string, processed: boolean) {
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/reports/documents/${documentId}`, {
+        params: {
+          processed,
+        },
+      }),
+    );
   }
 
   getCommentReports(filters: CommentReportFilter = {}) {
@@ -56,7 +65,8 @@ class ReportService extends BaseService {
     if (filters.commentContent) params.append("commentContent", filters.commentContent);
     if (filters.fromDate) params.append("fromDate", filters.fromDate.toISOString());
     if (filters.toDate) params.append("toDate", filters.toDate.toISOString());
-    if (filters.reportTypeCode && filters.reportTypeCode !== "all") params.append("reportTypeCode", filters.reportTypeCode);
+    if (filters.reportTypeCode && filters.reportTypeCode !== "all")
+      params.append("reportTypeCode", filters.reportTypeCode);
     if (filters.resolved !== null && filters.resolved !== undefined) {
       params.append("resolved", filters.resolved.toString());
     }
@@ -73,9 +83,9 @@ class ReportService extends BaseService {
     return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/comments/${reportId}`));
   }
 
-  resolveCommentReport(reportId: number, resolved: boolean) {
+  resolveCommentReport(reportId: number, status: string) {
     return this.handleApiResponse(
-      axiosInstance.put(`/document-interaction/api/v1/reports/comments/${reportId}/resolve?resolved=${resolved}`),
+      axiosInstance.put(`/document-interaction/api/v1/reports/comments/${reportId}/resolve?status=${status}`),
     );
   }
 

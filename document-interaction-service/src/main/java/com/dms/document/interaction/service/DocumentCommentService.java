@@ -71,7 +71,7 @@ public class DocumentCommentService {
 
         // Get all comment reports by the current user for this document
         List<CommentReport> userReports = commentReportRepository.findReportsByUserAndDocument(
-                userResponse.userId(), documentId
+                userResponse.userId(), documentId, Boolean.FALSE
         );
 
         // Create a map of comment ID to report status

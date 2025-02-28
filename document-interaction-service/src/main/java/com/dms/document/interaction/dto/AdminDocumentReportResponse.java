@@ -1,6 +1,6 @@
 package com.dms.document.interaction.dto;
 
-import com.dms.document.interaction.enums.ReportStatus;
+import com.dms.document.interaction.enums.DocumentReportStatus;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -10,7 +10,8 @@ public record AdminDocumentReportResponse(
         String documentTitle,
         UUID documentOwnerId,
         String documentOwnerUsername,
-        ReportStatus status,
+        DocumentReportStatus status,
+        boolean processed,
         int reportCount,
         UUID resolvedBy,
         String resolvedByUsername,

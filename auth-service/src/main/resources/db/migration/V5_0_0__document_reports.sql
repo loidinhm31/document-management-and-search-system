@@ -7,9 +7,9 @@ CREATE TABLE document_reports
     description      VARCHAR(1000),
     created_at       TIMESTAMP WITH TIME ZONE NOT NULL,
     status           VARCHAR(50)              NOT NULL,
+    processed        BOOLEAN DEFAULT FALSE,
     updated_by       UUID,
-    updated_at       TIMESTAMP WITH TIME ZONE,
-    CONSTRAINT uk_document_reports_user UNIQUE (document_id, user_id)
+    updated_at       TIMESTAMP WITH TIME ZONE
 );
 
 -- Index for faster lookups

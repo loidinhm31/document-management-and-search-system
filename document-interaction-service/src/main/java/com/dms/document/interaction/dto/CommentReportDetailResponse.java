@@ -19,7 +19,7 @@ public class CommentReportDetailResponse {
     private String commentUsername;
     private String reportTypeCode;
     private String description;
-    private boolean resolved;
+    private boolean processed;
     private UUID resolvedBy;
     private String resolvedByUsername;
     private Instant createdAt;
