@@ -18,10 +18,10 @@ public interface DocumentReportRepository extends JpaRepository<DocumentReport, 
     Optional<DocumentReport> findByDocumentIdAndUserId(String documentId, UUID userId);
 
     @Modifying
-    @Query("UPDATE DocumentReport r SET r.status = :status, r.resolvedBy = :resolvedBy, " +
-           "r.resolvedAt = :resolvedAt WHERE r.documentId = :documentId")
+    @Query("UPDATE DocumentReport r SET r.status = :status, r.updatedBy = :updatedBy, " +
+           "r.updatedAt = :updatedAt WHERE r.documentId = :documentId")
     void updateStatusForDocument(String documentId, ReportStatus status,
-                                 UUID resolvedBy, Instant resolvedAt);
+                                 UUID updatedBy, Instant updatedAt);
 
     List<DocumentReport> findByDocumentIdIn(Collection<String> documentIds);
 

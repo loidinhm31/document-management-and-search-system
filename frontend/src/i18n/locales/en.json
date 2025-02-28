@@ -447,13 +447,13 @@
           "allStatuses": "All statuses",
           "pending": "Pending",
           "resolved": "Resolved",
-          "unresolved": "Unresolved"
+          "remediated": "Violation Removed"
         },
         "actions": {
           "viewReasons": "View Reasons",
           "process": "Process",
           "resolve": "Resolve",
-          "unresolve": "Unresolve"
+          "remediate": "Remediate"
         },
         "pagination": {
           "previous": "Previous",
@@ -472,14 +472,14 @@
             "description": "Update status for \"{{document}}\"",
             "selectStatus": "Select new status",
             "resolvedDescription": "Hide document and prevent access",
-            "unresolvedDescription": "Allow document to remain visible"
+            "remediatedDescription": "Allow document to remain visible"
           },
           "resolve": {
             "title": "Resolve Report",
             "description": "Hide document \"{{document}}\" due to violation"
           },
-          "unresolve": {
-            "title": "Unresolve Report",
+          "remdiate": {
+            "title": "Remediate Report",
             "description": "Make document \"{{document}}\" visible again"
           }
         }
@@ -489,7 +489,7 @@
         "reasonsError": "Failed to fetch report reasons",
         "resolveError": "Failed to update comment status",
         "resolveSuccess": "Comment marked as resolved",
-        "unresolveSuccess": "Comment resolution removed",
+        "remediateSuccess": "Comment marked as remediated",
         "noReports": "No comment reports found",
         "contentRemoved": "Content removed due to policy violation",
         "filters": {

@@ -5,6 +5,7 @@ import com.dms.processor.enums.NotificationType;
 import com.dms.processor.model.DocumentInformation;
 import com.dms.processor.model.User;
 import com.dms.processor.repository.DocumentFavoriteRepository;
+import com.dms.processor.repository.DocumentReportRepository;
 import com.dms.processor.repository.DocumentRepository;
 import com.dms.processor.repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -41,6 +42,9 @@ public class DocumentEmailService extends EmailService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private DocumentReportRepository documentReportRepository;
+
     public void sendNotifyForRelatedUserInDocument(NotificationEventRequest notificationEvent) {
         DocumentInformation document = findDocument(notificationEvent.getDocumentId());
         Set<User> usersToNotify = findUsersToNotify(document, notificationEvent.getTriggerUsername());
@@ -51,6 +55,42 @@ public class DocumentEmailService extends EmailService {
                     usersToNotify.size(), document.getId());
         } else {
             log.info("No recipients found for notification event {}", notificationEvent.getEventId());
+        }
+    }
+
+    public void sendReportStatusNotifications(DocumentInformation document, String resolverId) {
+        Optional<User> resolver = userRepository.findById(UUID.fromString(resolverId));
+        String resolvedByUsername = resolver.map(User::getUsername).orElse("Unknown");
+
+        Set<User> favoriters = findFavoriters(document);
+        Set<User> reporters = findReporters(document);
+
+        // Combine both sets while avoiding duplicates
+        Set<User> allRecipients = new HashSet<>();
+        allRecipients.addAll(favoriters);
+        allRecipients.addAll(reporters);
+
+        if (CollectionUtils.isNotEmpty(allRecipients)) {
+            sendReportStatusEmails(allRecipients, document, resolvedByUsername, "resolved");
+            log.info("Sent report resolved notification emails to {} users for document: {}",
+                    allRecipients.size(), document.getId());
+        } else {
+            log.info("No recipients found for report status notification for document: {}", document.getId());
+        }
+    }
+
+    public void sendRemediationNotifications(DocumentInformation document, String remediatorId) {
+        Optional<User> remediator = userRepository.findById(UUID.fromString(remediatorId));
+        String remediatedByUsername = remediator.map(User::getUsername).orElse("Unknown");
+
+        Set<User> favoriters = findFavoriters(document);
+
+        if (CollectionUtils.isNotEmpty(favoriters)) {
+            sendReportStatusEmails(favoriters, document, remediatedByUsername, "remediated");
+            log.info("Sent report remediation notification emails to {} users for document: {}",
+                    favoriters.size(), document.getId());
+        } else {
+            log.info("No recipients found for remediation notification for document: {}", document.getId());
         }
     }
 
@@ -192,5 +232,75 @@ public class DocumentEmailService extends EmailService {
             log.error("Failed to process email batch", e);
             throw new RuntimeException("Failed to send batch emails", e);
         }
+    }
+
+    private Set<User> findReporters(DocumentInformation document) {
+        Set<UUID> reporterUserIds = documentReportRepository.findReporterUserIdsByDocumentId(document.getId());
+
+        if (CollectionUtils.isEmpty(reporterUserIds)) {
+            return new HashSet<>();
+        }
+
+        return new HashSet<>(userRepository.findUsersByUserIdIn(reporterUserIds));
+    }
+
+    private Set<User> findFavoriters(DocumentInformation document) {
+        Set<UUID> favoriterUserIds = documentFavoriteRepository.findUserIdsByDocumentId(document.getId());
+
+        if (CollectionUtils.isEmpty(favoriterUserIds)) {
+            return new HashSet<>();
+        }
+
+        return new HashSet<>(userRepository.findUsersByUserIdIn(favoriterUserIds));
+    }
+
+    private void sendReportStatusEmails(Set<User> recipients, DocumentInformation document,
+                                        String actionUsername, String actionType) {
+        Map<String, User> emailToUserMap = recipients.stream()
+                .filter(user -> user.getEmail() != null && !user.getEmail().isEmpty())
+                .collect(Collectors.toMap(User::getEmail, user -> user));
+
+        if (!emailToUserMap.isEmpty()) {
+            String subject = buildReportStatusEmailSubject(document, actionType);
+            String template = determineReportStatusTemplate(actionType);
+
+            sendBatchNotificationEmails(
+                    emailToUserMap.keySet(),
+                    subject,
+                    template,
+                    buildReportStatusTemplateVariables(document, actionUsername, emailToUserMap, actionType)
+            );
+        }
+    }
+
+    private String buildReportStatusEmailSubject(DocumentInformation document, String actionType) {
+        return switch (actionType) {
+            case "resolved" -> String.format("Report resolved for document: %s", document.getFilename());
+            case "remediated" -> String.format("Document remediated: %s", document.getFilename());
+            default -> String.format("Document report status updated: %s", document.getFilename());
+        };
+    }
+
+    private String determineReportStatusTemplate(String actionType) {
+        return switch (actionType) {
+            case "resolved" -> "report-resolved-notification";
+            case "remediated" -> "document-remediated-notification";
+            default -> "report-status-notification";
+        };
+    }
+
+    private Map<String, Object> buildReportStatusTemplateVariables(DocumentInformation document,
+                                                                   String actionUsername,
+                                                                   Map<String, User> emailToUserMap,
+                                                                   String actionType) {
+        Map<String, Object> vars = new HashMap<>();
+        vars.put("baseUrl", baseUrl);
+        vars.put("documentTitle", document.getFilename());
+        vars.put("actionUser", actionUsername);
+        vars.put("documentId", document.getId());
+        vars.put("recipientMap", emailToUserMap);
+        vars.put("actionType", actionType);
+
+        return vars;
     }
 }

@@ -157,7 +157,7 @@ export default function CommentReportsTab() {
         title: t("common.success"),
         description: newResolvedStatus
           ? t("admin.reports.comments.resolveSuccess")
-          : t("admin.reports.comments.unresolveSuccess"),
+          : t("admin.reports.comments.remediateSuccess"),
         variant: "success",
       });
 

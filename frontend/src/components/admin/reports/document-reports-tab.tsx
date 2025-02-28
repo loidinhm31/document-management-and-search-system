@@ -30,7 +30,7 @@ export interface DocumentReport {
   documentTitle: string;
   documentOwnerId: string;
   documentOwnerUsername: string;
-  status: "PENDING" | "RESOLVED" | "UNRESOLVED";
+  status: "PENDING" | "RESOLVED" | "REMEDIATED";
   reportCount: number;
   resolvedBy?: string;
   resolvedByUsername?: string;
@@ -43,7 +43,7 @@ export interface ReportDetail {
   reporterUsername: string;
   reportTypeCode: string;
   description?: string;
-  status: "PENDING" | "RESOLVED" | "UNRESOLVED";
+  status: "PENDING" | "RESOLVED" | "REMEDIATED";
   createdAt: string;
 }
 
@@ -76,7 +76,7 @@ export default function DocumentReportsTab() {
 
   const [showReasonsDialog, setShowReasonsDialog] = useState(false);
   const [showProcessDialog, setShowProcessDialog] = useState(false);
-  const [newStatus, setNewStatus] = useState<"PENDING" | "RESOLVED" | "UNRESOLVED">(null);
+  const [newStatus, setNewStatus] = useState<"PENDING" | "RESOLVED" | "REMEDIATED">(null);
 
   const loadReportTypes = async () => {
     try {
@@ -194,7 +194,7 @@ export default function DocumentReportsTab() {
 
   const handleProcessClick = (report: DocumentReport) => {
     setSelectedReport(report);
-    setNewStatus(report.status === "PENDING" ? "RESOLVED" : report.status === "RESOLVED" ? "UNRESOLVED" : "RESOLVED");
+    setNewStatus(report.status === "PENDING" ? "RESOLVED" : report.status === "RESOLVED" ? "REMEDIATED" : "RESOLVED");
     setShowProcessDialog(true);
   };
 
@@ -217,7 +217,7 @@ export default function DocumentReportsTab() {
     fetchReports();
   }, [currentPage]);
 
-  const handleChangResolvedStatus = (newStatus: "PENDING" | "RESOLVED" | "UNRESOLVED") => {
+  const handleChangResolvedStatus = (newStatus: "PENDING" | "RESOLVED" | "REMEDIATED") => {
     setNewStatus(newStatus);
   };
 
@@ -330,7 +330,7 @@ export default function DocumentReportsTab() {
               <SelectItem value="all">{t("admin.reports.documents.status.allStatuses")}</SelectItem>
               <SelectItem value="PENDING">{t("admin.reports.documents.status.pending")}</SelectItem>
               <SelectItem value="RESOLVED">{t("admin.reports.documents.status.resolved")}</SelectItem>
-              <SelectItem value="UNRESOLVED">{t("admin.reports.documents.status.unresolved")}</SelectItem>
+              <SelectItem value="REMEDIATED">{t("admin.reports.documents.status.remediated")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -392,7 +392,7 @@ export default function DocumentReportsTab() {
                         ${
                           report.status === "RESOLVED"
                             ? "bg-green-50 text-green-700 ring-green-600/20"
-                            : report.status === "UNRESOLVED"
+                            : report.status === "REMEDIATED"
                               ? "bg-yellow-50 text-orange-700 ring-orange-600/2"
                               : "bg-red-50 text-red-700 ring-red-600/20"
                         }`}
@@ -416,7 +416,7 @@ export default function DocumentReportsTab() {
                         {report.status === "PENDING"
                           ? t("admin.reports.documents.actions.process")
                           : report.status === "RESOLVED"
-                            ? t("admin.reports.documents.actions.unresolve")
+                            ? t("admin.reports.documents.actions.remediate")
                             : t("admin.reports.documents.actions.resolve")}
                       </Button>
                     </div>
@@ -520,14 +520,14 @@ export default function DocumentReportsTab() {
               {selectedReport?.status === "PENDING"
                 ? t("admin.reports.documents.dialogs.process.title")
                 : selectedReport?.status === "RESOLVED"
-                  ? t("admin.reports.documents.dialogs.unresolve.title")
+                  ? t("admin.reports.documents.dialogs.remediate.title")
                   : t("admin.reports.documents.dialogs.resolve.title")}
             </DialogTitle>
             <DialogDescription>
               {selectedReport?.status === "PENDING"
                 ? t("admin.reports.documents.dialogs.process.description", { document: selectedReport?.documentTitle })
                 : selectedReport?.status === "RESOLVED"
-                  ? t("admin.reports.documents.dialogs.unresolve.description", {
+                  ? t("admin.reports.documents.dialogs.remediate.description", {
                       document: selectedReport?.documentTitle,
                     })
                   : t("admin.reports.documents.dialogs.resolve.description", {
@@ -547,9 +547,9 @@ export default function DocumentReportsTab() {
                   {t("admin.reports.documents.status.resolved")} -{" "}
                   {t("admin.reports.documents.dialogs.process.resolvedDescription")}
                 </SelectItem>
-                <SelectItem value="UNRESOLVED">
-                  {t("admin.reports.documents.status.unresolved")} -{" "}
-                  {t("admin.reports.documents.dialogs.process.unresolvedDescription")}
+                <SelectItem value="REMEDIATED">
+                  {t("admin.reports.documents.status.remediated")} -{" "}
+                  {t("admin.reports.documents.dialogs.process.remediatedDescription")}
                 </SelectItem>
               </SelectContent>
             </Select>

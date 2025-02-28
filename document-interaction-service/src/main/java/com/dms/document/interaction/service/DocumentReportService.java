@@ -95,7 +95,7 @@ public class DocumentReportService {
                                 .eventId(UUID.randomUUID().toString())
                                 .userId(resolver.userId().toString())
                                 .documentId(documentId)
-                                .subject(EventType.REPORT_PROCESS_EVENT.name())
+                                .subject(EventType.DOCUMENT_REPORT_PROCESS_EVENT.name())
                                 .triggerAt(Instant.now())
                                 .build()
                 )
@@ -203,10 +203,10 @@ public class DocumentReportService {
                     getUsernameById(UUID.fromString(doc.getUserId())),
                     primaryReport.getStatus(),
                     reportCount,
-                    primaryReport.getResolvedBy(),
-                    primaryReport.getResolvedBy() != null ?
-                            getUsernameById(primaryReport.getResolvedBy()) : null,
-                    primaryReport.getResolvedAt()
+                    primaryReport.getUpdatedBy(),
+                    primaryReport.getUpdatedBy() != null ?
+                            getUsernameById(primaryReport.getUpdatedBy()) : null,
+                    primaryReport.getUpdatedAt()
             ));
         }
 
