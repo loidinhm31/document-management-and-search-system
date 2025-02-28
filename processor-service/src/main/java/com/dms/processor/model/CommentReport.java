@@ -38,6 +38,9 @@ public class CommentReport {
     @Column(name = "status")
     private CommentReportStatus status;
 
+    @Column(name = "times")
+    private Integer times;
+
     @Column(name = "created_at")
     private Instant createdAt;
 

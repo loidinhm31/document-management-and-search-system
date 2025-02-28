@@ -14,6 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DocumentReport, ReportStatus, ReportStatusValues } from "@/types/document-report";
+import { cn } from "@/lib/utils";
 
 interface DocumentReportProcessDialogProps {
   open: boolean;
@@ -35,13 +36,17 @@ const DocumentReportProcessDialog: React.FC<DocumentReportProcessDialogProps> = 
 
   useEffect(() => {
     if (open) {
-      setSelectedStatus(ReportStatusValues.RESOLVED);
+      if (report.status !== ReportStatusValues.RESOLVED) {
+        setSelectedStatus(ReportStatusValues.RESOLVED);
+      } else if (report.status === ReportStatusValues.RESOLVED) {
+        setSelectedStatus(ReportStatusValues.REMEDIATED);
+      }
     }
   }, [open]);
 
   const handleSetStatus = (status: ReportStatus) => {
     setSelectedStatus(status);
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,8 +63,18 @@ const DocumentReportProcessDialog: React.FC<DocumentReportProcessDialogProps> = 
         <div className="space-y-4 py-4">
           <RadioGroup value={selectedStatus} onValueChange={handleSetStatus} className="space-y-4">
             <div className="flex items-start space-x-3">
-              <RadioGroupItem value="RESOLVED" id="resolved" />
-              <div className="space-y-1">
+              <RadioGroupItem
+                disabled={report.status === ReportStatusValues.RESOLVED}
+                value="RESOLVED"
+                id="resolved"
+                aria-disabled={report.status === ReportStatusValues.RESOLVED}
+              />
+              <div
+                className={cn(
+                  "space-y-1",
+                  report.status === ReportStatusValues.RESOLVED && "opacity-50 cursor-not-allowed",
+                )}
+              >
                 <Label htmlFor="resolved" className="font-medium">
                   {t("admin.reports.documents.status.resolved")}
                 </Label>
@@ -70,8 +85,18 @@ const DocumentReportProcessDialog: React.FC<DocumentReportProcessDialogProps> = 
             </div>
 
             <div className="flex items-start space-x-3">
-              <RadioGroupItem value="REMEDIATED" id="remediated" />
-              <div className="space-y-1">
+              <RadioGroupItem
+                disabled={report.status === ReportStatusValues.PENDING}
+                value="REMEDIATED"
+                id="remediated"
+                aria-disabled={report.status === ReportStatusValues.PENDING}
+              />
+              <div
+                className={cn(
+                  "space-y-1",
+                  report.status === ReportStatusValues.PENDING && "opacity-50 cursor-not-allowed",
+                )}
+              >
                 <Label htmlFor="remediated" className="font-medium">
                   {t("admin.reports.documents.status.remediated")}
                 </Label>
@@ -82,8 +107,18 @@ const DocumentReportProcessDialog: React.FC<DocumentReportProcessDialogProps> = 
             </div>
 
             <div className="flex items-start space-x-3">
-              <RadioGroupItem value="REJECTED" id="rejected" />
-              <div className="space-y-1">
+              <RadioGroupItem
+                disabled={report.status === ReportStatusValues.RESOLVED}
+                value="REJECTED"
+                id="rejected"
+                aria-disabled={report.status === ReportStatusValues.RESOLVED}
+              />
+              <div
+                className={cn(
+                  "space-y-1",
+                  report.status === ReportStatusValues.RESOLVED && "opacity-50 cursor-not-allowed",
+                )}
+              >
                 <Label htmlFor="rejected" className="font-medium">
                   {t("admin.reports.documents.status.rejected")}
                 </Label>

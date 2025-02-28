@@ -9,9 +9,10 @@ CREATE TABLE comment_reports
     description      VARCHAR(1000),
     processed        BOOLEAN DEFAULT FALSE,
     status           VARCHAR(50)              NOT NULL,
+    times            INTEGER                  NOT NULL,
     created_at       TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_by       UUID,
-    updated_at      TIMESTAMP WITH TIME ZONE,
+    updated_at       TIMESTAMP WITH TIME ZONE,
     CONSTRAINT fk_comment_reports_comment FOREIGN KEY (comment_id) REFERENCES document_comments (id)
 );
 

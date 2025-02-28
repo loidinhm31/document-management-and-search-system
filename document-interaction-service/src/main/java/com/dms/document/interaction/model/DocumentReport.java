@@ -39,6 +39,9 @@ public class DocumentReport {
     @Column(name = "processed")
     private Boolean processed;
 
+    @Column(name = "times")
+    private Integer times;
+
     @Column(name = "updated_by")
     private UUID updatedBy;
 

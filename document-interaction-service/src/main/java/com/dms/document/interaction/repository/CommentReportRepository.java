@@ -25,6 +25,8 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 
     List<CommentReport> findByCommentId(Long commentId);
 
+    List<CommentReport> findByCommentIdAndProcessed(Long commentId, boolean processed);
+
     @Query(value = """
             SELECT 
                 cr.comment_id AS commentId,

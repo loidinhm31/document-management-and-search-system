@@ -71,7 +71,7 @@ public class DocumentProcessorConsumer {
 
     private void handleReportStatus(SyncEventRequest request) {
         log.info("Processing report resolved event for document: {}", request.getDocumentId());
-        documentProcessService.handleReportStatus(request.getDocumentId(), request.getUserId());
+        documentProcessService.handleReportStatus(request.getDocumentId(), request.getUserId(), request.getVersionNumber());
     }
 
     private void findAndProcessDocument(SyncEventRequest request, EventType eventType) {

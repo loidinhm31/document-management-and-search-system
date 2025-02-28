@@ -80,7 +80,7 @@ public class DocumentNotificationService {
         }
     }
 
-    public void sendCommentReportResolvedNotification(String documentId, Long commentId, UUID adminId) {
+    public void sendCommentReportResolvedNotification(String documentId, Long commentId, UUID adminId, int times) {
         NotificationEventRequest notificationEvent = NotificationEventRequest.builder()
                 .eventId(UUID.randomUUID().toString())
                 .documentId(documentId)
@@ -88,6 +88,7 @@ public class DocumentNotificationService {
                 .triggerUserId(adminId.toString())
                 .triggerAt(Instant.now())
                 .subject(EventType.COMMENT_REPORT_PROCESS_EVENT.name())
+                .versionNumber(times)
                 .build();
 
         publishEventService.sendNotificationEvent(notificationEvent);

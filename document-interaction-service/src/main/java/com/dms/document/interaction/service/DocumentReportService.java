@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,8 +57,20 @@ public class DocumentReportService {
                 .orElseThrow(() -> new IllegalArgumentException("Invalid report type"));
 
         // Check if user has already reported this document
-        if (documentReportRepository.existsByDocumentIdAndUserId(documentId, userResponse.userId())) {
+        if (documentReportRepository.existsByDocumentIdAndUserIdAndProcessed(documentId, userResponse.userId(), Boolean.FALSE)) {
             throw new IllegalStateException("You have already reported this document");
+        }
+
+        // Find user's processed report if it exists
+        List<DocumentReport> processedReports = documentReportRepository.findByDocumentIdAndProcessed(documentId, Boolean.TRUE);
+        Optional<DocumentReport> maxTimeProcessedReport = processedReports.stream()
+                .max(Comparator.comparing(report -> report.getTimes() != null ? report.getTimes() : 0));
+
+        int times = 1;
+        if (maxTimeProcessedReport.isPresent()) {
+            // Update existing report by incrementing times
+            DocumentReport maxTimeReport = maxTimeProcessedReport.get();
+            times = Objects.nonNull(maxTimeReport.getTimes()) ? maxTimeReport.getTimes() + 1 : 1;
         }
 
         // Create and save report
@@ -68,6 +81,7 @@ public class DocumentReportService {
         report.setDescription(request.description());
         report.setStatus(DocumentReportStatus.PENDING);
         report.setProcessed(Boolean.FALSE);
+        report.setTimes(times);
         report.setCreatedAt(Instant.now());
 
         DocumentReport savedReport = documentReportRepository.save(report);
@@ -91,15 +105,21 @@ public class DocumentReportService {
             throw new IllegalStateException("Report has already been processed");
         }
 
+        if (currentReport.getStatus() == newStatus) {
+            throw new IllegalStateException("Cannot update the same status");
+        }
+
         // Update status for related reports
+        AtomicInteger times = new AtomicInteger();
         Instant updatedAt = Instant.now();
         List<DocumentReport> documentReports = documentReportRepository.findByDocumentIdAndProcessed(documentId, false);
         documentReports.forEach((dr) -> {
+            times.set(dr.getTimes());
             dr.setStatus(newStatus);
             dr.setUpdatedBy(resolver.userId());
             dr.setUpdatedAt(updatedAt);
 
-            if (newStatus == DocumentReportStatus.REJECTED) {
+            if (newStatus == DocumentReportStatus.REJECTED || newStatus == DocumentReportStatus.REMEDIATED) {
                 dr.setProcessed(Boolean.TRUE);
             }
         });
@@ -108,6 +128,7 @@ public class DocumentReportService {
         DocumentInformation document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new IllegalArgumentException("Document not found"));
         document.setDocumentReportStatus(newStatus);
+        documentRepository.save(document);
 
         // Send sync event
         CompletableFuture.runAsync(() ->
@@ -118,6 +139,7 @@ public class DocumentReportService {
                                 .documentId(documentId)
                                 .subject(EventType.DOCUMENT_REPORT_PROCESS_EVENT.name())
                                 .triggerAt(Instant.now())
+                                .versionNumber(times.get())
                                 .build()
                 )
         );

@@ -6,7 +6,9 @@ import com.dms.processor.enums.DocumentStatus;
 import com.dms.processor.enums.EventType;
 import com.dms.processor.exception.DocumentProcessingException;
 import com.dms.processor.mapper.DocumentIndexMapper;
-import com.dms.processor.model.*;
+import com.dms.processor.model.DocumentContent;
+import com.dms.processor.model.DocumentInformation;
+import com.dms.processor.model.DocumentVersion;
 import com.dms.processor.opensearch.DocumentIndex;
 import com.dms.processor.opensearch.repository.DocumentIndexRepository;
 import com.dms.processor.repository.DocumentRepository;
@@ -20,7 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.*;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -68,7 +70,7 @@ public class DocumentProcessService {
     }
 
     @Transactional
-    public void handleReportStatus(String documentId, String userId) {
+    public void handleReportStatus(String documentId, String userId, int times) {
         try {
             DocumentInformation document = documentRepository.findById(documentId)
                     .orElseThrow(() -> new IllegalArgumentException("Document not found"));
@@ -78,11 +80,11 @@ public class DocumentProcessService {
 
             if (document.getDocumentReportStatus() == DocumentReportStatus.REJECTED) {
                 // Send notification emails to reporters
-                documentEmailService.sendDocumentReportRejectionNotifications(document, userId);
+                documentEmailService.sendDocumentReportRejectionNotifications(document, userId, times);
 
             } else if (document.getDocumentReportStatus() == DocumentReportStatus.RESOLVED) {
                 // Send notifications to both favoriters and reporters
-                documentEmailService.sendResolveNotifications(document, userId);
+                documentEmailService.sendResolveNotifications(document, userId, times);
 
             } else if (document.getDocumentReportStatus() == DocumentReportStatus.REMEDIATED) {
                 // Send notifications only to favoriters

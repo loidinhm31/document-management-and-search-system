@@ -8,6 +8,7 @@ CREATE TABLE document_reports
     created_at       TIMESTAMP WITH TIME ZONE NOT NULL,
     status           VARCHAR(50)              NOT NULL,
     processed        BOOLEAN DEFAULT FALSE,
+    times            INTEGER                  NOT NULL,
     updated_by       UUID,
     updated_at       TIMESTAMP WITH TIME ZONE
 );

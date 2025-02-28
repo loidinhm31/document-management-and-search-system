@@ -12,7 +12,7 @@ import java.time.Instant;
 import java.util.*;
 
 public interface DocumentReportRepository extends JpaRepository<DocumentReport, Long> {
-    boolean existsByDocumentIdAndUserId(String documentId, UUID userId);
+    boolean existsByDocumentIdAndUserIdAndProcessed(String documentId, UUID userId, boolean processed);
 
     Optional<DocumentReport> findByDocumentIdAndUserIdAndProcessed(String documentId, UUID userId, boolean processed);
 
