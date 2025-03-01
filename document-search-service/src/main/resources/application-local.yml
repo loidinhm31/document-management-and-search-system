@@ -11,6 +11,10 @@ spring:
         jwt:
           issuer-uri: http://localhost:8082
           jwk-set-uri: http://localhost:8082/.well-known/jwks.json
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
+    username: postgres
+    password: postgrespw
   data:
     mongodb:
       uri: mongodb://mongodb:mongodbpw@localhost:27017/dms?authSource=admin

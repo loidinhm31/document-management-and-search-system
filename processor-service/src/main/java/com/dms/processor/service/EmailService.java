@@ -3,7 +3,6 @@ package com.dms.processor.service;
 import com.dms.processor.model.User;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,72 +22,37 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class EmailService {
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
+    @Value("${app.email.batch-size:50}")
+    private int batchSize;
 
     @Autowired
     private TemplateEngine templateEngine;
 
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
+
     @Value("${mail-sender.from-email}")
     private String fromEmail;
 
-    @Value("${app.email.batch-size:50}")
-    private int batchSize;
+    public void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
+        log.info("Sending email");
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-    public void sendOtpEmail(String to, String username, String otp,
-                             int expiryMinutes, int maxAttempts) {
-        try {
-            Context context = new Context();
-            context.setVariable("username", username);
-            context.setVariable("otp", otp);
-            context.setVariable("expiryMinutes", expiryMinutes);
-            context.setVariable("maxAttempts", maxAttempts);
+        helper.setFrom(fromEmail);
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(htmlContent, true);
 
-            String htmlContent = templateEngine.process("otp-verification", context);
-
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(fromEmail);
-            helper.setTo(to);
-            helper.setSubject("Account Verification OTP");
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
-            log.info("OTP email sent successfully to: {}", to);
-        } catch (MessagingException e) {
-            log.error("Failed to send OTP email to: {}", to, e);
-            throw new RuntimeException("Failed to send OTP email", e);
-        }
+//        mailSender.send(message);
+        log.info("Email sent successfully to: {}", to);
     }
 
-    public void sendPasswordResetEmail(String to, String username, String resetUrl, int expiryHours) {
-        try {
-            Context context = new Context();
-            context.setVariable("username", username);
-            context.setVariable("resetUrl", resetUrl);
-            context.setVariable("expiryHours", expiryHours);
-
-            String htmlContent = templateEngine.process("password-reset", context);
-
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(fromEmail);
-            helper.setTo(to);
-            helper.setSubject("Password Reset Request");
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
-            log.info("Password reset email sent successfully to: {}", to);
-        } catch (MessagingException e) {
-            log.error("Failed to send password reset email to: {}", to, e);
-            throw new RuntimeException("Failed to send password reset email", e);
-        }
-    }
-
-    public void sendBatchNotificationEmails(Collection<String> toEmails, String subject,
-                                            String templateName, Map<String, Object> templateVars) {
+    /**
+     * Sends notification emails in batches
+     */
+    protected void sendBatchNotificationEmails(Collection<String> toEmails, String subject,
+                                     String templateName, Map<String, Object> templateVars) {
         if (toEmails == null || toEmails.isEmpty()) {
             log.info("No email recipients provided");
             return;
@@ -97,17 +61,12 @@ public class EmailService {
         Map<String, User> recipientMap = (Map<String, User>) templateVars.get("recipientMap");
 
         // Split recipients into batches
-        List<List<String>> batches = toEmails.stream()
-                .collect(Collectors.groupingBy(email ->
-                        toEmails.stream().toList().indexOf(email) / batchSize))
-                .values()
-                .stream()
-                .toList();
+        List<List<String>> batches = partitionEmails(toEmails);
 
         // Process each batch asynchronously
         List<CompletableFuture<Void>> futures = batches.stream()
                 .map(batch -> CompletableFuture.runAsync(() ->
-                        sendBatch(batch, subject, templateName, templateVars, recipientMap)))
+                        processBatch(batch, subject, templateName, templateVars, recipientMap)))
                 .toList();
 
         // Wait for all batches to complete
@@ -122,8 +81,23 @@ public class EmailService {
                 });
     }
 
-    private void sendBatch(List<String> batchEmails, String subject, String templateName,
-                           Map<String, Object> templateVars, Map<String, User> recipientMap) {
+    /**
+     * Divides emails into batches of the configured size
+     */
+    private List<List<String>> partitionEmails(Collection<String> emails) {
+        return emails.stream()
+                .collect(Collectors.groupingBy(email ->
+                        emails.stream().toList().indexOf(email) / batchSize))
+                .values()
+                .stream()
+                .toList();
+    }
+
+    /**
+     * Processes a batch of emails
+     */
+    private void processBatch(List<String> batchEmails, String subject, String templateName,
+                              Map<String, Object> templateVars, Map<String, User> recipientMap) {
         try {
             for (String email : batchEmails) {
                 try {
@@ -133,20 +107,8 @@ public class EmailService {
                     personalizedVars.put("recipientName", recipient.getUsername());
 
                     // Prepare email content
-                    Context context = new Context();
-                    context.setVariables(personalizedVars);
-                    String htmlContent = templateEngine.process(templateName, context);
-
-                    MimeMessage message = mailSender.createMimeMessage();
-                    MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-                    helper.setFrom(fromEmail);
-                    helper.setTo(email);
-                    helper.setSubject(subject);
-                    helper.setText(htmlContent, true);
-
-                    mailSender.send(message);
-                    log.debug("Sent email to {}", email);
+                    String htmlContent = renderTemplate(templateName, personalizedVars);
+                    sendEmail(email, subject, htmlContent);
                 } catch (MessagingException e) {
                     log.error("Failed to send email to {}", email, e);
                 }
@@ -156,4 +118,14 @@ public class EmailService {
             throw new RuntimeException("Failed to send batch emails", e);
         }
     }
+
+    /**
+     * Renders an email template with the provided variables
+     */
+    protected String renderTemplate(String templateName, Map<String, Object> variables) {
+        Context context = new Context();
+        context.setVariables(variables);
+        return templateEngine.process(templateName, context);
+    }
+
 }

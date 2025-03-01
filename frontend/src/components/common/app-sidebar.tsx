@@ -1,4 +1,4 @@
-import { BookOpen, Database, FileText, Settings2Icon, Shield, Users } from "lucide-react";
+import { Activity, AlertTriangle, BookOpen, Database, FileText, Settings2Icon, Users } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -52,6 +52,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       isActive: location.pathname === RoutePaths.DOCUMENT_PREFERENCE,
       permissions: ["ROLE_MENTOR", "ROLE_USER"],
     },
+    {
+      title: t("navigation.main.history"),
+      icon: Activity,
+      href: RoutePaths.DOCUMENT_USER_HISTORY,
+      isActive: location.pathname === RoutePaths.DOCUMENT_USER_HISTORY,
+      permissions: ["ROLE_ADMIN", "ROLE_MENTOR", "ROLE_USER"],
+    },
   ];
 
   const adminNavItems = [
@@ -66,6 +73,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Database,
       href: RoutePaths.ADMIN.MASTER_DATA,
       isActive: location.pathname.startsWith(RoutePaths.ADMIN.MASTER_DATA),
+    },
+    {
+      title: t("navigation.admin.reports"),
+      icon: AlertTriangle,
+      href: RoutePaths.ADMIN.REPORTS,
+      isActive: location.pathname.startsWith(RoutePaths.ADMIN.REPORTS),
     },
   ];
 

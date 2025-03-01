@@ -1,4 +1,3 @@
-import { jwtDecode } from "jwt-decode";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -9,14 +8,13 @@ import { ThemeToggle } from "@/components/common/theme-toggle";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { authService } from "@/services/auth.service";
-import { JwtPayload } from "@/types/auth";
 
 export default function OtpVerificationPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { setAuthData, setRole } = useAuth();
+  const { setAuthData } = useAuth();
 
   // Get email from location state or query params
   const username = location.state?.username || new URLSearchParams(location.search).get("username");
@@ -41,16 +39,8 @@ export default function OtpVerificationPage() {
           variant: "success",
         });
 
-        const decodedToken = jwtDecode<JwtPayload>(response.data.accessToken);
-
-        const user = {
-          username: decodedToken.sub,
-          roles: decodedToken.roles.split(","),
-        };
-
         // Update auth context
         setAuthData(response.data);
-        setRole(user.roles[0]);
 
         navigate("/");
       }

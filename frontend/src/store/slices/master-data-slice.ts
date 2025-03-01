@@ -19,31 +19,28 @@ const initialState: MasterDataState = {
   levels: [],
   categories: [],
   loading: false,
-  error: null
+  error: null,
 };
 
-export const fetchMasterData = createAsyncThunk(
-  "masterData/fetchAll",
-  async (_, { rejectWithValue }) => {
-    try {
-      const [majorsResponse, courseCodesReponse, levelsResponse, categoriesResponse] = await Promise.all([
-        masterDataService.getAllByType(MasterDataType.MAJOR, true),
-        masterDataService.getAllByType(MasterDataType.COURSE_CODE, true),
-        masterDataService.getAllByType(MasterDataType.COURSE_LEVEL, true),
-        masterDataService.getAllByType(MasterDataType.DOCUMENT_CATEGORY, true)
-      ]);
+export const fetchMasterData = createAsyncThunk("masterData/fetchAll", async (_, { rejectWithValue }) => {
+  try {
+    const [majorsResponse, courseCodesReponse, levelsResponse, categoriesResponse] = await Promise.all([
+      masterDataService.getAllByType(MasterDataType.MAJOR, true),
+      masterDataService.getAllByType(MasterDataType.COURSE_CODE, true),
+      masterDataService.getAllByType(MasterDataType.COURSE_LEVEL, true),
+      masterDataService.getAllByType(MasterDataType.DOCUMENT_CATEGORY, true),
+    ]);
 
-      return {
-        majors: majorsResponse.data,
-        courseCodes: courseCodesReponse.data,
-        levels: levelsResponse.data,
-        categories: categoriesResponse.data
-      };
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+    return {
+      majors: majorsResponse.data,
+      courseCodes: courseCodesReponse.data,
+      levels: levelsResponse.data,
+      categories: categoriesResponse.data,
+    };
+  } catch (error) {
+    return rejectWithValue(error.message);
   }
-);
+});
 
 const masterDataSlice = createSlice({
   name: "masterData",
@@ -66,7 +63,7 @@ const masterDataSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
-  }
+  },
 });
 
 export const selectMasterData = (state: RootState) => state.masterData;

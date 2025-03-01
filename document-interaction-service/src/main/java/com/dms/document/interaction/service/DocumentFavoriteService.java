@@ -9,25 +9,19 @@ import com.dms.document.interaction.exception.DuplicateFavoriteException;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentFavorite;
 import com.dms.document.interaction.model.DocumentInformation;
-import com.dms.document.interaction.model.UserDocumentHistory;
+import com.dms.document.interaction.model.DocumentUserHistory;
 import com.dms.document.interaction.repository.DocumentFavoriteRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
-import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
+import com.dms.document.interaction.repository.DocumentUserHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -37,7 +31,7 @@ public class DocumentFavoriteService {
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
     private final DocumentPreferencesService documentPreferencesService;
-    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
+    private final DocumentUserHistoryRepository documentUserHistoryRepository;
 
     public void favoriteDocument(String documentId, String username) {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
@@ -66,7 +60,7 @@ public class DocumentFavoriteService {
 
         CompletableFuture.runAsync(() -> {
             // History
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(userResponse.userId().toString())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.FAVORITE)
@@ -98,12 +92,12 @@ public class DocumentFavoriteService {
 
         CompletableFuture.runAsync(() -> {
             // History
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(userResponse.userId().toString())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.FAVORITE)
                     .version(doc.getCurrentVersion())
-                    .detail("REMOVE")
+                    .detail("-")
                     .createdAt(Instant.now())
                     .build());
         });

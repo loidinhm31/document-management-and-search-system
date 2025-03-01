@@ -78,11 +78,13 @@ const cleanupCache = async () => {
         } else {
           // Delete all marked entries
           Promise.all(
-            deletionQueue.map(key => {
+            deletionQueue.map((key) => {
               store.delete(key);
               metadataStore.delete(key);
-            })
-          ).then(() => resolve()).catch(reject);
+            }),
+          )
+            .then(() => resolve())
+            .catch(reject);
         }
       };
       request.onerror = () => reject(request.error);
@@ -144,12 +146,7 @@ const getCachedThumbnail = async (cacheKey: string): Promise<Blob | null> => {
 };
 
 // Save thumbnail to cache with metadata
-const cacheThumbnail = async (
-  cacheKey: string,
-  blob: Blob,
-  documentId: string,
-  version: number
-): Promise<void> => {
+const cacheThumbnail = async (cacheKey: string, blob: Blob, documentId: string, version: number): Promise<void> => {
   try {
     const db = await initDB();
     const transaction = db.transaction([STORE_NAME, METADATA_STORE], "readwrite");
@@ -166,7 +163,7 @@ const cacheThumbnail = async (
         timestamp: Date.now(),
         size: blob.size,
         documentId,
-        version
+        version,
       };
       metadataStore.put(metadata);
 
@@ -200,7 +197,7 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
           observer.disconnect();
         }
       },
-      { rootMargin: "50px" }
+      { rootMargin: "50px" },
     );
 
     if (ref.current) {
@@ -242,18 +239,13 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
           // If not in cache, fetch from server
           const response = await documentService.getDocumentThumbnail(
             documentInformation.id,
-            `v=${documentInformation.currentVersion}_${new Date(documentInformation.updatedAt).getTime()}`
+            `v=${documentInformation.currentVersion}_${new Date(documentInformation.updatedAt).getTime()}`,
           );
 
           const blob = new Blob([response.data]);
 
           // Cache the new thumbnail with metadata
-          await cacheThumbnail(
-            cacheKey,
-            blob,
-            documentInformation.id,
-            documentInformation.currentVersion
-          );
+          await cacheThumbnail(cacheKey, blob, documentInformation.id, documentInformation.currentVersion);
 
           // Create and set URL for display
           setThumbnailUrl(URL.createObjectURL(blob));
@@ -293,9 +285,12 @@ export const LazyThumbnail = React.memo(({ documentInformation }: LazyThumbnailP
           <img
             src={thumbnailUrl}
             alt={documentInformation.filename}
-            className={cn("w-full h-full rounded-md",
+            className={cn(
+              "w-full h-full rounded-md",
               documentInformation.documentType === DocumentType.PDF &&
-              documentInformation.status === DocumentStatus.COMPLETED ? "object-cover" : "object-contain"
+                documentInformation.status === DocumentStatus.COMPLETED
+                ? "object-cover"
+                : "object-contain",
             )}
             loading="lazy"
           />

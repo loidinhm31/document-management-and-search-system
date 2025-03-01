@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +37,7 @@ import java.util.Objects;
 public class DiscoverDocumentSearchService extends OpenSearchBaseService {
     private final RestHighLevelClient openSearchClient;
     private final UserClient userClient;
+    private final DocumentFavoriteService documentFavoriteService;
 
     private static final int MIN_SEARCH_LENGTH = 2;
     private static final int MAX_SUGGESTIONS = 10;
@@ -78,7 +80,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
                 return Page.empty(Pageable.unpaged());
             }
 
-            SearchRequest searchRequest = buildSearchRequest(request, searchContext, userResponse.userId().toString());
+            SearchRequest searchRequest = buildSearchRequest(request, searchContext, userResponse.userId());
             SearchResponse searchResponse = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
 
             return processSearchResults(
@@ -92,13 +94,18 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         }
     }
 
-    private SearchRequest buildSearchRequest(DocumentSearchRequest request, SearchContext context, String userId) {
+    private SearchRequest buildSearchRequest(DocumentSearchRequest request, SearchContext context, UUID userId) {
         SearchRequest searchRequest = new SearchRequest(INDEX_NAME);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Add sharing access filter
-        addSharingAccessFilter(queryBuilder, userId);
+        addSharingAccessFilter(queryBuilder, userId.toString());
+
+        // Add favorite filter if requested
+        if (Boolean.TRUE.equals(request.getFavoriteOnly())) {
+            documentFavoriteService.addFavoriteFilter(queryBuilder, userId);
+        }
 
         // Add filter conditions
         addFilterConditions(queryBuilder, request.getMajor(), request.getCourseCode(), request.getLevel(), request.getCategory(), request.getTags());
@@ -314,6 +321,9 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         if (StringUtils.isNotEmpty(context.originalQuery())) {
             addSuggestionSearchConditions(queryBuilder, request, context);
         }
+
+        // Boost documents based on recommendation count
+        addRecommendationBoost(queryBuilder);
 
         searchSourceBuilder.query(queryBuilder)
                 .size(MAX_SUGGESTIONS)

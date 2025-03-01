@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger
+  DialogTrigger,
 } from "@/components/ui/dialog";
 
 interface DocumentUploadDialogProps {
@@ -36,16 +36,11 @@ export default function DocumentUploadDialog({ onUploadSuccess, trigger }: Docum
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || defaultTrigger}
-      </DialogTrigger>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto"
-                     onInteractOutside={(e) => e.preventDefault()}>
+      <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>{t("document.upload.title")}</DialogTitle>
-          <DialogDescription>
-            {t("document.upload.description")}
-          </DialogDescription>
+          <DialogDescription>{t("document.upload.description")}</DialogDescription>
         </DialogHeader>
         <DocumentUpload onUploadSuccess={handleUploadSuccess} />
       </DialogContent>

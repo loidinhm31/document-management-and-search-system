@@ -10,11 +10,7 @@ export const HighlightCell = ({ highlights }) => {
   const MAX_VISIBLE_HIGHLIGHTS = 2;
 
   if (!highlights || highlights.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground italic">
-        {t("document.discover.status.noMatches")}
-      </div>
-    );
+    return <div className="text-sm text-muted-foreground italic">{t("document.discover.status.noMatches")}</div>;
   }
 
   const visibleHighlights = isExpanded ? highlights : highlights.slice(0, MAX_VISIBLE_HIGHLIGHTS);
@@ -33,12 +29,7 @@ export const HighlightCell = ({ highlights }) => {
       </div>
 
       {hasMore && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 text-xs"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
+        <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setIsExpanded(!isExpanded)}>
           {isExpanded ? (
             <>
               <ChevronUp className="mr-1 h-3 w-3" />

@@ -2,6 +2,7 @@ import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
 import { UpdatePreferencesRequest } from "@/types/document-preference";
+import { UserHistoryFilter, UserHistoryPage } from "@/types/document-user-history";
 import { UserSearchResponse } from "@/types/user";
 
 class DocumentService extends BaseService {
@@ -142,10 +143,10 @@ class DocumentService extends BaseService {
     );
   }
 
-  getRecommendationDocuments(documentId: string, size: number = 6, page: number = 0) {
+  getRecommendationDocuments(documentId: string, size: number = 6, page: number = 0, favoriteOnly: boolean = false) {
     return this.handleApiResponse(
       axiosInstance.get(`/document-search/api/v1/documents/recommendation`, {
-        params: { documentId, size, page },
+        params: { documentId, size, page, favoriteOnly },
       }),
     );
   }
@@ -198,6 +199,21 @@ class DocumentService extends BaseService {
 
   async getDocumentStatistics(documentId: string) {
     return axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/statistics`);
+  }
+
+  async getUserHistory(filters: UserHistoryFilter = {}): Promise<UserHistoryPage> {
+    const params = new URLSearchParams();
+
+    if (filters.actionType) params.append("actionType", filters.actionType);
+    if (filters.fromDate) params.append("fromDate", filters.fromDate);
+    if (filters.toDate) params.append("toDate", filters.toDate);
+    if (filters.documentName) params.append("documentName", filters.documentName);
+
+    params.append("page", String(filters.page || 0));
+    params.append("size", String(filters.size || 20));
+
+    const response = await axiosInstance.get(`/document-interaction/api/v1/documents?${params.toString()}`);
+    return response.data;
   }
 }
 

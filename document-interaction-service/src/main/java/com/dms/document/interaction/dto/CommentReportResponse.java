@@ -9,6 +9,5 @@ public record CommentReportResponse(
         String reportTypeCode,
         TranslationDTO reportTypeTranslation,
         String description,
-        boolean resolved,
         Instant createdAt
 ) {}

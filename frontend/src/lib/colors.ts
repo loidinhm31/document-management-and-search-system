@@ -12,8 +12,8 @@ export const themeColors = {
     "--primary": "37 100% 50%",
     "--primary-foreground": "210 40% 98%",
 
-    "--secondary": "240 20% 97%",
-    "--secondary-foreground": "222 47% 11%",
+    "--secondary": "175 84% 32%",
+    "--secondary-foreground": "0 0% 100%",
 
     "--muted": "240 5% 96%",
     "--muted-foreground": "240 4% 46%",
@@ -52,7 +52,7 @@ export const themeColors = {
     "--primary": "37 90% 60%",
     "--primary-foreground": "222 47% 11%",
 
-    "--secondary": "217 33% 17%",
+    "--secondary": "175 80% 20%",
     "--secondary-foreground": "210 40% 98%",
 
     "--muted": "217 33% 17%",

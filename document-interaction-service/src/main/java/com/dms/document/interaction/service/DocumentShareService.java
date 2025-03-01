@@ -8,21 +8,18 @@ import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.enums.*;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentInformation;
-import com.dms.document.interaction.model.UserDocumentHistory;
+import com.dms.document.interaction.model.DocumentUserHistory;
 import com.dms.document.interaction.repository.DocumentRepository;
-import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
+import com.dms.document.interaction.repository.DocumentUserHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -35,7 +32,7 @@ public class DocumentShareService {
     private final PublishEventService publishEventService;
     private final DocumentRepository documentRepository;
     private final DocumentPreferencesService documentPreferencesService;
-    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
+    private final DocumentUserHistoryRepository documentUserHistoryRepository;
 
     public ShareSettings getDocumentShareSettings(String documentId, String username) {
 
@@ -78,7 +75,7 @@ public class DocumentShareService {
         // Send sync event to indexing document
         CompletableFuture.runAsync(() -> {
             // Hístory
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(doc.getUserId())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.SHARE)

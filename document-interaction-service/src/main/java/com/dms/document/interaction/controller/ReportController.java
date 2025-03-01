@@ -2,8 +2,11 @@ package com.dms.document.interaction.controller;
 
 import com.dms.document.interaction.constant.ApiConstant;
 import com.dms.document.interaction.dto.AdminCommentReportResponse;
-import com.dms.document.interaction.dto.CommentReportSearchRequest;
-import com.dms.document.interaction.enums.ReportStatus;
+import com.dms.document.interaction.dto.AdminDocumentReportResponse;
+import com.dms.document.interaction.dto.CommentReportDetailResponse;
+import com.dms.document.interaction.dto.DocumentReportDetail;
+import com.dms.document.interaction.enums.CommentReportStatus;
+import com.dms.document.interaction.enums.DocumentReportStatus;
 import com.dms.document.interaction.service.CommentReportService;
 import com.dms.document.interaction.service.DocumentReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +22,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.List;
 
 @RestController
 @RequestMapping(ApiConstant.API_VERSION + "/reports")
@@ -31,45 +35,74 @@ public class ReportController {
     @Operation(summary = "Update report status",
             description = "Update status of document violation report (Admin only)")
     @PutMapping("/documents/{documentId}/status")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateReportStatus(
             @PathVariable String documentId,
-            @RequestParam ReportStatus status,
+            @RequestParam DocumentReportStatus status,
             @AuthenticationPrincipal Jwt jwt) {
         documentReportService.updateReportStatus(documentId, status, jwt.getSubject());
         return ResponseEntity.ok().build();
     }
 
-    @Operation(summary = "Resolve a comment report",
-            description = "Admin endpoint to mark a comment report as resolved or unresolved")
-    @PutMapping("/comments/{reportId}/resolve")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<AdminCommentReportResponse> resolveCommentReport(
-            @PathVariable Long reportId,
-            @RequestParam boolean resolved,
-            @AuthenticationPrincipal Jwt jwt) {
+    @Operation(summary = "Get all document reports with filters",
+            description = "Admin endpoint to retrieve paginated list of document reports with search and filter options")
+    @GetMapping("/documents")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<AdminDocumentReportResponse>> getAllDocumentReports(
+            @RequestParam(required = false) String documentTitle,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant toDate,
+            @RequestParam(required = false) DocumentReportStatus status,
+            @RequestParam(required = false) String reportTypeCode,
+            Pageable pageable) {
 
-        return ResponseEntity.ok(commentReportService.resolveCommentReport(
-                reportId, resolved, jwt.getSubject()));
+        return ResponseEntity.ok(documentReportService.getAdminDocumentReports(
+                documentTitle, fromDate, toDate, status, reportTypeCode, pageable));
+    }
+
+    @Operation(summary = "Get all report details for a specific document",
+            description = "Admin endpoint to retrieve all detailed reports for a specific document")
+    @GetMapping("/documents/{documentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<DocumentReportDetail>> getDocumentReportDetails(
+            @PathVariable String documentId, @RequestParam DocumentReportStatus status) {
+        return ResponseEntity.ok(documentReportService.getDocumentReportDetails(documentId, status));
+    }
+
+    @Operation(summary = "Update a comment report status",
+            description = "Admin endpoint to update a comment report status")
+    @PutMapping("/comments/{commentId}/resolve")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AdminCommentReportResponse> resolveCommentReport(
+            @PathVariable Long commentId,
+            @RequestParam CommentReportStatus status,
+            @AuthenticationPrincipal Jwt jwt) {
+        commentReportService.resolveCommentReport(
+                commentId, status, jwt.getSubject());
+        return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Get all comment reports with filters",
             description = "Admin endpoint to retrieve paginated list of comment reports with search and filter options")
     @GetMapping("/comments")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<AdminCommentReportResponse>> getAllCommentReports(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant toDate,
             @RequestParam(required = false) String commentContent,
             @RequestParam(required = false) String reportTypeCode,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant createdTo,
-            @RequestParam(required = false) Boolean resolved,
-            Pageable pageable,
-            @AuthenticationPrincipal Jwt jwt) {
+            @RequestParam(required = false) CommentReportStatus status,
+            Pageable pageable) {
 
-        CommentReportSearchRequest searchRequest = new CommentReportSearchRequest(
-                commentContent, reportTypeCode, createdFrom, createdTo, resolved
-        );
+        return ResponseEntity.ok(commentReportService.getAdminCommentReports(fromDate, toDate, commentContent, reportTypeCode, status, pageable));
+    }
 
-        return ResponseEntity.ok(commentReportService.getAdminCommentReports(searchRequest, pageable));
+    @Operation(summary = "Get all reports for a specific comment",
+            description = "Admin endpoint to retrieve all reports for a specific comment")
+    @GetMapping("/comments/{commentId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<CommentReportDetailResponse>> getCommentReportsByCommentId(
+            @PathVariable Long commentId, @RequestParam CommentReportStatus status) {
+        return ResponseEntity.ok(commentReportService.getCommentReportsByCommentId(commentId, status));
     }
 }

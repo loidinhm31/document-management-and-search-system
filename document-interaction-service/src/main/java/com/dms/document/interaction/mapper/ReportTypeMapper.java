@@ -51,7 +51,6 @@ public class ReportTypeMapper {
                 report.getReportTypeCode(),
                 translation,
                 report.getDescription(),
-                report.isResolved(),
                 report.getCreatedAt()
         );
     }

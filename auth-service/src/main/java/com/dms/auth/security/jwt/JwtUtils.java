@@ -72,7 +72,7 @@ public class JwtUtils {
                 .claim("is2faEnabled", userDetails.is2faEnabled())
                 .claim("roles", userDetails.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
-                        .collect(Collectors.joining(",")))
+                        .collect(Collectors.toList()))
                 .issuedAt(new Date())
                 .expiration(new Date((new Date()).getTime() + accessTokenExpirationMs))
                 .signWith(privateKey, SignatureAlgorithm.RS256)

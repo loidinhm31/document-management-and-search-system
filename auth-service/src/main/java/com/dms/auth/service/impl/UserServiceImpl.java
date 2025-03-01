@@ -45,9 +45,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl extends BaseService implements UserService {
-    @Value("${app.frontend.url}")
-    private String frontendUrl;
-
     @Autowired
     private AuthenticationManager authenticationManager;
 
@@ -223,7 +220,7 @@ public class UserServiceImpl extends BaseService implements UserService {
         passwordResetTokenRepository.save(resetToken);
 
         // Send email
-        publishEventService.sendPasswordResetEmail(user, token, 5); // 5 hours expiry
+        publishEventService.sendPasswordResetEmail(user, token, 5 * 60); // 5 hours expiry
     }
 
     @Override

@@ -70,5 +70,5 @@ rabbitmq:
   exchanges:
     notification: notification.exchange
   routing-keys:
-    otp: notification.otp.email.routing-key
-    password-reset: notification.password-reset.routing-key
+    email-auth: notification.email.auth.routing-key
+

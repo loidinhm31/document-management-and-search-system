@@ -17,6 +17,7 @@ public class DocumentSearchRequest {
     private String courseCode;
     private String level;
     private String category;
+    private Boolean favoriteOnly;
     private String sortField;
     private String sortDirection;
     private Set<String> tags;

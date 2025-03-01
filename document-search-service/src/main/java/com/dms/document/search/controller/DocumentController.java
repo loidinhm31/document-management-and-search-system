@@ -62,6 +62,7 @@ public class DocumentController {
     @GetMapping("recommendation")
     public ResponseEntity<Page<DocumentResponseDto>> getRecommendationDocuments(
             @RequestParam(required = false) String documentId,
+            @RequestParam(required = false) Boolean favoriteOnly,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam int page,
             @AuthenticationPrincipal Jwt jwt) {
@@ -72,6 +73,7 @@ public class DocumentController {
         // Get recommendations
         Page<DocumentResponseDto> recommendations = documentRecommendationService.getRecommendations(
                 documentId,
+                favoriteOnly,
                 username,
                 pageable
         );

@@ -2,7 +2,7 @@ package com.dms.processor.opensearch;
 
 import com.dms.processor.enums.DocumentStatus;
 import com.dms.processor.enums.DocumentType;
-import com.dms.processor.enums.ReportStatus;
+import com.dms.processor.enums.DocumentReportStatus;
 import com.dms.processor.enums.SharingType;
 import lombok.Builder;
 import lombok.Data;
@@ -34,5 +34,6 @@ public class DocumentIndex {
     private DocumentStatus status;
     private String language;
     private Instant createdAt;
-    private ReportStatus reportStatus;
+    private DocumentReportStatus documentReportStatus;
+    private Integer recommendationCount;
 }

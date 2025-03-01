@@ -17,7 +17,7 @@ import { DocumentPreferences, InteractionStats, PreferenceCategory } from "@/typ
 
 const SUPPORTED_LANGUAGES = [
   { code: "en", display: "English" },
-  { code: "vi", display: "Tiếng Việt" }
+  { code: "vi", display: "Tiếng Việt" },
 ];
 
 export default function DocumentPreferencesManager() {
@@ -36,20 +36,20 @@ export default function DocumentPreferencesManager() {
   // Get display value for a tag (translated if it's a master data code)
   const getTagDisplay = (tag: string) => {
     // First check if it's a language code
-    const language = SUPPORTED_LANGUAGES.find(lang => lang.code === tag);
+    const language = SUPPORTED_LANGUAGES.find((lang) => lang.code === tag);
     if (language) return language.display;
 
     // Check in each master data type
-    const majorItem = majors?.find(m => m.code === tag);
+    const majorItem = majors?.find((m) => m.code === tag);
     if (majorItem) return majorItem.translations[i18n.language] || majorItem.translations.en;
 
-    const courseCodeItem = courseCodes?.find(m => m.code === tag);
+    const courseCodeItem = courseCodes?.find((m) => m.code === tag);
     if (courseCodeItem) return courseCodeItem.translations[i18n.language] || courseCodeItem.translations.en;
 
-    const levelItem = levels?.find(l => l.code === tag);
+    const levelItem = levels?.find((l) => l.code === tag);
     if (levelItem) return levelItem.translations[i18n.language] || levelItem.translations.en;
 
-    const categoryItem = categories?.find(c => c.code === tag);
+    const categoryItem = categories?.find((c) => c.code === tag);
     if (categoryItem) return categoryItem.translations[i18n.language] || categoryItem.translations.en;
 
     return tag;
@@ -71,19 +71,21 @@ export default function DocumentPreferencesManager() {
         const [weightsRes, statsRes, tagsRes] = await Promise.all([
           documentService.getDocumentContentWeights(),
           documentService.getInteractionStatistics(),
-          documentService.getRecommendedTags()
+          documentService.getRecommendedTags(),
         ]);
-        setWeights(Object.entries(weightsRes.data).map(([type, weight]) => ({
-          type,
-          weight: weight as number
-        })));
+        setWeights(
+          Object.entries(weightsRes.data).map(([type, weight]) => ({
+            type,
+            weight: weight as number,
+          })),
+        );
         setStats(statsRes.data);
         setRecommendedTags(tagsRes.data);
       } catch (error) {
         toast({
           title: t("common.error"),
           description: t("document.preferences.fetchError"),
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -103,18 +105,18 @@ export default function DocumentPreferencesManager() {
         preferredLevels: Array.from(preferences.preferredLevels || []),
         preferredCategories: Array.from(preferences.preferredCategories || []),
         preferredTags: Array.from(preferences.preferredTags || []),
-        languagePreferences: Array.from(preferences.languagePreferences || [])
+        languagePreferences: Array.from(preferences.languagePreferences || []),
       });
       toast({
         title: t("common.success"),
         description: t("document.preferences.updateSuccess"),
-        variant: "success"
+        variant: "success",
       });
     } catch (error) {
       toast({
         title: t("common.error"),
         description: t("document.preferences.updateError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setSaving(false);
@@ -141,9 +143,7 @@ export default function DocumentPreferencesManager() {
           <Card>
             <CardHeader>
               <CardTitle>{t("document.preferences.contentPreferences.title")}</CardTitle>
-              <CardDescription>
-                {t("document.preferences.contentPreferences.description")}
-              </CardDescription>
+              <CardDescription>{t("document.preferences.contentPreferences.description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Language Preferences */}
@@ -151,11 +151,13 @@ export default function DocumentPreferencesManager() {
                 <Label>{t("document.preferences.contentPreferences.language.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.languagePreferences || [])}
-                  onChange={(languages) => setPreferences(prev => ({
-                    ...prev,
-                    languagePreferences: new Set(languages)
-                  }))}
-                  recommendedTags={SUPPORTED_LANGUAGES.map(lang => lang.code)}
+                  onChange={(languages) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      languagePreferences: new Set(languages),
+                    }))
+                  }
+                  recommendedTags={SUPPORTED_LANGUAGES.map((lang) => lang.code)}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.preferences.contentPreferences.language.placeholder")}
                 />
@@ -166,11 +168,13 @@ export default function DocumentPreferencesManager() {
                 <Label>{t("document.preferences.contentPreferences.majors.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.preferredMajors || [])}
-                  onChange={(majors) => setPreferences(prev => ({
-                    ...prev,
-                    preferredMajors: new Set(majors)
-                  }))}
-                  recommendedTags={majors?.map(major => major.code)}
+                  onChange={(majors) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      preferredMajors: new Set(majors),
+                    }))
+                  }
+                  recommendedTags={majors?.map((major) => major.code)}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.majorPlaceholder")}
                 />
@@ -181,11 +185,13 @@ export default function DocumentPreferencesManager() {
                 <Label>{t("document.preferences.contentPreferences.courseCode.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.preferredCourseCodes || [])}
-                  onChange={(course) => setPreferences(prev => ({
-                    ...prev,
-                    preferredCourseCodes: new Set(course)
-                  }))}
-                  recommendedTags={courseCodes?.map(course => course.code)}
+                  onChange={(course) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      preferredCourseCodes: new Set(course),
+                    }))
+                  }
+                  recommendedTags={courseCodes?.map((course) => course.code)}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.courseCodePlaceholder")}
                 />
@@ -196,11 +202,13 @@ export default function DocumentPreferencesManager() {
                 <Label>{t("document.preferences.contentPreferences.levels.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.preferredLevels || [])}
-                  onChange={(levels) => setPreferences(prev => ({
-                    ...prev,
-                    preferredLevels: new Set(levels)
-                  }))}
-                  recommendedTags={levels?.map(level => level.code)}
+                  onChange={(levels) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      preferredLevels: new Set(levels),
+                    }))
+                  }
+                  recommendedTags={levels?.map((level) => level.code)}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.levelPlaceholder")}
                 />
@@ -211,11 +219,13 @@ export default function DocumentPreferencesManager() {
                 <Label>{t("document.preferences.contentPreferences.categories.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.preferredCategories || [])}
-                  onChange={(categories) => setPreferences(prev => ({
-                    ...prev,
-                    preferredCategories: new Set(categories)
-                  }))}
-                  recommendedTags={categories?.map(category => category.code)}
+                  onChange={(categories) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      preferredCategories: new Set(categories),
+                    }))
+                  }
+                  recommendedTags={categories?.map((category) => category.code)}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.categoryPlaceholder")}
                 />
@@ -226,10 +236,12 @@ export default function DocumentPreferencesManager() {
                 <Label>{t("document.preferences.contentPreferences.tags.label")}</Label>
                 <TagInputHybrid
                   value={Array.from(preferences?.preferredTags || [])}
-                  onChange={(tags) => setPreferences(prev => ({
-                    ...prev,
-                    preferredTags: new Set(tags)
-                  }))}
+                  onChange={(tags) =>
+                    setPreferences((prev) => ({
+                      ...prev,
+                      preferredTags: new Set(tags),
+                    }))
+                  }
                   recommendedTags={recommendedTags}
                   onSearch={async (query) => {
                     try {
@@ -244,11 +256,7 @@ export default function DocumentPreferencesManager() {
                 />
               </div>
 
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full"
-              >
+              <Button onClick={handleSave} disabled={saving} className="w-full">
                 {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 <Save className="mr-2 h-4 w-4" />
                 {t("document.preferences.actions.save")}
@@ -261,9 +269,7 @@ export default function DocumentPreferencesManager() {
           <Card>
             <CardHeader>
               <CardTitle>{t("document.preferences.analytics.title")}</CardTitle>
-              <CardDescription>
-                {t("document.preferences.analytics.description")}
-              </CardDescription>
+              <CardDescription>{t("document.preferences.analytics.description")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Content Type Weights */}
@@ -280,9 +286,7 @@ export default function DocumentPreferencesManager() {
                           </p>
                         </div>
                         <div className="w-24 text-right">
-                          <span className="text-sm font-medium">
-                            {(weight * 100).toFixed(1)}%
-                          </span>
+                          <span className="text-sm font-medium">{(weight * 100).toFixed(1)}%</span>
                         </div>
                       </div>
                     ))}
@@ -299,17 +303,13 @@ export default function DocumentPreferencesManager() {
                       <div className="text-sm font-medium text-muted-foreground">
                         {t("document.preferences.analytics.stats.comments")}
                       </div>
-                      <div className="text-2xl font-bold">
-                        {stats.interactionCounts?.COMMENT || 0}
-                      </div>
+                      <div className="text-2xl font-bold">{stats.interactionCounts?.COMMENT || 0}</div>
                     </div>
                     <div className="rounded-lg border p-3">
                       <div className="text-sm font-medium text-muted-foreground">
                         {t("document.preferences.analytics.stats.uniqueDocuments")}
                       </div>
-                      <div className="text-2xl font-bold">
-                        {stats.uniqueDocumentsAccessed || 0}
-                      </div>
+                      <div className="text-2xl font-bold">{stats.uniqueDocumentsAccessed || 0}</div>
                     </div>
                   </div>
                 </div>

@@ -1,10 +1,11 @@
 package com.dms.document.interaction.dto;
 
+import com.dms.document.interaction.enums.CommentReportStatus;
+
 import java.time.Instant;
 import java.util.UUID;
 
 public record AdminCommentReportResponse(
-        Long id,
         String documentId,
         Long commentId,
         String commentContent,
@@ -13,11 +14,12 @@ public record AdminCommentReportResponse(
         UUID commentUserId,
         String commentUsername,
         String reportTypeCode,
-        TranslationDTO reportTypeTranslation,
         String description,
-        boolean resolved,
+        boolean processed,
+        CommentReportStatus status,
         UUID resolvedBy,
         String resolvedByUsername,
         Instant createdAt,
-        Instant resolvedAt
+        Instant resolvedAt,
+        int reportCount
 ) {}
