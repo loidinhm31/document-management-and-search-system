@@ -4,6 +4,7 @@ import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.DocumentSearchCriteria;
 import com.dms.document.search.dto.UserResponse;
 import com.dms.document.search.enums.AppRole;
+import com.dms.document.search.enums.DocumentReportStatus;
 import com.dms.document.search.enums.SharingType;
 import com.dms.document.search.model.DocumentInformation;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,10 @@ public class DocumentService {
         );
 
         criteriaList.add(new Criteria().orOperator(ownedCriteria, sharedCriteria));
+
+        // Violation criteria
+        Criteria violatedCriteria = Criteria.where("reportStatus").ne(DocumentReportStatus.RESOLVED.name());
+        criteriaList.add(violatedCriteria);
 
         // Add search criteria if provided
         if (StringUtils.isNotBlank(criteria.getSearch())) {

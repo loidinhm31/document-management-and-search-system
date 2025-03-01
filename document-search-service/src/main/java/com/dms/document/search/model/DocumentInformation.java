@@ -1,5 +1,6 @@
 package com.dms.document.search.model;
 
+import com.dms.document.search.enums.DocumentReportStatus;
 import com.dms.document.search.enums.DocumentStatus;
 import com.dms.document.search.enums.DocumentType;
 import com.dms.document.search.enums.SharingType;
@@ -104,4 +105,10 @@ public class DocumentInformation {
 
     @Field("updated_by")
     private String updatedBy;
+
+    @Field("report_status")
+    private DocumentReportStatus reportStatus;
+
+    @Field("recommendation_count")
+    private Integer recommendationCount;
 }

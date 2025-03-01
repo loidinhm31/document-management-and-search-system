@@ -111,7 +111,7 @@ public class DocumentInformation {
     private String updatedBy;
 
     @Field("report_status")
-    private DocumentReportStatus documentReportStatus;
+    private DocumentReportStatus reportStatus;
 
     @Field("recommendation_count")
     private Integer recommendationCount;

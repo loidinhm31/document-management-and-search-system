@@ -2,6 +2,7 @@ package com.dms.document.search.service;
 
 import com.dms.document.search.dto.DocumentResponseDto;
 import com.dms.document.search.dto.SearchContext;
+import com.dms.document.search.enums.DocumentReportStatus;
 import com.dms.document.search.enums.DocumentType;
 import com.dms.document.search.enums.QueryType;
 import com.dms.document.search.enums.SharingType;
@@ -50,6 +51,9 @@ public abstract class OpenSearchBaseService {
                 .must(QueryBuilders.termQuery("sharingType", SharingType.SPECIFIC.name()))
                 .must(QueryBuilders.termsQuery("sharedWith", Collections.singletonList(userId)));
         sharingFilter.should(specificAccess);
+
+        // Violation access: Exclude reported documents
+        sharingFilter.mustNot(QueryBuilders.termQuery("reportStatus", DocumentReportStatus.RESOLVED.name()));
 
         sharingFilter.minimumShouldMatch(1);
         queryBuilder.filter(sharingFilter);

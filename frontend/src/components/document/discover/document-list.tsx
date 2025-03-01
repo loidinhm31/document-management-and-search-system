@@ -426,7 +426,7 @@ export const DocumentList = () => {
                           <TableCell className="font-medium truncate">
                             <Button
                               variant="link"
-                              className="font-medium truncate p-0 h-auto"
+                              className="font-medium truncate p-0 h-auto text-wrap"
                               onClick={() => navigate(`/discover/${doc.id}`)}
                             >
                               {doc.filename}

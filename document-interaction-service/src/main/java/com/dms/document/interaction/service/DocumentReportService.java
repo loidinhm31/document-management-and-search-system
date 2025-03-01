@@ -127,7 +127,7 @@ public class DocumentReportService {
         // Update main document status
         DocumentInformation document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new IllegalArgumentException("Document not found"));
-        document.setDocumentReportStatus(newStatus);
+        document.setReportStatus(newStatus);
         documentRepository.save(document);
 
         // Send sync event
