@@ -274,13 +274,6 @@
       "unknown": "An unknown error occurred"
     }
   },
-  "validation": {
-    "required": "{{field}} is required",
-    "email": "Invalid email format",
-    "minLength": "{{field}} must be at least {{min}} characters",
-    "maxLength": "{{field}} must not exceed {{max}} characters",
-    "passwordMatch": "Passwords do not match"
-  },
   "admin": {
     "users": {
       "title": "User Management",
@@ -677,9 +670,6 @@
         "next": "Next",
         "pageInfo": "Page {{current}} of {{total}}",
         "slideInfo": "Slide {{current}} of {{total}}"
-      },
-      "preview": {
-        "unavailable": "PDF preview not available in your browser"
       }
     },
     "search": {
