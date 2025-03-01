@@ -250,8 +250,8 @@ public class DocumentReportService {
     }
 
     @Transactional(readOnly = true)
-    public List<DocumentReportDetail> getDocumentReportDetails(String documentId, Boolean processed) {
-        List<DocumentReport> reports = documentReportRepository.findByDocumentIdAndProcessed(documentId, processed);
+    public List<DocumentReportDetail> getDocumentReportDetails(String documentId, DocumentReportStatus status) {
+        List<DocumentReport> reports = documentReportRepository.findByDocumentIdAndStatus(documentId, status);
 
         if (reports.isEmpty()) {
             return Collections.emptyList();

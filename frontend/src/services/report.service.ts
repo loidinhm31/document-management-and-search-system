@@ -1,6 +1,6 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
-import { ReportType } from "@/types/document-report";
+import { ReportStatus, ReportType } from "@/types/document-report";
 
 interface DocumentReportFilter {
   documentTitle?: string;
@@ -49,11 +49,11 @@ class ReportService extends BaseService {
     );
   }
 
-  getDocumentReportDetail(documentId: string, processed: boolean) {
+  getDocumentReportDetail(documentId: string, status: ReportStatus) {
     return this.handleApiResponse(
       axiosInstance.get(`/document-interaction/api/v1/reports/documents/${documentId}`, {
         params: {
-          processed,
+          status,
         },
       }),
     );
@@ -79,8 +79,12 @@ class ReportService extends BaseService {
     );
   }
 
-  getCommentReportDetail(reportId: number) {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/comments/${reportId}`));
+  getCommentReportDetail(commentId: number, status: ReportStatus) {
+    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/comments/${commentId}`, {
+      params: {
+        status
+      }
+    }));
   }
 
   resolveCommentReport(reportId: number, status: string) {

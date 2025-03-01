@@ -123,7 +123,7 @@ public class CommentReportService {
             throw new IllegalStateException("Only administrators can resolve reports");
         }
 
-        List<CommentReport> commentReports = commentReportRepository.findByCommentId(commentId);
+        List<CommentReport> commentReports = commentReportRepository.findByCommentIdAndProcessed(commentId, Boolean.FALSE);
         if (commentReports.isEmpty()) {
             throw new EntityNotFoundException("Comment report not found");
         }
@@ -155,10 +155,11 @@ public class CommentReportService {
 
         // Resolve actual comment
         AtomicReference<String> documentId = new AtomicReference<>();
-        documentCommentRepository.findByDocumentIdAndId(commentReports.get(0).getDocumentId(), commentId)
+        commentReports.stream().findFirst()
+                .flatMap(cmr -> documentCommentRepository.findByDocumentIdAndId(cmr.getDocumentId(), commentId))
                 .ifPresent(dc -> {
+                    documentId.set(dc.getDocumentId());
                     if (newStatus == CommentReportStatus.RESOLVED) {
-                        documentId.set(dc.getDocumentId());
                         dc.setContent("[deleted]");
                         dc.setFlag(-1); // Flag -1 is deleted by reporter
                         dc.setUpdatedAt(Instant.now());
@@ -166,6 +167,7 @@ public class CommentReportService {
                         dc.setFlag(1);
                     }
                 });
+
 
         CompletableFuture.runAsync(() -> {
             // Notify user of resolution
@@ -252,12 +254,12 @@ public class CommentReportService {
     }
 
     @Transactional(readOnly = true)
-    public List<CommentReportDetailResponse> getCommentReportsByCommentId(Long commentId) {
+    public List<CommentReportDetailResponse> getCommentReportsByCommentId(Long commentId, CommentReportStatus status) {
         // Lấy comment từ repository
         DocumentComment comment = documentCommentRepository.findById(commentId)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        List<CommentReport> reports = commentReportRepository.findByCommentId(commentId);
+        List<CommentReport> reports = commentReportRepository.findByCommentIdAndStatus(commentId, status);
 
         if (reports.isEmpty()) {
             return Collections.emptyList();

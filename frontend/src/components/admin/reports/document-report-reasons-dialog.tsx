@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { reportService } from "@/services/report.service";
-import { ReportReason, ReportType } from "@/types/document-report";
+import { ReportReason, ReportStatus, ReportType } from "@/types/document-report";
 
 interface DocumentReportReasonsDialogProps {
   open: boolean;
@@ -16,7 +16,7 @@ interface DocumentReportReasonsDialogProps {
   documentId: string;
   documentTitle: string;
   reportTypes: ReportType[];
-  processed: boolean;
+  status: ReportStatus;
 }
 
 const DocumentReportReasonsDialog: React.FC<DocumentReportReasonsDialogProps> = ({
@@ -25,7 +25,7 @@ const DocumentReportReasonsDialog: React.FC<DocumentReportReasonsDialogProps> = 
   documentId,
   documentTitle,
   reportTypes,
-  processed,
+  status,
 }) => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
@@ -41,7 +41,7 @@ const DocumentReportReasonsDialog: React.FC<DocumentReportReasonsDialogProps> = 
   const fetchReportReasons = async () => {
     setLoading(true);
     try {
-      const response = await reportService.getDocumentReportDetail(documentId, processed);
+      const response = await reportService.getDocumentReportDetail(documentId, status);
       setReportReasons(response.data || []);
     } catch (error) {
       toast({

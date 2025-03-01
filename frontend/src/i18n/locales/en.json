@@ -493,7 +493,6 @@
         "processError": "Failed to update comment status",
         "processSuccess": "Comment Report processed successfully",
         "noReports": "No comment reports found",
-        "contentRemoved": "Content removed due to policy violation",
         "filters": {
           "commentContent": "Search by comment content",
           "reportType": "Report type",
@@ -541,7 +540,6 @@
             "resolvedBy": "Resolved by {{user}}",
             "resolvedDescription": "Remove comment content",
             "rejectedDescription": "Dismiss the report as invalid or not requiring action"
-
           },
           "process": {
             "title": "Resolve Comment Report",

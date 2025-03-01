@@ -1,5 +1,6 @@
 package com.dms.document.interaction.repository;
 
+import com.dms.document.interaction.enums.DocumentReportStatus;
 import com.dms.document.interaction.model.DocumentReport;
 import com.dms.document.interaction.model.projection.DocumentReportProjection;
 import org.springframework.data.domain.Page;
@@ -17,6 +18,8 @@ public interface DocumentReportRepository extends JpaRepository<DocumentReport, 
     Optional<DocumentReport> findByDocumentIdAndUserIdAndProcessed(String documentId, UUID userId, boolean processed);
 
     List<DocumentReport> findByDocumentIdAndProcessed(String documentId, boolean processed);
+
+    List<DocumentReport> findByDocumentIdAndStatus(String documentId, DocumentReportStatus status);
 
     @Query(value = """
             SELECT 

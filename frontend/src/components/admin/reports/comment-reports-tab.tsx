@@ -328,11 +328,7 @@ const CommentReportsTab = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {report.processed && report.status === ReportStatusValues.RESOLVED ? (
-                      <span className="text-muted-foreground italic">{t("admin.reports.comments.contentRemoved")}</span>
-                    ) : (
-                      truncateContent(report.commentContent)
-                    )}
+                    {truncateContent(report.commentContent)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center">
@@ -415,7 +411,7 @@ const CommentReportsTab = () => {
             onOpenChange={setShowReasonsDialog}
             commentId={selectedReport.commentId}
             commentContent={selectedReport.commentContent}
-            isResolved={selectedReport.processed}
+            status={selectedReport.status}
             reportTypes={reportTypes}
           />
 

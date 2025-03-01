@@ -429,7 +429,7 @@ const DocumentReportsTab = () => {
           documentId={selectedReport.documentId}
           documentTitle={selectedReport.documentTitle}
           reportTypes={reportTypes}
-          processed={selectedReport.processed}
+          status={selectedReport.status}
         />
       )}
 

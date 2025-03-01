@@ -65,8 +65,8 @@ public class ReportController {
     @GetMapping("/documents/{documentId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<DocumentReportDetail>> getDocumentReportDetails(
-            @PathVariable String documentId, @RequestParam Boolean processed) {
-        return ResponseEntity.ok(documentReportService.getDocumentReportDetails(documentId, processed));
+            @PathVariable String documentId, @RequestParam DocumentReportStatus status) {
+        return ResponseEntity.ok(documentReportService.getDocumentReportDetails(documentId, status));
     }
 
     @Operation(summary = "Update a comment report status",
@@ -102,7 +102,7 @@ public class ReportController {
     @GetMapping("/comments/{commentId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<CommentReportDetailResponse>> getCommentReportsByCommentId(
-            @PathVariable Long commentId) {
-        return ResponseEntity.ok(commentReportService.getCommentReportsByCommentId(commentId));
+            @PathVariable Long commentId, @RequestParam CommentReportStatus status) {
+        return ResponseEntity.ok(commentReportService.getCommentReportsByCommentId(commentId, status));
     }
 }

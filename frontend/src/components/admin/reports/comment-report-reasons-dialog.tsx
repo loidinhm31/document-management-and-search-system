@@ -15,14 +15,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { reportService } from "@/services/report.service";
-import { CommentReportDetail, ReportType } from "@/types/document-report";
+import { CommentReportDetail, ReportStatus, ReportStatusValues, ReportType } from "@/types/document-report";
 
 interface CommentReportReasonsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   commentId: number;
   commentContent: string;
-  isResolved: boolean;
+  status: ReportStatus;
   reportTypes: ReportType[];
 }
 
@@ -30,7 +30,7 @@ const CommentReportReasonsDialog: React.FC<CommentReportReasonsDialogProps> = ({
   open,
   onOpenChange,
   commentId,
-  isResolved,
+  status,
   reportTypes,
 }) => {
   const { t, i18n } = useTranslation();
@@ -47,7 +47,7 @@ const CommentReportReasonsDialog: React.FC<CommentReportReasonsDialogProps> = ({
   const fetchReportDetails = async () => {
     setLoading(true);
     try {
-      const response = await reportService.getCommentReportDetail(commentId);
+      const response = await reportService.getCommentReportDetail(commentId, status);
       console.log("rers", response.data);
       setReportDetails(response.data);
     } catch (error) {
@@ -93,13 +93,7 @@ const CommentReportReasonsDialog: React.FC<CommentReportReasonsDialogProps> = ({
                   <div className="space-y-2">
                     <h3 className="font-medium">{t("admin.reports.comments.dialogs.reasons.comment")}</h3>
                     <div className="bg-muted p-3 rounded-md">
-                      {isResolved ? (
-                        <span className="italic text-muted-foreground">
-                          {t("admin.reports.comments.contentRemoved")}
-                        </span>
-                      ) : (
-                        reportDetails[0].commentContent
-                      )}
+                      {reportDetails[0].commentContent}
                     </div>
                   </div>
                 </div>

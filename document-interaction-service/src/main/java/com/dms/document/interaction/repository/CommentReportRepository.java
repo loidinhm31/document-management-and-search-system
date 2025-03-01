@@ -1,5 +1,6 @@
 package com.dms.document.interaction.repository;
 
+import com.dms.document.interaction.enums.CommentReportStatus;
 import com.dms.document.interaction.model.CommentReport;
 import com.dms.document.interaction.model.projection.CommentReportProjection;
 import org.springframework.data.domain.Page;
@@ -23,7 +24,7 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
     @Query("SELECT cr FROM CommentReport cr WHERE cr.userId = :userId AND cr.documentId = :documentId AND cr.processed = :processed")
     List<CommentReport> findReportsByUserAndDocument(@Param("userId") UUID userId, @Param("documentId") String documentId, @Param("processed") boolean processed);
 
-    List<CommentReport> findByCommentId(Long commentId);
+    List<CommentReport> findByCommentIdAndStatus(Long commentId, CommentReportStatus status);
 
     List<CommentReport> findByCommentIdAndProcessed(Long commentId, boolean processed);
 
