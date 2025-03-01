@@ -19,10 +19,7 @@ interface RelatedDocumentsProps {
   onDocumentClick?: (document: DocumentInformation) => void;
 }
 
-export function RelatedDocuments({
-                                   documentId,
-                                   onDocumentClick
-                                 }: RelatedDocumentsProps) {
+export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumentsProps) {
   const { t } = useTranslation();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { majors, categories } = useAppSelector(selectMasterData);
@@ -51,7 +48,7 @@ export function RelatedDocuments({
       toast({
         title: t("common.error"),
         description: t("document.related.error"),
-        variant: "destructive"
+        variant: "destructive",
       });
       setHasMore(false);
     } finally {
@@ -72,9 +69,9 @@ export function RelatedDocuments({
         return;
       }
 
-      setDocuments(prev => {
-        const existingIds = new Set(prev.map(doc => doc.id));
-        const uniqueNewDocs = newDocs.filter(doc => !existingIds.has(doc.id));
+      setDocuments((prev) => {
+        const existingIds = new Set(prev.map((doc) => doc.id));
+        const uniqueNewDocs = newDocs.filter((doc) => !existingIds.has(doc.id));
         return [...prev, ...uniqueNewDocs];
       });
       setHasMore(newDocs.length === ITEMS_PER_PAGE);
@@ -102,25 +99,26 @@ export function RelatedDocuments({
     }
   }, [currentPage, fetchMoreDocuments]);
 
-  const handleScroll = useCallback((direction: "left" | "right") => {
-    const newIndex = direction === "left"
-      ? Math.max(0, currentIndex - VISIBLE_ITEMS)
-      : currentIndex + VISIBLE_ITEMS;
+  const handleScroll = useCallback(
+    (direction: "left" | "right") => {
+      const newIndex = direction === "left" ? Math.max(0, currentIndex - VISIBLE_ITEMS) : currentIndex + VISIBLE_ITEMS;
 
-    console.log("Handle scroll:", {
-      direction,
-      currentIndex,
-      newIndex,
-      documentsLength: documents.length
-    });
+      console.log("Handle scroll:", {
+        direction,
+        currentIndex,
+        newIndex,
+        documentsLength: documents.length,
+      });
 
-    setCurrentIndex(newIndex);
+      setCurrentIndex(newIndex);
 
-    // Load more data if needed
-    if (direction === "right" && newIndex + VISIBLE_ITEMS >= documents.length && hasMore) {
-      setCurrentPage(prev => prev + 1);
-    }
-  }, [currentIndex, documents.length, hasMore]);
+      // Load more data if needed
+      if (direction === "right" && newIndex + VISIBLE_ITEMS >= documents.length && hasMore) {
+        setCurrentPage((prev) => prev + 1);
+      }
+    },
+    [currentIndex, documents.length, hasMore],
+  );
 
   if (!documents.length && !loading) return null;
 
@@ -165,7 +163,7 @@ export function RelatedDocuments({
             ref={scrollContainerRef}
             className="flex gap-4 transition-transform duration-300 ease-in-out"
             style={{
-              transform: `translateX(-${currentIndex * (280 + 16)}px)` // card width (280px) + gap (16px)
+              transform: `translateX(-${currentIndex * (280 + 16)}px)`, // card width (280px) + gap (16px)
             }}
           >
             {documents.map((doc) => (
@@ -179,9 +177,7 @@ export function RelatedDocuments({
                     <LazyThumbnail documentInformation={doc} />
                   </div>
                   <div>
-                    <h4 className="font-medium line-clamp-2 text-sm">
-                      {doc.filename}
-                    </h4>
+                    <h4 className="font-medium line-clamp-2 text-sm">{doc.filename}</h4>
                     <p className="text-xs text-muted-foreground mt-1">
                       {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })} -{" "}
                       {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}

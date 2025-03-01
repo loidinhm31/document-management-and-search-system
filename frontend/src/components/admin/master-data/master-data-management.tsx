@@ -49,7 +49,7 @@ export default function MasterDataManagement() {
 
       // Build a lookup map for parent names
       const map: Record<string, MasterData> = {};
-      response.data.forEach(item => {
+      response.data.forEach((item) => {
         if (item.id) {
           map[item.id] = item;
         }
@@ -60,7 +60,7 @@ export default function MasterDataManagement() {
       toast({
         title: t("common.error"),
         description: t("masterData.fetchError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoadingParents(false);
@@ -83,7 +83,7 @@ export default function MasterDataManagement() {
       toast({
         title: t("common.error"),
         description: t("masterData.fetchError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -96,7 +96,7 @@ export default function MasterDataManagement() {
 
   const handleTypeChange = (value: MasterDataType) => {
     setSelectedType(value);
-    setSelectedParent("all");  // Reset parent filter when type changes
+    setSelectedParent("all"); // Reset parent filter when type changes
   };
 
   const handleParentChange = (value: string) => {
@@ -109,9 +109,7 @@ export default function MasterDataManagement() {
       if (searchQuery.trim()) {
         const response = await masterDataService.searchByText(searchQuery);
         // Filter by type if needed
-        const filtered = selectedType
-          ? response.data.filter(item => item.type === selectedType)
-          : response.data;
+        const filtered = selectedType ? response.data.filter((item) => item.type === selectedType) : response.data;
         setMasterData(filtered);
       } else {
         fetchMasterData();
@@ -120,7 +118,7 @@ export default function MasterDataManagement() {
       toast({
         title: t("common.error"),
         description: t("admin.masterData.searchError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -135,14 +133,14 @@ export default function MasterDataManagement() {
       toast({
         title: t("common.success"),
         description: t("admin.masterData.deleteSuccess"),
-        variant: "success"
+        variant: "success",
       });
       fetchMasterData();
     } catch (error) {
       toast({
         title: t("common.error"),
         description: t("admin.masterData.deleteError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setShowDeleteDialog(false);
@@ -159,7 +157,7 @@ export default function MasterDataManagement() {
       toast({
         title: t("common.error"),
         description: t("admin.masterData.updateError"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -196,18 +194,12 @@ export default function MasterDataManagement() {
 
             {/* Parent filter - only show for COURSE_CODE */}
             {selectedType === MasterDataType.COURSE_CODE && (
-              <Select
-                value={selectedParent}
-                onValueChange={handleParentChange}
-                disabled={loadingParents}
-              >
+              <Select value={selectedParent} onValueChange={handleParentChange} disabled={loadingParents}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder={t("admin.masterData.selectParent")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">
-                    {t("admin.masterData.allParents")}
-                  </SelectItem>
+                  <SelectItem value="all">{t("admin.masterData.allParents")}</SelectItem>
                   {parentOptions.map((parent) => (
                     <SelectItem key={parent.id} value={parent.id}>
                       {parent.translations.en})
@@ -255,9 +247,7 @@ export default function MasterDataManagement() {
                       <TableHead>{t("admin.masterData.headers.parent")}</TableHead>
                     )}
                     <TableHead>{t("admin.masterData.headers.status")}</TableHead>
-                    <TableHead className="text-right">
-                      {t("admin.masterData.headers.actions")}
-                    </TableHead>
+                    <TableHead className="text-right">{t("admin.masterData.headers.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -266,18 +256,13 @@ export default function MasterDataManagement() {
                       <TableCell className="font-medium">{item.code}</TableCell>
                       <TableCell>{item.translations.en}</TableCell>
                       <TableCell>{item.translations.vi}</TableCell>
-                      <TableCell>
-                        {t(`admin.masterData.types.${item.type.toLowerCase()}`)}
-                      </TableCell>
+                      <TableCell>{t(`admin.masterData.types.${item.type.toLowerCase()}`)}</TableCell>
                       {/* Display parent for COURSE_CODE */}
                       {selectedType === MasterDataType.COURSE_CODE && (
                         <TableCell>{getParentDisplay(item.parentId)}</TableCell>
                       )}
                       <TableCell>
-                        <Switch
-                          checked={item.active}
-                          onCheckedChange={() => handleStatusChange(item)}
-                        />
+                        <Switch checked={item.active} onCheckedChange={() => handleStatusChange(item)} />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -332,7 +317,7 @@ export default function MasterDataManagement() {
           onConfirm={handleDelete}
           title={t("admin.masterData.delete.title")}
           description={t("admin.masterData.delete.description", {
-            name: selectedItem?.translations.en
+            name: selectedItem?.translations.en,
           })}
         />
       </CardContent>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Favorited Document Removal Notice</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="min-width: 100%; background-color: #f8fafc;">
+    <tr>
+        <td align="center" valign="top">
+            <table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto;">
+                <!-- Header -->
+                <tr>
+                    <td align="center" valign="top" style="background-color: #fbbf24; padding: 20px; border-radius: 8px 8px 0 0;">
+                        <div style="font-size: 24px; font-weight: bold; color: #1e293b;">DMS</div>
+                    </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                    <td align="left" valign="top" style="background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                        <p>Hello <span style="font-weight: 600; color: #334155;" th:text="${recipientName ?: 'User'}">User</span>,</p>
+                        <p>
+                            We need to inform you about a document in your favorites list:
+                        </p>
+
+                        <!-- Document info box -->
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin: 20px 0;">
+                            <tr>
+                                <td style="padding: 15px;">
+                                    <h3 style="margin-top: 0; margin-bottom: 10px;" th:text="${documentTitle}">Document Title</h3>
+                                    <p style="margin: 0; color: #64748b;">Processed by: <span style="font-weight: 600;" th:text="${actionUser}">Administrator</span></p>
+                                    <p style="margin: 0; color: #64748b;">Processed on: <span th:text="${#dates.format(#dates.createNow(), 'dd MMM yyyy, HH:mm')}">01 Jan 2023</span></p>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Document Removal notice box -->
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; border-radius: 6px; margin: 20px 0;">
+                            <tr>
+                                <td style="padding: 15px;">
+                                    <p style="margin-top: 0;">
+                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: #ef4444; border-radius: 50%; position: relative; top: 2px; margin-right: 5px; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);"></span>
+                                        Document status:
+                                    </p>
+                                    <p style="text-align: center; margin: 15px 0;">
+                                        <span style="display: inline-block; background-color: #ef4444; color: #ffffff; border-radius: 9999px; padding: 3px 10px; font-size: 14px; font-weight: 600;">Removed</span>
+                                    </p>
+                                    <p style="margin-bottom: 0; font-style: italic; color: #64748b; font-size: 14px;">
+                                        This document has been removed from our system due to a violation of our content policies. It is no longer accessible in your favorites list.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p>We apologize for any inconvenience this may cause. Our content standards are designed to maintain a safe and reliable document repository for all users.</p>
+
+                        <p>If you have any questions about this decision, please contact our support team through the help center.</p>
+
+                        <!-- Footer -->
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px; border-top: 1px solid #e2e8f0;">
+                            <tr>
+                                <td align="center" style="padding-top: 20px; color: #64748b; font-size: 14px;">
+                                    <p>
+                                        Best regards,<br/>
+                                        DMS Team
+                                    </p>
+                                    <p style="font-size: 12px; color: #94a3b8;">
+                                        This is an automated message, please do not reply to this email.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

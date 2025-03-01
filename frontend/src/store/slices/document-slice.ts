@@ -8,7 +8,7 @@ interface DocumentState {
 }
 
 const initialState: DocumentState = {
-  currentDocument: null
+  currentDocument: null,
 };
 
 const documentSlice = createSlice({
@@ -17,8 +17,8 @@ const documentSlice = createSlice({
   reducers: {
     setCurrentDocument: (state, action: PayloadAction<DocumentInformation | null>) => {
       state.currentDocument = action.payload;
-    }
-  }
+    },
+  },
 });
 
 export const { setCurrentDocument } = documentSlice.actions;

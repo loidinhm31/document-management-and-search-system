@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { documentReportService } from "@/services/document-report.service";
 import { CreateReportRequest, DocumentReport, ReportType } from "@/types/document-report";
+import { reportService } from "@/services/report.service";
 
 interface ReportDialogProps {
   documentId: string;
@@ -60,7 +61,7 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
 
   const loadReportTypes = async () => {
     try {
-      const response = await documentReportService.getDocumentReportTypes();
+      const response = await reportService.getDocumentReportTypes();
       setReportTypes(response.data);
     } catch (error) {
       console.error("Error loading report types:", error);
@@ -127,7 +128,9 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
             <div className="grid gap-4 mt-2">
               <div className="grid gap-2">
                 <h4 className="font-medium">{t("document.report.type")}</h4>
-                <p className="text-sm text-muted-foreground">{existingReport.reportTypeTranslation[i18n.language] || existingReport.reportTypeTranslation.en}</p>
+                <p className="text-sm text-muted-foreground">
+                  {existingReport.reportTypeTranslation[i18n.language] || existingReport.reportTypeTranslation.en}
+                </p>
               </div>
 
               {existingReport.description && (
@@ -140,7 +143,7 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
               <div className="grid gap-2">
                 <h4 className="font-medium">{t("document.report.statusLabel")}</h4>
                 <p className="text-sm text-muted-foreground">
-                  {existingReport.resolved ? t("document.report.status.resolved") : t("document.report.status.pending")}
+                  {existingReport.status === "RESOLVED" ? t("document.report.status.resolved") : existingReport.status === "PENDING" ? t("document.report.status.pending") : ""}
                 </p>
               </div>
             </div>

@@ -13,11 +13,7 @@ interface SearchSuggestionsProps {
   placeholder?: string;
 }
 
-const SearchSuggestions = ({
-                             onSearch,
-                             className = "",
-                             placeholder
-                           }: SearchSuggestionsProps) => {
+const SearchSuggestions = ({ onSearch, className = "", placeholder }: SearchSuggestionsProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const suggestions = useSelector(selectSuggestions);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -35,7 +31,7 @@ const SearchSuggestions = ({
       } else {
         setShowSuggestions(false);
       }
-    }, 350)
+    }, 350),
   ).current;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,15 +48,13 @@ const SearchSuggestions = ({
       case "ArrowDown":
         event.preventDefault();
         if (suggestions.length > 0) {
-          setSelectedIndex(prev =>
-            prev < suggestions.length - 1 ? prev + 1 : prev
-          );
+          setSelectedIndex((prev) => (prev < suggestions.length - 1 ? prev + 1 : prev));
         }
         break;
       case "ArrowUp":
         event.preventDefault();
         if (suggestions.length > 0) {
-          setSelectedIndex(prev => prev > -1 ? prev - 1 : prev);
+          setSelectedIndex((prev) => (prev > -1 ? prev - 1 : prev));
         }
         break;
       case "Enter":
@@ -82,12 +76,12 @@ const SearchSuggestions = ({
     // Extract only the highlighted words and join them with spaces
     const regex = /@@HIGHLIGHT@@(.*?)@@E_HIGHLIGHT@@/g;
     const matches = [...suggestion.matchAll(regex)];
-    const cleanText = matches.map(match => match[1]).join(" ");
+    const cleanText = matches.map((match) => match[1]).join(" ");
 
     dispatch(setSearchTerm(cleanText));
     setShowSuggestions(false);
     onSearch();
-    setSelectedIndex(-1)
+    setSelectedIndex(-1);
   };
 
   const cleanSuggestion = (suggestion: string) => {
@@ -159,7 +153,7 @@ const SearchSuggestions = ({
                 className={cn(
                   "w-full text-left px-2 py-1.5 text-sm rounded whitespace-pre-wrap break-words",
                   "hover:bg-accent hover:text-accent-foreground",
-                  index === selectedIndex && "bg-accent text-accent-foreground"
+                  index === selectedIndex && "bg-accent text-accent-foreground",
                 )}
                 onClick={() => handleSuggestionSelect(suggestion)}
                 dangerouslySetInnerHTML={{ __html: `...${cleanSuggestion(suggestion)}...` }}

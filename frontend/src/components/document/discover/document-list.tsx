@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Calendar, Download, Eye, Filter, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Calendar, Download, Eye, Filter, Heart, Loader2, Search } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -30,8 +30,10 @@ import {
   setMajor,
   setPage,
   setPageSize,
+  setSearchTerm,
   setSort,
   setTags,
+  toggleFavoriteOnly,
 } from "@/store/slices/search-slice";
 import { DocumentInformation } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
@@ -61,6 +63,7 @@ export const DocumentList = () => {
     totalPages,
     currentPage,
     pageSize,
+    favoriteOnly,
   } = useAppSelector(selectSearchState);
 
   const { majors, levels, categories } = useAppSelector(selectMasterData);
@@ -127,7 +130,8 @@ export const DocumentList = () => {
       selectedMajor !== "all" ||
       selectedLevel !== "all" ||
       selectedCategory !== "all" ||
-      selectedTags.length > 0
+      selectedTags.length > 0 ||
+      favoriteOnly
     ) {
       dispatch(fetchSearchDocuments());
     } else {
@@ -141,7 +145,8 @@ export const DocumentList = () => {
       selectedMajor === "all" &&
       selectedLevel === "all" &&
       selectedCategory === "all" &&
-      selectedTags.length === 0
+      selectedTags.length === 0 &&
+      !favoriteOnly
     ) {
       dispatch(fetchRecommendedDocuments());
     } else {
@@ -205,7 +210,30 @@ export const DocumentList = () => {
     if (selectedLevel !== "all") count++;
     if (selectedCategory !== "all") count++;
     if (selectedTags.length > 0) count++;
+    if (favoriteOnly) count++;
     return count;
+  };
+
+  const handleToggleFavorites = () => {
+    dispatch(toggleFavoriteOnly());
+    dispatch(setPage(0));
+    if (favoriteOnly) {
+      // Turning it off, go back to normal behavior
+      if (
+        !searchTerm.trim() &&
+        selectedMajor === "all" &&
+        selectedLevel === "all" &&
+        selectedCategory === "all" &&
+        selectedTags.length === 0
+      ) {
+        dispatch(fetchRecommendedDocuments());
+      } else {
+        dispatch(fetchSearchDocuments());
+      }
+    } else {
+      // Turning it on, fetch favorites
+      dispatch(fetchSearchDocuments());
+    }
   };
 
   const handlePreview = (doc: DocumentInformation) => {
@@ -226,11 +254,26 @@ export const DocumentList = () => {
             {/* Search Input and Button */}
             <div className="flex flex-1 flex-col gap-2 sm:flex-row">
               <div className="flex-1">
-                <SearchSuggestions
-                  onSearch={handleSearch}
-                  className="max-w-none"
-                  placeholder={t("document.search.placeholder")}
-                />
+                {!favoriteOnly && (
+                  <SearchSuggestions
+                    onSearch={handleSearch}
+                    className="max-w-none"
+                    placeholder={t("document.search.placeholder")}
+                  />
+                )}
+                {favoriteOnly && (
+                  <div className="relative rounded-lg border shadow-sm">
+                    <div className="flex items-center px-3 gap-2">
+                      <Search className="h-4 w-4 shrink-0 opacity-50" />
+                      <input
+                        value={searchTerm}
+                        onChange={(e) => dispatch(setSearchTerm(e.target.value))}
+                        className="flex h-9 w-full rounded-md bg-transparent py-3 text-sm outline-none"
+                        placeholder={t("document.search.favorites.placeholder")}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               <Button onClick={handleSearch} className="shrink-0">
                 {t("document.commonSearch.apply")}
@@ -239,6 +282,16 @@ export const DocumentList = () => {
 
             {/* Filter and Reset Buttons */}
             <div className="flex gap-2">
+              {/* Favorite Button */}
+              <Button
+                variant={favoriteOnly ? "default" : "outline"}
+                onClick={handleToggleFavorites}
+                className="relative gap-2"
+              >
+                <Heart className={`h-4 w-4 ${favoriteOnly ? "fill-current" : ""}`} />
+                <span className="hidden sm:inline">{t("document.commonSearch.favoritesOnly")}</span>
+              </Button>
+
               <Button variant="outline" onClick={() => setShowAdvanced(!showAdvanced)} className="relative gap-2">
                 <Filter className="h-4 w-4" />
                 <span className="hidden sm:inline">{t("document.commonSearch.filters")}</span>
@@ -426,7 +479,9 @@ export const DocumentList = () => {
               </div>
             </>
           ) : (
-            <p className="flex justify-center">{t("document.discover.empty")}</p>
+            <p className="flex justify-center">
+              {favoriteOnly ? t("document.discover.emptyFavorites") : t("document.discover.empty")}
+            </p>
           )}
 
           {/* Pagination */}

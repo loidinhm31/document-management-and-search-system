@@ -4,8 +4,10 @@ import { useTranslation } from "react-i18next";
 import { MdOutlineFavorite, MdOutlineFavoriteBorder } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { CommentSection } from "@/components/document/discover/comment-section";
+import { CommentSection } from "@/components/document/discover/comment/comment-section";
 import DocumentStats from "@/components/document/discover/document-stats";
+import { DocumentNoteList } from "@/components/document/discover/note/document-note-list";
+import { RecommendationButton } from "@/components/document/discover/recommendation-button";
 import { RelatedDocuments } from "@/components/document/discover/related-document";
 import { ReportDocumentDialog } from "@/components/document/discover/report-document-dialog";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
@@ -47,6 +49,7 @@ export default function DocumentDetailPage() {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
+
 
   const handleFavorite = async () => {
     if (!documentId) return;
@@ -137,6 +140,8 @@ export default function DocumentDetailPage() {
     setStatistics(statisticsResponse.data);
   };
 
+  const isMentor = currentUser?.roles.includes("ROLE_MENTOR");
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
@@ -189,6 +194,9 @@ export default function DocumentDetailPage() {
                     )}
                   </Button>
                 )}
+
+                {/* Add Recommendation Button for Mentors */}
+                {isMentor && documentId && <RecommendationButton documentId={documentId} />}
 
                 {currentUser?.userId === documentData.userId && (
                   <ShareDocumentDialog
@@ -306,6 +314,9 @@ export default function DocumentDetailPage() {
 
         {/* Related Documents Section */}
         <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
+
+        {/* Mentor Notes Section */}
+        <DocumentNoteList documentId={documentId} />
 
         {/* Comments Section */}
         <Card>

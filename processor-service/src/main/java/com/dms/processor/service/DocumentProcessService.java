@@ -1,9 +1,9 @@
 package com.dms.processor.service;
 
 import com.dms.processor.dto.DocumentExtractContent;
+import com.dms.processor.enums.DocumentReportStatus;
 import com.dms.processor.enums.DocumentStatus;
 import com.dms.processor.enums.EventType;
-import com.dms.processor.enums.ReportStatus;
 import com.dms.processor.exception.DocumentProcessingException;
 import com.dms.processor.mapper.DocumentIndexMapper;
 import com.dms.processor.model.DocumentContent;
@@ -35,6 +35,7 @@ public class DocumentProcessService {
     private final ThumbnailService thumbnailService;
     private final DocumentIndexMapper documentIndexMapper;
     private final DocumentContentService documentContentService;
+    private final DocumentEmailService documentEmailService;
     private final S3Service s3Service;
 
     @Transactional
@@ -68,17 +69,26 @@ public class DocumentProcessService {
         }
     }
 
-    public void handleReportStatus(String documentId) {
+    @Transactional
+    public void handleReportStatus(String documentId, String userId, int times) {
         try {
             DocumentInformation document = documentRepository.findById(documentId)
                     .orElseThrow(() -> new IllegalArgumentException("Document not found"));
 
+            // Index the document to update search
             indexDocument(document);
 
-            if (document.getReportStatus() == ReportStatus.RESOLVED) {
-                // TODO Send mail to all favorites and reporter
-            } else if (document.getReportStatus() == ReportStatus.REMOVED) {
-                // TODO Send mail to all favorites
+            if (document.getDocumentReportStatus() == DocumentReportStatus.REJECTED) {
+                // Send notification emails to reporters
+                documentEmailService.sendDocumentReportRejectionNotifications(document, userId, times);
+
+            } else if (document.getDocumentReportStatus() == DocumentReportStatus.RESOLVED) {
+                // Send notifications to both favoriters and reporters
+                documentEmailService.sendResolveNotifications(document, userId, times);
+
+            } else if (document.getDocumentReportStatus() == DocumentReportStatus.REMEDIATED) {
+                // Send notifications only to favoriters
+                documentEmailService.sendReportRemediationNotifications(document, userId);
             }
         } catch (Exception e) {
             log.error("Error handling report status for document: {}", documentId, e);

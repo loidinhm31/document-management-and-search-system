@@ -221,7 +221,9 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                           className="h-7 w-full sm:w-auto"
                           disabled={isDownloading || loading}
                         >
-                          {!isDownloading ? t("document.versions.actions.download") : t("document.versions.actions.downloading")}
+                          {!isDownloading
+                            ? t("document.versions.actions.download")
+                            : t("document.versions.actions.downloading")}
                         </Button>
                       </div>
                     </div>

@@ -16,10 +16,13 @@ import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.common.lucene.search.function.CombineFunction;
+import org.opensearch.common.lucene.search.function.FieldValueFactorFunction;
 import org.opensearch.common.unit.Fuzziness;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.MoreLikeThisQueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.index.query.functionscore.FieldValueFactorFunctionBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.search.sort.SortBuilders;
 import org.opensearch.search.sort.SortOrder;
@@ -40,12 +43,13 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
     private final RestHighLevelClient openSearchClient;
     private final UserClient userClient;
     private final DocumentPreferencesRepository documentPreferencesRepository;
+    private final DocumentFavoriteService documentFavoriteService;
 
     private static final float MAX_INTERACTION_BOOST = 3.0f;
     private static final float INTERACTION_WEIGHT_MULTIPLIER = 0.5f;
     private static final float PREFERENCE_BOOST_MULTIPLIER = 2.0f;
 
-    public Page<DocumentResponseDto> getRecommendations(String documentId, String username, Pageable pageable) {
+    public Page<DocumentResponseDto> getRecommendations(String documentId, Boolean favoriteOnly, String username, Pageable pageable) {
         try {
             ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
             if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
@@ -57,7 +61,7 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
 
             return StringUtils.isNotEmpty(documentId)
                     ? getContentBasedRecommendations(documentId, userResponse.userId().toString(), preferences, pageable)
-                    : getPreferenceBasedRecommendations(userResponse.userId().toString(), preferences, pageable);
+                    : getPreferenceBasedRecommendations(userResponse.userId(), preferences, favoriteOnly, pageable);
         } catch (IOException e) {
             log.error("Error getting recommendations: {}", e.getMessage());
             throw new RuntimeException("Failed to get recommendations", e);
@@ -100,6 +104,9 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
 
         // Exclude source document
         queryBuilder.mustNot(QueryBuilders.termQuery("_id", documentId));
+
+        // Boost documents based on recommendation count
+        addRecommendationBoost(queryBuilder);
 
         // Content similarity
         addContentSimilarityBoosts(queryBuilder, sourceDoc.getSourceAsMap());
@@ -275,8 +282,9 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
     }
 
     private Page<DocumentResponseDto> getPreferenceBasedRecommendations(
-            String userId,
+            UUID userId,
             DocumentPreferences preferences,
+            Boolean favoriteOnly,
             Pageable pageable) throws IOException {
 
         SearchRequest searchRequest = new SearchRequest(INDEX_NAME);
@@ -284,7 +292,12 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Add sharing access filter
-        addSharingAccessFilter(queryBuilder, userId);
+        addSharingAccessFilter(queryBuilder, userId.toString());
+
+        // Add favorite filter if requested
+        if (Boolean.TRUE.equals(favoriteOnly)) {
+            documentFavoriteService.addFavoriteFilter(queryBuilder, userId);
+        }
 
         // Add preference-based boosts
         addPreferenceBoosts(queryBuilder, preferences);

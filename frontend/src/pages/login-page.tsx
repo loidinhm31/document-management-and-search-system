@@ -16,11 +16,10 @@ import { JwtPayload, TokenResponse } from "@/types/auth";
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { token, setAuthData, setRole } = useAuth();
+  const { token, setAuthData } = useAuth();
   const { toast } = useToast();
 
   const [step, setStep] = useState(1);
-  const [accessToken, setAccessToken] = useState("");
   const [username, setUsername] = useState("");
   const [tokenResponse, setTokenResponse] = useState<TokenResponse>();
 
@@ -34,33 +33,25 @@ export default function LoginPage() {
     setTokenResponse(responseData);
     const decodedToken = jwtDecode<JwtPayload>(responseData.accessToken);
     if (decodedToken.is2faEnabled) {
-      setAccessToken(responseData.accessToken);
       setStep(2);
     } else {
-      handleSuccessfulLogin(responseData, decodedToken);
+      handleSuccessfulLogin(responseData);
     }
   };
 
-  const handleSuccessfulLogin = (token: TokenResponse, decodedToken: JwtPayload) => {
-    const user = {
-      username: decodedToken.sub,
-      roles: decodedToken.roles.split(",")
-    };
-
+  const handleSuccessfulLogin = (token: TokenResponse) => {
     // Update auth context
     setAuthData(token);
-    setRole(user.roles[0]);
 
     toast({
       title: t("common.success"),
       description: t("auth.login.success"),
-      variant: "success"
+      variant: "success",
     });
   };
 
   const handle2FASuccess = () => {
-    const decodedToken = jwtDecode<JwtPayload>(accessToken);
-    handleSuccessfulLogin(tokenResponse, decodedToken);
+    handleSuccessfulLogin(tokenResponse);
     navigate("/");
   };
 

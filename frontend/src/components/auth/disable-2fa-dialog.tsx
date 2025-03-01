@@ -19,12 +19,7 @@ interface Disable2FADialogProps {
   loading?: boolean;
 }
 
-const Disable2FADialog: React.FC<Disable2FADialogProps> = ({
-                                                             open,
-                                                             onOpenChange,
-                                                             onConfirm,
-                                                             loading = false,
-                                                           }) => {
+const Disable2FADialog: React.FC<Disable2FADialogProps> = ({ open, onOpenChange, onConfirm, loading = false }) => {
   const { t } = useTranslation();
 
   return (
@@ -35,24 +30,14 @@ const Disable2FADialog: React.FC<Disable2FADialogProps> = ({
             <AlertTriangle className="h-5 w-5 text-destructive" />
             {t("profile.twoFactor.disable.title")}
           </DialogTitle>
-          <DialogDescription>
-            {t("profile.twoFactor.disable.description")}
-          </DialogDescription>
+          <DialogDescription>{t("profile.twoFactor.disable.description")}</DialogDescription>
         </DialogHeader>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             {t("common.cancel")}
           </Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirm}
-            disabled={loading}
-          >
+          <Button variant="destructive" onClick={onConfirm} disabled={loading}>
             {t("profile.twoFactor.actions.disable")}
           </Button>
         </DialogFooter>

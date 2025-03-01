@@ -53,9 +53,9 @@ const SidebarProvider = React.forwardRef<
 
   // Get initial state from cookie
   const initialOpen = React.useMemo(() => {
-    const cookies = document.cookie.split(';');
-    const sidebarCookie = cookies.find(cookie => cookie.trim().startsWith(`${SIDEBAR_COOKIE_NAME}=`));
-    return sidebarCookie ? sidebarCookie.split('=')[1].trim() === 'true' : defaultOpen;
+    const cookies = document.cookie.split(";");
+    const sidebarCookie = cookies.find((cookie) => cookie.trim().startsWith(`${SIDEBAR_COOKIE_NAME}=`));
+    return sidebarCookie ? sidebarCookie.split("=")[1].trim() === "true" : defaultOpen;
   }, [defaultOpen]);
 
   // This is the internal state of the sidebar.

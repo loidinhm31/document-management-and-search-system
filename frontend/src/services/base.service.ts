@@ -27,7 +27,7 @@ export class BaseService {
     toast({
       title: i18next.t("common.success"),
       description: message,
-      variant: "success"
+      variant: "success",
     });
   }
 
@@ -62,7 +62,7 @@ export class BaseService {
     toast({
       title: i18next.t("common.error"),
       description,
-      variant: "destructive"
+      variant: "destructive",
     });
   }
 }

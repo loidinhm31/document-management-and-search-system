@@ -14,6 +14,7 @@ interface SearchState {
   selectedLevel: string;
   selectedCategory: string;
   selectedTags: string[];
+  favoriteOnly: boolean;
 
   // Pagination
   currentPage: number;
@@ -49,6 +50,7 @@ const initialState: SearchState = {
   selectedLevel: "all",
   selectedCategory: "all",
   selectedTags: [],
+  favoriteOnly: false,
   currentPage: 0,
   pageSize: 10,
   totalPages: 0,
@@ -58,7 +60,7 @@ const initialState: SearchState = {
   documents: [],
   loading: false,
   error: null,
-  advancedFilters: {}
+  advancedFilters: {},
 };
 
 export const fetchRecommendedDocuments = createAsyncThunk(
@@ -66,16 +68,15 @@ export const fetchRecommendedDocuments = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     try {
       const state = getState() as RootState;
-      const {
-        currentPage,
-        pageSize,
-      } = state.search;
-      const response = await documentService.getRecommendationDocuments(undefined, pageSize, currentPage);
+      const { currentPage, pageSize, favoriteOnly } = state.search;
+
+      // Add favoriteOnly parameter to the request
+      const response = await documentService.getRecommendationDocuments(undefined, pageSize, currentPage, favoriteOnly);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 // Async thunk for search suggestions
@@ -91,7 +92,7 @@ export const fetchSuggestions = createAsyncThunk(
         courseCodes: selectedCourseCode === "all" ? undefined : selectedCourseCode,
         level: selectedLevel === "all" ? undefined : selectedLevel,
         category: selectedCategory === "all" ? undefined : selectedCategory,
-        tags: selectedTags.length > 0 ? selectedTags : undefined
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
       };
 
       const response = await searchService.suggestions(query, filters);
@@ -99,7 +100,7 @@ export const fetchSuggestions = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 // Async thunk for fetching documents
@@ -118,7 +119,8 @@ export const fetchSearchDocuments = createAsyncThunk(
         selectedSort,
         currentPage,
         pageSize,
-        advancedFilters
+        advancedFilters,
+        favoriteOnly,
       } = state.search;
 
       const selectSortParts = selectedSort.split(",");
@@ -132,7 +134,8 @@ export const fetchSearchDocuments = createAsyncThunk(
         tags: selectedTags.length > 0 ? selectedTags : undefined,
         sortField: selectSortParts.length > 0 ? selectSortParts[0] : undefined,
         sortDirection: selectSortParts.length > 1 ? selectSortParts[1] : undefined,
-        ...advancedFilters
+        favoriteOnly,
+        ...advancedFilters,
       };
 
       const response = await searchService.searchDocuments(filters, currentPage, pageSize);
@@ -140,7 +143,7 @@ export const fetchSearchDocuments = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 const searchSlice = createSlice({
@@ -182,10 +185,14 @@ const searchSlice = createSlice({
       state.pageSize = action.payload;
       state.currentPage = 0; // Reset to first page when page size changes
     },
+    toggleFavoriteOnly: (state) => {
+      state.favoriteOnly = !state.favoriteOnly;
+      state.currentPage = 0; // Reset to first page when toggling favorites
+    },
     setAdvancedFilters: (state, action: PayloadAction<Partial<SearchState["advancedFilters"]>>) => {
       state.advancedFilters = {
         ...state.advancedFilters,
-        ...action.payload
+        ...action.payload,
       };
       state.currentPage = 0;
     },
@@ -194,9 +201,9 @@ const searchSlice = createSlice({
         ...initialState,
         documents: state.documents, // Preserve current documents until new search
         suggestions: state.suggestions, // Preserve suggestions
-        isSearchMode: false
+        isSearchMode: false,
       };
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -249,7 +256,7 @@ const searchSlice = createSlice({
         state.loading = false;
         state.documents = [];
       });
-  }
+  },
 });
 
 export const {
@@ -263,7 +270,8 @@ export const {
   setPage,
   setPageSize,
   setAdvancedFilters,
-  resetFilters
+  resetFilters,
+  toggleFavoriteOnly,
 } = searchSlice.actions;
 
 // Selectors
@@ -275,7 +283,7 @@ export const selectPagination = (state: RootState) => ({
   currentPage: state.search.currentPage,
   pageSize: state.search.pageSize,
   totalPages: state.search.totalPages,
-  totalElements: state.search.totalElements
+  totalElements: state.search.totalElements,
 });
 
 export default searchSlice.reducer;

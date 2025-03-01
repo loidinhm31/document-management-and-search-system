@@ -7,7 +7,8 @@ import {
   addProcessingItem,
   removeProcessingItem,
   selectProcessingItems,
-  updateProcessingItem} from "@/store/slices/processing-slice";
+  updateProcessingItem,
+} from "@/store/slices/processing-slice";
 import { DocumentStatus } from "@/types/document";
 
 interface ProcessingItem {
@@ -32,51 +33,56 @@ export function ProcessingProvider({ children }: { children: React.ReactNode }) 
   const dispatch = useAppDispatch();
   const items = useAppSelector(selectProcessingItems);
 
-  const handleAddProcessingItem = useCallback((documentId: string, filename: string) => {
-    const item = {
-      id: uuidv4(),
-      documentId,
-      filename,
-      status: DocumentStatus.PENDING,
-      addedAt: new Date().getTime()
-    };
-    dispatch(addProcessingItem(item));
-  }, [dispatch]);
+  const handleAddProcessingItem = useCallback(
+    (documentId: string, filename: string) => {
+      const item = {
+        id: uuidv4(),
+        documentId,
+        filename,
+        status: DocumentStatus.PENDING,
+        addedAt: new Date().getTime(),
+      };
+      dispatch(addProcessingItem(item));
+    },
+    [dispatch],
+  );
 
-  const handleRemoveProcessingItem = useCallback((id: string) => {
-    dispatch(removeProcessingItem(id));
-  }, [dispatch]);
+  const handleRemoveProcessingItem = useCallback(
+    (id: string) => {
+      dispatch(removeProcessingItem(id));
+    },
+    [dispatch],
+  );
 
-  const handleUpdateProcessingItem = useCallback(async (documentId: string, status: DocumentStatus, error?: string) => {
-    dispatch(updateProcessingItem({ documentId, status, error }));
+  const handleUpdateProcessingItem = useCallback(
+    async (documentId: string, status: DocumentStatus, error?: string) => {
+      dispatch(updateProcessingItem({ documentId, status, error }));
 
-    // If status is COMPLETED, fetch and update the document details
-    if (status === DocumentStatus.COMPLETED) {
-      try {
-        const response = await documentService.getDocumentDetails(documentId);
-        // You can dispatch additional action here to update document details in store if needed
-        console.log("Document updated:", response.data);
-      } catch (error) {
-        console.info("Error updating document details:", error);
+      // If status is COMPLETED, fetch and update the document details
+      if (status === DocumentStatus.COMPLETED) {
+        try {
+          const response = await documentService.getDocumentDetails(documentId);
+          // You can dispatch additional action here to update document details in store if needed
+          console.log("Document updated:", response.data);
+        } catch (error) {
+          console.info("Error updating document details:", error);
+        }
       }
-    }
-  }, [dispatch]);
+    },
+    [dispatch],
+  );
 
   const contextValue = React.useMemo<ProcessingContextType>(
     () => ({
       items,
       addProcessingItem: handleAddProcessingItem,
       removeProcessingItem: handleRemoveProcessingItem,
-      updateProcessingItem: handleUpdateProcessingItem
+      updateProcessingItem: handleUpdateProcessingItem,
     }),
-    [items, handleAddProcessingItem, handleRemoveProcessingItem, handleUpdateProcessingItem]
+    [items, handleAddProcessingItem, handleRemoveProcessingItem, handleUpdateProcessingItem],
   );
 
-  return (
-    <ProcessingContext.Provider value={contextValue}>
-      {children}
-    </ProcessingContext.Provider>
-  );
+  return <ProcessingContext.Provider value={contextValue}>{children}</ProcessingContext.Provider>;
 }
 
 export const useProcessing = () => {

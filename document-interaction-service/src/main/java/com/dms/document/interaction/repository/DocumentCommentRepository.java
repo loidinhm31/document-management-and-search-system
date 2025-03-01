@@ -24,8 +24,6 @@ public interface DocumentCommentRepository extends JpaRepository<DocumentComment
             FROM document_comments c
             WHERE c.document_id = :documentId 
             AND c.parent_id IS NULL 
-            AND c.deleted = false
-            
             UNION ALL
             
             -- Recursive case: get replies
@@ -35,7 +33,6 @@ public interface DocumentCommentRepository extends JpaRepository<DocumentComment
                 ch.thread_order
             FROM document_comments c
             INNER JOIN CommentHierarchy ch ON c.parent_id = ch.id
-            WHERE c.deleted = false
         )
         SELECT * FROM CommentHierarchy
         ORDER BY thread_order DESC, level ASC, created_at ASC
@@ -43,7 +40,7 @@ public interface DocumentCommentRepository extends JpaRepository<DocumentComment
         """, nativeQuery = true)
     List<DocumentComment> findCommentsWithReplies(String documentId, int limit, int offset);
 
-    @Query("SELECT COUNT(c) FROM DocumentComment c WHERE c.documentId = :documentId AND c.parentId IS NULL AND c.deleted = false")
+    @Query("SELECT COUNT(c) FROM DocumentComment c WHERE c.documentId = :documentId AND c.parentId IS NULL AND c.flag = 1")
     long countTopLevelComments(String documentId);
 
     @Query(value = """
@@ -66,7 +63,7 @@ public interface DocumentCommentRepository extends JpaRepository<DocumentComment
     @Modifying
     @Query("""
     UPDATE DocumentComment c 
-    SET c.deleted = true, 
+    SET c.flag = 0, 
         c.content = '[deleted]',
         c.updatedAt = CURRENT_TIMESTAMP 
     WHERE c.id IN :commentIds

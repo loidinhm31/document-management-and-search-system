@@ -1,7 +1,6 @@
 package com.dms.document.search.service;
 
 import com.dms.document.search.dto.DocumentResponseDto;
-import com.dms.document.search.dto.DocumentSearchRequest;
 import com.dms.document.search.dto.SearchContext;
 import com.dms.document.search.enums.DocumentType;
 import com.dms.document.search.enums.QueryType;
@@ -10,9 +9,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.opensearch.common.lucene.search.function.CombineFunction;
+import org.opensearch.common.lucene.search.function.FieldValueFactorFunction;
 import org.opensearch.core.common.text.Text;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.index.query.functionscore.FieldValueFactorFunctionBuilder;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.opensearch.search.fetch.subphase.highlight.HighlightField;
@@ -224,7 +226,7 @@ public abstract class OpenSearchBaseService {
         return new PageImpl<>(documentResponses, pageable, totalHits);
     }
 
-    public List<String> processSuggestionResults(SearchHit[] hits) {
+    protected List<String> processSuggestionResults(SearchHit[] hits) {
         return Arrays.stream(hits)
                 .map(hit -> {
                     List<String> highlights = new ArrayList<>();
@@ -239,6 +241,21 @@ public abstract class OpenSearchBaseService {
                 })
                 .flatMap(List::stream)
                 .collect(Collectors.toList());
+    }
+
+    protected void addRecommendationBoost(BoolQueryBuilder queryBuilder) {
+        // Boost documents based on recommendation count
+        FieldValueFactorFunctionBuilder recommendationFactor = new FieldValueFactorFunctionBuilder("recommendationCount")
+                .factor(1.0f)
+                .modifier(FieldValueFactorFunction.Modifier.LOG1P) // Use log(1 + x) to smooth the curve
+                .missing(0); // Default value if field is missing
+        queryBuilder.should(
+                QueryBuilders.functionScoreQuery(
+                                QueryBuilders.rangeQuery("recommendationCount").gt(0),
+                                recommendationFactor
+                        ).boostMode(CombineFunction.MULTIPLY)
+                        .boost(5.0f)
+        );
     }
 
     private void addHighlightsFromField(HighlightField field, List<String> highlights) {

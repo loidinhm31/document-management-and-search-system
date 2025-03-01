@@ -1,7 +1,7 @@
 package com.dms.document.interaction.model;
 
 
-import com.dms.document.interaction.enums.ReportStatus;
+import com.dms.document.interaction.enums.DocumentReportStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -34,12 +34,18 @@ public class DocumentReport {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private ReportStatus status = ReportStatus.PENDING;
+    private DocumentReportStatus status = DocumentReportStatus.PENDING;
 
-    @Column(name = "resolved_by")
-    private UUID resolvedBy;
+    @Column(name = "processed")
+    private Boolean processed;
 
-    @Column(name = "resolved_at")
-    private Instant resolvedAt;
+    @Column(name = "times")
+    private Integer times;
+
+    @Column(name = "updated_by")
+    private UUID updatedBy;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
 }

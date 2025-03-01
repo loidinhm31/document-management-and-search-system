@@ -19,16 +19,16 @@ interface TagInputHybridProps {
 }
 
 const TagInputHybrid = ({
-                          value,
-                          onChange,
-                          recommendedTags = [],
-                          onSearch,
-                          placeholder = "Enter tags...",
-                          disabled = false,
-                          error = false,
-                          className = "",
-                          getTagDisplay = (tag) => tag
-                        }: TagInputHybridProps) => {
+  value,
+  onChange,
+  recommendedTags = [],
+  onSearch,
+  placeholder = "Enter tags...",
+  disabled = false,
+  error = false,
+  className = "",
+  getTagDisplay = (tag) => tag,
+}: TagInputHybridProps) => {
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -42,7 +42,7 @@ const TagInputHybrid = ({
       setDropdownStyle({
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
-        width: rect.width
+        width: rect.width,
       });
     }
   };
@@ -62,7 +62,7 @@ const TagInputHybrid = ({
     try {
       setLoading(true);
       const results = await onSearch(prefix || "");
-      setSuggestions(results.filter(tag => !value.includes(tag)));
+      setSuggestions(results.filter((tag) => !value.includes(tag)));
     } catch (error) {
       console.info("Error fetching tag suggestions:", error);
       setSuggestions([]);
@@ -75,7 +75,7 @@ const TagInputHybrid = ({
     debounce((prefix: string) => {
       fetchSuggestions(prefix);
     }, 350),
-    [value, showSuggestions]
+    [value, showSuggestions],
   );
 
   useEffect(() => {
@@ -117,7 +117,7 @@ const TagInputHybrid = ({
   };
 
   const removeTag = (tagToRemove: string) => {
-    onChange(value.filter(tag => tag !== tagToRemove));
+    onChange(value.filter((tag) => tag !== tagToRemove));
   };
 
   const handleFocus = () => {
@@ -127,10 +127,8 @@ const TagInputHybrid = ({
 
   const SuggestionsDropdown = () => {
     // Filter out already selected tags from both recommended tags and search results
-    const filteredRecommendedTags = recommendedTags.filter(tag => !value.includes(tag));
-    const filteredSuggestions = suggestions.filter(tag =>
-      !value.includes(tag) && !recommendedTags.includes(tag)
-    );
+    const filteredRecommendedTags = recommendedTags.filter((tag) => !value.includes(tag));
+    const filteredSuggestions = suggestions.filter((tag) => !value.includes(tag) && !recommendedTags.includes(tag));
 
     // Combine filtered results
     const allSuggestions = [...filteredRecommendedTags, ...filteredSuggestions];
@@ -144,21 +142,17 @@ const TagInputHybrid = ({
           top: `${dropdownStyle.top}px`,
           left: `${dropdownStyle.left}px`,
           width: `${dropdownStyle.width}px`,
-          zIndex: 9999
+          zIndex: 9999,
         }}
         className="bg-popover rounded-md border shadow-md"
       >
         <div className="p-1">
           {loading ? (
-            <div className="text-sm text-muted-foreground px-2 py-1.5">
-              Loading...
-            </div>
+            <div className="text-sm text-muted-foreground px-2 py-1.5">Loading...</div>
           ) : (
             <>
               {filteredRecommendedTags.length > 0 && (
-                <div className="px-2 py-1 text-xs text-muted-foreground font-medium">
-                  Recommended Tags
-                </div>
+                <div className="px-2 py-1 text-xs text-muted-foreground font-medium">Recommended Tags</div>
               )}
               {filteredRecommendedTags.map((tag) => (
                 <button
@@ -185,7 +179,7 @@ const TagInputHybrid = ({
           )}
         </div>
       </div>,
-      document.body
+      document.body,
     );
   };
 
@@ -196,7 +190,7 @@ const TagInputHybrid = ({
           "min-h-10 flex flex-wrap gap-2 p-2 rounded-md border bg-background",
           disabled ? "opacity-50 cursor-not-allowed" : "cursor-text",
           error ? "border-destructive" : "border-input hover:border-primary focus-within:border-primary",
-          className
+          className,
         )}
       >
         {value.map((tag) => (

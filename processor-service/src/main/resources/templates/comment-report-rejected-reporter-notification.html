@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comment Report Decision</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f8fafc;">
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="min-width: 100%; background-color: #f8fafc;">
+    <tr>
+        <td align="center" valign="top">
+            <table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; margin: 0 auto;">
+                <!-- Header -->
+                <tr>
+                    <td align="center" valign="top" style="background-color: #fbbf24; padding: 20px; border-radius: 8px 8px 0 0;">
+                        <div style="font-size: 24px; font-weight: bold; color: #1e293b;">DMS</div>
+                    </td>
+                </tr>
+
+                <!-- Content -->
+                <tr>
+                    <td align="left" valign="top" style="background-color: #ffffff; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e2e8f0; border-top: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                        <p>Hello <span style="font-weight: 600; color: #334155;" th:text="${recipientName}">User</span>,</p>
+
+                        <p>
+                            We wanted to inform you about the status of a report you submitted for a comment on the document:
+                        </p>
+
+                        <!-- Document info box -->
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin: 20px 0;">
+                            <tr>
+                                <td style="padding: 15px;">
+                                    <h3 style="margin-top: 0; margin-bottom: 10px;" th:text="${documentTitle}">Document Title</h3>
+                                    <p style="margin: 0; color: #64748b;">Processed by: <span style="font-weight: 600;" th:text="${resolverUser}">Admin</span></p>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Rejection notice box -->
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f0f9ff; border: 1px solid #e0f2fe; border-left: 4px solid #0ea5e9; border-radius: 6px; margin: 20px 0;">
+                            <tr>
+                                <td style="padding: 15px;">
+                                    <p style="margin-top: 0;">
+                                        <span style="display: inline-block; width: 6px; height: 6px; background-color: #0ea5e9; border-radius: 50%; position: relative; top: 2px; margin-right: 5px; box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.3);"></span>
+                                        Report status:
+                                    </p>
+                                    <p style="text-align: center; margin: 15px 0;">
+                                        <span style="display: inline-block; background-color: #0ea5e9; color: #ffffff; border-radius: 9999px; padding: 3px 10px; font-size: 14px; font-weight: 600;">Not Actionable</span>
+                                    </p>
+                                    <p style="margin-bottom: 0; font-style: italic; color: #64748b; font-size: 14px;">
+                                        After careful review, we have determined that this comment does not violate our content policies. The comment remains available on the document.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p>You can view the document and its comments by clicking the button below:</p>
+
+                        <!-- Button (made with table for better email compatibility) -->
+                        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 15px auto;">
+                            <tr>
+                                <td align="center" style="background-color: #fbbf24; border-radius: 4px;">
+                                    <a th:href="${baseUrl + '/discover/' + documentId}" style="display: inline-block; padding: 10px 20px; color: #1e293b; text-decoration: none; font-weight: 500;">View Document</a>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <p>
+                            If you're having trouble with the button above, you can also copy and paste the following link into your browser:
+                        </p>
+
+                        <p style="word-break: break-all; background-color: #f8fafc; padding: 10px; border-radius: 4px; font-size: 14px;">
+                            <span th:text="${baseUrl + '/discover/' + documentId}">https://example.com/discover/123</span>
+                        </p>
+
+                        <p>Thank you for your concern in helping maintain our community standards. If you have any questions about this decision, please contact our support team.</p>
+
+                        <!-- Footer -->
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 30px; border-top: 1px solid #e2e8f0;">
+                            <tr>
+                                <td align="center" style="padding-top: 20px; color: #64748b; font-size: 14px;">
+                                    <p>
+                                        Best regards,<br/>
+                                        DMS Team
+                                    </p>
+                                    <p style="font-size: 12px; color: #94a3b8;">
+                                        This is an automated message, please do not reply to this email.
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+</body>
+</html>

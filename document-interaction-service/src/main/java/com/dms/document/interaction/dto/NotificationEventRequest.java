@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 @SuperBuilder
 @NoArgsConstructor
@@ -12,8 +13,9 @@ import lombok.experimental.SuperBuilder;
 @Setter
 public class NotificationEventRequest extends EventRequest {
     private String documentId;
+    private Long commentId;
     private String documentTitle;
     private NotificationType notificationType;
-    private String triggerUsername;
+    private String triggerUserId;
     private Integer versionNumber;
 }

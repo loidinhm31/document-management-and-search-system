@@ -10,17 +10,14 @@ import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.CommentReport;
 import com.dms.document.interaction.model.DocumentComment;
 import com.dms.document.interaction.model.DocumentInformation;
-import com.dms.document.interaction.model.UserDocumentHistory;
+import com.dms.document.interaction.model.DocumentUserHistory;
 import com.dms.document.interaction.repository.CommentReportRepository;
 import com.dms.document.interaction.repository.DocumentCommentRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
-import com.dms.document.interaction.repository.UserDocumentHistoryRepository;
+import com.dms.document.interaction.repository.DocumentUserHistoryRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -44,7 +41,7 @@ public class DocumentCommentService {
     private final DocumentRepository documentRepository;
     private final DocumentNotificationService documentNotificationService;
     private final DocumentPreferencesService documentPreferencesService;
-    private final UserDocumentHistoryRepository userDocumentHistoryRepository;
+    private final DocumentUserHistoryRepository documentUserHistoryRepository;
     private final CommentReportRepository commentReportRepository;
 
     @Transactional(readOnly = true)
@@ -74,7 +71,7 @@ public class DocumentCommentService {
 
         // Get all comment reports by the current user for this document
         List<CommentReport> userReports = commentReportRepository.findReportsByUserAndDocument(
-                userResponse.userId(), documentId
+                userResponse.userId(), documentId, Boolean.FALSE
         );
 
         // Create a map of comment ID to report status
@@ -100,7 +97,7 @@ public class DocumentCommentService {
         // Check parent id is still valid
         if (Objects.nonNull(request.parentId())) {
             Optional<DocumentComment> parentComment = documentCommentRepository.findById(request.parentId());
-            if (parentComment.isPresent() && parentComment.get().isDeleted()) {
+            if (parentComment.isPresent() && parentComment.get().getFlag() == 0) {
                 throw new InvalidDocumentException("PARENT_COMMENT_DELETED");
             }
         }
@@ -110,6 +107,7 @@ public class DocumentCommentService {
         comment.setUserId(userResponse.userId());
         comment.setContent(request.content());
         comment.setParentId(request.parentId());
+        comment.setFlag(1);
         comment.setCreatedAt(Instant.now());
 
         DocumentComment savedComment = documentCommentRepository.save(comment);
@@ -119,7 +117,7 @@ public class DocumentCommentService {
 
         CompletableFuture.runAsync(() -> {
             // History
-            userDocumentHistoryRepository.save(UserDocumentHistory.builder()
+            documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(userResponse.userId().toString())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.COMMENT)
@@ -130,7 +128,7 @@ public class DocumentCommentService {
 
             // Only notify if this is a new commenter
             documentNotificationService.handleCommentNotification(
-                    documentId,
+                    documentInformation,
                     username,
                     userResponse.userId(),
                     savedComment.getId()
@@ -241,7 +239,6 @@ public class DocumentCommentService {
         // Check if this comment has been reported by the current user
         CommentReport userReport = commentReportMap.get(comment.getId());
         boolean reportedByUser = userReport != null;
-        boolean reportResolved = reportedByUser && userReport.isResolved();
 
         return CommentResponse.builder()
                 .id(comment.getId())
@@ -250,8 +247,8 @@ public class DocumentCommentService {
                 .createdAt(comment.getCreatedAt())
                 .updatedAt(comment.getUpdatedAt())
                 .edited(comment.isEdited())
+                .flag(comment.getFlag())
                 .reportedByUser(reportedByUser)
-                .reportResolved(reportResolved)
                 .build();
     }
 }

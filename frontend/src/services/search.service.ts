@@ -18,8 +18,8 @@ class SearchService extends BaseService {
       axiosInstance.post(`/document-search/api/v1/search`, {
         ...filters,
         page,
-        size
-      })
+        size,
+      }),
     );
   }
 
@@ -27,8 +27,8 @@ class SearchService extends BaseService {
     return this.handleApiResponse<string[]>(
       axiosInstance.post(`/document-search/api/v1/search/suggestions`, {
         query,
-        ...filters
-      })
+        ...filters,
+      }),
     );
   }
 
@@ -42,11 +42,11 @@ class SearchService extends BaseService {
       page,
       size,
       sortField: filters.sort?.split(",")[0] || "createdAt",
-      sortDirection: filters.sort?.split(",")[1] || "desc"
+      sortDirection: filters.sort?.split(",")[1] || "desc",
     };
 
     return this.handleApiResponse<PageResponse<DocumentInformation>>(
-      axiosInstance.post("/document-search/api/v1/documents/me/search", searchRequest)
+      axiosInstance.post("/document-search/api/v1/documents/me/search", searchRequest),
     );
   }
 }

@@ -27,7 +27,8 @@ public class DocumentIndexMapper {
                 .status(doc.getStatus())
                 .language(doc.getLanguage())
                 .createdAt(doc.getCreatedAt())
-                .reportStatus(doc.getReportStatus())
+                .documentReportStatus(doc.getDocumentReportStatus())
+                .recommendationCount(doc.getRecommendationCount() != null ? doc.getRecommendationCount() : 0)
                 .build();
     }
 }

@@ -16,13 +16,13 @@ interface TagInputProps {
 }
 
 const TagInputDebounce = ({
-                    value,
-                    onChange,
-                    placeholder = "Enter tags...",
-                    disabled = false,
-                    error = false,
-                    className = ""
-                  }: TagInputProps) => {
+  value,
+  onChange,
+  placeholder = "Enter tags...",
+  disabled = false,
+  error = false,
+  className = "",
+}: TagInputProps) => {
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -37,7 +37,7 @@ const TagInputDebounce = ({
       setDropdownStyle({
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
-        width: rect.width
+        width: rect.width,
       });
     }
   };
@@ -59,8 +59,8 @@ const TagInputDebounce = ({
       const response = await documentService.getTagSuggestions(prefix);
       setSuggestions(
         response.data
-          .filter(tag => !value.includes(tag)) // Filter out already selected tags
-          .slice(0, 5) // Limit to 5 suggestions
+          .filter((tag) => !value.includes(tag)) // Filter out already selected tags
+          .slice(0, 5), // Limit to 5 suggestions
       );
     } catch (error) {
       console.info("Error fetching tag suggestions:", error);
@@ -74,7 +74,7 @@ const TagInputDebounce = ({
     debounce((prefix: string) => {
       fetchTags(prefix);
     }, 350),
-    [value, showSuggestions]
+    [value, showSuggestions],
   );
 
   useEffect(() => {
@@ -122,7 +122,7 @@ const TagInputDebounce = ({
   };
 
   const removeTag = (tagToRemove: string) => {
-    onChange(value.filter(tag => tag !== tagToRemove));
+    onChange(value.filter((tag) => tag !== tagToRemove));
   };
 
   const handleFocus = () => {
@@ -146,15 +146,13 @@ const TagInputDebounce = ({
           top: `${dropdownStyle.top}px`,
           left: `${dropdownStyle.left}px`,
           width: `${dropdownStyle.width}px`,
-          zIndex: 9999
+          zIndex: 9999,
         }}
         className="bg-popover rounded-md border shadow-md"
       >
         <div className="p-1">
           {loading ? (
-            <div className="text-sm text-muted-foreground px-2 py-1.5">
-              Loading...
-            </div>
+            <div className="text-sm text-muted-foreground px-2 py-1.5">Loading...</div>
           ) : (
             suggestions.map((suggestion) => (
               <button
@@ -168,7 +166,7 @@ const TagInputDebounce = ({
           )}
         </div>
       </div>,
-      document.body
+      document.body,
     );
   };
 

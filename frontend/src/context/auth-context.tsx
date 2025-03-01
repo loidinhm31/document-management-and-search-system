@@ -19,16 +19,12 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   token: null,
   refreshToken: null,
-  setAuthData: () => {
-  },
-  clearAuthData: () => {
-  },
+  setAuthData: () => {},
+  clearAuthData: () => {},
   currentUser: null,
-  setCurrentUser: () => {
-  },
+  setCurrentUser: () => {},
   role: null,
-  setRole: () => {
-  }
+  setRole: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -50,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearAuthData = () => {
-    authService.logout(refreshToken).then(r => {
+    authService.logout(refreshToken).then((r) => {
       localStorage.removeItem("JWT_TOKEN");
       localStorage.removeItem("REFRESH_TOKEN");
       localStorage.removeItem("USER");
@@ -143,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     currentUser,
     setCurrentUser,
     role,
-    setRole
+    setRole,
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
