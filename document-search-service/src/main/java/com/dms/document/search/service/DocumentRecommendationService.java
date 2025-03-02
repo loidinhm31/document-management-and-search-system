@@ -223,32 +223,25 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
         if (preferences == null) return;
 
         // Add preferred majors boost
-        addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 3.0f);
+        addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 3.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred course code boost
-        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 3.0f);
+        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 3.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred levels boost
-        addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 2.0f);
+        addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 2.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred categories boost
-        addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 2.5f);
+        addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 2.5f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred tags boost
-        addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 2.0f);
+        addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 2.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add content type weights
         addContentTypeWeights(queryBuilder, preferences.getContentTypeWeights());
 
         // Add interaction history boosts
         addInteractionHistoryBoosts(queryBuilder, preferences);
-    }
-
-    private void addPreferredFieldBoost(BoolQueryBuilder queryBuilder, String field, Set<String> values, float boost) {
-        if (CollectionUtils.isNotEmpty(values)) {
-            queryBuilder.should(QueryBuilders.termsQuery(field, values)
-                    .boost(boost * PREFERENCE_BOOST_MULTIPLIER));
-        }
     }
 
     private void addContentTypeWeights(BoolQueryBuilder queryBuilder, Map<String, Double> contentTypeWeights) {

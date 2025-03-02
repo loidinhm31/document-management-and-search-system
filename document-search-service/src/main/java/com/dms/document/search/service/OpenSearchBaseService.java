@@ -6,6 +6,7 @@ import com.dms.document.search.enums.DocumentReportStatus;
 import com.dms.document.search.enums.DocumentType;
 import com.dms.document.search.enums.QueryType;
 import com.dms.document.search.enums.SharingType;
+import com.dms.document.search.model.DocumentPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -260,6 +261,32 @@ public abstract class OpenSearchBaseService {
                         ).boostMode(CombineFunction.MULTIPLY)
                         .boost(5.0f)
         );
+    }
+
+    protected void addPreferredFieldBoost(BoolQueryBuilder queryBuilder, String field, Set<String> values, float boost) {
+        if (CollectionUtils.isNotEmpty(values)) {
+            queryBuilder.should(QueryBuilders.termsQuery(field, values)
+                    .boost(boost));
+        }
+    }
+
+    protected void addBasicPreferenceBoosts(BoolQueryBuilder queryBuilder, DocumentPreferences preferences) {
+        if (preferences == null) return;
+
+        // Add preferred fields with moderate boost values
+        // Note: These are intentionally lower than search term boosts (which go up to 15.0f)
+        // to ensure search relevance remains the primary factor
+        addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 1.5f);
+        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 1.5f);
+        addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 1.0f);
+        addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 1.0f);
+        addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 1.0f);
+
+        // Language preferences
+        if (CollectionUtils.isNotEmpty(preferences.getLanguagePreferences())) {
+            queryBuilder.should(QueryBuilders.termsQuery("language", preferences.getLanguagePreferences())
+                    .boost(1.5f));
+        }
     }
 
     private void addHighlightsFromField(HighlightField field, List<String> highlights) {
