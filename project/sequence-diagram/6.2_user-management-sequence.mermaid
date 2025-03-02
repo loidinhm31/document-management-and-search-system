@@ -1,0 +1,41 @@
+sequenceDiagram
+    actor Admin
+    participant Frontend
+    participant AuthService
+    participant Database
+
+    Admin->>Frontend: Select user to manage
+    Frontend->>AuthService: GET /api/v1/users/{id}
+
+    AuthService->>Database: getUserById()
+    Database-->>AuthService: User
+
+    AuthService-->>Frontend: Return user details
+    Frontend-->>Admin: Display user information
+
+    alt Update User Role
+        Admin->>Frontend: Change user role
+        Frontend->>AuthService: PUT /api/v1/users/{id}/role
+
+        AuthService->>Database: getUserById()
+        Database-->>AuthService: User
+        AuthService->>Database: getRoleByName()
+        Database-->>AuthService: Role
+
+        AuthService->>Database: updateUserRole()
+
+        AuthService-->>Frontend: 200 OK
+        Frontend-->>Admin: Confirm role updated
+    else Update Account Status
+        Admin->>Frontend: Change account status
+        Frontend->>AuthService: PUT /api/v1/users/{id}/status
+
+        AuthService->>Database: getUserById()
+        Database-->>AuthService: User
+
+        AuthService->>AuthService: validatePermissions()
+        AuthService->>Database: updateUserStatus()
+
+        AuthService-->>Frontend: 200 OK
+        Frontend-->>Admin: Confirm status updated
+    end

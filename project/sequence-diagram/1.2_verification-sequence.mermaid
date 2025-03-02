@@ -5,11 +5,12 @@ sequenceDiagram
     participant Database
     participant MessageBroker
     participant ProcessorService
+    participant Email
 
-    User->>Frontend: Submit OTP from email
-    Frontend->>AuthService: POST /api/v1/auth/otp/verify
+    User->>Frontend: Submit OTP <br> from email
+    Frontend->>AuthService: POST /api/v1/auth/<br>otp/verify
 
-    AuthService->>Database: getOtpVerificationByUsername()
+    AuthService->>Database: getOtpVerification<br>ByUsername()
     Database-->>AuthService: OtpVerification
 
     alt OTP expired, invalid, or account locked
@@ -28,12 +29,13 @@ sequenceDiagram
 
     alt Resend OTP
         User->>Frontend: Request new OTP
-        Frontend->>AuthService: POST /api/v1/auth/otp/resend
+        Frontend->>AuthService: POST /api/v1/auth/<br>otp/resend
 
-        AuthService->>Database: regenerateOtp()
+        AuthService->>Database: regenerate<br>Otp()
         AuthService->>MessageBroker: publishOtpEmailEvent(email, newOtp)
-        MessageBroker-->>ProcessorService: consumeOtpEmailEvent(email, newOtp)
-        ProcessorService-->>User: Send new verification email
+        MessageBroker-->>ProcessorService: consumeOtp<br>EmailEvent(email,<br> newOtp)
+        ProcessorService-->>Email: Send mail
+        Email-->>User: Send new verification email
 
         AuthService-->>Frontend: Success response
         Frontend-->>User: Display message to check email

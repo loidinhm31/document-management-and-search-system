@@ -1,0 +1,17 @@
+sequenceDiagram
+    actor Admin
+    participant Frontend
+    participant AuthService
+    participant Database
+
+    Admin->>Frontend: Access user management page
+    Frontend->>AuthService: GET /api/v1/admin/users?search=&enabled=&role=
+
+    AuthService->>Database: findUsersBySearchCriteria()
+    Note over AuthService,Database: Apply filters for search term, status, and role
+    Database-->>AuthService: Page<User>
+
+    AuthService->>AuthService: mapToUserDTOs()
+
+    AuthService-->>Frontend: Return user search results
+    Frontend-->>Admin: Display filtered user list
