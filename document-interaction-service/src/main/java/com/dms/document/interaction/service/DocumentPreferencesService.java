@@ -55,6 +55,7 @@ public class DocumentPreferencesService {
 
         // Update explicit preferences while preserving implicit data
         existing.setPreferredMajors(request.preferredMajors());
+        existing.setPreferredCourseCodes(request.preferredCourseCodes());
         existing.setPreferredLevels(request.preferredLevels());
         existing.setPreferredCategories(request.preferredCategories());
         existing.setPreferredTags(request.preferredTags());
@@ -232,6 +233,7 @@ public class DocumentPreferencesService {
 
         // Initialize empty collections
         preferences.setPreferredMajors(new HashSet<>());
+        preferences.setPreferredCourseCodes(new HashSet<>());
         preferences.setPreferredLevels(new HashSet<>());
         preferences.setPreferredCategories(new HashSet<>());
         preferences.setPreferredTags(new HashSet<>());

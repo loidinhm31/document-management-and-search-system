@@ -37,6 +37,7 @@ import {
 } from "@/store/slices/search-slice";
 import { DocumentInformation } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
+import { useAuth } from "@/context/auth-context";
 
 interface SortableColumn {
   field: string;
@@ -49,6 +50,7 @@ export const DocumentList = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const { currentUser} = useAuth();
 
   const loading = useAppSelector(selectSearchLoading);
   const documents = useAppSelector(selectSearchResults);
@@ -283,14 +285,16 @@ export const DocumentList = () => {
             {/* Filter and Reset Buttons */}
             <div className="flex gap-2">
               {/* Favorite Button */}
-              <Button
-                variant={favoriteOnly ? "default" : "outline"}
-                onClick={handleToggleFavorites}
-                className="relative gap-2"
-              >
-                <Heart className={`h-4 w-4 ${favoriteOnly ? "fill-current" : ""}`} />
-                <span className="hidden sm:inline">{t("document.commonSearch.favoritesOnly")}</span>
-              </Button>
+              {!currentUser.roles.includes("ROLE_ADMIN") && (
+                <Button
+                  variant={favoriteOnly ? "default" : "outline"}
+                  onClick={handleToggleFavorites}
+                  className="relative gap-2"
+                >
+                  <Heart className={`h-4 w-4 ${favoriteOnly ? "fill-current" : ""}`} />
+                  <span className="hidden sm:inline">{t("document.commonSearch.favoritesOnly")}</span>
+                </Button>
+              )}
 
               <Button variant="outline" onClick={() => setShowAdvanced(!showAdvanced)} className="relative gap-2">
                 <Filter className="h-4 w-4" />

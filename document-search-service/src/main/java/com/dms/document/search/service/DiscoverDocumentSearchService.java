@@ -175,7 +175,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
     }
 
     private void addGeneralSearchConditions(BoolQueryBuilder queryBuilder, SearchContext context) {
-        // 1. Primary content matching - stricter
+        // Primary content matching - stricter
         BoolQueryBuilder contentQuery = QueryBuilders.boolQuery();
 
         // Case variations for content
@@ -200,7 +200,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
 
         queryBuilder.should(contentQuery);
 
-        // 2. Filename matching with case variations
+        // Filename matching with case variations
         BoolQueryBuilder filenameQuery = QueryBuilders.boolQuery();
 
         // Vietnamese-analyzed filename variations
@@ -375,7 +375,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         String lowercaseQuery = context.lowercaseQuery();
         String uppercaseQuery = context.uppercaseQuery();
 
-        // 1. Content matching with broader acceptance
+        // Content matching with broader acceptance
         BoolQueryBuilder contentQuery = QueryBuilders.boolQuery();
 
         // Phrase matching with increased slop for more flexibility
@@ -409,7 +409,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
 
         queryBuilder.should(contentQuery);
 
-        // 2. Enhanced filename matching
+        // Filename matching
         BoolQueryBuilder filenameQuery = QueryBuilders.boolQuery();
 
         // Exact matches with case variations

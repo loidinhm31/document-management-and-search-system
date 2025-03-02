@@ -1,7 +1,6 @@
 package com.dms.document.interaction.service;
 
 import com.dms.document.interaction.dto.NotificationEventRequest;
-import com.dms.document.interaction.enums.CommentReportStatus;
 import com.dms.document.interaction.enums.EventType;
 import com.dms.document.interaction.enums.NotificationType;
 import com.dms.document.interaction.model.DocumentFavorite;
@@ -38,7 +37,7 @@ public class DocumentNotificationService {
                     .collect(Collectors.toSet());
 
             if (CollectionUtils.isNotEmpty(favoritedUsers)) {
-                sendNotification(
+                sendNotificationToFavoriters(
                         document,
                         username,
                         NotificationType.NEW_COMMENT_FROM_NEW_USER,
@@ -55,7 +54,7 @@ public class DocumentNotificationService {
                 .collect(Collectors.toSet());
 
         if (!favoritedUsers.isEmpty()) {
-            sendNotification(
+            sendNotificationToFavoriters(
                     document,
                     username,
                     NotificationType.NEW_FILE_VERSION,
@@ -71,7 +70,7 @@ public class DocumentNotificationService {
                 .collect(Collectors.toSet());
 
         if (!favoritedUsers.isEmpty()) {
-            sendNotification(
+            sendNotificationToFavoriters(
                     document,
                     username,
                     NotificationType.DOCUMENT_REVERTED,
@@ -99,7 +98,7 @@ public class DocumentNotificationService {
         return !documentCommentRepository.existsByDocumentIdAndUserIdAndIdNot(documentId, userId, newCommentId);
     }
 
-    private void sendNotification(
+    private void sendNotificationToFavoriters(
             DocumentInformation document,
             String triggerUsername,
             NotificationType type,
