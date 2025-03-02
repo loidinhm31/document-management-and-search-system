@@ -1,35 +1,31 @@
 package com.dms.document.search.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.springframework.util.StringUtils;
+import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class DocumentSearchCriteria {
     private String search;
-    private String major;
-    private String courseCode;
+    private Set<String> majors;
+    private Set<String> courseCodes;
     private String level;
-    private String category;
+    private Set<String> categories;
     private Set<String> tags;
     private String sortField;
     private String sortDirection;
 
     public String getSortField() {
-        // Default to createdAt if not specified
-        return StringUtils.hasText(sortField) ? sortField : "createdAt";
+        return sortField != null ? sortField : "createdAt";
     }
 
     public String getSortDirection() {
-        // Default to descending if not specified
-        if (!StringUtils.hasText(sortDirection)) {
-            return "desc";
-        }
-        // Validate direction
-        String normalizedDirection = sortDirection.toLowerCase();
-        return normalizedDirection.equals("asc") ? "asc" : "desc";
+        return sortDirection != null ? sortDirection : "DESC";
     }
 }

@@ -4,10 +4,10 @@ import java.util.Set;
 
 public record DocumentUpdateRequest(
         String summary,
-        String courseCode,
-        String major,
+        Set<String> courseCodes,
+        Set<String> majors,
         String level,
-        String category,
+        Set<String> categories,
         Set<String> tags
 ) {
 }

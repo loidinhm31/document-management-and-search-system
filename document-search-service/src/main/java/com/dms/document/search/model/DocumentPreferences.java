@@ -46,6 +46,9 @@ public class DocumentPreferences {
     @Field("major_interaction_counts")
     private Map<String, Integer> majorInteractionCounts;
 
+    @Field("course_code_interaction_counts")
+    private Map<String, Integer> courseCodeInteractionCounts;
+
     @Field("level_interaction_counts")
     private Map<String, Integer> levelInteractionCounts;
 

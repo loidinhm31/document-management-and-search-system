@@ -50,24 +50,20 @@
         }
       }
     },
-    "major": {
+    "majors": {
       "type": "keyword"
     },
-    "courseCode": {
+    "courseCodes": {
       "type": "keyword"
     },
     "courseLevel": {
       "type": "keyword"
     },
-    "category": {
+    "categories": {
       "type": "keyword"
     },
     "tags": {
       "type": "keyword"
-    },
-    "extractedMetadata": {
-      "type": "object",
-      "enabled": true
     },
     "userId": {
       "type": "keyword"

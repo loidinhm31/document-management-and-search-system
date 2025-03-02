@@ -26,10 +26,11 @@ export interface DocumentInformation {
   documentType: DocumentType;
   content?: string;
   summary?: string;
-  major: string;
-  courseCode: string;
+  majors?: string[];
+  courseCodes?: string[];
   courseLevel: string;
   category: string;
+  categories?: string[];
   tags?: string[];
   extractedMetadata?: Record<string, string>;
   userId: string;
@@ -48,6 +49,7 @@ export interface DocumentInformation {
   currentVersion: number;
   versions: DocumentVersion[];
 }
+
 export interface DocumentSearchResponse {
   content: DocumentInformation[];
   totalElements: number;
@@ -58,10 +60,10 @@ export interface DocumentSearchResponse {
 
 export interface DocumentMetadataUpdate {
   summary?: string;
-  courseCode?: string;
-  major?: string;
+  majors?: string[];
+  courseCodes?: string[];
   level?: string;
-  category?: string;
+  categories?: string[];
   tags?: string[];
 }
 

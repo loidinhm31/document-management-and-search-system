@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import * as z from "zod";
 
+import TagInput from "@/components/common/tag-input";
 import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -28,10 +29,10 @@ const documentSchema = z.object({
           val && val.length < 50 ? "Summary must be at least 50 characters" : "Summary must not exceed 500 characters",
       }),
     ),
-  courseCode: z.string().optional(),
-  major: z.string().min(1, "Major is required"),
+  majors: z.array(z.string()).min(1, "At least one major is required"),
+  courseCodes: z.array(z.string()).optional(),
   level: z.string().min(1, "Course level is required"),
-  category: z.string().min(1, "Document category is required"),
+  categories: z.array(z.string()).min(1, "At least one document category is required"),
   tags: z.array(z.string()).optional(),
 });
 
@@ -57,41 +58,47 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
     resolver: zodResolver(documentSchema),
     defaultValues: initialValues || {
       summary: "",
-      courseCode: "",
-      major: "",
+      majors: [],
+      courseCodes: [],
       level: "",
-      category: "",
+      category: [],
       tags: [],
     },
     mode: "onBlur",
   });
 
-  const selectedMajor = form.watch("major");
+  const selectedMajors = form.watch("majors");
 
+  // Get all available course codes for the selected majors
   const filteredCourseCodes = useMemo(() => {
-    if (!selectedMajor) {
+    if (!selectedMajors || selectedMajors.length === 0) {
       return [];
     }
-    const majorObj = majors.find((m) => m.code === selectedMajor);
-    return courseCodes.filter((course) => course.parentId === majorObj?.id);
-  }, [selectedMajor, courseCodes, majors]);
 
+    // Find all parent IDs for the selected major codes
+    const majorParentIds = majors.filter((major) => selectedMajors.includes(major.code)).map((major) => major.id);
+
+    // Return course codes that belong to any of the selected majors
+    return courseCodes.filter((course) => majorParentIds.includes(course.parentId));
+  }, [selectedMajors, courseCodes, majors]);
+
+  // When majors change, update course codes if necessary
   useEffect(() => {
-    if (selectedMajor && form.getValues("courseCode")) {
-      if (filteredCourseCodes?.length === 0) {
-        form.setValue("courseCode", "");
-        return;
-      }
+    const currentCourseCodes = form.getValues("courseCodes") || [];
 
-      // Check if the current course code belongs to the selected major
-      const currentCourseCode = form.getValues("courseCode");
-      const isValidCourseCode = filteredCourseCodes.some((course) => course.code === currentCourseCode);
+    if (selectedMajors && currentCourseCodes.length > 0) {
+      // Get the valid course code options for current selected majors
+      const validCourseCodeOptions = filteredCourseCodes.map((course) => course.code);
 
-      if (!isValidCourseCode) {
-        form.setValue("courseCode", "");
+      // Filter out any course codes that are no longer valid based on selected majors
+      const validCourseCodes = currentCourseCodes.filter((code) => validCourseCodeOptions.includes(code));
+
+      // If the valid list is different from current list, update form value
+      if (validCourseCodes.length !== currentCourseCodes.length) {
+        form.setValue("courseCodes", validCourseCodes);
       }
     }
-  }, [selectedMajor, filteredCourseCodes, form]);
+  }, [selectedMajors, filteredCourseCodes, form]);
 
   useEffect(() => {
     if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
@@ -140,6 +147,24 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
     await onSubmit(data, selectedFile || undefined);
     form.reset();
     setSelectedFile(null);
+  };
+
+  // Helper function to get display values for tags
+  const getTagDisplay = (tag: string) => {
+    // Check in each master data type
+    const majorItem = majors?.find((m) => m.code === tag);
+    if (majorItem) return majorItem.translations[i18n.language] || majorItem.translations.en;
+
+    const courseCodeItem = courseCodes?.find((m) => m.code === tag);
+    if (courseCodeItem) return courseCodeItem.translations[i18n.language] || courseCodeItem.translations.en;
+
+    const levelItem = levels?.find((l) => l.code === tag);
+    if (levelItem) return levelItem.translations[i18n.language] || levelItem.translations.en;
+
+    const categoryItem = categories?.find((c) => c.code === tag);
+    if (categoryItem) return categoryItem.translations[i18n.language] || categoryItem.translations.en;
+
+    return tag;
   };
 
   return (
@@ -210,28 +235,20 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
 
             <FormField
               control={form.control}
-              name="major"
+              name="majors"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("document.upload.form.major.label")}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={disabled || majors?.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("document.upload.form.major.placeholder")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {majors?.map((major) => (
-                        <SelectItem key={major.code} value={major.code}>
-                          {major.translations[i18n.language] || major.translations.en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <TagInput
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      recommendedTags={majors?.map((major) => major.code) || []}
+                      getTagDisplay={getTagDisplay}
+                      disabled={disabled || majors?.length === 0}
+                      placeholder={t("document.upload.form.major.placeholder")}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -239,28 +256,20 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
 
             <FormField
               control={form.control}
-              name="courseCode"
+              name="courseCodes"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("document.upload.form.courseCode.label")}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={disabled || !selectedMajor || filteredCourseCodes.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("document.upload.form.courseCode.placeholder")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {filteredCourseCodes.map((course) => (
-                        <SelectItem key={course.code} value={course.code}>
-                          {course.translations[i18n.language] || course.translations.en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <TagInput
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      recommendedTags={filteredCourseCodes.map((course) => course.code)}
+                      getTagDisplay={getTagDisplay}
+                      disabled={disabled || !selectedMajors.length || filteredCourseCodes.length === 0}
+                      placeholder={t("document.upload.form.courseCode.placeholder")}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -297,28 +306,20 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
 
             <FormField
               control={form.control}
-              name="category"
+              name="categories"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={disabled || categories?.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("document.detail.form.category.placeholder")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories?.map((category) => (
-                        <SelectItem key={category.code} value={category.code}>
-                          {category.translations[i18n.language] || category.translations.en}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <TagInput
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      recommendedTags={categories?.map((category) => category.code) || []}
+                      getTagDisplay={getTagDisplay}
+                      disabled={disabled || categories?.length === 0}
+                      placeholder={t("document.detail.form.category.placeholder")}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

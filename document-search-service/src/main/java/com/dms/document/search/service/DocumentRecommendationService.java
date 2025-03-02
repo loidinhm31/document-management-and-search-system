@@ -185,37 +185,41 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
     }
 
     private void addMetadataSimilarityBoosts(BoolQueryBuilder queryBuilder, Map<String, Object> sourceDoc) {
-        // Same major and level
-        String major = (String) sourceDoc.get("major");
+        @SuppressWarnings("unchecked")
+        Set<String> majors = (Set<String>) sourceDoc.get("majors");
         String courseLevel = (String) sourceDoc.get("courseLevel");
-        if (major != null && courseLevel != null) {
-            BoolQueryBuilder majorLevelQuery = QueryBuilders.boolQuery()
-                    .must(QueryBuilders.termQuery("major", major))
-                    .must(QueryBuilders.termQuery("courseLevel", courseLevel));
-            queryBuilder.should(majorLevelQuery.boost(3.0f));
+        if (majors != null) {
+            queryBuilder.should(QueryBuilders.termsQuery("majors", majors).boost(3.0f));
         }
 
-        // Same category
-        String category = (String) sourceDoc.get("category");
-        if (category != null) {
-            queryBuilder.should(QueryBuilders.termQuery("category", category).boost(2.0f));
+        @SuppressWarnings("unchecked")
+        Set<String> categories = (Set<String>) sourceDoc.get("categories");
+        if (categories != null) {
+            queryBuilder.should(QueryBuilders.termsQuery("categories", categories).boost(2.0f));
         }
 
-        // Course code similarity
-        String courseCode = (String) sourceDoc.get("courseCode");
-        if (courseCode != null) {
-            queryBuilder.should(QueryBuilders.termQuery("courseCode", courseCode).boost(8.0f))
-                    .should(QueryBuilders.matchQuery("courseCode", courseCode)
-                            .fuzziness(Fuzziness.TWO)
-                            .prefixLength(3)
-                            .boost(6.0f));
+        @SuppressWarnings("unchecked")
+        Set<String> courseCodes = (Set<String>) sourceDoc.get("courseCodes");
+        if (courseCodes != null) {
+            queryBuilder.should(QueryBuilders.termsQuery("courseCodes", courseCodes).boost(3.0f));
         }
 
-        // Common tags
+        if (courseLevel != null) {
+            queryBuilder.should(QueryBuilders.termQuery("courseLevel", courseLevel).boost(3.0f));
+        }
+
         @SuppressWarnings("unchecked")
         List<String> tags = (List<String>) sourceDoc.get("tags");
         if (CollectionUtils.isNotEmpty(tags)) {
             queryBuilder.should(QueryBuilders.termsQuery("tags", tags).boost(4.0f));
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> extractedMetadata = (Map<String, String>) sourceDoc.get("extractedMetadata");
+        if (extractedMetadata != null) {
+            extractedMetadata.forEach((key, value) -> {
+                queryBuilder.should(QueryBuilders.termQuery("extractedMetadata.value", value).boost(2.0f));
+            });
         }
     }
 

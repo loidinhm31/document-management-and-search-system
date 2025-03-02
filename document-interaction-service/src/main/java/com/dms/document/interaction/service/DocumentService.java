@@ -60,10 +60,10 @@ public class DocumentService {
 
     public DocumentInformation uploadDocument(MultipartFile file,
                                               String summary,
-                                              String courseCode,
-                                              String major,
+                                              Set<String> courseCodes,
+                                              Set<String> majors,
                                               String level,
-                                              String category,
+                                              Set<String> categories,
                                               Set<String> tags,
                                               String username) throws IOException {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
@@ -98,6 +98,12 @@ public class DocumentService {
                 .createdAt(Instant.now())
                 .build();
 
+        // Initialize sets if they're null
+        Set<String> finalMajors = majors != null ? majors : new HashSet<>();
+        Set<String> finalCourseCodes = courseCodes != null ? courseCodes : new HashSet<>();
+        Set<String> finalCategories = categories != null ? categories : new HashSet<>();
+        Set<String> finalTags = tags != null ? tags : new HashSet<>();
+
         // Create document with PENDING status
         DocumentInformation document = DocumentInformation.builder()
                 .status(DocumentStatus.PENDING)
@@ -107,11 +113,11 @@ public class DocumentService {
                 .mimeType(file.getContentType())
                 .documentType(documentType)
                 .summary(summary)
-                .major(major)
-                .courseCode(courseCode)
+                .majors(finalMajors)
+                .courseCodes(finalCourseCodes)
                 .courseLevel(level)
-                .category(category)
-                .tags(tags != null ? tags : new HashSet<>())
+                .categories(finalCategories)
+                .tags(finalTags)
                 .userId(userResponse.userId().toString())
                 .sharingType(SharingType.PRIVATE)
                 .sharedWith(new HashSet<>())
@@ -300,10 +306,10 @@ public class DocumentService {
         // Update fields if provided
         if (Objects.nonNull(document)) {
             document.setSummary(documentUpdateRequest.summary());
-            document.setCourseCode(documentUpdateRequest.courseCode());
-            document.setMajor(documentUpdateRequest.major());
+            document.setCourseCodes(documentUpdateRequest.courseCodes());
+            document.setMajors(documentUpdateRequest.majors());
             document.setCourseLevel(documentUpdateRequest.level());
-            document.setCategory(documentUpdateRequest.category());
+            document.setCategories(documentUpdateRequest.categories());
             document.setTags(documentUpdateRequest.tags());
         }
         document.setUpdatedAt(Instant.now());
@@ -375,11 +381,12 @@ public class DocumentService {
 
         // Update metadata
         document.setSummary(documentUpdateRequest.summary());
-        document.setCourseCode(documentUpdateRequest.courseCode());
-        document.setMajor(documentUpdateRequest.major());
+        document.setCourseCodes(documentUpdateRequest.courseCodes());
+        document.setMajors(documentUpdateRequest.majors());
         document.setCourseLevel(documentUpdateRequest.level());
-        document.setCategory(documentUpdateRequest.category());
+        document.setCategories(documentUpdateRequest.categories());
         document.setTags(documentUpdateRequest.tags());
+
         document.setUpdatedAt(Instant.now());
         document.setUpdatedBy(username);
 

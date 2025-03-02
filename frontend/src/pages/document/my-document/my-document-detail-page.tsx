@@ -73,24 +73,44 @@ export default function MyDocumentDetailPage() {
         // Send both metadata and file in single request
         const formData = new FormData();
         formData.append("file", file);
+
         if (data.summary) {
           formData.append("summary", data.summary);
         }
-        formData.append("courseCode", data.courseCode);
-        formData.append("major", data.major);
+
+        // Handle majors (multiple values)
+        if (data.majors && data.majors.length > 0) {
+          data.majors.forEach(major => formData.append("majors", major));
+        }
+
+        // Handle course codes (multiple values)
+        if (data.courseCodes && data.courseCodes.length > 0) {
+          data.courseCodes.forEach(courseCode => formData.append("courseCodes", courseCode));
+        }
+
+        // Single value fields
         formData.append("level", data.level);
-        formData.append("category", data.category);
-        data.tags.forEach((tag) => formData.append("tags", tag));
+
+        // Handle categories (multiple values)
+        if (data.categories && data.categories.length > 0) {
+          data.categories.forEach(category => formData.append("categories", category));
+        }
+
+        // Tags (multiple values)
+        if (data.tags && data.tags.length > 0) {
+          data.tags.forEach(tag => formData.append("tags", tag));
+        }
+
         await handleFileUpdate(documentId, formData);
         setFileChange(true);
       } else {
         // Metadata-only update
         await documentService.updateDocument(documentId, {
           summary: data.summary,
-          courseCode: data.courseCode,
-          major: data.major,
+          majors: data.majors,
+          courseCodes: data.courseCodes,
           level: data.level,
-          category: data.category,
+          categories: data.categories,
           tags: data.tags,
         });
         setFileChange(false);
@@ -228,10 +248,10 @@ export default function MyDocumentDetailPage() {
                   key={`df-${documentData.id}-${documentData.updatedAt}`}
                   initialValues={{
                     summary: documentData?.summary || "",
-                    courseCode: documentData?.courseCode || "",
-                    major: documentData?.major || "",
+                    majors: documentData?.majors || (documentData?.major ? [documentData.major] : []),
+                    courseCodes: documentData?.courseCodes || (documentData?.courseCode ? [documentData.courseCode] : []),
                     level: documentData?.courseLevel || "",
-                    category: documentData?.category || "",
+                    categories: documentData?.categories || (documentData?.category ? [documentData.category] : []),
                     tags: documentData?.tags || [],
                   }}
                   onSubmit={handleSubmit}

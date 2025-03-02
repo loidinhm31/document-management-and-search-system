@@ -11,6 +11,7 @@ import com.dms.document.interaction.model.DocumentPreferences;
 import com.dms.document.interaction.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -151,8 +152,28 @@ public class DocumentPreferencesService {
         if (majorCounts == null) {
             majorCounts = new HashMap<>();
         }
-        majorCounts.merge(document.getMajor(), 1, Integer::sum);
+
+        if (CollectionUtils.isNotEmpty(document.getMajors())) {
+            for (String major : document.getMajors()) {
+                majorCounts.merge(major, 1, Integer::sum);
+            }
+        }
+
         preferences.setMajorInteractionCounts(majorCounts);
+
+        // Update course code counts
+        Map<String, Integer> courseCodeCounts = preferences.getCourseCodeInteractionCounts();
+        if (courseCodeCounts == null) {
+            courseCodeCounts = new HashMap<>();
+        }
+
+        if (CollectionUtils.isNotEmpty(document.getCourseCodes())) {
+            for (String course : document.getCourseCodes()) {
+                courseCodeCounts.merge(course, 1, Integer::sum);
+            }
+        }
+
+        preferences.setCourseCodeInteractionCounts(courseCodeCounts);
 
         // Update level counts
         Map<String, Integer> levelCounts = preferences.getLevelInteractionCounts();
@@ -167,7 +188,13 @@ public class DocumentPreferencesService {
         if (categoryCounts == null) {
             categoryCounts = new HashMap<>();
         }
-        categoryCounts.merge(document.getCategory(), 1, Integer::sum);
+
+        if (CollectionUtils.isNotEmpty(document.getCategories())) {
+            for (String category : document.getCategories()) {
+                categoryCounts.merge(category, 1, Integer::sum);
+            }
+        }
+
         preferences.setCategoryInteractionCounts(categoryCounts);
 
         // Update tag counts

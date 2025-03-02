@@ -26,13 +26,13 @@ public class DocumentResponseDto {
 
     private DocumentType documentType;
 
-    private String major;
+    private Set<String> majors;
 
-    private String courseCode;
+    private Set<String> courseCodes;
 
     private String courseLevel;
 
-    private String category;
+    private Set<String> categories;
 
     private Set<String> tags;
 

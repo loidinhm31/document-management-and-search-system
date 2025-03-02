@@ -38,7 +38,7 @@ public class DocumentService {
         UserResponse userResponse = response.getBody();
 
         if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
-                Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
+              Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
             throw new InvalidDataAccessResourceUsageException("Invalid role");
         }
 
@@ -73,19 +73,22 @@ public class DocumentService {
         }
 
         // Add filters if provided
-        if (StringUtils.isNotBlank(criteria.getMajor())) {
-            criteriaList.add(Criteria.where("major").is(criteria.getMajor()));
+        if (CollectionUtils.isNotEmpty(criteria.getMajors())) {
+            criteriaList.add(Criteria.where("majors").in(criteria.getMajors()));
+        }
+        if (CollectionUtils.isNotEmpty(criteria.getCourseCodes())) {
+            criteriaList.add(Criteria.where("course_codes").in(criteria.getCourseCodes()));
         }
         if (StringUtils.isNotBlank(criteria.getLevel())) {
             criteriaList.add(Criteria.where("courseLevel").is(criteria.getLevel()));
         }
-        if (StringUtils.isNotBlank(criteria.getCategory())) {
-            criteriaList.add(Criteria.where("category").is(criteria.getCategory()));
+        if (CollectionUtils.isNotEmpty(criteria.getCategories())) {
+            criteriaList.add(Criteria.where("categories").in(criteria.getCategories()));
         }
 
         // Add tag filter if provided
         if (CollectionUtils.isNotEmpty(criteria.getTags())) {
-            criteriaList.add(Criteria.where("tags").all(criteria.getTags()));
+            criteriaList.add(Criteria.where("tags").in(criteria.getTags()));
         }
 
         // Combine all criteria with AND

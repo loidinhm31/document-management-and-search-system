@@ -60,23 +60,19 @@ public abstract class OpenSearchBaseService {
         queryBuilder.filter(sharingFilter);
     }
 
-    protected void addFilterConditions(BoolQueryBuilder queryBuilder, String major, String courseCode, String courseLevel, String category, Set<String> tags) {
-        if (StringUtils.isNotBlank(major)) {
-            queryBuilder.filter(QueryBuilders.termQuery("major", major));
+    protected void addFilterConditions(BoolQueryBuilder queryBuilder, Set<String> majors, Set<String> courseCodes, String courseLevel, Set<String> categories, Set<String> tags) {
+        if (CollectionUtils.isNotEmpty(majors)) {
+            queryBuilder.filter(QueryBuilders.termsQuery("majors", majors));
         }
-
-        if (StringUtils.isNotBlank(courseCode)) {
-            queryBuilder.filter(QueryBuilders.termQuery("courseCode", courseCode));
+        if (CollectionUtils.isNotEmpty(courseCodes)) {
+            queryBuilder.filter(QueryBuilders.termsQuery("courseCodes", courseCodes));
         }
-
         if (StringUtils.isNotBlank(courseLevel)) {
             queryBuilder.filter(QueryBuilders.termQuery("courseLevel", courseLevel));
         }
-
-        if (StringUtils.isNotBlank(category)) {
-            queryBuilder.filter(QueryBuilders.termQuery("category", category));
+        if (CollectionUtils.isNotEmpty(categories)) {
+            queryBuilder.filter(QueryBuilders.termsQuery("categories", categories));
         }
-
         if (CollectionUtils.isNotEmpty(tags)) {
             queryBuilder.filter(QueryBuilders.termsQuery("tags", tags));
         }
@@ -173,36 +169,31 @@ public abstract class OpenSearchBaseService {
 
                     return DocumentResponseDto.builder()
                             .id(hit.getId())
-                            // Handle String fields with defaults
                             .filename(Optional.ofNullable(source.get("filename"))
                                     .map(Object::toString)
                                     .orElse(""))
-                            // Handle DocumentType enum safely
                             .documentType(Optional.ofNullable(source.get("documentType"))
                                     .map(Object::toString)
                                     .map(DocumentType::valueOf)
                                     .orElse(null))
-                            .major(Optional.ofNullable(source.get("major"))
-                                    .map(Object::toString)
-                                    .orElse(""))
-                            .courseCode(Optional.ofNullable(source.get("courseCode"))
-                                    .map(Object::toString)
-                                    .orElse(""))
+                            .majors(Optional.ofNullable(source.get("majors"))
+                                    .map(obj -> (Set<String>) obj)
+                                    .orElse(new HashSet<>()))
+                            .courseCodes(Optional.ofNullable(source.get("courseCodes"))
+                                    .map(obj -> (Set<String>) obj)
+                                    .orElse(new HashSet<>()))
                             .courseLevel(Optional.ofNullable(source.get("courseLevel"))
                                     .map(Object::toString)
                                     .orElse(""))
-                            .category(Optional.ofNullable(source.get("category"))
-                                    .map(Object::toString)
-                                    .orElse(""))
-                            // Handle numeric fields safely
+                            .categories(Optional.ofNullable(source.get("categories"))
+                                    .map(obj -> (Set<String>) obj)
+                                    .orElse(new HashSet<>()))
+                            .tags(Optional.ofNullable(source.get("tags"))
+                                    .map(obj -> (Set<String>) obj)
+                                    .orElse(new HashSet<>()))
                             .fileSize(Optional.ofNullable(source.get("fileSize"))
-                                    .map(size -> {
-                                        if (size instanceof Long) return (Long) size;
-                                        if (size instanceof Integer) return ((Integer) size).longValue();
-                                        return 0L;
-                                    })
+                                    .map(size -> ((Number) size).longValue())
                                     .orElse(0L))
-                            // Handle String fields with defaults
                             .mimeType(Optional.ofNullable(source.get("mimeType"))
                                     .map(Object::toString)
                                     .orElse(""))
@@ -212,17 +203,7 @@ public abstract class OpenSearchBaseService {
                             .userId(Optional.ofNullable(source.get("userId"))
                                     .map(Object::toString)
                                     .orElse(""))
-                            // Handle collections safely
-                            .tags(Optional.ofNullable(source.get("tags"))
-                                    .map(obj -> {
-                                        if (obj instanceof List<?>) {
-                                            return new HashSet<>((List<String>) obj);
-                                        }
-                                        return new HashSet<String>();
-                                    })
-                                    .orElse(new HashSet<>()))
                             .createdAt(createdAt)
-                            // Handle highlights list
                             .highlights(highlights)
                             .build();
                 })
