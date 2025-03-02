@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    User->>Frontend: View Interaction Statistics<br>(Analytics tab)
+    Frontend->>DIS: GET /api/v1/documents/preferences/statistics
+
+    DIS->>DB: getAggregatedInteractionStats(userId, since=30daysAgo)
+    DB-->>DIS: aggregatedStats (views, downloads, comments, <br>shares, uniqueDocuments)
+
+    alt Stats exist
+        DIS->>DIS: formatStatisticsResponse(stats)
+    else No stats
+        DIS->>DIS: createEmptyStatisticsResponse()
+    end
+
+    DIS-->>Frontend: interactionStatistics
+    Frontend->>User: Display interaction statistics

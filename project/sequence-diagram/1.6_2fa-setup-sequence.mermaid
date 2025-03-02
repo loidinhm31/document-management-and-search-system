@@ -1,0 +1,51 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant AuthService
+    participant Database
+
+    Note over User, Frontend: Enable 2FA
+    User->>Frontend: Request to enable 2FA
+    Frontend->>AuthService: POST /api/v1/users/{id}/2fa/enable
+    
+    AuthService->>Database: getUserById(userId)
+    Database-->>AuthService: User
+    
+    AuthService->>AuthService: generateTotpSecret()
+    AuthService->>Database: storeTotpSecretForUser()
+    
+    AuthService->>AuthService: generateQrCodeUrl()
+    
+    AuthService-->>Frontend: QR Code URL
+    Frontend-->>User: Display QR Code to scan
+    
+    User->>User: Scan QR Code with authenticator app
+    User->>Frontend: Submit verification code
+    Frontend->>AuthService: POST /api/v1/users/{id}/2fa/verify
+    
+    AuthService->>Database: getUserWithTotpSecret()
+    Database-->>AuthService: User with secret
+    
+    AuthService->>AuthService: validateTotpCode(secret, code)
+    
+    alt Invalid code
+        AuthService-->>Frontend: 400 Bad Request
+        Frontend-->>User: Display error message
+    else Valid code
+        AuthService->>Database: enable2faForUser()
+        
+        AuthService-->>Frontend: 200 OK
+        Frontend-->>User: Display success message
+    end
+    
+    Note over User, Frontend: Disable 2FA
+    User->>Frontend: Request to disable 2FA
+    Frontend->>AuthService: POST /api/v1/users/{id}/2fa/disable
+    
+    AuthService->>Database: getUserById(userId)
+    Database-->>AuthService: User
+    
+    AuthService->>Database: disable2faForUser()
+    
+    AuthService-->>Frontend: 200 OK
+    Frontend-->>User: Display success message

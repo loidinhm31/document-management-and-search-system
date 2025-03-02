@@ -1,0 +1,42 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant AuthService
+    participant Database
+    
+    User->>Frontend: Enter username and password
+    Frontend->>AuthService: POST /api/v1/auth/login
+    
+    AuthService->>Database: authenticateUser(username, password)
+    Database-->>AuthService: Authentication result
+    
+    alt Invalid credentials
+        AuthService-->>Frontend: 401 Unauthorized
+        Frontend-->>User: Display error message
+    else Valid credentials but user not verified
+        AuthService-->>Frontend: TokenResponse with enabled=false
+        Frontend-->>User: Display verification required message
+    else Valid credentials with 2FA enabled
+        AuthService-->>Frontend: TokenResponse with 2FA required
+        Frontend-->>User: Prompt for 2FA code
+        
+        User->>Frontend: Submit 2FA code
+        Frontend->>AuthService: POST /api/v1/auth/2fa/verify
+        
+        AuthService->>AuthService: validateTotpCode(username, code)
+        
+        alt Invalid 2FA code
+            AuthService-->>Frontend: "UNVERIFIED"
+            Frontend-->>User: Display error message
+        else Valid 2FA code
+            AuthService->>AuthService: generateTokens()
+            AuthService-->>Frontend: TokenResponse
+            Frontend->>Frontend: Store tokens
+            Frontend-->>User: Redirect to dashboard
+        end
+    else Valid credentials without 2FA
+        AuthService->>AuthService: generateTokens()
+        AuthService-->>Frontend: TokenResponse
+        Frontend->>Frontend: Store tokens
+        Frontend-->>User: Redirect to dashboard
+    end

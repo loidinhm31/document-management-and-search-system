@@ -1,0 +1,30 @@
+sequenceDiagram
+    actor Mentor
+    participant DIS as Document Interaction Service
+    participant DB as Database
+
+    Mentor->>DIS: POST /api/v1/documents/{id}/notes
+    Note right of Mentor: Note content (max 200 chars)
+
+    DIS->>DB: checkAccess(documentId, mentorId)
+    DB-->>DIS: document
+
+    DIS->>DB: checkDocumentStatus(documentId)
+    DB-->>DIS: status
+
+    alt Status is COMPLETED
+        DIS->>DB: findExistingNote(documentId, mentorId)
+        DB-->>DIS: existingNote?
+
+        alt Note exists
+            DIS->>DB: updateNote(id, content, edited=true)
+            DIS->>DB: recordUserHistory(userId, NOTE, "UPDATE")
+        else New note
+            DIS->>DB: createNote(documentId, mentorId, content)
+            DIS->>DB: recordUserHistory(userId, NOTE, "ADD")
+        end
+
+        DIS-->>Mentor: 200 OK with note data
+    else Document not ready
+        DIS-->>Mentor: 400 Bad Request
+    end

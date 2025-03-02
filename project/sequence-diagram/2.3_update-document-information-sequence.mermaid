@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant OS as OpenSearch
+
+    User->>Frontend: Edit document <br> metadata
+    Frontend->>DIS: PUT /api/v1/<br>documents/{id}
+
+    DIS->>DB: findDocumentBy<br>Owner(id, userId)
+    DB-->>DIS: document
+
+    DIS->>DB: saveUpdated<br>Document(document)
+    DB-->>DIS: savedDocument
+
+    DIS->>DB: recordUpdateHistory<br>(userId, documentId)
+    DIS->>MB: publishEvent(UPDATE_EVENT, documentId)
+
+    DIS-->>Frontend: 200 OK + <br> updatedDocument
+    Frontend-->>User: Display success & <br> updated details
+
+    MB->>PS: consumeEvent<br>(UPDATE_EVENT, documentId)
+    PS->>DB: getDocument(documentId)
+    DB-->>PS: document
+
+    PS->>OS: updateDocument<br>Index(document)

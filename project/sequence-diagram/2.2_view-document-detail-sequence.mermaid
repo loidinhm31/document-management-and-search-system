@@ -1,0 +1,16 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    User->>Frontend: Select document to view
+    Frontend->>DIS: GET /api/v1/documents/{id}
+
+    DIS->>DB: findAccessibleDocumentById(id, userId)
+    DB-->>DIS: documentInformation
+
+    DIS->>DB: recordViewHistory(userId, documentId)
+
+    DIS-->>Frontend: 200 OK + documentInformation
+    Frontend-->>User: Display document details
