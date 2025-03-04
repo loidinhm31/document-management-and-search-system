@@ -104,14 +104,9 @@ public class DocumentService {
 
         Query query = new Query(finalCriteria)
                 .with(pageable);
+        query.fields().exclude("content"); // Exclude the content field from the query results
         List<DocumentInformation> documents = mongoTemplate.find(query, DocumentInformation.class);
 
-        return new PageImpl<>(
-                documents.stream()
-                        .peek(d -> d.setContent(null))
-                        .toList(),
-                pageable,
-                total
-        );
+        return new PageImpl<>(documents, pageable, total);
     }
 }

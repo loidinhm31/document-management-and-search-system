@@ -1,0 +1,150 @@
+erDiagram
+    ROLES ||--o{ USERS : "assigned to"
+    USERS ||--o{ PASSWORD_RESET_TOKEN : "has"
+    USERS ||--o{ REFRESH_TOKENS : "has"
+    USERS ||--o{ OTP_VERIFICATIONS : "has"
+    USERS ||--o{ DOCUMENT_FAVORITES : "favorites"
+    USERS ||--o{ DOCUMENT_COMMENTS : "creates"
+    USERS ||--o{ DOCUMENT_REPORTS : "submits"
+    USERS ||--o{ COMMENT_REPORTS : "submits"
+    USERS }|--o{ DOCUMENT_RECOMMENDATIONS : "recommends as mentor"
+    USERS }|--o{ DOCUMENT_NOTES : "writes as mentor"
+    DOCUMENT_COMMENTS ||--o{ COMMENT_REPORTS : "reported via"
+    DOCUMENT_COMMENTS ||--o{ DOCUMENT_COMMENTS : "parent of"
+
+    ROLES {
+        UUID role_id PK
+        VARCHAR role_name
+        VARCHAR created_by
+        TIMESTAMP created_at
+        VARCHAR updated_by
+        TIMESTAMP updated_at
+    }
+
+    USERS {
+        UUID user_id PK
+        VARCHAR username
+        VARCHAR email
+        VARCHAR password
+        BOOLEAN account_non_locked
+        BOOLEAN account_non_expired
+        BOOLEAN credentials_non_expired
+        BOOLEAN enabled
+        TIMESTAMP credentials_expiry_date
+        TIMESTAMP account_expiry_date
+        VARCHAR two_factor_secret
+        BOOLEAN is_two_factor_enabled
+        VARCHAR sign_up_method
+        UUID role_id FK
+        VARCHAR created_by
+        TIMESTAMP created_at
+        VARCHAR updated_by
+        TIMESTAMP updated_at
+    }
+
+    PASSWORD_RESET_TOKEN {
+        UUID id PK
+        VARCHAR token
+        UUID user_id FK
+        TIMESTAMP expiry_date
+        BOOLEAN used
+        VARCHAR created_by
+        TIMESTAMP created_at
+        VARCHAR updated_by
+        TIMESTAMP updated_at
+    }
+
+    REFRESH_TOKENS {
+        UUID id PK
+        VARCHAR token
+        UUID user_id FK
+        TIMESTAMP expiry_date
+        BOOLEAN revoked
+        VARCHAR user_agent
+        VARCHAR ip_address
+        VARCHAR created_by
+        TIMESTAMP created_at
+        VARCHAR updated_by
+        TIMESTAMP updated_at
+    }
+
+    OTP_VERIFICATIONS {
+        UUID id PK
+        VARCHAR otp
+        VARCHAR email
+        TIMESTAMP expiry_time
+        INT attempt_count
+        BOOLEAN is_validated
+        TIMESTAMP locked_until
+        UUID user_id FK
+        TIMESTAMP created_at
+        VARCHAR created_by
+        TIMESTAMP updated_at
+        VARCHAR updated_by
+    }
+
+    DOCUMENT_FAVORITES {
+        BIGINT id PK
+        UUID user_id FK
+        VARCHAR document_id
+        TIMESTAMP created_at
+    }
+
+    DOCUMENT_COMMENTS {
+        BIGINT id PK
+        VARCHAR document_id
+        UUID user_id FK
+        VARCHAR content
+        BIGINT parent_id FK
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+        BOOLEAN edited
+        SMALLINT flag
+        BIGINT version
+    }
+
+    DOCUMENT_REPORTS {
+        BIGINT id PK
+        VARCHAR document_id
+        UUID user_id FK
+        VARCHAR report_type_code
+        VARCHAR description
+        TIMESTAMP created_at
+        VARCHAR status
+        BOOLEAN processed
+        INTEGER times
+        UUID updated_by
+        TIMESTAMP updated_at
+    }
+
+    COMMENT_REPORTS {
+        BIGINT id PK
+        VARCHAR document_id
+        BIGINT comment_id FK
+        UUID user_id FK
+        VARCHAR report_type_code
+        VARCHAR description
+        BOOLEAN processed
+        VARCHAR status
+        INTEGER times
+        TIMESTAMP created_at
+        UUID updated_by
+        TIMESTAMP updated_at
+    }
+
+    DOCUMENT_RECOMMENDATIONS {
+        BIGINT id PK
+        VARCHAR document_id
+        UUID mentor_id FK
+        TIMESTAMP created_at
+    }
+
+    DOCUMENT_NOTES {
+        BIGINT id PK
+        VARCHAR document_id
+        UUID mentor_id FK
+        VARCHAR content
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+        BOOLEAN edited
+    }

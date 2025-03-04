@@ -1,0 +1,42 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DSS as DocumentSearchService
+    participant AuthS as AuthService
+    participant OS as OpenSearch
+
+    User->>Frontend: Enter text in search box
+    Note over Frontend: Wait 350ms after last keystroke
+
+    Frontend->>DSS: POST /api/v1/search/suggestions
+    Note over Frontend,DSS: SuggestionRequest (query, filters)
+
+    DSS->>AuthS: getUserByUsername(token)
+    AuthS-->>DSS: UserResponse (userId, role)
+
+    alt Query length < 2 characters
+        DSS-->>Frontend: Return empty suggestions list
+    else Query length acceptable
+        DSS->>DSS: analyzeQuery(query)
+        Note over DSS: Determine if query is definition or general search
+
+        DSS->>DSS: getUserPreferences(userId)
+        Note over DSS: Retrieve user's preferred majors,<br>courses, tags, and past interactions
+
+        DSS->>OS: buildAndExecuteSuggestionSearch()
+        Note over DSS,OS: Complex query with:<br>- Access filters<br>- User preferences<br>- Vietnamese language support<br>- Fuzzy matching<br>- Maximum 10 suggestions
+
+        OS-->>DSS: suggestionResults
+
+        DSS->>DSS: processAndHighlight(suggestionResults)
+        Note over DSS: Extract and format highlighted matches
+    end
+
+    DSS-->>Frontend: Return suggestions list
+
+    Frontend-->>User: Display suggestions with highlighted matches
+
+    User->>Frontend: Select suggestion (click/Enter)
+
+    Frontend->>Frontend: Fill search box with selected term
+    Frontend->>Frontend: Automatically trigger search

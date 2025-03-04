@@ -2,6 +2,7 @@ package com.dms.document.interaction.controller;
 
 import com.dms.document.interaction.exception.DuplicateFavoriteException;
 import com.dms.document.interaction.exception.InvalidDocumentException;
+import com.dms.document.interaction.exception.InvalidMasterDataException;
 import com.dms.document.interaction.exception.UnsupportedDocumentTypeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
@@ -39,6 +40,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidDataAccessResourceUsageException.class)
     public ResponseEntity<Map<String, String>> handleInvalidDataAccess(InvalidDataAccessResourceUsageException ex) {
         return createErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidMasterDataException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidMasterData(Exception ex) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("status", HttpStatus.CONFLICT.toString());
+        errorResponse.put("error", HttpStatus.CONFLICT.getReasonPhrase());
+        errorResponse.put("message", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(Exception.class)

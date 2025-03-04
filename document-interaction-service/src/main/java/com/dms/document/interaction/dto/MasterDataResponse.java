@@ -3,6 +3,7 @@ package com.dms.document.interaction.dto;
 import com.dms.document.interaction.enums.MasterDataType;
 import lombok.Builder;
 import lombok.Data;
+import lombok.With;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,4 +20,6 @@ public class MasterDataResponse {
     private Instant updatedAt;
     private boolean isActive;
     private String parentId;
+    @With
+    private boolean isFullUpdate;
 }
