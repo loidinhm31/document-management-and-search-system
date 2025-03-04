@@ -1,0 +1,42 @@
+sequenceDiagram
+    actor Admin
+    participant FE as Frontend
+    participant MDS as DocumentInteractionService<br>(MasterDataService)
+    participant DB as Database
+
+    Admin->>FE: Select item & modify fields
+    FE->>MDS: PUT /api/v1/master-data/{id}
+
+    MDS->>MDS: validateMasterDataRequest()
+
+    alt Invalid Request
+        MDS-->>FE: 400 Bad Request + error message
+        FE-->>Admin: Show validation error
+    else Valid Request
+        MDS->>DB: getMasterDataById(id)
+        DB-->>MDS: MasterData entity
+
+        alt Not Found
+            MDS-->>FE: 404 Not Found
+            FE-->>Admin: Show error message
+        end
+
+        MDS->>DB: checkIfItemInUse(id, code, type)
+        Note right of DB: Checks documents, preferences,<br>and child records
+        DB-->>MDS: boolean inUse
+
+        alt Item in Use
+            Note over MDS: Apply restricted update - only<br>descriptions and translations
+            MDS->>DB: savePartialUpdate(safeFieldsOnly)
+            DB-->>MDS: updated entity
+
+            MDS-->>FE: 200 OK + { isFullUpdate: false, ... }
+            FE-->>Admin: Show partial update notice
+        else Item Not in Use
+            MDS->>DB: saveFullUpdate(allFields)
+            DB-->>MDS: updated entity
+
+            MDS-->>FE: 200 OK + { isFullUpdate: true, ... }
+            FE-->>Admin: Show success message
+        end
+    end

@@ -1,0 +1,35 @@
+sequenceDiagram
+    actor Admin
+    participant FE as Frontend
+    participant MDS as DocumentInteractionService<br>(MasterDataService)
+    participant DB as Database
+
+%% Get course codes for a specific major
+    Admin->>FE: Select major to view related courses
+    FE->>MDS: GET /api/v1/master-data/COURSE_CODE/parent/{majorId}
+
+    MDS->>DB: findMasterDataByTypeAndParentId(COURSE_CODE, majorId)
+    DB-->>MDS: List<MasterData>
+
+    MDS-->>FE: 200 OK + related course codes
+    FE-->>Admin: Display related course list
+
+%% Create course code under a major
+    Admin->>FE: Create new course under selected major
+    Note over FE: Form includes majorId as parentId
+
+    FE->>MDS: POST /api/v1/master-data
+
+    MDS->>DB: verifyParentExists(majorId)
+    DB-->>MDS: MasterData parent
+
+    alt Parent Not Found or Not a Major
+        MDS-->>FE: 400 Bad Request
+        FE-->>Admin: Show error message
+    else Valid Parent
+        MDS->>DB: saveMasterData(courseWithParent)
+        DB-->>MDS: saved entity
+
+        MDS-->>FE: 200 OK + created course
+        FE-->>Admin: Show success & updated list
+    end

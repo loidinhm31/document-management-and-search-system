@@ -1,0 +1,33 @@
+sequenceDiagram
+    actor Admin
+    participant FE as FrontEnd
+    participant MDS as DocumentInteractionService<br>(MasterDataService)
+    participant DB as Database
+
+    Admin->>FE: Fill master data form & submit
+    Note over FE: Form contains type, code,<br>translations, description, etc.
+
+    FE->>MDS: POST /api/v1/master-data
+
+    MDS->>MDS: validateMasterDataRequest()
+
+    alt Invalid Request
+        MDS-->>FE: 400 Bad Request + error message
+        FE-->>Admin: Show validation error
+    else Valid Request
+        alt Course code with parent major
+            MDS->>DB: verifyParentExists(parentId)
+            DB-->>MDS: boolean exists
+
+            alt Parent not found or not a major
+                MDS-->>FE: 400 Bad Request + error message
+                FE-->>Admin: Show validation error
+            end
+        end
+
+        MDS->>DB: saveMasterData(masterData)
+        DB-->>MDS: saved entity
+
+        MDS-->>FE: 200 OK + created master data
+        FE-->>Admin: Show success message & updated list
+    end
