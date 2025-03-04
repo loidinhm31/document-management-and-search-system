@@ -149,7 +149,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         searchSourceBuilder.highlighter(configureHighlightFields(context));
 
         // Exclude content field
-        searchSourceBuilder.fetchSource(null, new String[]{"content"});
+        searchSourceBuilder.fetchSource(new String[]{"*"}, new String[]{"content"});
 
         searchRequest.source(searchSourceBuilder);
         return searchRequest;
@@ -368,7 +368,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
                 .trackScores(true)
                 .sort(SortBuilders.scoreSort().order(SortOrder.DESC))
                 .highlighter(configureSuggestionHighlightFields())
-                .fetchSource(null, new String[]{"content"});
+                .fetchSource(new String[]{"*"}, new String[]{"content"});
 
         searchRequest.source(searchSourceBuilder);
         return searchRequest;
