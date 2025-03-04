@@ -10,9 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export interface SearchFilters {
   search?: string;
-  major?: string;
+  majors?: string[];
   level?: string;
-  category?: string;
+  categories?: string[];
   sort?: string;
   tags?: string[];
   favoriteOnly?: boolean;
@@ -41,18 +41,19 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
   const [selectedSort, setSelectedSort] = useState(sortOptions[0].value);
 
   // Filter states
-  const [selectedMajor, setSelectedMajor] = useState("all");
-  const [selectedCourseCode, setSelectedCourseCode] = useState("all");
-  const [selectedLevel, setSelectedLevel] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedMajors, setSelectedMajors] = useState<string[]>([]);
+  const [selectedCourseCodes, setSelectedCourseCodes] = useState<string[]>([]);
+  const [selectedLevel, setSelectedLevel] = useState(undefined);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const handleSearch = () => {
     onSearch({
       search: searchTerm,
-      major: selectedMajor === "all" ? undefined : selectedMajor,
-      level: selectedLevel === "all" ? undefined : selectedLevel,
-      category: selectedCategory === "all" ? undefined : selectedCategory,
+      majors: selectedMajors.length <= 0 ? undefined : selectedMajors,
+      courseCodes: selectedCourseCodes.length <= 0 ? undefined : selectedCategories,
+      level: selectedLevel ? undefined : selectedLevel,
+      categories: selectedCategories.length <= 0 ? undefined : selectedCategories,
       sort: selectedSort,
       tags: selectedTags.length > 0 ? selectedTags : undefined,
     });
@@ -60,9 +61,10 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
 
   const handleReset = () => {
     setSearchTerm("");
-    setSelectedMajor("all");
-    setSelectedLevel("all");
-    setSelectedCategory("all");
+    setSelectedMajors([]);
+    setSelectedCourseCodes([]);
+    setSelectedLevel(undefined);
+    setSelectedCategories([]);
     setSelectedTags([]);
     setSelectedSort(sortOptions[0].value);
     onSearch({});
@@ -70,9 +72,10 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (selectedMajor !== "all") count++;
-    if (selectedLevel !== "all") count++;
-    if (selectedCategory !== "all") count++;
+    if (selectedMajors.length > 0) count++;
+    if (selectedCourseCodes.length > 0) count++;
+    if (selectedLevel) count++;
+    if (selectedCategories.length > 0) count++;
     if (selectedTags.length > 0) count++;
     return count;
   };
@@ -135,15 +138,15 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
         {showAdvanced && (
           <div className="space-y-4">
             <DocumentFilter
-              majorValue={selectedMajor}
-              onMajorChange={setSelectedMajor}
-              courseCodeValue={selectedCourseCode}
-              onCourseCodeChange={setSelectedCourseCode}
-              levelValue={selectedLevel}
+              majors={selectedMajors}
+              onMajorsChange={setSelectedMajors}
+              courseCodes={selectedCourseCodes}
+              onCourseCodesChange={setSelectedCourseCodes}
+              level={selectedLevel}
               onLevelChange={setSelectedLevel}
-              categoryValue={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              tagsValue={selectedTags}
+              categories={selectedCategories}
+              onCategoriesChange={setSelectedCategories}
+              tags={selectedTags}
               onTagsChange={setSelectedTags}
               className="md:grid-cols-3 lg:grid-cols-4"
             />

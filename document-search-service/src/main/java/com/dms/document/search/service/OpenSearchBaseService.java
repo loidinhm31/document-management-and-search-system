@@ -177,19 +177,39 @@ public abstract class OpenSearchBaseService {
                                     .map(DocumentType::valueOf)
                                     .orElse(null))
                             .majors(Optional.ofNullable(source.get("majors"))
-                                    .map(obj -> (Set<String>) obj)
+                                    .map(obj -> {
+                                        if (obj instanceof Collection) {
+                                            return new HashSet<>((Collection<String>) obj);
+                                        }
+                                        return new HashSet<String>();
+                                    })
                                     .orElse(new HashSet<>()))
                             .courseCodes(Optional.ofNullable(source.get("courseCodes"))
-                                    .map(obj -> (Set<String>) obj)
+                                    .map(obj -> {
+                                        if (obj instanceof Collection) {
+                                            return new HashSet<>((Collection<String>) obj);
+                                        }
+                                        return new HashSet<String>();
+                                    })
                                     .orElse(new HashSet<>()))
                             .courseLevel(Optional.ofNullable(source.get("courseLevel"))
                                     .map(Object::toString)
                                     .orElse(""))
                             .categories(Optional.ofNullable(source.get("categories"))
-                                    .map(obj -> (Set<String>) obj)
+                                    .map(obj -> {
+                                        if (obj instanceof Collection) {
+                                            return new HashSet<>((Collection<String>) obj);
+                                        }
+                                        return new HashSet<String>();
+                                    })
                                     .orElse(new HashSet<>()))
                             .tags(Optional.ofNullable(source.get("tags"))
-                                    .map(obj -> (Set<String>) obj)
+                                    .map(obj -> {
+                                        if (obj instanceof Collection) {
+                                            return new HashSet<>((Collection<String>) obj);
+                                        }
+                                        return new HashSet<String>();
+                                    })
                                     .orElse(new HashSet<>()))
                             .fileSize(Optional.ofNullable(source.get("fileSize"))
                                     .map(size -> ((Number) size).longValue())

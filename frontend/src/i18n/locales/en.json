@@ -560,10 +560,10 @@
       },
       "headers": {
         "name": "Name",
-        "course": "Course Code",
-        "major": "Major",
+        "courses": "Course Codes",
+        "majors": "Majors",
         "level": "Level",
-        "category": "Category",
+        "categories": "Categories",
         "tags": "Tags",
         "matches": "Matches",
         "created": "Created",
@@ -597,21 +597,21 @@
         "sizeLimitError": "File size exceeds the maximum limit {{maxFileSize}} MB. Selected file is {{fileSizeError}} MB"
       },
       "form": {
-        "major": {
-          "label": "Major *",
-          "placeholder": "Select major"
+        "majors": {
+          "label": "Majors *",
+          "placeholder": "Select majors"
         },
-        "courseCode": {
-          "label": "Course Code",
-          "placeholder": "Enter course code"
+        "courseCodes": {
+          "label": "Course Codes",
+          "placeholder": "Enter course codes"
         },
         "level": {
           "label": "Course Level *",
           "placeholder": "Select course level"
         },
-        "category": {
-          "label": "Document Category *",
-          "placeholder": "Select document category"
+        "categories": {
+          "label": "Document Categories *",
+          "placeholder": "Select document categories"
         },
         "tags": {
           "label": "Tags",
@@ -691,21 +691,21 @@
           "label": "Summary (50-500 characters)",
           "placeholder": "Enter summary"
         },
-        "courseCode": {
-          "label": "Course Code",
-          "placeholder": "Enter course code"
+        "courseCodes": {
+          "label": "Course Codes",
+          "placeholder": "Enter course codes"
         },
-        "major": {
-          "label": "Major",
-          "placeholder": "Select major"
+        "majors": {
+          "label": "Majosr",
+          "placeholder": "Select majors"
         },
         "level": {
           "label": "Course Level",
           "placeholder": "Select course level"
         },
-        "category": {
-          "label": "Document Category",
-          "placeholder": "Select document category"
+        "categories": {
+          "label": "Document Categories",
+          "placeholder": "Select document categories"
         },
         "tags": {
           "label": "Tags",
@@ -716,10 +716,10 @@
         "uploadedBy": "Uploaded by",
         "uploadDate": "Upload date",
         "summary": "Summary",
-        "courseCode": "Course Code",
-        "major": "Major",
+        "courseCodes": "Course Codes",
+        "majors": "Majors",
         "level": "Course Level",
-        "category": "Document Category",
+        "categories": "Document Categories",
         "tags": "Tags"
       },
       "buttons": {
@@ -774,14 +774,14 @@
     "commonSearch": {
       "all": "All",
       "filters": "Filters",
-      "majorLabel": "Major",
-      "majorPlaceholder": "Select major",
-      "courseCodeLabel": "Course Code",
-      "courseCodePlaceholder": "Select course code",
+      "majorLabel": "Majors",
+      "majorPlaceholder": "Select majors",
+      "courseCodeLabel": "Course Codes",
+      "courseCodePlaceholder": "Select course codes",
       "levelLabel": "Level",
       "levelPlaceholder": "Select level",
-      "categoryLabel": "Category",
-      "categoryPlaceholder": "Select category",
+      "categoryLabel": "Categories",
+      "categoryPlaceholder": "Select categories",
       "reset": "Reset Filter",
       "apply": "Search",
       "tagLabel": "Tags",

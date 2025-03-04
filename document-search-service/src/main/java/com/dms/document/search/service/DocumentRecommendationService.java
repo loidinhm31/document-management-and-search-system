@@ -186,20 +186,20 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
 
     private void addMetadataSimilarityBoosts(BoolQueryBuilder queryBuilder, Map<String, Object> sourceDoc) {
         @SuppressWarnings("unchecked")
-        Set<String> majors = (Set<String>) sourceDoc.get("majors");
+        List<String> majors = (List<String>) sourceDoc.get("majors");
         String courseLevel = (String) sourceDoc.get("courseLevel");
         if (majors != null) {
             queryBuilder.should(QueryBuilders.termsQuery("majors", majors).boost(3.0f));
         }
 
         @SuppressWarnings("unchecked")
-        Set<String> categories = (Set<String>) sourceDoc.get("categories");
+        List<String> categories = (List<String>) sourceDoc.get("categories");
         if (categories != null) {
             queryBuilder.should(QueryBuilders.termsQuery("categories", categories).boost(2.0f));
         }
 
         @SuppressWarnings("unchecked")
-        Set<String> courseCodes = (Set<String>) sourceDoc.get("courseCodes");
+        List<String> courseCodes = (List<String>) sourceDoc.get("courseCodes");
         if (courseCodes != null) {
             queryBuilder.should(QueryBuilders.termsQuery("courseCodes", courseCodes).boost(3.0f));
         }

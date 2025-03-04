@@ -238,7 +238,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
               name="majors"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("document.upload.form.major.label")}</FormLabel>
+                  <FormLabel>{t("document.upload.form.majors.label")}</FormLabel>
                   <FormControl>
                     <TagInput
                       value={field.value || []}
@@ -246,7 +246,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
                       recommendedTags={majors?.map((major) => major.code) || []}
                       getTagDisplay={getTagDisplay}
                       disabled={disabled || majors?.length === 0}
-                      placeholder={t("document.upload.form.major.placeholder")}
+                      placeholder={t("document.upload.form.majors.placeholder")}
                     />
                   </FormControl>
                   <FormMessage />
@@ -259,7 +259,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
               name="courseCodes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("document.upload.form.courseCode.label")}</FormLabel>
+                  <FormLabel>{t("document.upload.form.courseCodes.label")}</FormLabel>
                   <FormControl>
                     <TagInput
                       value={field.value || []}
@@ -267,7 +267,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
                       recommendedTags={filteredCourseCodes.map((course) => course.code)}
                       getTagDisplay={getTagDisplay}
                       disabled={disabled || !selectedMajors.length || filteredCourseCodes.length === 0}
-                      placeholder={t("document.upload.form.courseCode.placeholder")}
+                      placeholder={t("document.upload.form.courseCodes.placeholder")}
                     />
                   </FormControl>
                   <FormMessage />
@@ -309,7 +309,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
               name="categories"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("document.upload.form.category.label")}</FormLabel>
+                  <FormLabel>{t("document.upload.form.categories.label")}</FormLabel>
                   <FormControl>
                     <TagInput
                       value={field.value || []}
@@ -317,7 +317,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
                       recommendedTags={categories?.map((category) => category.code) || []}
                       getTagDisplay={getTagDisplay}
                       disabled={disabled || categories?.length === 0}
-                      placeholder={t("document.detail.form.category.placeholder")}
+                      placeholder={t("document.detail.form.categories.placeholder")}
                     />
                   </FormControl>
                   <FormMessage />

@@ -3,122 +3,148 @@ import i18n from "i18next";
 import React, { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import TagInput from "@/components/common/tag-input";
 import TagInputDebounce from "@/components/common/tag-input-debounce";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 
 export interface DocumentFilterProps {
-  majorValue: string;
-  onMajorChange: (value: string) => void;
-  courseCodeValue: string;
-  onCourseCodeChange: (value: string) => void;
-  levelValue: string;
+  majors: string[];
+  onMajorsChange: (value: string[]) => void;
+  courseCodes: string[];
+  onCourseCodesChange: (value: string[]) => void;
+  level: string;
   onLevelChange: (value: string) => void;
-  categoryValue: string;
-  onCategoryChange: (value: string) => void;
-  tagsValue: string[];
+  categories: string[];
+  onCategoriesChange: (value: string[]) => void;
+  tags: string[];
   onTagsChange: (tags: string[]) => void;
   className?: string;
 }
 
 export const DocumentFilter = ({
-  majorValue,
-  onMajorChange,
-  courseCodeValue,
-  onCourseCodeChange,
-  levelValue,
+  majors,
+  onMajorsChange,
+  courseCodes,
+  onCourseCodesChange,
+  level,
   onLevelChange,
-  categoryValue,
-  onCategoryChange,
-  tagsValue,
+  categories,
+  onCategoriesChange,
+  tags,
   onTagsChange,
   className,
 }: DocumentFilterProps) => {
   const { t } = useTranslation();
 
   const dispatch = useAppDispatch();
-  const { majors, courseCodes, levels, categories, loading } = useAppSelector(selectMasterData);
+  const {
+    majors: availableMajors,
+    courseCodes: availableCourseCodes,
+    levels,
+    categories: availableCategories,
+    loading,
+  } = useAppSelector(selectMasterData);
 
   const filteredCourseCodes = useMemo(() => {
-    if (majorValue === "all") {
-      return courseCodes;
+    if (majors.length === 0) {
+      return availableCourseCodes;
     }
-    const majorObj = majors.find((m) => m.code === majorValue);
-    return courseCodes.filter((course) => course.parentId === majorObj?.id);
-  }, [majorValue, courseCodes]);
+
+    // Find parent IDs for all selected majors
+    const majorParentIds = availableMajors.filter((m) => majors.includes(m.code)).map((m) => m.id);
+
+    // Return course codes for any of the selected majors
+    return availableCourseCodes.filter((course) => majorParentIds.includes(course.parentId));
+  }, [majors, availableCourseCodes, availableMajors]);
 
   useEffect(() => {
-    if (majorValue !== "all" && courseCodeValue !== "all") {
-      // Check if the current course code belongs to the selected major
-      const isValidCourseCode = filteredCourseCodes.some((course) => course.code === courseCodeValue);
-      if (!isValidCourseCode) {
-        onCourseCodeChange("all");
+    // If majors change, validate course codes
+    if (courseCodes.length > 0) {
+      // Get all valid course code options
+      const validCourseCodeOptions = filteredCourseCodes.map((course) => course.code);
+
+      // Filter out any course codes that are no longer valid based on selected majors
+      const validCourseCodes = courseCodes.filter((code) => validCourseCodeOptions.includes(code));
+
+      // If we've filtered out any course codes, update the selection
+      if (validCourseCodes.length !== courseCodes.length) {
+        onCourseCodesChange(validCourseCodes.length > 0 ? validCourseCodes : []);
       }
     }
-  }, [majorValue, filteredCourseCodes, courseCodeValue, onCourseCodeChange]);
+  }, [majors, filteredCourseCodes, courseCodes, onCourseCodesChange]);
 
   useEffect(() => {
-    if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
+    if (
+      availableMajors?.length === 0 ||
+      availableCourseCodes?.length === 0 ||
+      levels?.length === 0 ||
+      availableCategories?.length === 0
+    ) {
       dispatch(fetchMasterData());
     }
-  }, [dispatch, majors?.length, courseCodes?.length, levels?.length, categories?.length]);
+  }, [dispatch, availableMajors?.length, availableCourseCodes?.length, levels?.length, availableCategories?.length]);
 
   if (loading) {
     return <div>Loading...</div>;
   }
 
-  const handleMajorChange = (value: string) => {
-    onMajorChange(value);
+  // Helper function for tag display
+  const getTagDisplay = (tag: string) => {
+    const majorItem = availableMajors.find((m) => m.code === tag);
+    if (majorItem) return majorItem.translations[i18n.language] || majorItem.translations.en;
+
+    const courseCodeItem = availableCourseCodes.find((m) => m.code === tag);
+    if (courseCodeItem) return courseCodeItem.translations[i18n.language] || courseCodeItem.translations.en;
+
+    const levelItem = levels.find((l) => l.code === tag);
+    if (levelItem) return levelItem.translations[i18n.language] || levelItem.translations.en;
+
+    const categoryItem = availableCategories.find((c) => c.code === tag);
+    if (categoryItem) return categoryItem.translations[i18n.language] || categoryItem.translations.en;
+
+    return tag;
   };
 
   return (
     <div className={`grid gap-4 ${className}`}>
-      {/* Major Filter */}
+      {/* Majors Filter */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.majorLabel")}</Label>
-        <Select value={majorValue} onValueChange={handleMajorChange}>
-          <SelectTrigger disabled={!majors}>
-            <SelectValue placeholder={t("document.commonSearch.majorPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
-            {majors?.map((major) => (
-              <SelectItem key={major.code} value={major.code}>
-                {major.translations[i18n.language] || major.translations.en}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <TagInput
+          value={majors.includes("all") ? [] : majors}
+          onChange={(values) => onMajorsChange(values.length > 0 ? values : ["all"])}
+          recommendedTags={availableMajors?.map((major) => major.code) || []}
+          getTagDisplay={getTagDisplay}
+          placeholder={t("document.commonSearch.majorPlaceholder")}
+          disabled={!availableMajors}
+          allowMultiple={true}
+        />
       </div>
 
-      {/* Course code Filter */}
+      {/* Course Codes Filter */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.courseCodeLabel")}</Label>
-        <Select value={courseCodeValue} onValueChange={onCourseCodeChange}>
-          <SelectTrigger disabled={!filteredCourseCodes}>
-            <SelectValue placeholder={t("document.commonSearch.courseCodePlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
-            {filteredCourseCodes?.map((course) => (
-              <SelectItem key={course.code} value={course.code}>
-                {course.translations[i18n.language] || course.translations.en}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <TagInput
+          value={courseCodes.includes("all") ? [] : courseCodes}
+          onChange={(values) => onCourseCodesChange(values.length > 0 ? values : ["all"])}
+          recommendedTags={filteredCourseCodes?.map((course) => course.code) || []}
+          getTagDisplay={getTagDisplay}
+          placeholder={t("document.commonSearch.courseCodePlaceholder")}
+          disabled={!filteredCourseCodes || majors.length === 0 || majors.includes("all")}
+          allowMultiple={true}
+        />
       </div>
 
-      {/* Level Filter */}
+      {/* Level Filter - Keep as is */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.levelLabel")}</Label>
-        <Select value={levelValue} onValueChange={onLevelChange}>
+        <Select value={undefined} onValueChange={onLevelChange}>
           <SelectTrigger disabled={!levels}>
             <SelectValue placeholder={t("document.commonSearch.levelPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
             {levels?.map((level) => (
               <SelectItem key={level.code} value={level.code}>
                 {level.translations[i18n.language] || level.translations.en}
@@ -128,29 +154,25 @@ export const DocumentFilter = ({
         </Select>
       </div>
 
-      {/* Category Filter */}
+      {/* Categories Filter */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.categoryLabel")}</Label>
-        <Select value={categoryValue} onValueChange={onCategoryChange}>
-          <SelectTrigger disabled={!categories}>
-            <SelectValue placeholder={t("document.commonSearch.categoryPlaceholder")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
-            {categories?.map((category) => (
-              <SelectItem key={category.code} value={category.code}>
-                {category.translations[i18n.language] || category.translations.en}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <TagInput
+          value={categories.includes("all") ? [] : categories}
+          onChange={(values) => onCategoriesChange(values.length > 0 ? values : ["all"])}
+          recommendedTags={availableCategories?.map((category) => category.code) || []}
+          getTagDisplay={getTagDisplay}
+          placeholder={t("document.commonSearch.categoryPlaceholder")}
+          disabled={!availableCategories}
+          allowMultiple={true}
+        />
       </div>
 
       {/* Tags Input */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.tagLabel")}</Label>
         <TagInputDebounce
-          value={tagsValue}
+          value={tags}
           onChange={onTagsChange}
           placeholder={t("document.commonSearch.tagsPlaceholder")}
         />

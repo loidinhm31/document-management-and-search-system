@@ -112,7 +112,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         }
 
         // Add filter conditions
-        addFilterConditions(queryBuilder, request.getMajor(), request.getCourseCode(), request.getLevel(), request.getCategory(), request.getTags());
+        addFilterConditions(queryBuilder, request.getMajors(), request.getCourseCodes(), request.getLevel(), request.getCategories(), request.getTags());
 
         // Add search conditions if search query exists
         if (StringUtils.isNotEmpty(context.originalQuery())) {
@@ -329,7 +329,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         addSharingAccessFilter(queryBuilder, userId);
 
         // Reuse filter conditions but simplified
-        addFilterConditions(queryBuilder, request.getMajor(), request.getCourseCode(), request.getLevel(), request.getCategory(), request.getTags());
+        addFilterConditions(queryBuilder, request.getMajors(), request.getCourseCodes(), request.getLevel(), request.getCategories(), request.getTags());
 
         // Get user preferences for document personalization
         DocumentPreferences preferences = documentPreferencesRepository.findByUserId(userId)
