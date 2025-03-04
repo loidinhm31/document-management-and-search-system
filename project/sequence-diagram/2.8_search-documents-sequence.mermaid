@@ -1,0 +1,45 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DSS as DocumentSearchService
+    participant AuthS as AuthService
+    participant DB as Database <br> (MongoDB)
+
+    User->>Frontend: Enter search keywords and filters
+
+    Frontend->>DSS: POST /api/v1/documents/me/search
+    Note over Frontend,DSS: DocumentSearchRequest (search text, filters, page, size, sort)
+
+    DSS->>AuthS: validateUser(username)
+    AuthS-->>DSS: UserResponse (userId, role)
+
+    DSS->>DSS: buildSearchCriteria()
+    Note over DSS: Combine search terms with filters:<br>majors, courseCodes, level, categories, tags
+
+    DSS->>DB: countDocuments(criteria)
+    DB-->>DSS: totalResults
+
+    DSS->>DB: findDocuments(criteria, pageable)
+    Note over DSS,DB: Query for documents owned by user<br>or shared with user, excluding deleted
+
+    DB-->>DSS: documentsList
+
+    DSS->>DSS: createPagedResponse(documentsList, totalResults, pageable)
+
+    DSS-->>Frontend: 200 OK + Page<DocumentInformation>
+
+    Frontend-->>User: Display search results with pagination
+
+    alt No results found
+        Frontend-->>User: Show "No documents found" message
+    end
+
+    alt User navigates to another page
+        User->>Frontend: Click next/previous page
+        Frontend->>DSS: Repeat request with new page parameter
+    end
+
+    alt User changes sort order
+        User->>Frontend: Select different sort option
+        Frontend->>DSS: Repeat request with new sort parameters
+    end
