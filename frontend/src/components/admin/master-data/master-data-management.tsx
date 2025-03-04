@@ -137,11 +137,21 @@ export default function MasterDataManagement() {
       });
       fetchMasterData();
     } catch (error) {
-      toast({
-        title: t("common.error"),
-        description: t("admin.masterData.deleteError"),
-        variant: "destructive",
-      });
+      if (error.response && error.response.status === 409) {
+        if (error.response.data.message === "MASTER_DATA_ALREADY_IN_USE") {
+          toast({
+            title: t("common.error"),
+            description: t("admin.masterData.inUseError"),
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: t("common.error"),
+          description: t("admin.masterData.deleteError"),
+          variant: "destructive",
+        });
+      }
     } finally {
       setShowDeleteDialog(false);
       setSelectedItem(null);
