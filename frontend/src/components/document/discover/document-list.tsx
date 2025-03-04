@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import MultiValueDisplay from "@/components/common/multi-value-display";
 import { DocumentListActions } from "@/components/document/discover/document-list-actions";
 import { HighlightCell } from "@/components/document/discover/highlight-cell";
 import SearchSuggestions from "@/components/document/discover/search-suggestions";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { cn, getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
@@ -24,10 +26,10 @@ import {
   selectSearchLoading,
   selectSearchResults,
   selectSearchState,
-  setCategory,
-  setCourseCode,
+  setCategories,
+  setCourseCodes,
   setLevel,
-  setMajor,
+  setMajors,
   setPage,
   setPageSize,
   setSearchTerm,
@@ -49,16 +51,17 @@ export const DocumentList = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
 
   const loading = useAppSelector(selectSearchLoading);
   const documents = useAppSelector(selectSearchResults);
 
   const {
     selectedSort,
-    selectedMajor,
-    selectedCourseCode,
+    selectedMajors,
+    selectedCourseCodes,
     selectedLevel,
-    selectedCategory,
+    selectedCategories,
     selectedTags,
     totalPages,
     currentPage,
@@ -78,10 +81,10 @@ export const DocumentList = () => {
 
   const columns: SortableColumn[] = [
     { field: "filename", label: t("document.discover.headers.name"), sortable: !!isSearchMode },
-    { field: "major", label: t("document.discover.headers.major"), sortable: !!isSearchMode },
-    { field: "courseCode", label: t("document.discover.headers.course"), sortable: !!isSearchMode },
+    { field: "major", label: t("document.discover.headers.majors"), sortable: !!isSearchMode },
+    { field: "courseCode", label: t("document.discover.headers.courses"), sortable: !!isSearchMode },
     { field: "courseLevel", label: t("document.discover.headers.level"), sortable: !!isSearchMode },
-    { field: "category", label: t("document.discover.headers.category"), sortable: !!isSearchMode },
+    { field: "category", label: t("document.discover.headers.categories"), sortable: !!isSearchMode },
     { field: "tags", label: t("document.discover.headers.tags"), sortable: false },
     // Only show matches column in search mode
     ...(isSearchMode ? [{ field: "highlights", label: t("document.discover.headers.matches"), sortable: false }] : []),
@@ -127,9 +130,10 @@ export const DocumentList = () => {
   useEffect(() => {
     if (
       searchTerm ||
-      selectedMajor !== "all" ||
+      !selectedMajors.includes("all") ||
+      !selectedCourseCodes.includes("all") ||
       selectedLevel !== "all" ||
-      selectedCategory !== "all" ||
+      !selectedCategories.includes("all") ||
       selectedTags.length > 0 ||
       favoriteOnly
     ) {
@@ -142,9 +146,10 @@ export const DocumentList = () => {
   const handleSearch = () => {
     if (
       !searchTerm.trim() &&
-      selectedMajor === "all" &&
+      selectedMajors.includes("all") &&
+      selectedCourseCodes.includes("all") &&
       selectedLevel === "all" &&
-      selectedCategory === "all" &&
+      selectedCategories.includes("all") &&
       selectedTags.length === 0 &&
       !favoriteOnly
     ) {
@@ -206,9 +211,10 @@ export const DocumentList = () => {
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (selectedMajor !== "all") count++;
-    if (selectedLevel !== "all") count++;
-    if (selectedCategory !== "all") count++;
+    if (selectedMajors.length > 0) count++;
+    if (selectedCourseCodes.length > 0) count++;
+    if (selectedLevel) count++;
+    if (selectedCategories.length > 0) count++;
     if (selectedTags.length > 0) count++;
     if (favoriteOnly) count++;
     return count;
@@ -221,9 +227,9 @@ export const DocumentList = () => {
       // Turning it off, go back to normal behavior
       if (
         !searchTerm.trim() &&
-        selectedMajor === "all" &&
+        selectedMajors.includes("all") &&
         selectedLevel === "all" &&
-        selectedCategory === "all" &&
+        selectedCategories.includes("all") &&
         selectedTags.length === 0
       ) {
         dispatch(fetchRecommendedDocuments());
@@ -283,14 +289,16 @@ export const DocumentList = () => {
             {/* Filter and Reset Buttons */}
             <div className="flex gap-2">
               {/* Favorite Button */}
-              <Button
-                variant={favoriteOnly ? "default" : "outline"}
-                onClick={handleToggleFavorites}
-                className="relative gap-2"
-              >
-                <Heart className={`h-4 w-4 ${favoriteOnly ? "fill-current" : ""}`} />
-                <span className="hidden sm:inline">{t("document.commonSearch.favoritesOnly")}</span>
-              </Button>
+              {!currentUser.roles.includes("ROLE_ADMIN") && (
+                <Button
+                  variant={favoriteOnly ? "default" : "outline"}
+                  onClick={handleToggleFavorites}
+                  className="relative gap-2"
+                >
+                  <Heart className={`h-4 w-4 ${favoriteOnly ? "fill-current" : ""}`} />
+                  <span className="hidden sm:inline">{t("document.commonSearch.favoritesOnly")}</span>
+                </Button>
+              )}
 
               <Button variant="outline" onClick={() => setShowAdvanced(!showAdvanced)} className="relative gap-2">
                 <Filter className="h-4 w-4" />
@@ -312,15 +320,15 @@ export const DocumentList = () => {
           {showAdvanced && (
             <div className="space-y-4">
               <DocumentFilter
-                majorValue={selectedMajor}
-                onMajorChange={(value) => dispatch(setMajor(value))}
-                courseCodeValue={selectedCourseCode}
-                onCourseCodeChange={(value) => dispatch(setCourseCode(value))}
-                levelValue={selectedLevel}
+                majors={selectedMajors}
+                onMajorsChange={(values) => dispatch(setMajors(values))}
+                courseCodes={selectedCourseCodes}
+                onCourseCodesChange={(values) => dispatch(setCourseCodes(values))}
+                level={selectedLevel}
                 onLevelChange={(value) => dispatch(setLevel(value))}
-                categoryValue={selectedCategory}
-                onCategoryChange={(value) => dispatch(setCategory(value))}
-                tagsValue={selectedTags}
+                categories={selectedCategories}
+                onCategoriesChange={(values) => dispatch(setCategories(values))}
+                tags={selectedTags}
                 onTagsChange={(tags) => dispatch(setTags(tags))}
                 className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
               />
@@ -358,14 +366,16 @@ export const DocumentList = () => {
                     <CardContent className="p-4 pt-0">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{t("document.discover.headers.major")}:</span>
+                          <span className="text-sm font-medium">{t("document.discover.headers.majors")}:</span>
                           <span className="text-sm">
-                            {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}
+                            <MultiValueDisplay value={doc.majors} className="line-clamp-1" />
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{t("document.discover.headers.course")}:</span>
-                          <span className="text-sm">{doc.courseCode}</span>
+                          <span className="text-sm font-medium">{t("document.discover.headers.courses")}:</span>
+                          <span className="text-sm">
+                            <MultiValueDisplay value={doc.courseCodes} className="line-clamp-1" />
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.level")}:</span>
@@ -374,9 +384,9 @@ export const DocumentList = () => {
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{t("document.discover.headers.category")}:</span>
+                          <span className="text-sm font-medium">{t("document.discover.headers.categories")}:</span>
                           <span className="text-sm">
-                            {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
+                            <MultiValueDisplay value={doc.categories} className="line-clamp-1" />
                           </span>
                         </div>
                         {doc.highlights && doc.highlights.length > 0 && (
@@ -426,33 +436,36 @@ export const DocumentList = () => {
                           <TableCell className="font-medium truncate">
                             <Button
                               variant="link"
-                              className="font-medium truncate p-0 h-auto"
+                              className="font-medium truncate p-0 h-auto text-left text-wrap"
                               onClick={() => navigate(`/discover/${doc.id}`)}
                             >
                               {doc.filename}
                             </Button>
                           </TableCell>
                           <TableCell className="truncate">
-                            {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })}
+                            <MultiValueDisplay
+                              value={doc.majors}
+                              type={MasterDataType.MAJOR}
+                              masterData={{ majors }}
+                              className="line-clamp-1"
+                            />
                           </TableCell>
-                          <TableCell className="truncate">{doc.courseCode}</TableCell>
+                          <TableCell className="truncate">
+                            <MultiValueDisplay value={doc.courseCodes} className="line-clamp-1" />
+                          </TableCell>
                           <TableCell className="hidden md:table-cell">
                             {getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
                           </TableCell>
                           <TableCell className="hidden lg:table-cell">
-                            {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
+                            <MultiValueDisplay
+                              value={doc.categories}
+                              type={MasterDataType.DOCUMENT_CATEGORY}
+                              masterData={{ categories }}
+                              className="line-clamp-1"
+                            />
                           </TableCell>
                           <TableCell className="hidden xl:table-cell">
-                            <div className="flex flex-wrap gap-1">
-                              {doc.tags?.map((tag, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
+                            <MultiValueDisplay value={doc.tags} />
                           </TableCell>
                           {isSearchMode && (
                             <TableCell>

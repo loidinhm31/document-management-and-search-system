@@ -1,8 +1,9 @@
 import i18n from "i18next";
 import { Loader2, Save } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import TagInput from "@/components/common/tag-input";
 import TagInputHybrid from "@/components/common/tag-input-hybrid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -149,7 +150,7 @@ export default function DocumentPreferencesManager() {
               {/* Language Preferences */}
               <div className="space-y-2">
                 <Label>{t("document.preferences.contentPreferences.language.label")}</Label>
-                <TagInputHybrid
+                <TagInput
                   value={Array.from(preferences?.languagePreferences || [])}
                   onChange={(languages) =>
                     setPreferences((prev) => ({
@@ -166,7 +167,7 @@ export default function DocumentPreferencesManager() {
               {/* Preferred Majors */}
               <div className="space-y-2">
                 <Label>{t("document.preferences.contentPreferences.majors.label")}</Label>
-                <TagInputHybrid
+                <TagInput
                   value={Array.from(preferences?.preferredMajors || [])}
                   onChange={(majors) =>
                     setPreferences((prev) => ({
@@ -174,7 +175,7 @@ export default function DocumentPreferencesManager() {
                       preferredMajors: new Set(majors),
                     }))
                   }
-                  recommendedTags={majors?.map((major) => major.code)}
+                  recommendedTags={majors?.map((major) => major.code) || []}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.majorPlaceholder")}
                 />
@@ -183,7 +184,7 @@ export default function DocumentPreferencesManager() {
               {/* Preferred Course Codes */}
               <div className="space-y-2">
                 <Label>{t("document.preferences.contentPreferences.courseCode.label")}</Label>
-                <TagInputHybrid
+                <TagInput
                   value={Array.from(preferences?.preferredCourseCodes || [])}
                   onChange={(course) =>
                     setPreferences((prev) => ({
@@ -191,7 +192,7 @@ export default function DocumentPreferencesManager() {
                       preferredCourseCodes: new Set(course),
                     }))
                   }
-                  recommendedTags={courseCodes?.map((course) => course.code)}
+                  recommendedTags={courseCodes?.map((course) => course.code) || []}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.courseCodePlaceholder")}
                 />
@@ -200,7 +201,7 @@ export default function DocumentPreferencesManager() {
               {/* Preferred Levels */}
               <div className="space-y-2">
                 <Label>{t("document.preferences.contentPreferences.levels.label")}</Label>
-                <TagInputHybrid
+                <TagInput
                   value={Array.from(preferences?.preferredLevels || [])}
                   onChange={(levels) =>
                     setPreferences((prev) => ({
@@ -208,7 +209,7 @@ export default function DocumentPreferencesManager() {
                       preferredLevels: new Set(levels),
                     }))
                   }
-                  recommendedTags={levels?.map((level) => level.code)}
+                  recommendedTags={levels?.map((level) => level.code) || []}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.levelPlaceholder")}
                 />
@@ -217,7 +218,7 @@ export default function DocumentPreferencesManager() {
               {/* Preferred Categories */}
               <div className="space-y-2">
                 <Label>{t("document.preferences.contentPreferences.categories.label")}</Label>
-                <TagInputHybrid
+                <TagInput
                   value={Array.from(preferences?.preferredCategories || [])}
                   onChange={(categories) =>
                     setPreferences((prev) => ({
@@ -225,7 +226,7 @@ export default function DocumentPreferencesManager() {
                       preferredCategories: new Set(categories),
                     }))
                   }
-                  recommendedTags={categories?.map((category) => category.code)}
+                  recommendedTags={categories?.map((category) => category.code) || []}
                   getTagDisplay={getTagDisplay}
                   placeholder={t("document.commonSearch.categoryPlaceholder")}
                 />

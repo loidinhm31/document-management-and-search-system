@@ -13,9 +13,9 @@ import java.util.Set;
 @AllArgsConstructor
 public class SuggestionRequest {
     private String query;
-    private String major;
-    private String courseCode;
+    private Set<String> majors;
+    private Set<String> courseCodes;
     private String level;
-    private String category;
+    private Set<String> categories;
     private Set<String> tags;
 }

@@ -1,0 +1,32 @@
+sequenceDiagram
+    actor Mentor
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant OS as OpenSearch
+
+    Mentor->>Frontend: Click "Remove <br> Recommendation" button
+    Frontend->>DIS: DELETE /api/v1/documents/<br>{id}/recommendations
+
+    DIS->>DB: checkRecommendation<br>(documentId, mentorId)
+    DB-->>DIS: recommendation
+
+    alt Recommendation exists
+        DIS->>DB: deleteRecommendation<br>(documentId, mentorId)
+        DIS->>DB: updateDocumentRecommendation<br>Count(documentId)
+        DIS->>DB: recordUserHistory(userId, <br>RECOMMENDATION, "REMOVE")
+
+        DIS->>MB: publishEvent(documentId, UPDATE_EVENT)
+        DIS-->>Frontend: 200 OK
+        Frontend-->>Mentor: Update UI to show <br> "Not Recommended" state
+
+        MB->>PS: consumeEvent<br>(documentId, UPDATE_EVENT)
+        PS->>DB: getDocumentDetails(documentId)
+        DB-->>PS: document
+        PS->>OS: indexDocument<br>(document)
+    else No recommendation
+        DIS-->>Frontend: 204 No Content
+        Frontend-->>Mentor: No change in UI state
+    end

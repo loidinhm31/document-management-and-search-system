@@ -40,10 +40,10 @@ public class DocumentController {
         // Create search criteria from request
         DocumentSearchCriteria criteria = DocumentSearchCriteria.builder()
                 .search(request.getSearch())
-                .major(request.getMajor())
-                .courseCode(request.getCourseCode())
+                .majors(request.getMajors())
+                .courseCodes(request.getCourseCodes())
                 .level(request.getLevel())
-                .category(request.getCategory())
+                .categories(request.getCategories())
                 .tags(request.getTags())
                 .sortField(request.getSortField())
                 .sortDirection(request.getSortDirection())

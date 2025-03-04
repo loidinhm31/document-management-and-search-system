@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as Document Interaction Service
+    participant DB as Database
+    participant S3 as S3 Storage
+
+    User->>Frontend: Click download button
+    Frontend->>DIS: GET /api/v1/documents/{id}/file?action=download
+
+    DIS->>DB: findAccessibleDocumentById(id, userId)
+    DB-->>DIS: documentInformation
+
+    DIS->>S3: getFile(documentInfo.filePath)
+    S3-->>DIS: fileContent
+
+    DIS->>DB: recordDownloadHistory(userId, documentId)
+
+    DIS-->>Frontend: 200 OK + file (content-disposition: attachment)
+    Frontend-->>User: Browser downloads file

@@ -1,0 +1,24 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant S3 as S3Storage
+
+    User->>Frontend: View document preview
+    Frontend->>DIS: GET /api/v1/documents/{id}/thumbnail
+
+    DIS->>DB: findAccessibleDocumentById(id, userId)
+    DB-->>DIS: documentInformation
+
+    alt thumbnail exists
+        DIS->>S3: getThumbnail(document.thumbnailPath)
+        S3-->>DIS: thumbnailData
+        DIS-->>Frontend: 200 OK + thumbnailData
+    else document still processing
+        DIS-->>Frontend: 202 Accepted + placeholderThumbnail
+    else thumbnail generation failed
+        DIS-->>Frontend: 200 OK + errorPlaceholder
+    end
+
+    Frontend-->>User: Display document preview

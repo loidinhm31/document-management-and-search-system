@@ -1,0 +1,35 @@
+sequenceDiagram
+    actor Mentor
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant OS as OpenSearch
+
+    Mentor->>Frontend: Click "Recommend" <br>button on document
+    Frontend->>DIS: POST /api/v1/documents/<br>{id}/recommendations
+
+    DIS->>DB: checkAccess<br>(documentId, mentorId)
+    DB-->>DIS: document
+
+    DIS->>DB: checkExistingRecommendation<br>(documentId, mentorId)
+    DB-->>DIS: exists?
+
+    alt Not already recommended
+        DIS->>DB: saveRecommendation<br>(documentId, mentorId)
+        DIS->>DB: updateDocument<br>RecommendationCount(documentId)
+        DIS->>DB: recordUserHistory(userId, <br>RECOMMENDATION, "ADD")
+
+        DIS->>MB: publishEvent(documentId, UPDATE_EVENT)
+        DIS-->>Frontend: 200 OK
+        Frontend-->>Mentor: Update UI to show <br>"Recommended" state
+
+        MB->>PS: consumeEvent<br>(documentId, UPDATE_EVENT)
+        PS->>DB: getDocumentDetails(documentId)
+        DB-->>PS: document
+        PS->>OS: indexDocument<br>(document)
+    else Already recommended
+        DIS-->>Frontend: 204 No Content
+        Frontend-->>Mentor: No change in UI state
+    end

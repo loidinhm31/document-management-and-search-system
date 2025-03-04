@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    User->>Frontend: View Analytics tab
+    Frontend->>DIS: GET /api/v1/documents/preferences/content-weights
+
+    DIS->>DB: findRecentInteractions(userId, since=30daysAgo)
+    DB-->>DIS: recentInteractions
+
+    loop For each interaction
+        DIS->>DB: getDocumentType(documentId)
+        DB-->>DIS: documentType
+        DIS->>DIS: calculateTypeWeight(type, interactions)
+    end
+
+    DIS->>DIS: normalizeWeights(calculatedWeights)
+
+    DIS-->>Frontend: contentTypeWeights map
+    Frontend->>User: Display content type weights chart

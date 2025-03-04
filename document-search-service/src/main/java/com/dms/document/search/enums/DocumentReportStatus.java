@@ -1,7 +1,8 @@
 package com.dms.document.search.enums;
 
-public enum ReportStatus {
+public enum DocumentReportStatus {
     PENDING,
+    REJECTED,
     RESOLVED,
-    REMOVED,
+    REMEDIATED,
 }

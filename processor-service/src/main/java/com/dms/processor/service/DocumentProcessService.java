@@ -78,15 +78,15 @@ public class DocumentProcessService {
             // Index the document to update search
             indexDocument(document);
 
-            if (document.getDocumentReportStatus() == DocumentReportStatus.REJECTED) {
+            if (document.getReportStatus() == DocumentReportStatus.REJECTED) {
                 // Send notification emails to reporters
                 documentEmailService.sendDocumentReportRejectionNotifications(document, userId, times);
 
-            } else if (document.getDocumentReportStatus() == DocumentReportStatus.RESOLVED) {
+            } else if (document.getReportStatus() == DocumentReportStatus.RESOLVED) {
                 // Send notifications to both favoriters and reporters
                 documentEmailService.sendResolveNotifications(document, userId, times);
 
-            } else if (document.getDocumentReportStatus() == DocumentReportStatus.REMEDIATED) {
+            } else if (document.getReportStatus() == DocumentReportStatus.REMEDIATED) {
                 // Send notifications only to favoriters
                 documentEmailService.sendReportRemediationNotifications(document, userId);
             }

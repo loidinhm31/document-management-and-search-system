@@ -34,10 +34,20 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
       if (data.summary) {
         formData.append("summary", data.summary);
       }
-      formData.append("courseCode", data.courseCode);
-      formData.append("major", data.major);
+
+      if (data.majors && data.majors.length > 0) {
+        data.majors.forEach(major => formData.append("majors", major));
+      }
+
+      if (data.courseCodes && data.courseCodes.length > 0) {
+        data.courseCodes.forEach(courseCode => formData.append("courseCodes", courseCode));
+      }
+
       formData.append("level", data.level);
-      formData.append("category", data.category);
+
+      if (data.categories && data.categories.length > 0) {
+        data.categories.forEach(category => formData.append("categories", category));
+      }
 
       const cleanedTags = (data.tags || []).map((tag) => tag.trim()).filter(Boolean);
 

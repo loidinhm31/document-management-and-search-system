@@ -23,7 +23,7 @@ public interface DocumentCommentRepository extends JpaRepository<DocumentComment
                 c.created_at as thread_order
             FROM document_comments c
             WHERE c.document_id = :documentId 
-            AND c.parent_id IS NULL 
+            AND c.parent_id IS NULL AND c.flag = 1
             UNION ALL
             
             -- Recursive case: get replies
@@ -33,6 +33,7 @@ public interface DocumentCommentRepository extends JpaRepository<DocumentComment
                 ch.thread_order
             FROM document_comments c
             INNER JOIN CommentHierarchy ch ON c.parent_id = ch.id
+            WHERE c.flag = 1
         )
         SELECT * FROM CommentHierarchy
         ORDER BY thread_order DESC, level ASC, created_at ASC

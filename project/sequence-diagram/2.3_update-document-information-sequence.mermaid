@@ -1,0 +1,79 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant S3 as S3Storage
+    participant MQ as MEssageBroker
+    participant PS as ProcessorService
+    participant OS as OpenSearch
+    participant ES as Email Service
+
+    User->>Frontend: Select document <br> to update
+
+    alt Update Metadata Only
+        User->>Frontend: Edit document <br> metadata
+        Frontend->>DIS: PUT /api/v1/<br>documents/{id}
+
+        DIS->>DB: findDocument<br>ByOwner(id, userId)
+        DB-->>DIS: document
+
+        DIS->>DB: saveUpdated<br>Document(document)
+        DB-->>DIS: savedDocument
+
+        DIS->>DB: recordUpdateHistory<br>(userId, documentId)
+        DIS->>MQ: publishEvent(UPDATE_EVENT, documentId)
+
+        DIS-->>Frontend: 200 OK + <br> updatedDocument
+        Frontend-->>User: Display success &<br> updated details
+
+        MQ->>PS: consumeEvent<br>(UPDATE_EVENT,<br> documentId)
+        PS->>DB: getDocument(documentId)
+        DB-->>PS: document
+
+        PS->>OS: updateDocument<br>Index(document)
+    else Update with New File
+        User->>Frontend: Upload new file & <br> edit metadata
+        Frontend->>DIS: PUT /api/v1/<br>documents/{id}/file
+
+        DIS->>DB: findDocument<br>ByOwner(id, userId)
+        DB-->>DIS: document
+
+        DIS->>S3: uploadFile(newFile, "documents")
+        S3-->>DIS: newFileKey
+
+        DIS->>DB: createNewVersion<br>(document, newFile)
+        DIS->>DB: updateDocumentInfo<br>(document, metadata)
+        DB-->>DIS: updatedDocument
+
+        DIS->>DB: recordUpdateFileHistory<br>(userId, documentId)
+
+    %% Notification flow for new file version
+        DIS->>DB: findUserIdsBy<br>DocumentId(documentId)
+        DB-->>DIS: favoriterUserIds
+        DIS->>MQ: publishNotificationEvent(NEW_FILE_VERSION, favoriterUserIds)
+
+        DIS->>MQ: publishEvent(UPDATE_EVENT_WITH_FILE, documentId)
+
+        DIS-->>Frontend: 200 OK + <br> updatedDocument
+        Frontend-->>User: Display success <br> & updated details
+
+    %% Process new file version
+        MQ->>PS: consumeEvent(UPDATE_EVENT_<br>WITH_FILE, documentId)
+        PS->>S3: downloadFile(newFileKey)
+        S3-->>PS: fileContent
+
+        PS->>PS: processDocument(extractContent, generateThumbnail)
+        PS->>S3: uploadThumbnail(thumbnailData)
+        S3-->>PS: thumbnailKey
+
+        PS->>DB: updateDocument(status, thumbnail, content)
+        PS->>OS: updateDocument<br>Index(document)
+
+    %% Email notification processing
+        MQ->>PS: consumeNotification<br>Event(NEW_FILE_VERSION)
+        PS->>PS: prepareNewVersionNotificationEmails(document)
+        PS->>ES: sendBatchEmails(favoriterUsers, subject, emailTemplate)
+
+        Note over ES: Favorited users <br>receive email <br> notifications <br>about new version
+    end

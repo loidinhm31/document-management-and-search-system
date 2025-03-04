@@ -1,0 +1,26 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant AuthService
+    participant Database
+
+    Note over User, Frontend: After successful password authentication
+    User->>Frontend: Submit 2FA code
+    Frontend->>AuthService: POST /api/v1/auth/2fa/verify
+    
+    AuthService->>Database: getUserWithTotpSecret(username)
+    Database-->>AuthService: User with 2FA secret
+    
+    AuthService->>AuthService: validateTotpCode(secret, code)
+    
+    alt Invalid code
+        AuthService-->>Frontend: "UNVERIFIED"
+        Frontend-->>User: Display error message
+    else Valid code
+        AuthService->>Database: updateLoginStatus()
+        AuthService->>AuthService: generateTokens()
+        
+        AuthService-->>Frontend: TokenResponse
+        Frontend->>Frontend: Store tokens
+        Frontend-->>User: Redirect to dashboard
+    end

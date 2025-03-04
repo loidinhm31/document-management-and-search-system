@@ -204,7 +204,7 @@ class DocumentService extends BaseService {
   async getUserHistory(filters: UserHistoryFilter = {}): Promise<UserHistoryPage> {
     const params = new URLSearchParams();
 
-    if (filters.actionType) params.append("actionType", filters.actionType);
+    if (filters.actionType && filters.actionType !== "all") params.append("actionType", filters.actionType);
     if (filters.fromDate) params.append("fromDate", filters.fromDate);
     if (filters.toDate) params.append("toDate", filters.toDate);
     if (filters.documentName) params.append("documentName", filters.documentName);

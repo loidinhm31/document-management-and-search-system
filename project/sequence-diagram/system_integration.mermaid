@@ -1,0 +1,26 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant S3 as S3Storage
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant OS as OpenSearch
+
+    User->>Frontend: User Interactions (View/Add/Edit)
+    Frontend->>DIS: REST API Requests
+
+    DIS->>DB: Data Operations
+    DIS->>S3: File Operations (when needed)
+
+    alt Background Processing Required
+        DIS->>MB: Publish Events
+        MB->>PS: Consume Events
+        PS->>DB: Read/Update Document Data
+        PS->>S3: File Processing
+        PS->>OS: Index Documents
+    end
+
+    DIS-->>Frontend: API Responses
+    Frontend-->>User: UI Updates

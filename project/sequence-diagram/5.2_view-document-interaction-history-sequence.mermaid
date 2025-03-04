@@ -1,0 +1,25 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    User->>Frontend: Navigate to Document History
+    Frontend->>DIS: GET /api/v1/documents (with filters)
+
+    Note over DIS: Parameters: actionType, fromDate, toDate, documentName, page, size
+
+    DIS->>DB: findUserHistoryWithFilters(userId, filters, pageable)
+
+    alt Document name search needed
+        DIS->>DB: findDocumentIdsByFilename(documentName)
+        DB-->>DIS: matchingDocumentIds
+    end
+
+    DB-->>DIS: userHistoryRecords
+
+    DIS->>DB: getDocumentDetailsForHistoryRecords(documentIds)
+    DB-->>DIS: documentDetails
+
+    DIS-->>Frontend: Page<UserHistoryResponse>
+    Frontend->>User: Display history list

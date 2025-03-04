@@ -25,6 +25,7 @@ import { setCurrentDocument } from "@/store/slices/document-slice";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
+import MultiValueDisplay from "@/components/common/multi-value-display";
 
 export default function DocumentDetailPage() {
   const { t } = useTranslation();
@@ -244,20 +245,22 @@ export default function DocumentDetailPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>{t("document.detail.fields.major")}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {getMasterDataTranslation(documentData.major, MasterDataType.MAJOR, { majors })}
-                      </p>
+                      <Label>{t("document.detail.fields.majors")}</Label>
+                      <MultiValueDisplay
+                        value={documentData.majors || documentData.major}
+                        type={MasterDataType.MAJOR}
+                        masterData={{ majors }}
+                      />
                     </div>
 
-                    {documentData.courseCode && (
+                    {(documentData.courseCodes || documentData.courseCode) && (
                       <div className="space-y-2">
-                        <Label>{t("document.detail.fields.courseCode")}</Label>
-                        <p className="text-sm text-muted-foreground">
-                          {getMasterDataTranslation(documentData.courseCode, MasterDataType.COURSE_CODE, {
-                            courseCodes,
-                          })}
-                        </p>
+                        <Label>{t("document.detail.fields.courseCodes")}</Label>
+                        <MultiValueDisplay
+                          value={documentData.courseCodes || documentData.courseCode}
+                          type={MasterDataType.COURSE_CODE}
+                          masterData={{ courseCodes }}
+                        />
                       </div>
                     )}
 
@@ -270,27 +273,21 @@ export default function DocumentDetailPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>{t("document.detail.fields.category")}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {getMasterDataTranslation(documentData.category, MasterDataType.DOCUMENT_CATEGORY, {
-                        categories,
-                      })}
-                    </p>
+                    <Label>{t("document.detail.fields.categories")}</Label>
+                    <MultiValueDisplay
+                      value={documentData.categories || documentData.category}
+                      type={MasterDataType.DOCUMENT_CATEGORY}
+                      masterData={{ categories }}
+                    />
                   </div>
 
                   {documentData.tags && documentData.tags.length > 0 && (
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.tags")}</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {documentData.tags.map((tag, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+                      <MultiValueDisplay
+                        value={documentData.tags}
+                        pillClassName="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                      />
                     </div>
                   )}
                 </div>

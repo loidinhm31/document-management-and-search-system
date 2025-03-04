@@ -23,6 +23,9 @@ public class DocumentPreferences {
     @Field("preferred_majors")
     private Set<String> preferredMajors;
 
+    @Field("preferred_course_codes")
+    private Set<String> preferredCourseCodes;
+
     @Field("preferred_levels")
     private Set<String> preferredLevels;
 
@@ -42,6 +45,9 @@ public class DocumentPreferences {
     // Interaction history aggregates
     @Field("major_interaction_counts")
     private Map<String, Integer> majorInteractionCounts;
+
+    @Field("course_code_interaction_counts")
+    private Map<String, Integer> courseCodeInteractionCounts;
 
     @Field("level_interaction_counts")
     private Map<String, Integer> levelInteractionCounts;

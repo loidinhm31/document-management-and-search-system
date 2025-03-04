@@ -33,7 +33,7 @@ export default function DocumentUserHistoryPage() {
   });
 
   const [searchInput, setSearchInput] = useState("");
-  const [selectedActionType, setSelectedActionType] = useState<UserDocumentActionType | undefined>(undefined);
+  const [selectedActionType, setSelectedActionType] = useState<UserDocumentActionType | undefined>("all");
   const [selectedFromDate, setSelectedFromDate] = useState<Date | undefined>(undefined);
   const [selectedToDate, setSelectedToDate] = useState<Date | undefined>(undefined);
 
@@ -135,59 +135,59 @@ export default function DocumentUserHistoryPage() {
     > = {
       [UserDocumentActionType.UPLOAD_DOCUMENT]: {
         label: t("document.history.actionTypes.uploadDocument"),
-        variant: "bg-cyan-200 text-cyan-700 ring-cyan-600/20",
+        variant: "bg-primary/10 text-primary ring-primary/30",
       },
       [UserDocumentActionType.VIEW_DOCUMENT]: {
         label: t("document.history.actionTypes.viewDocument"),
-        variant: "bg-green-100 text-green-700 ring-green-600/20",
+        variant: "bg-secondary/10 text-secondary ring-secondary/30",
       },
       [UserDocumentActionType.UPDATE_DOCUMENT]: {
         label: t("document.history.actionTypes.updateDocument"),
-        variant: "bg-green-200 text-green-700 ring-green-600/20",
+        variant: "bg-secondary/15 text-secondary ring-secondary/30",
       },
       [UserDocumentActionType.UPDATE_DOCUMENT_FILE]: {
         label: t("document.history.actionTypes.updateDocumentFile"),
-        variant: "bg-green-300 text-green-800 ring-green-800/20",
+        variant: "bg-secondary/20 text-secondary ring-secondary/30",
       },
       [UserDocumentActionType.DELETE_DOCUMENT]: {
         label: t("document.history.actionTypes.deleteDocument"),
-        variant: "bg-red-100 text-red-800 ring-red-800/20",
+        variant: "bg-destructive/10 text-destructive ring-destructive/30",
       },
       [UserDocumentActionType.DOWNLOAD_FILE]: {
         label: t("document.history.actionTypes.downloadFile"),
-        variant: "bg-yellow-100 text-yellow-800 ring-yellow-800/20",
+        variant: "bg-accent/10 text-accent ring-accent/30",
       },
       [UserDocumentActionType.DOWNLOAD_VERSION]: {
         label: t("document.history.actionTypes.downloadVersion"),
-        variant: "bg-yellow-200 text-yellow-500 ring-yellow-600/20",
+        variant: "bg-accent/15 text-accent ring-accent/30",
       },
       [UserDocumentActionType.REVERT_VERSION]: {
         label: t("document.history.actionTypes.revertVersion"),
-        variant: "bg-orange-200 text-orange-500 ring-orange-600/20",
+        variant: "bg-accent/20 text-accent ring-accent/30",
       },
       [UserDocumentActionType.SHARE]: {
         label: t("document.history.actionTypes.share"),
-        variant: "bg-blue-200 text-blue-500 ring-blue-600/20",
+        variant: "bg-primary/15 text-primary ring-primary/30",
       },
       [UserDocumentActionType.FAVORITE]: {
         label: t("document.history.actionTypes.favorite"),
-        variant: "bg-pink-200 text-pink-500 ring-pink-600/20",
+        variant: "bg-accent/25 text-accent ring-accent/30",
       },
       [UserDocumentActionType.COMMENT]: {
         label: t("document.history.actionTypes.comment"),
-        variant: "bg-purple-200 text-purple-500 ring-purple-600/20",
+        variant: "bg-secondary/25 text-secondary ring-secondary/30",
       },
       [UserDocumentActionType.RECOMMEND]: {
         label: t("document.history.actionTypes.recommend"),
-        variant: "bg-lime-50 text-lime-500 ring-lime-600/20",
+        variant: "bg-primary/20 text-primary ring-primary/30",
       },
       [UserDocumentActionType.ADD_NOTE]: {
         label: t("document.history.actionTypes.addNote"),
-        variant: "bg-amber-50 text-amber-500 ring-amber-600/20",
+        variant: "bg-secondary/30 text-secondary ring-secondary/30",
       },
     };
 
-    return actionMap[type] || { label: type, variant: "default" as const };
+    return actionMap[type] || { label: type, variant: "bg-muted text-muted-foreground" };
   };
 
   // Navigate to document view
@@ -226,7 +226,7 @@ export default function DocumentUserHistoryPage() {
                 value={selectedActionType}
                 onValueChange={(value) => setSelectedActionType(value as UserDocumentActionType)}
               >
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger  className="w-[200px]">
                   <SelectValue placeholder={t("document.history.filters.actionType")} />
                 </SelectTrigger>
                 <SelectContent>

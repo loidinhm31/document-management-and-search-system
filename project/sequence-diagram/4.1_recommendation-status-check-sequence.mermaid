@@ -1,0 +1,18 @@
+sequenceDiagram
+    actor Mentor
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    Mentor->>Frontend: View document detail page
+
+    Frontend->>DIS: GET /api/v1/documents/{id}/recommendations/status
+    DIS->>DB: checkRecommendation(documentId, mentorId)
+    DB-->>DIS: isRecommended
+    DIS-->>Frontend: 200 OK (true/false)
+
+    alt Is Recommended
+        Frontend-->>Mentor: Display "Recommended" state (filled icon)
+    else Not Recommended
+        Frontend-->>Mentor: Display "Not Recommended" state (outline icon)
+    end

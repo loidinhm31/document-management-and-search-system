@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor Admin
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant Email
+
+    %% Admin rejects a comment report
+    Admin->>Frontend: Click "Reject" button
+    Frontend->>DIS: PUT /api/v1/reports/comments/{commentId}/resolve?status=REJECTED
+    
+    DIS->>DB: resolveCommentReport<br>(commentId, REJECTED, adminId)
+    DIS->>DB: updateCommentFlag<br>(comment, flag=1)
+    DB-->>DIS: updated
+    
+    DIS->>MB: publishEvent<br>(COMMENT_REPORT_PROCESS_EVENT, documentId, commentId, times)
+    DIS-->>Frontend: 200 OK
+    Frontend-->>Admin: Show success notification
+    
+    %% Processor service handles event
+    MB->>PS: consumeEvent<br>(COMMENT_REPORT_PROCESS_EVENT)
+    PS->>DB: findCommentById<br>(documentId, commentId)
+    DB-->>PS: comment
+    PS->>DB: findDocumentById<br>(documentId)
+    DB-->>PS: document
+    
+    %% Email notifications - only to reporters
+    PS->>DB: findReporterUserIds<br>(commentId, REJECTED, times)
+    DB-->>PS: reporterIds
+    PS->>DB: findUserDetails<br>(reporterIds)
+    DB-->>PS: reporters
+    
+    PS->>Email: sendRejectionNotificationsToReporters<br>(reporters, document, comment)
+    
+    Note over PS,Email: No notification to comment author

@@ -48,7 +48,7 @@ const AuthenticatedLayout = ({ children }: { children: React.ReactNode }) => (
 export default function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
+      <ThemeProvider defaultTheme="light" storageKey="ui-theme">
         <AuthProvider>
           <ProcessingProvider>
             <Suspense fallback={<LoadingFallback />}>

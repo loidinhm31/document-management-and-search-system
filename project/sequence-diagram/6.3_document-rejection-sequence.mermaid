@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor Admin
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant OS as OpenSearch
+    participant Email
+
+%% Admin rejects a document report
+    Admin->>Frontend: Click <br> "Reject" <br> button
+    Frontend->>DIS: PUT /api/v1/reports/documents/<br>{documentId}/status?<br>status=REJECTED
+
+    DIS->>DB: updateReport<br>Status(documentId, <br>REJECTED, adminId)
+    DIS->>DB: updateDocument<br>Status(documentId,<br> REJECTED)
+    DB-->>DIS: updated
+
+    DIS->>MB: publishEvent<br>(DOCUMENT_REPORT_PROCESS<br>_EVENT, documentId, times)
+    DIS-->>Frontend: 200 OK
+    Frontend-->>Admin: Show success <br> notification
+
+%% Processor service handles event
+    MB->>PS: consumeEvent<br>(DOCUMENT_REPORT_<br>PROCESS_EVENT)
+    PS->>DB: findById<br>(documentId)
+    DB-->>PS: document
+    PS->>OS: indexDocument<br>(document with<br> updated status)
+
+%% Email notifications - only to reporters
+    PS->>DB: findReporterUserIds<br>(documentId, REJECTED, times)
+    DB-->>PS: reporterIds
+    PS->>DB: findUserDetails<br>(reporterIds)
+    DB-->>PS: reporters
+
+    PS->>Email: sendRejection<br>Notifications<br>(reporters, document)
+
+    Note over PS,Email: No notification to document<br>owner or favoriting users

@@ -3,8 +3,11 @@ package com.dms.document.search.service;
 import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.*;
 import com.dms.document.search.enums.QueryType;
+import com.dms.document.search.model.DocumentPreferences;
+import com.dms.document.search.repository.DocumentPreferencesRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
@@ -37,6 +40,7 @@ import java.util.UUID;
 public class DiscoverDocumentSearchService extends OpenSearchBaseService {
     private final RestHighLevelClient openSearchClient;
     private final UserClient userClient;
+    private final DocumentPreferencesRepository documentPreferencesRepository;
     private final DocumentFavoriteService documentFavoriteService;
 
     private static final int MIN_SEARCH_LENGTH = 2;
@@ -108,10 +112,20 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         }
 
         // Add filter conditions
-        addFilterConditions(queryBuilder, request.getMajor(), request.getCourseCode(), request.getLevel(), request.getCategory(), request.getTags());
+        addFilterConditions(queryBuilder, request.getMajors(), request.getCourseCodes(), request.getLevel(), request.getCategories(), request.getTags());
 
         // Add search conditions if search query exists
         if (StringUtils.isNotEmpty(context.originalQuery())) {
+            // Look up user preferences for document
+            DocumentPreferences preferences = documentPreferencesRepository.findByUserId(userId.toString())
+                    .orElse(null);
+
+            // Add preference boosts
+            if (preferences != null) {
+                addBasicPreferenceBoosts(queryBuilder, preferences);
+            }
+
+            // Add search-specific query conditions
             if (context.queryType() == QueryType.DEFINITION) {
                 addDefinitionSearchConditions(queryBuilder, context);
             } else {
@@ -161,7 +175,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
     }
 
     private void addGeneralSearchConditions(BoolQueryBuilder queryBuilder, SearchContext context) {
-        // 1. Primary content matching - stricter
+        // Primary content matching - stricter
         BoolQueryBuilder contentQuery = QueryBuilders.boolQuery();
 
         // Case variations for content
@@ -186,7 +200,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
 
         queryBuilder.should(contentQuery);
 
-        // 2. Filename matching with case variations
+        // Filename matching with case variations
         BoolQueryBuilder filenameQuery = QueryBuilders.boolQuery();
 
         // Vietnamese-analyzed filename variations
@@ -315,7 +329,28 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         addSharingAccessFilter(queryBuilder, userId);
 
         // Reuse filter conditions but simplified
-        addFilterConditions(queryBuilder, request.getMajor(), request.getCourseCode(), request.getLevel(), request.getCategory(), request.getTags());
+        addFilterConditions(queryBuilder, request.getMajors(), request.getCourseCodes(), request.getLevel(), request.getCategories(), request.getTags());
+
+        // Get user preferences for document personalization
+        DocumentPreferences preferences = documentPreferencesRepository.findByUserId(userId)
+                .orElse(null);
+
+        // Apply stronger preference boosts (compared to search)
+        // since personalization is more expected and helpful in typeahead
+        if (preferences != null) {
+            // Apply stronger preference boosts for suggestions (higher values than in search)
+            addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 2.5f);
+            addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 2.5f);
+            addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 2.0f);
+            addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 2.0f);
+            addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 2.0f);
+
+            // Language preferences with stronger boost
+            if (CollectionUtils.isNotEmpty(preferences.getLanguagePreferences())) {
+                queryBuilder.should(QueryBuilders.termsQuery("language", preferences.getLanguagePreferences())
+                        .boost(2.5f));
+            }
+        }
 
         // Add lighter suggestion-specific search conditions
         if (StringUtils.isNotEmpty(context.originalQuery())) {
@@ -340,7 +375,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         String lowercaseQuery = context.lowercaseQuery();
         String uppercaseQuery = context.uppercaseQuery();
 
-        // 1. Content matching with broader acceptance
+        // Content matching with broader acceptance
         BoolQueryBuilder contentQuery = QueryBuilders.boolQuery();
 
         // Phrase matching with increased slop for more flexibility
@@ -374,7 +409,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
 
         queryBuilder.should(contentQuery);
 
-        // 2. Enhanced filename matching
+        // Filename matching
         BoolQueryBuilder filenameQuery = QueryBuilders.boolQuery();
 
         // Exact matches with case variations
