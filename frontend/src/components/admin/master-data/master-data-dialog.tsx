@@ -143,13 +143,30 @@ export default function MasterDataDialog({
         parentId: values.parentId && values.parentId !== "none" ? values.parentId : undefined,
       };
 
-      await masterDataService.save(masterDataItem);
+      const response = await masterDataService.save(masterDataItem);
 
-      toast({
-        title: t("common.success"),
-        description: t(isEditing ? "masterData.updateSuccess" : "masterData.createSuccess"),
-        variant: "success",
-      });
+      if (isEditing) {
+        if (response.data.fullUpdate) {
+          toast({
+            title: t("common.success"),
+            description: t("admin.masterData.updateFullSuccess"),
+            variant: "success",
+          });
+        } else {
+          toast({
+            title: t("common.success"),
+            description: t("admin.masterData.updateNonFullSuccess"),
+            variant: "success",
+          });
+        }
+      } else {
+        toast({
+          title: t("common.success"),
+          description: t("admin.masterData.createSuccess"),
+          variant: "success",
+        });
+      }
+
 
       // Reset form and close dialog before calling onSuccess
       form.reset();

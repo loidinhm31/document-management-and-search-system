@@ -1,0 +1,25 @@
+sequenceDiagram
+    actor Admin
+    participant FE as Frontend
+    participant MDS as DocumentInteractionService<br>(MasterDataService)
+    participant DB as Database
+
+%% Get all by type
+    Admin->>FE: Select master data type
+    FE->>MDS: GET /api/v1/master-data/{type}?active={boolean}
+
+    MDS->>DB: findMasterDataByType(type, active)
+    DB-->>MDS: List<MasterData>
+
+    MDS-->>FE: 200 OK + List<MasterDataResponse>
+    FE-->>Admin: Display master data list
+
+%% Search operation
+    Admin->>FE: Enter search query
+    FE->>MDS: GET /api/v1/master-data/search?query={text}
+
+    MDS->>DB: searchMasterDataByText(text)
+    DB-->>MDS: List<MasterData>
+
+    MDS-->>FE: 200 OK + search results
+    FE-->>Admin: Display search results

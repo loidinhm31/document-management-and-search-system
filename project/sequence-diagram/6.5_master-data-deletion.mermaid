@@ -1,0 +1,23 @@
+sequenceDiagram
+    actor Admin
+    participant FE as Frontend
+    participant MDS as DocumentInteractionService<br>(MasterDataService)
+    participant DB as Database
+
+    Admin->>FE: Select item & click Delete
+    FE->>MDS: DELETE /api/v1/master-data/{id}
+
+    MDS->>DB: checkIfItemInUse(id)
+    Note right of DB: Checks usage in documents,<br>preferences and child items
+    DB-->>MDS: boolean inUse
+
+    alt Item in Use
+        MDS-->>FE: 409 Conflict (MASTER_DATA_ALREADY_IN_USE)
+        FE-->>Admin: Show "Cannot delete - item is in use" error
+    else Item Not in Use
+        MDS->>DB: deleteMasterData(id)
+        DB-->>MDS: operation result
+
+        MDS-->>FE: 200 OK
+        FE-->>Admin: Show success message & update list
+    end

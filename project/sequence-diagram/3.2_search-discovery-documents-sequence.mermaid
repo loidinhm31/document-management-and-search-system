@@ -1,0 +1,51 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DSS as DocumentSearchService
+    participant AuthS as AuthService
+    participant OS as OpenSearch
+
+    User->>Frontend: Enter search criteria & select filters
+    Note over User,Frontend: Search text, majors, course codes,<br>level, document types, tags
+
+    Frontend->>DSS: POST /api/v1/search
+    Note over Frontend,DSS: DocumentSearchRequest (search text,<br>filters, favoriteOnly, page, size, sorting)
+
+    DSS->>AuthS: getUserByUsername(token)
+    AuthS-->>DSS: UserResponse (userId, role)
+    
+    DSS->>DSS: analyzeQuery(search)
+    Note over DSS: Determine search approach based on<br>query characteristics and language
+    
+    alt Search query too short (< 2 chars)
+        DSS-->>Frontend: Return empty page
+    else Search query valid
+        DSS->>DSS: buildSearchRequest()
+        Note over DSS: Create query with:<br>- Access control filters<br>- User-selected filters<br>- Favorite filter (if enabled)<br>- User preference boosts<br>- Sorting configuration<br>- Result highlighting
+        
+        alt favoriteOnly is true
+            DSS->>DSS: getFavoriteDocumentIds(userId)
+            Note over DSS: Retrieve user's favorite documents<br>to filter search results
+        end
+        
+        DSS->>OS: executeSearch(searchRequest)
+        Note over DSS,OS: Execute complex search with:<br>- Vietnamese language analysis<br>- Relevance scoring<br>- Field boosting<br>- Pagination parameters
+        
+        OS-->>DSS: searchResults (hits, total)
+        
+        DSS->>DSS: processSearchResults()
+        Note over DSS: Convert search hits to DocumentResponseDto<br>Extract highlights for display<br>Format metadata for presentation
+    end
+    
+    DSS-->>Frontend: Return Page<DocumentResponseDto>
+    
+    Frontend-->>User: Display results with highlighted matches
+    
+    alt No results found
+        Frontend-->>User: Display "No results found" message
+    end
+    
+    alt Change sort order or pagination
+        User->>Frontend: Select different sort/page
+        Frontend->>DSS: Repeat search with new parameters
+    end

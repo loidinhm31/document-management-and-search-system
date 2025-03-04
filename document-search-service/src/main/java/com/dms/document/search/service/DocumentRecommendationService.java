@@ -132,7 +132,8 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
                 .from(pageable.getPageNumber() * pageable.getPageSize())
                 .size(pageable.getPageSize())
                 .trackScores(true)
-                .sort(SortBuilders.scoreSort().order(SortOrder.DESC));
+                .sort(SortBuilders.scoreSort().order(SortOrder.DESC))
+                .fetchSource(new String[]{"*"}, new String[]{"content"});
 
         searchRequest.source(searchSourceBuilder);
 

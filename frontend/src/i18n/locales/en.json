@@ -401,13 +401,15 @@
         "description": "Are you sure you want to delete {name}? This action cannot be undone."
       },
       "createSuccess": "Master data created successfully",
+      "updateFullSuccess": "Master data updated successfully",
+      "updateNonFullSuccess": "Only updated safe fields (description, translation, active)",
       "createError": "Failed to create master data",
-      "updateSuccess": "Master data updated successfully",
       "updateError": "Failed to update master data",
       "deleteSuccess": "Master data deleted successfully",
       "deleteError": "Failed to delete master data",
       "fetchError": "Failed to fetch master data",
-      "searchError": "Failed to search master data"
+      "searchError": "Failed to search master data",
+      "inUseError": "Master Data already in use"
     },
     "reports": {
       "title": "Reports Management",

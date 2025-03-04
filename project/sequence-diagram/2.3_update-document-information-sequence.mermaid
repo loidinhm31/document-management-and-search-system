@@ -4,7 +4,7 @@ sequenceDiagram
     participant DIS as DocumentInteractionService
     participant DB as Database
     participant S3 as S3Storage
-    participant MQ as MEssageBroker
+    participant MQ as MessageBroker
     participant PS as ProcessorService
     participant OS as OpenSearch
     participant ES as Email Service
@@ -59,11 +59,11 @@ sequenceDiagram
         Frontend-->>User: Display success <br> & updated details
 
     %% Process new file version
-        MQ->>PS: consumeEvent(UPDATE_EVENT_<br>WITH_FILE, documentId)
+        MQ->>PS: consumeEvent(<br>UPDATE_EVENT_<br>WITH_FILE,<br> documentId)
         PS->>S3: downloadFile(newFileKey)
         S3-->>PS: fileContent
 
-        PS->>PS: processDocument(extractContent, generateThumbnail)
+        PS->>PS: processDocument(extractContent, <br> generateThumbnail)
         PS->>S3: uploadThumbnail(thumbnailData)
         S3-->>PS: thumbnailKey
 
@@ -73,7 +73,7 @@ sequenceDiagram
     %% Email notification processing
         MQ->>PS: consumeNotification<br>Event(NEW_FILE_VERSION)
         PS->>PS: prepareNewVersionNotificationEmails(document)
-        PS->>ES: sendBatchEmails(favoriterUsers, subject, emailTemplate)
 
-        Note over ES: Favorited users <br>receive email <br> notifications <br>about new version
+        PS->>ES: sendBatchEmails<br>(favoriterUsers, subject, emailTemplate)
+        Note over ES: Favorited <br> users <br>receive email <br> notifications <br>about new <br> version
     end
