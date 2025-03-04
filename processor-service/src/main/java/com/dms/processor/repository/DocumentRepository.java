@@ -6,5 +6,4 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.Optional;
 
 public interface DocumentRepository extends MongoRepository<DocumentInformation, String> {
-    Optional<DocumentInformation> findById(String id, String userId);
 }

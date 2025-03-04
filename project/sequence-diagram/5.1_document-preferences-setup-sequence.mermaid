@@ -1,0 +1,29 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    User->>Frontend: Navigate to Document Preferences
+    Frontend->>DIS: GET /api/v1/documents/preferences
+
+    DIS->>DB: findPreferencesByUserId(userId)
+    DB-->>DIS: preferences (or empty)
+
+    alt Preferences don't exist
+        DIS->>DB: saveNewPreferences<br>(createDefaultPreferences(userId))
+        DB-->>DIS: savedPreferences
+    end
+
+    DIS-->>Frontend: DocumentPreferences
+    Frontend->>User: Display preferences form
+    User->>Frontend: Update preferences
+    Frontend->>DIS: PUT /api/v1/documents/preferences<br>(preferredMajors, levels, categories,<br>tags, languages)
+
+    DIS->>DB: findPreferencesByUserId(userId)
+    DB-->>DIS: existingPreferences
+
+    DIS->>DB: savePreferences(updatedPreferences)
+    DB-->>DIS: confirmation
+
+    DIS-->>Frontend: Updated preferences
+    Frontend->>User: Show success message

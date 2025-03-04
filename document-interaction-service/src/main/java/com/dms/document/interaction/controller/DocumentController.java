@@ -39,22 +39,21 @@ public class DocumentController {
     private final DocumentService documentService;
     private final DocumentShareService documentShareService;
     private final DocumentHistoryService documentHistoryService;
-    private final DocumentReportService documentReportService;
 
     @Operation(summary = "Upload a new document",
-            description = "Upload a document file with metadata like summary, course code, major, etc.")
+            description = "Upload a document file with metadata like summary, course codes, majors, etc.")
     @PostMapping
     public ResponseEntity<DocumentInformation> uploadDocument(
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) String summary,
-            @RequestParam(required = false) String courseCode,
-            @RequestParam String major,
+            @RequestParam(required = false) Set<String> courseCodes,
+            @RequestParam(required = false) Set<String> majors,
             @RequestParam String level,
-            @RequestParam String category,
+            @RequestParam Set<String> categories,
             @RequestParam(required = false) Set<String> tags,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         return ResponseEntity.ok(documentService.uploadDocument(
-                file, summary, courseCode, major, level, category, tags, jwt.getSubject()));
+                file, summary, courseCodes, majors, level, categories, tags, jwt.getSubject()));
     }
 
     @Operation(summary = "Get document details",
@@ -139,21 +138,21 @@ public class DocumentController {
     @Operation(
             summary = "Update document with new file",
             description = "Update an existing document by uploading a new file and optionally updating its metadata. " +
-                    "Creates a new version of the document and triggers reprocessing."
+                          "Creates a new version of the document and triggers reprocessing."
     )
     @PutMapping(value = "/{id}/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<DocumentInformation> updateDocumentWithFile(
             @PathVariable String id,
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) String summary,
-            @RequestParam(required = false) String courseCode,
-            @RequestParam String major,
+            @RequestParam(required = false) Set<String> courseCodes,
+            @RequestParam(required = false) Set<String> majors,
             @RequestParam String level,
-            @RequestParam String category,
+            @RequestParam Set<String> categories,
             @RequestParam(required = false) Set<String> tags,
             @AuthenticationPrincipal Jwt jwt) throws IOException {
         DocumentUpdateRequest updateRequest = new DocumentUpdateRequest(
-                summary, courseCode, major, level, category, tags
+                summary, courseCodes, majors, level, categories, tags
         );
         return ResponseEntity.ok(documentService.updateDocumentWithFile(id, file, updateRequest, jwt.getSubject()));
     }

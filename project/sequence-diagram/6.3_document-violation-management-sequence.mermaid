@@ -1,0 +1,40 @@
+sequenceDiagram
+    actor Admin
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant OS as OpenSearch
+    participant Email
+
+%% Admin remediates a document (makes it visible again)
+    Admin->>Frontend: Click <br> "Remediate" <br> button
+    Frontend->>DIS: PUT /api/v1/reports/<br>documents/{documentId}/<br>status?status=REMEDIATED
+
+    DIS->>DB: updateReport<br>Status(documentId, <br>REMEDIATED, adminId)
+    DIS->>DB: updateDocument<br>Status(documentId,<br> REMEDIATED)
+    DB-->>DIS: updated
+
+    DIS->>MB: publishEvent<br>(DOCUMENT_REPORT_PROCESS_EVENT,<br> documentId, times)
+    DIS-->>Frontend: 200 OK
+    Frontend-->>Admin: Show succes <br> notification
+
+%% Processor service handles event
+    MB->>PS: consumeEvent<br>(DOCUMENT_REPORT_<br>PROCESS_EVENT)
+    PS->>DB: findById(documentId)
+    DB-->>PS: document
+    PS->>OS: indexDocument<br>(document with <br>REMEDIATED status)
+
+%% Email notifications - only to creator and favoriters
+    PS->>DB: findCreator<br>(document.userId)
+    DB-->>PS: creator
+    PS->>DB: findFavorite<br>UserIds(documentId)
+    DB-->>PS: favoriterIds
+    PS->>DB: findUserDetails<br>(userIds)
+    DB-->>PS: users
+
+    PS->>Email: sendRemediation<br>NotificationToCreator<br>(creator, document)
+    PS->>Email: sendRemediation<br>NotificationToFavoriters<br>(favoriters, document)
+
+    Note over PS,Email: No notification sent to reporters for remediation

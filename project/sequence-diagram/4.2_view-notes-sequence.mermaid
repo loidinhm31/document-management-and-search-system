@@ -1,0 +1,20 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    User->>Frontend: View document detail page
+
+    Frontend->>DIS: GET /api/v1/documents/{id}/notes
+    DIS->>DB: getAllNotes(documentId)
+    DB-->>DIS: notes[]
+    DIS-->>Frontend: 200 OK with notes list
+
+    Frontend-->>User: Display mentor notes section with all notes
+
+    alt User is Mentor
+        Frontend-->>User: Show note editing controls
+    else Regular User
+        Frontend-->>User: Show read-only notes
+    end

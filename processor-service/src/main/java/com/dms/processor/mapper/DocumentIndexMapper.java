@@ -15,10 +15,10 @@ public class DocumentIndexMapper {
                 .mimeType(doc.getMimeType())
                 .documentType(doc.getDocumentType())
                 .summary(doc.getSummary())
-                .major(doc.getMajor())
-                .courseCode(doc.getCourseCode())
+                .majors(doc.getMajors())
+                .courseCodes(doc.getCourseCodes())
                 .courseLevel(doc.getCourseLevel())
-                .category(doc.getCategory())
+                .categories(doc.getCategories())
                 .tags(doc.getTags())
                 .fileSize(doc.getFileSize())
                 .sharingType(doc.getSharingType())
@@ -27,7 +27,7 @@ public class DocumentIndexMapper {
                 .status(doc.getStatus())
                 .language(doc.getLanguage())
                 .createdAt(doc.getCreatedAt())
-                .documentReportStatus(doc.getDocumentReportStatus())
+                .reportStatus(doc.getReportStatus())
                 .recommendationCount(doc.getRecommendationCount() != null ? doc.getRecommendationCount() : 0)
                 .build();
     }

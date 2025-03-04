@@ -21,12 +21,11 @@ public class DocumentIndex {
     private String mimeType;
     private DocumentType documentType;
     private String summary;
-    private String major;
-    private String courseCode;
+    private Set<String> majors;
+    private Set<String> courseCodes;
     private String courseLevel;
-    private String category;
+    private Set<String> categories;
     private Set<String> tags;
-    private Map<String, String> extractedMetadata;
     private String userId;
     private SharingType sharingType;
     private Set<String> sharedWith;
@@ -34,6 +33,6 @@ public class DocumentIndex {
     private DocumentStatus status;
     private String language;
     private Instant createdAt;
-    private DocumentReportStatus documentReportStatus;
+    private DocumentReportStatus reportStatus;
     private Integer recommendationCount;
 }

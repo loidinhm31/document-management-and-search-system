@@ -13,10 +13,10 @@ import java.util.Set;
 @AllArgsConstructor
 public class DocumentSearchRequest {
     private String search;
-    private String major;
-    private String courseCode;
+    private Set<String> majors;
+    private Set<String> courseCodes;
     private String level;
-    private String category;
+    private Set<String> categories;
     private Boolean favoriteOnly;
     private String sortField;
     private String sortDirection;

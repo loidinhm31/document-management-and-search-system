@@ -38,20 +38,20 @@ public class DocumentInformation {
     private DocumentType documentType;
 
     @Indexed
-    @Field("major")
-    private String major;
+    @Field("majors")
+    private Set<String> majors;
 
     @Indexed
-    @Field("course_code")
-    private String courseCode;
+    @Field("course_codes")
+    private Set<String> courseCodes;
 
     @Indexed
     @Field("course_level")
     private String courseLevel;
 
     @Indexed
-    @Field("category")
-    private String category;
+    @Field("categories")
+    private Set<String> categories;
 
     @Indexed
     @Field("tags")
@@ -118,7 +118,7 @@ public class DocumentInformation {
     private String updatedBy;
 
     @Field("report_status")
-    private DocumentReportStatus documentReportStatus;
+    private DocumentReportStatus reportStatus;
 
     @Field("recommendation_count")
     private Integer recommendationCount;

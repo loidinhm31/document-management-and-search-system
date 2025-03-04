@@ -5,9 +5,10 @@ import { PageResponse } from "@/types/user";
 
 export interface SearchFilters {
   search?: string;
-  major?: string;
+  majors?: string[];
+  courseCodes?: string[];
   level?: string;
-  category?: string;
+  categories?: string[];
   tags?: string[];
   sort?: string;
 }
@@ -35,9 +36,10 @@ class SearchService extends BaseService {
   getUserDocuments(page: number = 0, size: number = 12, filters: SearchFilters = {}) {
     const searchRequest = {
       search: filters.search,
-      major: filters.major,
+      majors: filters.majors,
+      courseCodes: filters.courseCodes,
       level: filters.level,
-      category: filters.category,
+      categories: filters.categories,
       tags: filters.tags,
       page,
       size,

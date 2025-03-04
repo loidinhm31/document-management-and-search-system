@@ -1,0 +1,33 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant AuthService
+    participant Database
+    participant MessageBroker
+    participant ProcessorService
+    participant Email
+
+    User->>Frontend: Fill registration <br> form
+    Frontend->>AuthService: POST /api/v1/auth/<br>register
+
+    AuthService->>Database: checkUsernameAnd<br>EmailAvailability()
+    Database-->>AuthService: Available: true/false
+
+    alt Username or email already exists
+        AuthService-->>Frontend: 400 Bad Request
+        Frontend-->>User: Display error message
+    else Username and email are available
+        AuthService->>Database: createUserWith<br>DefaultRole()
+        Database-->>AuthService: User (not verified)
+
+        AuthService->>AuthService: generateOtpCode()
+        AuthService->>Database: storeOtpVerification()
+
+        AuthService->>MessageBroker: publishOtpEmailEvent(email, otp)
+        MessageBroker-->>ProcessorService: consumeOtp<br>EmailEvent(email, otp)
+        ProcessorService-->>Email: Send mail
+        Email-->>User: Send verification  email with OTP
+
+        AuthService-->>Frontend: 201 Created
+        Frontend-->>User: Display success <br> message and <br> prompt to verify
+    end

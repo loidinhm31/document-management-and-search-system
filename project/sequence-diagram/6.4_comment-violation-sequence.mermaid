@@ -1,0 +1,58 @@
+sequenceDiagram
+    actor Admin
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant Email
+
+%% Admin views comment violations
+    Admin->>Frontend: Access comment <br> violations tab
+    Frontend->>DIS: GET /api/v1/reports/<br>comments?commentContent&<br>fromDate&status
+    DIS->>DB: findCommentReports<br>GroupedByProcessed<br>(filters, pagination)
+    DB-->>DIS: commentReport<br>Projections
+    DIS->>DB: getUsernamesByIds<br>(userIds from<br> projections)
+    DB-->>DIS: usernames
+    DIS-->>Frontend: Return AdminComment<br>ReportResponse list
+    Frontend-->>Admin: Display comment <br> violations table
+
+%% Admin views specific comment report details
+    Admin->>Frontend: Click "View <br> Reports" for <br> comment
+    Frontend->>DIS: GET /api/v1/reports<br>/comments/{commentId}?<br>status=PENDING
+    DIS->>DB: findByCommentId<br>AndStatus<br>(commentId, status)
+    DB-->>DIS: reportList
+    DIS->>DB: findCommentById<br>(documentId, commentId)
+    DB-->>DIS: comment
+    DIS->>DB: getUsernames<br>ByIds<br>(reporterIds, <br>commentUserId)
+    DB-->>DIS: usernames
+    DIS-->>Frontend: Return CommentReport<br>DetailResponse list
+    Frontend-->>Admin: Display comment <br> report details
+
+%% Admin resolves a comment report (removes the comment)
+    Admin->>Frontend: Click <br> "Resolve"  <br>button
+    Frontend->>DIS: PUT /api/v1/reports/<br>comments/{commentId}/resolve?<br>status=RESOLVED
+
+    DIS->>DB: resolveCommentReport<br>(commentId, <br>RESOLVED, adminId)
+    DIS->>DB: updateCommentContent<br>(comment, "[deleted]",<br> flag=-1)
+    DB-->>DIS: updated
+
+    DIS->>MB: publishEvent<br>(COMMENT_REPORT_<br>PROCESS_EVENT, documentId,<br> commentId, times)
+    DIS-->>Frontend: 200 OK
+    Frontend-->>Admin: Show success <br> notification
+
+%% Processor service handles event
+    MB->>PS: consumeEvent<br>(COMMENT_REPORT<br>_PROCESS_EVENT)
+    PS->>DB: findCommentById<br>(documentId, commentId)
+    DB-->>PS: comment
+    PS->>DB: findDocumentById<br>(documentId)
+    DB-->>PS: document
+
+%% Email notifications
+    PS->>DB: findReporterUserIds<br>(commentId, RESOLVED, times)
+    DB-->>PS: reporterIds
+    PS->>DB: findUserDetails<br>(reporterIds, comment.userId)
+    DB-->>PS: users
+
+    PS->>Email: sendCommentResolved<br>NotificationToAuthor<br>(commenter, document)
+    PS->>Email: sendCommentResolved<br>NotificationToReporters<br>(reporters, document,<br> comment)

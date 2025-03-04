@@ -1,0 +1,32 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant AuthService
+    participant GoogleAuth
+    participant Database
+
+    User->>Frontend: Click "Login with Google"
+    Frontend->>AuthService: Redirect to OAuth endpoint
+    AuthService->>GoogleAuth: Redirect for authentication
+    GoogleAuth-->>User: Display Google login page
+    User->>GoogleAuth: Enter Google credentials
+    GoogleAuth-->>AuthService: Redirect with auth code
+    
+    AuthService->>GoogleAuth: Exchange code for user info
+    GoogleAuth-->>AuthService: User email, profile info
+    
+    AuthService->>Database: findUserByEmail()
+    Database-->>AuthService: User (if exists)
+    
+    alt User exists
+        AuthService->>AuthService: updateLoginStatus()
+    else User doesn't exist
+        AuthService->>Database: createUserFromGoogleProfile()
+        Database-->>AuthService: New User
+    end
+    
+    AuthService->>AuthService: generateTokens()
+    
+    AuthService-->>Frontend: Redirect with tokens
+    Frontend->>Frontend: Store tokens
+    Frontend-->>User: Redirect to dashboard

@@ -15,7 +15,7 @@ interface TagInputHybridProps {
   disabled?: boolean;
   error?: boolean;
   className?: string;
-  getTagDisplay?: (tag: string) => string; // New prop for custom tag display
+  getTagDisplay?: (tag: string) => string;
 }
 
 const TagInputHybrid = ({

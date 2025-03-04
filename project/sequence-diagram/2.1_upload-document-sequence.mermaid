@@ -1,0 +1,35 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant S3 as S3Storage
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant OS as OpenSearch
+
+    User->>Frontend: Upload document & <br> enter metadata
+    Frontend->>DIS: POST /api/v1/<br>documents
+
+    DIS->>S3: storeFile(file)
+    S3-->>DIS: fileKey
+
+    DIS->>DB: saveDocument<br>(documentInfo)
+    DB-->>DIS: savedDocument
+
+    DIS->>MB: publishEvent(SYNC_EVENT, documentId)
+    DIS-->>Frontend: 200 OK + <br> documentInformation
+    Frontend-->>User: Show upload success & <br> document details
+
+    MB->>PS: consumeEvent<br>(SYNC_EVENT, documentId)
+    PS->>S3: downloadFile(fileKey)
+    S3-->>PS: fileContent
+
+    PS->>PS: processDocument<br>(extractContent, generateThumbnail)
+    PS->>S3: uploadThumbnail(thumbnailData)
+    S3-->>PS: thumbnailKey
+
+    PS->>DB: updateDocument(status, thumbnail, content)
+    PS->>OS: indexDocument<br>(documentData)
+
+    Note over User,OS: Document is now available for viewing

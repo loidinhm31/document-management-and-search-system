@@ -185,37 +185,41 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
     }
 
     private void addMetadataSimilarityBoosts(BoolQueryBuilder queryBuilder, Map<String, Object> sourceDoc) {
-        // Same major and level
-        String major = (String) sourceDoc.get("major");
+        @SuppressWarnings("unchecked")
+        List<String> majors = (List<String>) sourceDoc.get("majors");
         String courseLevel = (String) sourceDoc.get("courseLevel");
-        if (major != null && courseLevel != null) {
-            BoolQueryBuilder majorLevelQuery = QueryBuilders.boolQuery()
-                    .must(QueryBuilders.termQuery("major", major))
-                    .must(QueryBuilders.termQuery("courseLevel", courseLevel));
-            queryBuilder.should(majorLevelQuery.boost(3.0f));
+        if (majors != null) {
+            queryBuilder.should(QueryBuilders.termsQuery("majors", majors).boost(3.0f));
         }
 
-        // Same category
-        String category = (String) sourceDoc.get("category");
-        if (category != null) {
-            queryBuilder.should(QueryBuilders.termQuery("category", category).boost(2.0f));
+        @SuppressWarnings("unchecked")
+        List<String> categories = (List<String>) sourceDoc.get("categories");
+        if (categories != null) {
+            queryBuilder.should(QueryBuilders.termsQuery("categories", categories).boost(2.0f));
         }
 
-        // Course code similarity
-        String courseCode = (String) sourceDoc.get("courseCode");
-        if (courseCode != null) {
-            queryBuilder.should(QueryBuilders.termQuery("courseCode", courseCode).boost(8.0f))
-                    .should(QueryBuilders.matchQuery("courseCode", courseCode)
-                            .fuzziness(Fuzziness.TWO)
-                            .prefixLength(3)
-                            .boost(6.0f));
+        @SuppressWarnings("unchecked")
+        List<String> courseCodes = (List<String>) sourceDoc.get("courseCodes");
+        if (courseCodes != null) {
+            queryBuilder.should(QueryBuilders.termsQuery("courseCodes", courseCodes).boost(3.0f));
         }
 
-        // Common tags
+        if (courseLevel != null) {
+            queryBuilder.should(QueryBuilders.termQuery("courseLevel", courseLevel).boost(3.0f));
+        }
+
         @SuppressWarnings("unchecked")
         List<String> tags = (List<String>) sourceDoc.get("tags");
         if (CollectionUtils.isNotEmpty(tags)) {
             queryBuilder.should(QueryBuilders.termsQuery("tags", tags).boost(4.0f));
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> extractedMetadata = (Map<String, String>) sourceDoc.get("extractedMetadata");
+        if (extractedMetadata != null) {
+            extractedMetadata.forEach((key, value) -> {
+                queryBuilder.should(QueryBuilders.termQuery("extractedMetadata.value", value).boost(2.0f));
+            });
         }
     }
 
@@ -223,32 +227,25 @@ public class DocumentRecommendationService extends OpenSearchBaseService {
         if (preferences == null) return;
 
         // Add preferred majors boost
-        addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 3.0f);
+        addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 3.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred course code boost
-        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 3.0f);
+        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 3.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred levels boost
-        addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 2.0f);
+        addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 2.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred categories boost
-        addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 2.5f);
+        addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 2.5f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred tags boost
-        addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 2.0f);
+        addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 2.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add content type weights
         addContentTypeWeights(queryBuilder, preferences.getContentTypeWeights());
 
         // Add interaction history boosts
         addInteractionHistoryBoosts(queryBuilder, preferences);
-    }
-
-    private void addPreferredFieldBoost(BoolQueryBuilder queryBuilder, String field, Set<String> values, float boost) {
-        if (CollectionUtils.isNotEmpty(values)) {
-            queryBuilder.should(QueryBuilders.termsQuery(field, values)
-                    .boost(boost * PREFERENCE_BOOST_MULTIPLIER));
-        }
     }
 
     private void addContentTypeWeights(BoolQueryBuilder queryBuilder, Map<String, Double> contentTypeWeights) {

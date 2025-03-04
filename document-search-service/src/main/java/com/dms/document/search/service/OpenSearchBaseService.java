@@ -2,9 +2,11 @@ package com.dms.document.search.service;
 
 import com.dms.document.search.dto.DocumentResponseDto;
 import com.dms.document.search.dto.SearchContext;
+import com.dms.document.search.enums.DocumentReportStatus;
 import com.dms.document.search.enums.DocumentType;
 import com.dms.document.search.enums.QueryType;
 import com.dms.document.search.enums.SharingType;
+import com.dms.document.search.model.DocumentPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -51,27 +53,26 @@ public abstract class OpenSearchBaseService {
                 .must(QueryBuilders.termsQuery("sharedWith", Collections.singletonList(userId)));
         sharingFilter.should(specificAccess);
 
+        // Violation access: Exclude reported documents
+        sharingFilter.mustNot(QueryBuilders.termQuery("reportStatus", DocumentReportStatus.RESOLVED.name()));
+
         sharingFilter.minimumShouldMatch(1);
         queryBuilder.filter(sharingFilter);
     }
 
-    protected void addFilterConditions(BoolQueryBuilder queryBuilder, String major, String courseCode, String courseLevel, String category, Set<String> tags) {
-        if (StringUtils.isNotBlank(major)) {
-            queryBuilder.filter(QueryBuilders.termQuery("major", major));
+    protected void addFilterConditions(BoolQueryBuilder queryBuilder, Set<String> majors, Set<String> courseCodes, String courseLevel, Set<String> categories, Set<String> tags) {
+        if (CollectionUtils.isNotEmpty(majors)) {
+            queryBuilder.filter(QueryBuilders.termsQuery("majors", majors));
         }
-
-        if (StringUtils.isNotBlank(courseCode)) {
-            queryBuilder.filter(QueryBuilders.termQuery("courseCode", courseCode));
+        if (CollectionUtils.isNotEmpty(courseCodes)) {
+            queryBuilder.filter(QueryBuilders.termsQuery("courseCodes", courseCodes));
         }
-
         if (StringUtils.isNotBlank(courseLevel)) {
             queryBuilder.filter(QueryBuilders.termQuery("courseLevel", courseLevel));
         }
-
-        if (StringUtils.isNotBlank(category)) {
-            queryBuilder.filter(QueryBuilders.termQuery("category", category));
+        if (CollectionUtils.isNotEmpty(categories)) {
+            queryBuilder.filter(QueryBuilders.termsQuery("categories", categories));
         }
-
         if (CollectionUtils.isNotEmpty(tags)) {
             queryBuilder.filter(QueryBuilders.termsQuery("tags", tags));
         }
@@ -168,36 +169,51 @@ public abstract class OpenSearchBaseService {
 
                     return DocumentResponseDto.builder()
                             .id(hit.getId())
-                            // Handle String fields with defaults
                             .filename(Optional.ofNullable(source.get("filename"))
                                     .map(Object::toString)
                                     .orElse(""))
-                            // Handle DocumentType enum safely
                             .documentType(Optional.ofNullable(source.get("documentType"))
                                     .map(Object::toString)
                                     .map(DocumentType::valueOf)
                                     .orElse(null))
-                            .major(Optional.ofNullable(source.get("major"))
-                                    .map(Object::toString)
-                                    .orElse(""))
-                            .courseCode(Optional.ofNullable(source.get("courseCode"))
-                                    .map(Object::toString)
-                                    .orElse(""))
+                            .majors(Optional.ofNullable(source.get("majors"))
+                                    .map(obj -> {
+                                        if (obj instanceof Collection) {
+                                            return new HashSet<>((Collection<String>) obj);
+                                        }
+                                        return new HashSet<String>();
+                                    })
+                                    .orElse(new HashSet<>()))
+                            .courseCodes(Optional.ofNullable(source.get("courseCodes"))
+                                    .map(obj -> {
+                                        if (obj instanceof Collection) {
+                                            return new HashSet<>((Collection<String>) obj);
+                                        }
+                                        return new HashSet<String>();
+                                    })
+                                    .orElse(new HashSet<>()))
                             .courseLevel(Optional.ofNullable(source.get("courseLevel"))
                                     .map(Object::toString)
                                     .orElse(""))
-                            .category(Optional.ofNullable(source.get("category"))
-                                    .map(Object::toString)
-                                    .orElse(""))
-                            // Handle numeric fields safely
-                            .fileSize(Optional.ofNullable(source.get("fileSize"))
-                                    .map(size -> {
-                                        if (size instanceof Long) return (Long) size;
-                                        if (size instanceof Integer) return ((Integer) size).longValue();
-                                        return 0L;
+                            .categories(Optional.ofNullable(source.get("categories"))
+                                    .map(obj -> {
+                                        if (obj instanceof Collection) {
+                                            return new HashSet<>((Collection<String>) obj);
+                                        }
+                                        return new HashSet<String>();
                                     })
+                                    .orElse(new HashSet<>()))
+                            .tags(Optional.ofNullable(source.get("tags"))
+                                    .map(obj -> {
+                                        if (obj instanceof Collection) {
+                                            return new HashSet<>((Collection<String>) obj);
+                                        }
+                                        return new HashSet<String>();
+                                    })
+                                    .orElse(new HashSet<>()))
+                            .fileSize(Optional.ofNullable(source.get("fileSize"))
+                                    .map(size -> ((Number) size).longValue())
                                     .orElse(0L))
-                            // Handle String fields with defaults
                             .mimeType(Optional.ofNullable(source.get("mimeType"))
                                     .map(Object::toString)
                                     .orElse(""))
@@ -207,17 +223,7 @@ public abstract class OpenSearchBaseService {
                             .userId(Optional.ofNullable(source.get("userId"))
                                     .map(Object::toString)
                                     .orElse(""))
-                            // Handle collections safely
-                            .tags(Optional.ofNullable(source.get("tags"))
-                                    .map(obj -> {
-                                        if (obj instanceof List<?>) {
-                                            return new HashSet<>((List<String>) obj);
-                                        }
-                                        return new HashSet<String>();
-                                    })
-                                    .orElse(new HashSet<>()))
                             .createdAt(createdAt)
-                            // Handle highlights list
                             .highlights(highlights)
                             .build();
                 })
@@ -256,6 +262,32 @@ public abstract class OpenSearchBaseService {
                         ).boostMode(CombineFunction.MULTIPLY)
                         .boost(5.0f)
         );
+    }
+
+    protected void addPreferredFieldBoost(BoolQueryBuilder queryBuilder, String field, Set<String> values, float boost) {
+        if (CollectionUtils.isNotEmpty(values)) {
+            queryBuilder.should(QueryBuilders.termsQuery(field, values)
+                    .boost(boost));
+        }
+    }
+
+    protected void addBasicPreferenceBoosts(BoolQueryBuilder queryBuilder, DocumentPreferences preferences) {
+        if (preferences == null) return;
+
+        // Add preferred fields with moderate boost values
+        // Note: These are intentionally lower than search term boosts (which go up to 15.0f)
+        // to ensure search relevance remains the primary factor
+        addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 1.5f);
+        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 1.5f);
+        addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 1.0f);
+        addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 1.0f);
+        addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 1.0f);
+
+        // Language preferences
+        if (CollectionUtils.isNotEmpty(preferences.getLanguagePreferences())) {
+            queryBuilder.should(QueryBuilders.termsQuery("language", preferences.getLanguagePreferences())
+                    .boost(1.5f));
+        }
     }
 
     private void addHighlightsFromField(HighlightField field, List<String> highlights) {
