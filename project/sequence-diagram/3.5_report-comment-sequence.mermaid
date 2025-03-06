@@ -1,0 +1,44 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    User->>Frontend: Click report button on comment
+
+    Frontend->>DIS: GET /api/v1/comments/{commentId}/report/status
+    DIS->>DB: checkExistingReport<br>(commentId, userId)
+    DB-->>DIS: alreadyReported
+
+    alt Not previously reported
+        DIS-->>Frontend: 200 OK {canReport: true}
+
+        Frontend-->>User: Display report form with violation reasons
+
+        User->>Frontend: Select violation reason
+        User->>Frontend: Enter additional details (optional)
+        User->>Frontend: Submit report
+
+        Frontend->>DIS: POST /api/v1/comments/{commentId}/reports<br>{reportType: string, details: string}
+
+        DIS->>DB: validateUserRole<br>(userId)
+        DB-->>DIS: isValidReporter
+
+        DIS->>DB: checkReportType<br>(reportType)
+        DB-->>DIS: reportTypeValid
+
+        alt Valid reporter (not admin/owner)
+            DIS->>DB: saveCommentReport<br>(commentId, userId, reportType, details)
+            DB-->>DIS: reportId
+
+            DIS-->>Frontend: 201 Created {reportId, status: "PENDING"}
+            Frontend-->>User: Display confirmation message
+
+        else Invalid reporter
+            DIS-->>Frontend: 403 Forbidden<br>{error: "Not eligible to report"}
+            Frontend-->>User: Display error message
+        end
+    else Already reported
+        DIS-->>Frontend: 200 OK {canReport: false, reportStatus: string}
+        Frontend-->>User: Display "Already reported" message with current status
+    end
