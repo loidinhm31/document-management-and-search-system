@@ -1,0 +1,623 @@
+classDiagram
+%% Core Service Layer
+    class DocumentProcessService {
+        +processDocument(document: DocumentInformation, versionNumber: Integer, eventType: EventType): void
+        +handleReportStatus(documentId: String, userId: String, times: int): void
+        +deleteDocumentFromIndex(documentId: String): void
+        -processRevertContent(document: DocumentInformation, revertToVersionNumber: Integer): void
+        -processFullDocument(document: DocumentInformation, tempFile: Path): void
+        -processMetadataUpdate(document: DocumentInformation): void
+        -extractAndProcessContent(filePath: Path): DocumentExtractContent
+        -updateDocumentWithContent(document: DocumentInformation, documentVersion: DocumentVersion, content: DocumentExtractContent): void
+        -indexDocument(document: DocumentInformation): void
+        -handleProcessingError(document: DocumentInformation, e: Exception): void
+        -handleThumbnail(document: DocumentInformation, documentVersion: DocumentVersion, tempFile: Path): void
+        -generateAndSaveThumbnail(document: DocumentInformation, documentVersion: DocumentVersion, tempFile: Path): void
+    }
+
+    class ContentExtractorService {
+        -maxSizeThreshold: DataSize
+        +extractContent(filePath: Path): DocumentExtractContent
+        -basicExtractTextContent(filePath: Path): String
+        -handlePdfExtraction(filePath: Path, metadata: Map): String
+        -tikaExtractTextContent(filePath: Path): String
+    }
+
+    class SmartPdfExtractor {
+        -qualityThreshold: double
+        -minTextDensity: double
+        +extractText(pdfPath: Path): ExtractedText
+        -calculateTextDensity(text: String, pageCount: int): double
+        -assessTextQuality(text: String): double
+        -shouldUseOcr(textDensity: double, textQuality: double): boolean
+    }
+
+    class OcrService {
+        -tesseract: Tesseract
+        -tessdataPath: String
+        -minimumTextLength: int
+        -dpi: float
+        -imageType: String
+        +initialize(): void
+        +extractTextFromPdf(pdfPath: Path): String
+        +performOcrOnImage(image: BufferedImage): String
+        +preprocessImage(image: BufferedImage): BufferedImage
+        +isImageBasedPdf(pdfPath: Path): boolean
+    }
+
+    class ThumbnailService {
+        -thumbnailWidth: int
+        -thumbnailHeight: int
+        +generateThumbnail(filePath: Path, documentType: DocumentType, content: String): byte[]
+        -generateThumbnailByType(filePath: Path, documentType: DocumentType, content: String): BufferedImage
+        -generatePdfThumbnail(filePath: Path): BufferedImage
+        -convertToBytes(image: BufferedImage): byte[]
+        -resizeImage(original: BufferedImage, width: int, height: int): BufferedImage
+    }
+
+    class BaseThumbnailGenerator {
+        #width: int
+        #height: int
+        #DEFAULT_CELL_WIDTH: int
+        #DEFAULT_CELL_HEIGHT: int
+        #DEFAULT_START_X: int
+        #DEFAULT_START_Y: int
+        #DEFAULT_COLUMNS: int
+        #DEFAULT_ROWS: int
+        #createBaseImage(): BufferedImage
+        #setupGraphics(g2d: Graphics2D): void
+        #truncateLine(line: String, maxLength: int): String
+        #drawGrid(g2d: Graphics2D, startX: int, startY: int, cols: int, rows: int, cellWidth: int, cellHeight: int): void
+        #drawGridHeaders(g2d: Graphics2D, startX: int, startY: int, cols: int, rows: int, cellWidth: int, cellHeight: int): void
+    }
+
+    class S3Service {
+        +uploadFile(filePath: Path, prefix: String, contentType: String): String
+        +downloadToTemp(s3Key: String): Path
+        +deleteFile(key: String): void
+        +cleanup(tempPath: Path): void
+        -generateS3Key(filename: String, prefix: String): String
+    }
+
+    class DocumentContentService {
+        +saveVersionContent(documentId: String, versionNumber: Integer, content: String, metadata: Map): void
+        +getVersionContent(documentId: String, versionNumber: Integer): Optional~DocumentContent~
+        -generateContentId(documentId: String, versionNumber: Integer): String
+    }
+
+    class EmailService {
+        -batchSize: int
+        -fromEmail: String
+        +sendEmail(to: String, subject: String, htmlContent: String): void
+        #sendBatchNotificationEmails(toEmails: Collection, subject: String, templateName: String, templateVars: Map): void
+        -partitionEmails(emails: Collection): List~List~
+        -processBatch(batchEmails: List, subject: String, templateName: String, templateVars: Map, recipientMap: Map): void
+        #renderTemplate(templateName: String, variables: Map): String
+    }
+
+    class DocumentEmailService {
+        -baseUrl: String
+        +sendNotifyForRelatedUserInDocument(notificationEvent: NotificationEventRequest): void
+        +sendDocumentReportRejectionNotifications(document: DocumentInformation, rejecterId: String, times: int): void
+        +sendResolveNotifications(document: DocumentInformation, resolverId: String, times: int): void
+        +sendReportRemediationNotifications(document: DocumentInformation, remediatorId: String): void
+        +sendCommentReportProcessNotification(notificationEvent: NotificationEventRequest): void
+        -findDocument(documentId: String): DocumentInformation
+        -findCommentById(documentId: String, commentId: Long): DocumentComment
+        -findUserByUsername(username: String): User
+        -getUsernameById(userId: String): String
+        -findUserById(userId: String): User
+        -findUsersToNotify(document: DocumentInformation, triggerUser: User): Set~User~
+        -findFavoriters(document: DocumentInformation): Set~User~
+        -createEmailToUserMap(users: Set~User~): Map~String, User~
+        -sendNotifications(users: Set~User~, triggerUser: User, document: DocumentInformation, event: NotificationEventRequest): void
+        -buildNotificationContext(event: NotificationEventRequest, document: DocumentInformation, triggerUser: User, emailToUserMap: Map~String, User~): NotificationContext
+        -buildEmailSubject(event: NotificationEventRequest, document: DocumentInformation): String
+        -determineEmailTemplate(type: NotificationType): String
+        -sendReportStatusEmails(recipients: Set~User~, document: DocumentInformation, actionUsername: String, subject: String, emailTemplate: String): void
+        -sendMailToCreator(subject: String, templateName: String, creator: User, document: DocumentInformation, actionUsername: String): void
+    }
+
+    class AuthEmailService {
+        -baseUrl: String
+        +sendOtpEmail(to: String, username: String, otp: String, expiryMinutes: int, maxAttempts: int): void
+        +sendPasswordResetEmail(to: String, username: String, token: String, expiryMinutes: int): void
+    }
+
+    class LanguageDetectionService {
+        -languageDetector: LanguageDetector
+        +init(): void
+        +detectLanguage(text: String): Optional~String~
+        +detectLanguages(text: String): List~LanguageResult~
+    }
+
+    class OcrLargeFileProcessor {
+        -chunkSize: int
+        -tempDir: String
+        -maxThreads: int
+        -executorService: ExecutorService
+        +initialize(): void
+        +processLargePdf(pdfPath: Path): String
+        -processChunk(renderer: PDFRenderer, startPage: int, endPage: int, tempDirectory: File, processedPages: AtomicInteger, totalPages: int): CompletableFuture~String~
+        -createTempDirectory(): File
+        -cleanupTempDirectory(directory: File): void
+        -isTextSufficient(text: String): boolean
+        +shutdown(): void
+    }
+
+    class LargeFileProcessor {
+        -executorService: ExecutorService
+        -processingTasks: ConcurrentHashMap~String, CompletableFuture~String~~
+        -threadCounter: AtomicInteger
+        -chunkSizeMB: int
+        +processLargeFile(filePath: Path): CompletableFuture~String~
+        -processFileInChunks(filePath: Path): String
+        -processChunk(buffer: byte[], bytesRead: int, parser: Parser, context: ParseContext): String
+        +cancelProcessing(fileId: String): void
+        +getProcessingProgress(fileId: String): double
+    }
+
+    class OpenSearchIndexService {
+        -INDEX_NAME: String
+        +setupIndex(): void
+        +verifyIndexMapping(): void
+        -verifyField(properties: Map, fieldName: String): void
+        +verifyDocument(id: String): void
+        -testFieldAccess(documentId: String, fieldPath: String): void
+        +reindexAll(): void
+        -loadResourceFile(path: String): String
+    }
+
+%% Consumer Layer
+    class DocumentProcessorConsumer {
+        +processDocumentEvent(request: SyncEventRequest): void
+        -handleRevertEvent(request: SyncEventRequest, eventType: EventType): void
+        -handleDeleteEvent(request: SyncEventRequest): void
+        -handleUpdateEvent(request: SyncEventRequest, eventType: EventType): void
+        -handleSyncEvent(request: SyncEventRequest, eventType: EventType): void
+        -handleReportStatus(request: SyncEventRequest): void
+        -findAndProcessDocument(request: SyncEventRequest, eventType: EventType): void
+    }
+
+    class EmailNotificationConsumer {
+        +consumeNotificationEvent(notificationEvent: NotificationEventRequest): void
+        +consumeOtpEmail(payload: EmailNotificationPayload): void
+    }
+
+    class DeadLetterQueueListener {
+        +processFailedMessages(failedMessage: Message): void
+    }
+
+%% Thumbnail Generators
+    class CsvThumbnailGenerator {
+        +generateThumbnail(content: String): BufferedImage
+        -drawCsvContent(g2d: Graphics2D, content: String): void
+        -drawCellContent(g2d: Graphics2D, content: String): void
+        -createEmptyThumbnail(): BufferedImage
+    }
+
+    class JsonThumbnailGenerator {
+        +generateThumbnail(content: String): BufferedImage
+        -drawJsonContent(g2d: Graphics2D, content: String): void
+        -formatJsonLines(content: String): String[]
+        -createEmptyThumbnail(): BufferedImage
+    }
+
+    class MarkdownThumbnailGenerator {
+        +generateThumbnail(content: String): BufferedImage
+        -drawMarkdownContent(g2d: Graphics2D, content: String): void
+        -drawFormattedLine(g2d: Graphics2D, line: String, x: int, y: int): void
+        -createEmptyThumbnail(): BufferedImage
+    }
+
+
+
+    class PowerPointThumbnailGenerator {
+        +generateThumbnail(content: String): BufferedImage
+        -drawSlideContent(g2d: Graphics2D, content: String): void
+        -drawTitleArea(g2d: Graphics2D, title: String): void
+        -drawBulletPoints(g2d: Graphics2D, lines: String[]): void
+        -drawSlideNumber(g2d: Graphics2D): void
+        -createEmptyThumbnail(): BufferedImage
+    }
+
+    class SpreadsheetThumbnailGenerator {
+        +generateThumbnail(content: String): BufferedImage
+        -drawSpreadsheetContent(g2d: Graphics2D, content: String): void
+        -drawSheetTab(g2d: Graphics2D, sheetName: String): void
+        -drawCellContent(g2d: Graphics2D, content: String, startY: int): void
+        -createEmptyThumbnail(): BufferedImage
+    }
+
+    class TextThumbnailGenerator {
+        +generateThumbnail(content: String): BufferedImage
+        -drawTextContent(g2d: Graphics2D, content: String): void
+        -createEmptyThumbnail(): BufferedImage
+    }
+
+    class WordThumbnailGenerator {
+        +generateThumbnail(content: String): BufferedImage
+        -drawDocumentContent(g2d: Graphics2D, content: String): void
+        -createEmptyThumbnail(): BufferedImage
+    }
+
+    class XmlThumbnailGenerator {
+        +generateThumbnail(content: String): BufferedImage
+        -drawXmlContent(g2d: Graphics2D, content: String): void
+        -drawXmlTag(g2d: Graphics2D, tag: String, x: int, y: int, tagColor: Color, attributeColor: Color): void
+        -formatXmlLines(content: String): String[]
+        -createEmptyThumbnail(): BufferedImage
+    }
+
+%% Model Layer
+    class DocumentInformation {
+        -id: String
+        -status: DocumentStatus
+        -summary: String
+        -documentType: DocumentType
+        -majors: Set~String~
+        -courseCodes: Set~String~
+        -courseLevel: String
+        -categories: Set~String~
+        -tags: Set~String~
+        -userId: String
+        -sharingType: SharingType
+        -sharedWith: Set~String~
+        -deleted: boolean
+        -currentVersion: Integer
+        -versions: List~DocumentVersion~
+        -processingError: String
+        -filename: String
+        -filePath: String
+        -thumbnailPath: String
+        -fileSize: Long
+        -mimeType: String
+        -extractedMetadata: Map~String, String~
+        -content: String
+        -language: String
+        -createdAt: Instant
+        -updatedAt: Instant
+        -createdBy: String
+        -updatedBy: String
+        -reportStatus: DocumentReportStatus
+        -recommendationCount: Integer
+        +getLatestVersion(): Optional~DocumentVersion~
+        +getVersion(versionNumber: Integer): Optional~DocumentVersion~
+    }
+
+    class DocumentVersion {
+        -versionNumber: Integer
+        -filePath: String
+        -thumbnailPath: String
+        -filename: String
+        -fileSize: Long
+        -mimeType: String
+        -documentType: DocumentType
+        -status: DocumentStatus
+        -language: String
+        -processingError: String
+        -createdBy: String
+        -createdAt: Instant
+    }
+
+    class DocumentContent {
+        -id: String
+        -documentId: String
+        -versionNumber: Integer
+        -content: String
+        -extractedMetadata: Map~String, String~
+        -version: Long
+    }
+
+    class DocumentIndex {
+        -id: String
+        -filename: String
+        -content: String
+        -fileSize: Long
+        -mimeType: String
+        -documentType: DocumentType
+        -summary: String
+        -majors: Set~String~
+        -courseCodes: Set~String~
+        -courseLevel: String
+        -categories: Set~String~
+        -tags: Set~String~
+        -userId: String
+        -sharingType: SharingType
+        -sharedWith: Set~String~
+        -deleted: boolean
+        -status: DocumentStatus
+        -language: String
+        -createdAt: Instant
+        -reportStatus: DocumentReportStatus
+        -recommendationCount: Integer
+    }
+
+    class DocumentComment {
+        -id: Long
+        -documentId: String
+        -userId: UUID
+        -content: String
+        -parentId: Long
+        -createdAt: Instant
+        -updatedAt: Instant
+        -edited: boolean
+        -flag: Integer
+        -version: Long
+        -reports: List~CommentReport~
+    }
+
+    class CommentReport {
+        -id: Long
+        -documentId: String
+        -commentId: Long
+        -userId: UUID
+        -reportTypeCode: String
+        -description: String
+        -processed: Boolean
+        -status: CommentReportStatus
+        -times: Integer
+        -createdAt: Instant
+        -updatedAt: Instant
+        -updatedBy: UUID
+        -comment: DocumentComment
+    }
+
+    class DocumentReport {
+        -id: Long
+        -documentId: String
+        -userId: UUID
+        -reportTypeCode: String
+        -description: String
+        -createdAt: Instant
+        -status: DocumentReportStatus
+        -processed: Boolean
+        -times: Integer
+        -updatedBy: UUID
+        -updatedAt: Instant
+    }
+
+    class DocumentFavorite {
+        -id: Long
+        -userId: UUID
+        -documentId: String
+        -createdAt: Instant
+    }
+
+    class User {
+        -userId: UUID
+        -username: String
+        -email: String
+    }
+
+    class FailedMessage {
+        -id: String
+        -originalMessageId: String
+        -originalQueue: String
+        -routingKey: String
+        -errorMessage: String
+        -stackTrace: String
+        -messageBody: String
+        -headers: Map~String, Object~
+        -retryCount: int
+        -status: FailedMessageStatus
+        -createdAt: Instant
+        -updatedAt: Instant
+        -lastRetryAt: Instant
+    }
+
+%% DTO Layer
+    class DocumentExtractContent {
+        +content: String
+        +metadata: Map~String, String~
+    }
+
+    class ExtractedText {
+        +text: String
+        +usedOcr: boolean
+    }
+
+    class EventRequest {
+        -userId: String
+        -eventId: String
+        -subject: String
+        -triggerAt: Instant
+    }
+
+    class SyncEventRequest {
+        -documentId: String
+        -versionNumber: Integer
+    }
+
+    class NotificationEventRequest {
+        -documentId: String
+        -commentId: Long
+        -documentTitle: String
+        -notificationType: NotificationType
+        -triggerUserId: String
+        -versionNumber: Integer
+    }
+
+    class EmailNotificationPayload {
+        -to: String
+        -username: String
+        -otp: String
+        -expiryMinutes: int
+        -maxAttempts: int
+        -subject: String
+        -templateName: String
+        -token: String
+        -eventType: String
+    }
+
+%% Repository Layer
+    class DocumentRepository {
+        +findById(id: String): Optional~DocumentInformation~
+        +save(document: DocumentInformation): DocumentInformation
+    }
+
+    class DocumentContentRepository {
+        +findByDocumentIdAndVersionNumber(documentId: String, versionNumber: Integer): Optional~DocumentContent~
+        +save(content: DocumentContent): DocumentContent
+    }
+
+    class DocumentIndexRepository {
+        -INDEX_NAME: String
+        +save(document: DocumentIndex): void
+        +findById(id: String): Optional~DocumentIndex~
+        +deleteById(id: String): void
+        +findAll(): List~DocumentIndex~
+        +findByUserId(userId: String): List~DocumentIndex~
+    }
+
+    class FailedMessageRepository {
+        +findByStatus(status: FailedMessageStatus): List~FailedMessage~
+        +findRetryableMessages(status: FailedMessageStatus, maxRetries: int): List~FailedMessage~
+        +findByOriginalMessageId(originalMessageId: String): Optional~FailedMessage~
+    }
+
+    class DocumentFavoriteRepository {
+        +findUserIdsByDocumentId(documentId: String): Set~UUID~
+    }
+
+    class UserRepository {
+        +findByUsername(username: String): Optional~User~
+        +findUsersByUserIdIn(userIds: Set~UUID~): List~User~
+    }
+
+    class DocumentCommentRepository {
+        +findByDocumentIdAndId(documentId: String, id: Long): Optional~DocumentComment~
+    }
+
+    class CommentReportRepository {
+        +findReporterUserIdsByCommentIdAndStatusAndTimes(commentId: Long, status: CommentReportStatus, times: int): Set~UUID~
+    }
+
+    class DocumentReportRepository {
+        +findReporterUserIdsByDocumentIdAndStatusAndTimes(documentId: String, status: DocumentReportStatus, times: int): Set~UUID~
+    }
+
+%% Enums
+    class DocumentType {
+        <<enumeration>>
+        PDF
+        WORD
+        WORD_DOCX
+        EXCEL
+        EXCEL_XLSX
+        POWERPOINT
+        POWERPOINT_PPTX
+        TEXT_PLAIN
+        CSV
+        XML
+        JSON
+        MARKDOWN
+    }
+
+    class DocumentStatus {
+        <<enumeration>>
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+    }
+
+    class EventType {
+        <<enumeration>>
+        SYNC_EVENT
+        UPDATE_EVENT
+        UPDATE_EVENT_WITH_FILE
+        DELETE_EVENT
+        REVERT_EVENT
+        FAVORITE_NOTIFICATION
+        DOCUMENT_REPORT_PROCESS_EVENT
+        COMMENT_REPORT_PROCESS_EVENT
+    }
+
+    class DocumentReportStatus {
+        <<enumeration>>
+        PENDING
+        REJECTED
+        RESOLVED
+        REMEDIATED
+    }
+
+    class CommentReportStatus {
+        <<enumeration>>
+        PENDING
+        REJECTED
+        RESOLVED
+    }
+
+    class NotificationType {
+        <<enumeration>>
+        NEW_COMMENT_FROM_NEW_USER
+        NEW_FILE_VERSION
+        DOCUMENT_REVERTED
+    }
+
+    class SharingType {
+        <<enumeration>>
+        PRIVATE
+        PUBLIC
+        SPECIFIC
+    }
+
+%% Inheritance and Relationships
+    DocumentEmailService --|> EmailService
+    AuthEmailService --|> EmailService
+
+    SyncEventRequest --|> EventRequest
+    NotificationEventRequest --|> EventRequest
+
+    BaseThumbnailGenerator <|-- CsvThumbnailGenerator
+    BaseThumbnailGenerator <|-- JsonThumbnailGenerator
+    BaseThumbnailGenerator <|-- MarkdownThumbnailGenerator
+    BaseThumbnailGenerator <|-- PowerPointThumbnailGenerator
+    BaseThumbnailGenerator <|-- SpreadsheetThumbnailGenerator
+    BaseThumbnailGenerator <|-- TextThumbnailGenerator
+    BaseThumbnailGenerator <|-- WordThumbnailGenerator
+    BaseThumbnailGenerator <|-- XmlThumbnailGenerator
+
+%% Core Service Relationships
+    DocumentProcessService --> DocumentRepository
+    DocumentProcessService --> DocumentIndexRepository
+    DocumentProcessService --> ContentExtractorService
+    DocumentProcessService --> LanguageDetectionService
+    DocumentProcessService --> ThumbnailService
+    DocumentProcessService --> DocumentContentService
+    DocumentProcessService --> S3Service
+    DocumentProcessService --> DocumentEmailService
+
+    ContentExtractorService --> SmartPdfExtractor
+    ContentExtractorService --> OcrLargeFileProcessor
+    ContentExtractorService --> LargeFileProcessor
+
+    SmartPdfExtractor --> OcrService
+
+    ThumbnailService ..> BaseThumbnailGenerator
+
+    DocumentContentService --> DocumentContentRepository
+
+    DocumentEmailService --> DocumentRepository
+    DocumentEmailService --> DocumentFavoriteRepository
+    DocumentEmailService --> UserRepository
+    DocumentEmailService --> DocumentReportRepository
+    DocumentEmailService --> CommentReportRepository
+    DocumentEmailService --> DocumentCommentRepository
+
+%% Consumer Relationships
+    DocumentProcessorConsumer --> DocumentProcessService
+    DocumentProcessorConsumer --> DocumentRepository
+
+    EmailNotificationConsumer --> DocumentEmailService
+    EmailNotificationConsumer --> AuthEmailService
+
+    DeadLetterQueueListener --> FailedMessageRepository
+
+%% Model Relationships
+    DocumentInformation *-- DocumentVersion : contains
+    DocumentComment *-- CommentReport : contains
+
+%% DTO Relationships
+    DocumentExtractContent o-- ExtractedText

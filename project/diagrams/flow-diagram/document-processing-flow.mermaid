@@ -1,0 +1,108 @@
+flowchart TD
+%% Starting point - Consumer receives event
+
+%% Main processing method
+    I[Consume Full Document Process] --> J[DocumentProcessService.processDocument]
+    J --> K[Set status to PROCESSING & Download file from S3 to temp location]
+
+%% Process Full Document flow
+    K --> N[Get version number & document version]
+    N --> O{Version found?}
+    O -->|No| O1[Throw DocumentProcessingException]
+    O -->|Yes| P[Extract content from file]
+
+%% Content extraction flow
+    P --> P1[extractContent]
+    P1 --> P2{File type?}
+    P2 -->|PDF| P3[handlePdfExtraction with SmartPdfExtractor.extractText]
+    P2 -->|Other| P4{File size > threshold?}
+
+%% PDF handling
+    P3 --> P3B{Need OCR?}
+    P3B -->|Yes| P3C[OcrService.extractTextFromPdf]
+    P3B -->|No| P3D[Use direct text extraction]
+    P3C --> P7[Return extracted content]
+    P3D --> P7
+
+%% Large file handling
+    P4 -->|Yes| P5[LargeFileProcessor.processLargeFile]
+    P4 -->|No| P6[Extract text using Tika]
+    P5 --> P7[Return extracted content]
+    P6 --> P7
+
+%% Back to main process flow
+    P7 --> Q1[updateDocumentWithContent <br> - Set document content]
+
+%% Update document with content
+    Q1 --> Q2{Language detected?}
+    Q2 -->|No| Q3[Detect language]
+    Q2 -->|Yes| Q4[Use existing language]
+    Q3 --> Q5[Update document & version language - status COMPLETED, timestamp]
+    Q4 --> Q5
+    Q5 --> Q6[Save document & content]
+
+%% Generate thumbnail
+    Q6 --> R1[handleThumbnail & generateAndSaveThumbnail - based on document type with ThumbnailService.generateThumbnail from temp thumbnail file]
+    R1 --> R2[Upload thumbnail to S3]
+    R2 --> R3[Update document with thumbnail path & Save]
+
+%% Index document
+    R3 --> S[indexDocument - mapping & save to OpenSearch ]
+
+%% Cleanup and completion
+    S --> T[Cleanup temporary files]
+
+%% Error handling path
+    J -- Exception --> V1[handleProcessingError]
+    V1 --> V2[Update version & document status to FAILED - set error message, timestamp]
+    V2 --> V3[Save document]
+    V3 --> W[Throw DocumentProcessingException]
+
+%% Final cleanup
+    T --> X[Return to consumer]
+    W --> X
+
+%% Subgraph for Content Extraction
+    subgraph "Content Extraction"
+        P1
+        P2
+        P3
+        P4
+        P5
+        P6
+        P7
+        P3B
+        P3C
+        P3D
+    end
+
+%% Subgraph for Document Update
+    subgraph "Document Update"
+        Q1
+        Q2
+        Q3
+        Q4
+        Q5
+        Q6
+    end
+
+%% Subgraph for Thumbnail Generation
+    subgraph "Thumbnail Generation"
+        R1
+        R2
+        R3
+    end
+
+%% Subgraph for Indexing
+    subgraph "OpenSearch"
+        S
+
+    end
+
+%% Subgraph for Error Handling
+    subgraph "Error Handling"
+        V1
+        V2
+        V3
+        W
+    end
