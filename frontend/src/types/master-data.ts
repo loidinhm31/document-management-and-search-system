@@ -20,6 +20,7 @@ export interface MasterData {
   updatedAt?: Date;
   active: boolean;
   parentId?: string;
+  fullUpdate?: boolean;
 }
 
 export const MASTER_DATA_HIERARCHY = {
