@@ -1,4 +1,5 @@
 import { Separator } from "@radix-ui/react-separator";
+import { debounce } from "lodash";
 import { Loader2, Search, Share2, Users } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -29,11 +30,11 @@ interface ShareDocumentDialogProps {
 }
 
 export default function ShareDocumentDialog({
-  documentId,
-  documentName,
-  iconOnly,
-  isShared,
-}: ShareDocumentDialogProps) {
+                                              documentId,
+                                              documentName,
+                                              iconOnly,
+                                              isShared,
+                                            }: ShareDocumentDialogProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -43,6 +44,10 @@ export default function ShareDocumentDialog({
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isPublic, setIsPublic] = useState(isShared);
   const [loading, setLoading] = useState(false);
+
+  // Add state to track initial values
+  const [initialIsPublic, setInitialIsPublic] = useState(isShared);
+  const [initialSelectedUsers, setInitialSelectedUsers] = useState<string[]>([]);
 
   // Fetch initial share settings when dialog opens
   useEffect(() => {
@@ -66,8 +71,14 @@ export default function ShareDocumentDialog({
     try {
       const response = await documentService.getShareSettings(documentId);
       const { isPublic, sharedWith = [] } = response.data;
+
+      // Set current values
       setIsPublic(isPublic);
       setSelectedUsers(sharedWith || []);
+
+      // Store initial values for comparison
+      setInitialIsPublic(isPublic);
+      setInitialSelectedUsers([...sharedWith]);
 
       // If there are shared users, fetch their details
       if (sharedWith?.length > 0) {
@@ -128,7 +139,31 @@ export default function ShareDocumentDialog({
     });
   };
 
+  // Check if there are actual changes in the sharing settings
+  const hasChanges = () => {
+    // Check if public status changed
+    if (isPublic !== initialIsPublic) return true;
+
+    // Check if the selected users array changed
+    if (selectedUsers.length !== initialSelectedUsers.length) return true;
+
+    // Check if the same users are selected (order doesn't matter)
+    const initialSet = new Set(initialSelectedUsers);
+    return selectedUsers.some(userId => !initialSet.has(userId));
+  };
+
   const handleUpdateSharing = async () => {
+    // Only proceed if there are actual changes
+    if (!hasChanges()) {
+      toast({
+        title: t("common.info"),
+        description: t("document.myDocuments.share.noChanges"),
+        variant: "default",
+      });
+      setOpen(false);
+      return;
+    }
+
     setIsUpdating(true);
     try {
       await documentService.updateShareSettings(documentId, {
@@ -152,8 +187,13 @@ export default function ShareDocumentDialog({
     }
   };
 
+  const handleDialogChange = () => {
+    setOpen(!open);
+    setSearchQuery("")
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="flex items-center gap-2 px-4">
           <Share2 className="h-4 w-4" />
@@ -218,12 +258,23 @@ export default function ShareDocumentDialog({
                       </div>
                     </div>
                   ))}
+                  {users.length === 0 && (
+                    <div className="flex h-full items-center justify-center p-4">
+                      <p className="text-sm text-muted-foreground">
+                        {t("document.myDocuments.share.specific.noResults")}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </ScrollArea>
           </div>
 
-          <Button onClick={handleUpdateSharing} disabled={isUpdating} className="w-full">
+          <Button
+            onClick={handleUpdateSharing}
+            disabled={isUpdating || !hasChanges()}
+            className="w-full"
+          >
             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {t("document.myDocuments.share.actions.update")}
           </Button>
