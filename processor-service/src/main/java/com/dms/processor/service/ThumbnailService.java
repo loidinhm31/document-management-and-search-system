@@ -47,8 +47,6 @@ public class ThumbnailService {
             case JSON -> new JsonThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case XML -> new XmlThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
             case MARKDOWN -> new MarkdownThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(content);
-            default ->
-                    new PlaceholderThumbnailGenerator(thumbnailWidth, thumbnailHeight).generateThumbnail(documentType);
         };
     }
 

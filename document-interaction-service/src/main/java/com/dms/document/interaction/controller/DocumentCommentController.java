@@ -1,7 +1,10 @@
 package com.dms.document.interaction.controller;
 
 import com.dms.document.interaction.constant.ApiConstant;
-import com.dms.document.interaction.dto.*;
+import com.dms.document.interaction.dto.CommentReportRequest;
+import com.dms.document.interaction.dto.CommentReportResponse;
+import com.dms.document.interaction.dto.CommentRequest;
+import com.dms.document.interaction.dto.CommentResponse;
 import com.dms.document.interaction.service.CommentReportService;
 import com.dms.document.interaction.service.DocumentCommentService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,15 +12,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.Instant;
-import java.util.List;
 
 @RestController
 @RequestMapping(ApiConstant.API_VERSION + ApiConstant.DOCUMENT_BASE_PATH + ApiConstant.DOCUMENT_ID_PATH + "/comments")

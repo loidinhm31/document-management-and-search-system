@@ -3,12 +3,13 @@ package com.dms.processor.generator;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-public class CsvThumbnailGenerator extends BaseThumbnailGenerator {
+public class CsvThumbnailGenerator extends BaseThumbnailGenerator implements ThumbnailGenerator {
 
     public CsvThumbnailGenerator(int width, int height) {
         super(width, height);
     }
 
+    @Override
     public BufferedImage generateThumbnail(String content) {
         if (content == null || content.trim().isEmpty()) {
             return createEmptyThumbnail();

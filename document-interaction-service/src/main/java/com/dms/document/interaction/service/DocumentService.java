@@ -40,9 +40,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class DocumentService {
-    private final DocumentNotificationService documentNotificationService;
-    private final S3Service s3Service;
-
     @Value("${app.document.max-size-mb}")
     private DataSize maxFileSize;
 
@@ -52,11 +49,13 @@ public class DocumentService {
     @Value("${app.document.placeholder.error}")
     private Resource errorPlaceholder;
 
-    private final PublishEventService publishEventService;
     private final DocumentRepository documentRepository;
+    private final DocumentUserHistoryRepository documentUserHistoryRepository;
+    private final DocumentNotificationService documentNotificationService;
+    private final S3Service s3Service;
+    private final PublishEventService publishEventService;
     private final DocumentPreferencesService documentPreferencesService;
     private final UserClient userClient;
-    private final DocumentUserHistoryRepository documentUserHistoryRepository;
 
     public DocumentInformation uploadDocument(MultipartFile file,
                                               String summary,

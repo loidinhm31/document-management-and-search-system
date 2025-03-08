@@ -6,7 +6,6 @@ import com.dms.document.interaction.dto.MasterDataResponse;
 import com.dms.document.interaction.dto.ReportTypeResponse;
 import com.dms.document.interaction.enums.MasterDataType;
 import com.dms.document.interaction.service.CommentReportService;
-import com.dms.document.interaction.service.DocumentHistoryService;
 import com.dms.document.interaction.service.DocumentReportService;
 import com.dms.document.interaction.service.MasterDataService;
 import io.swagger.v3.oas.annotations.Operation;

@@ -7,7 +7,6 @@ import com.dms.document.interaction.model.DocumentFavorite;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.repository.DocumentCommentRepository;
 import com.dms.document.interaction.repository.DocumentFavoriteRepository;
-import com.dms.document.interaction.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -24,7 +23,6 @@ import java.util.stream.Collectors;
 public class DocumentNotificationService {
     private final DocumentFavoriteRepository documentFavoriteRepository;
     private final DocumentCommentRepository documentCommentRepository;
-    private final DocumentRepository documentRepository;
     private final PublishEventService publishEventService;
 
     public void handleCommentNotification(DocumentInformation document, String username, UUID userId, Long newCommentId) {

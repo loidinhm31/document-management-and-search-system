@@ -10,7 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface DocumentReportRepository extends JpaRepository<DocumentReport, Long> {
     boolean existsByDocumentIdAndUserIdAndProcessed(String documentId, UUID userId, boolean processed);

@@ -1,8 +1,8 @@
 package com.dms.document.interaction.model;
 
+import com.dms.document.interaction.enums.DocumentReportStatus;
 import com.dms.document.interaction.enums.DocumentStatus;
 import com.dms.document.interaction.enums.DocumentType;
-import com.dms.document.interaction.enums.DocumentReportStatus;
 import com.dms.document.interaction.enums.SharingType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
