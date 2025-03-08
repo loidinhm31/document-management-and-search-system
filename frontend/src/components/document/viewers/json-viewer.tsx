@@ -42,18 +42,18 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload, isD
             // Apply syntax highlighting
             const highlightedContent = content
               // Highlight keys
-              .replace(/"([^"]+)":/g, '<span class="text-blue-600">"$1"</span>:')
+              .replace(/"([^"]+)":/g, '<span class="text-blue-600 dark:text-blue-400">"$1"</span>:')
               // Highlight string values
-              .replace(/: "([^"]+)"/g, ': <span class="text-green-600">"$1"</span>')
+              .replace(/: "([^"]+)"/g, ': <span class="text-green-600 dark:text-green-400">"$1"</span>')
               // Highlight numbers
-              .replace(/: (\d+\.?\d*)/g, ': <span class="text-orange-600">$1</span>')
+              .replace(/: (\d+\.?\d*)/g, ': <span class="text-orange-600 dark:text-orange-400">$1</span>')
               // Highlight booleans and null
-              .replace(/: (true|false|null)/g, ': <span class="text-purple-600">$1</span>');
+              .replace(/: (true|false|null)/g, ': <span class="text-purple-600 dark:text-purple-400">$1</span>');
 
             return (
               <div
                 key={`json-line-${index}`}
-                className="hover:bg-slate-50 py-[2px]"
+                className="hover:bg-muted py-[2px]"
                 style={{
                   paddingLeft: `${indent * 8}px`,
                 }}
@@ -80,7 +80,7 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload, isD
         </Button>
       </div>
       <ScrollArea className="flex-1">
-        <div className="p-4 text-sm font-mono whitespace-pre bg-white">{highlightSyntax(content)}</div>
+        <div className="p-4 text-sm font-mono whitespace-pre bg-background text-foreground">{highlightSyntax(content)}</div>
       </ScrollArea>
     </div>
   );

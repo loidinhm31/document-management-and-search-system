@@ -198,25 +198,25 @@ export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload, isDow
         </Button>
       </div>
       <ScrollArea className="flex-1">
-        <pre className="p-4 text-sm font-mono whitespace-pre bg-white overflow-x-auto">
+        <pre className="p-4 text-sm font-mono whitespace-pre bg-background text-foreground overflow-x-auto">
           <code className="text-foreground">
             {highlightedParts.map((part, index) => {
               let className: string;
               switch (part.type) {
                 case "tag":
-                  className = "text-blue-600";
+                  className = "text-blue-600 dark:text-blue-400";
                   break;
                 case "attribute":
-                  className = "text-purple-600";
+                  className = "text-purple-600 dark:text-purple-400";
                   break;
                 case "attributeValue":
-                  className = "text-green-600";
+                  className = "text-green-600 dark:text-green-400";
                   break;
                 case "comment":
-                  className = "text-gray-500 italic";
+                  className = "text-gray-500 dark:text-gray-400 italic";
                   break;
                 case "cdata":
-                  className = "text-orange-600";
+                  className = "text-orange-600 dark:text-orange-400";
                   break;
                 default:
                   className = "text-foreground";

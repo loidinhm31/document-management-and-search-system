@@ -58,7 +58,7 @@ export const PowerPointViewer: React.FC<PowerPointViewerProps> = ({ content, onD
           {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
-      <div className="flex-1 overflow-auto bg-white p-4">
+      <div className="flex-1 overflow-auto bg-background text-foreground p-4">
         <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: content[currentSlide] || "" }} />
       </div>
     </div>

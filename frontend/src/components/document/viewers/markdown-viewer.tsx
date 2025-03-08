@@ -80,7 +80,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content, onDownl
           {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 bg-background">
         <div className="p-6">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
             {content}

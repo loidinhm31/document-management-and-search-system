@@ -60,7 +60,7 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
           {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-background">
         <Table>
           <TableHeader>
             <TableRow>

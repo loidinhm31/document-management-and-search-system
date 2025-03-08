@@ -22,7 +22,7 @@ export const TextViewer: React.FC<TextViewerProps> = ({ content, onDownload, isD
           {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
-      <div className="flex-1 overflow-auto bg-white p-4">
+      <div className="flex-1 overflow-auto bg-background text-foreground p-4">
         <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
       </div>
     </div>

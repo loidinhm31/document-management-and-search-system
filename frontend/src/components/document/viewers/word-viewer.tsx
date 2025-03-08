@@ -22,7 +22,7 @@ export const WordViewer: React.FC<WordViewerProps> = ({ content, onDownload, isD
           {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
         </Button>
       </div>
-      <div className="flex-1 overflow-auto bg-white p-4" dangerouslySetInnerHTML={{ __html: content }} />
+      <div className="flex-1 overflow-auto bg-background p-4" dangerouslySetInnerHTML={{ __html: content }} />
     </div>
   );
 };
