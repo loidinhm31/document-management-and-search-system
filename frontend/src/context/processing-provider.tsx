@@ -57,17 +57,6 @@ export function ProcessingProvider({ children }: { children: React.ReactNode }) 
   const handleUpdateProcessingItem = useCallback(
     async (documentId: string, status: DocumentStatus, error?: string) => {
       dispatch(updateProcessingItem({ documentId, status, error }));
-
-      // If status is COMPLETED, fetch and update the document details
-      if (status === DocumentStatus.COMPLETED) {
-        try {
-          const response = await documentService.getDocumentDetails(documentId);
-          // You can dispatch additional action here to update document details in store if needed
-          console.log("Document updated:", response.data);
-        } catch (error) {
-          console.info("Error updating document details:", error);
-        }
-      }
     },
     [dispatch],
   );

@@ -19,6 +19,7 @@ export function ProcessingStatus() {
 
       for (const item of pendingItems) {
         try {
+          console.info("Polling", item);
           const response = await documentService.getDocumentDetails(item.documentId);
           updateProcessingItem(item.documentId, response.data.status, response.data.processingError);
         } catch (error) {

@@ -271,6 +271,7 @@
       "serverError": "Internal server error occurred",
       "networkError": "Network error. Please check your connection",
       "badRequest": "Bad request. Please check your input",
+      "typeNotSupport": "Unsupported Media Type, please check extension and mimetype",
       "unknown": "An unknown error occurred"
     }
   },

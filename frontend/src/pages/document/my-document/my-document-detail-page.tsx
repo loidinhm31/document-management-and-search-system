@@ -37,6 +37,7 @@ export default function MyDocumentDetailPage() {
   const { toast } = useToast();
 
   const fetchDocument = async () => {
+    console.log("Fetching document");
     if (!documentId) return;
 
     try {
@@ -68,6 +69,7 @@ export default function MyDocumentDetailPage() {
     if (!documentId) return;
     setUpdating(true);
 
+    let updateResponse;
     try {
       if (file) {
         // Send both metadata and file in single request
@@ -80,12 +82,12 @@ export default function MyDocumentDetailPage() {
 
         // Handle majors (multiple values)
         if (data.majors && data.majors.length > 0) {
-          data.majors.forEach(major => formData.append("majors", major));
+          data.majors.forEach((major) => formData.append("majors", major));
         }
 
         // Handle course codes (multiple values)
         if (data.courseCodes && data.courseCodes.length > 0) {
-          data.courseCodes.forEach(courseCode => formData.append("courseCodes", courseCode));
+          data.courseCodes.forEach((courseCode) => formData.append("courseCodes", courseCode));
         }
 
         // Single value fields
@@ -93,19 +95,19 @@ export default function MyDocumentDetailPage() {
 
         // Handle categories (multiple values)
         if (data.categories && data.categories.length > 0) {
-          data.categories.forEach(category => formData.append("categories", category));
+          data.categories.forEach((category) => formData.append("categories", category));
         }
 
         // Tags (multiple values)
         if (data.tags && data.tags.length > 0) {
-          data.tags.forEach(tag => formData.append("tags", tag));
+          data.tags.forEach((tag) => formData.append("tags", tag));
         }
 
-        await handleFileUpdate(documentId, formData);
+        updateResponse = await handleFileUpdate(documentId, formData);
         setFileChange(true);
       } else {
         // Metadata-only update
-        await documentService.updateDocument(documentId, {
+        updateResponse = await documentService.updateDocument(documentId, {
           summary: data.summary,
           majors: data.majors,
           courseCodes: data.courseCodes,
@@ -116,21 +118,15 @@ export default function MyDocumentDetailPage() {
         setFileChange(false);
       }
 
-      // Refresh document data
-      const response = await documentService.getDocumentDetails(documentId);
-      setDocumentData(response.data);
-
-      toast({
-        title: t("common.success"),
-        description: t("document.detail.updateSuccess"),
-        variant: "success",
-      });
-    } catch (_error) {
-      toast({
-        title: t("common.error"),
-        description: t("document.detail.updateError"),
-        variant: "destructive",
-      });
+      if (updateResponse) {
+        toast({
+          title: t("common.success"),
+          description: t("document.detail.updateSuccess"),
+          variant: "success",
+        });
+      }
+    } catch (error) {
+      console.error(error);
     } finally {
       setUpdating(false);
     }
@@ -143,12 +139,8 @@ export default function MyDocumentDetailPage() {
 
       // Add to processing queue
       addProcessingItem(document.id, document.originalFilename);
-    } catch (_error) {
-      toast({
-        title: t("common.error"),
-        description: t("document.detail.updateError"),
-        variant: "destructive",
-      });
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -249,7 +241,8 @@ export default function MyDocumentDetailPage() {
                   initialValues={{
                     summary: documentData?.summary || "",
                     majors: documentData?.majors || (documentData?.major ? [documentData.major] : []),
-                    courseCodes: documentData?.courseCodes || (documentData?.courseCode ? [documentData.courseCode] : []),
+                    courseCodes:
+                      documentData?.courseCodes || (documentData?.courseCode ? [documentData.courseCode] : []),
                     level: documentData?.courseLevel || "",
                     categories: documentData?.categories || (documentData?.category ? [documentData.category] : []),
                     tags: documentData?.tags || [],

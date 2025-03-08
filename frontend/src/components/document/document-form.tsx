@@ -16,7 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
-import { ACCEPT_TYPE_MAP, MAX_FILE_SIZE } from "@/types/document";
+import { selectProcessingItems } from "@/store/slices/processing-slice";
+import { ACCEPT_TYPE_MAP, DocumentStatus, MAX_FILE_SIZE } from "@/types/document";
 
 const documentSchema = z.object({
   summary: z
@@ -50,6 +51,8 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
+  const [hasFormChanges, setHasFormChanges] = useState(false);
+  const [polling, setPolling] = useState(false);
 
   const dispatch = useAppDispatch();
   const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
@@ -67,7 +70,48 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
     mode: "onBlur",
   });
 
+  const formValues = form.watch();
   const selectedMajors = form.watch("majors");
+
+  const processingItems = useAppSelector(selectProcessingItems);
+  const latestProcessingItem = useMemo(
+    () => (processingItems.length > 0 ? processingItems[processingItems.length - 1] : null),
+    [processingItems],
+  );
+
+  useEffect(() => {
+    if (latestProcessingItem) {
+      setPolling(latestProcessingItem?.status !== DocumentStatus.COMPLETED);
+    }
+  }, [latestProcessingItem?.status, initialValues]);
+
+  // Check if form values are different from initial values
+  useEffect(() => {
+    if (!initialValues) {
+      // If no initial values, then any change makes the form valid for submission
+      setHasFormChanges(true);
+      return;
+    }
+
+    // Compare current form values with initial values
+    const hasChanges =
+      formValues.summary !== initialValues.summary ||
+      !areArraysEqual(formValues.majors, initialValues.majors) ||
+      !areArraysEqual(formValues.courseCodes || [], initialValues.courseCodes || []) ||
+      formValues.level !== initialValues.level ||
+      !areArraysEqual(formValues.categories, initialValues.categories) ||
+      !areArraysEqual(formValues.tags || [], initialValues.tags || []);
+
+    setHasFormChanges(hasChanges || !!selectedFile);
+  }, [formValues, initialValues, selectedFile]);
+
+  // Helper function to compare arrays
+  const areArraysEqual = (arr1: string[], arr2: string[]): boolean => {
+    if (arr1.length !== arr2.length) return false;
+    const sortedArr1 = [...arr1].sort();
+    const sortedArr2 = [...arr2].sort();
+    return sortedArr1.every((value, index) => value === sortedArr2[index]);
+  };
 
   // Get all available course codes for the selected majors
   const filteredCourseCodes = useMemo(() => {
@@ -147,6 +191,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
     await onSubmit(data, selectedFile || undefined);
     form.reset();
     setSelectedFile(null);
+    setHasFormChanges(false);
   };
 
   // Helper function to get display values for tags
@@ -346,7 +391,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
 
             <Button
               type="submit"
-              disabled={masterDataLoading || loading || (!initialValues && !selectedFile)}
+              disabled={masterDataLoading || loading || !hasFormChanges || (hasFormChanges && polling) || disabled}
               className="w-full"
             >
               {(masterDataLoading || loading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
