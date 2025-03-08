@@ -45,7 +45,6 @@ export default function ShareDocumentDialog({
   const [isPublic, setIsPublic] = useState(isShared);
   const [loading, setLoading] = useState(false);
 
-  // Add state to track initial values
   const [initialIsPublic, setInitialIsPublic] = useState(isShared);
   const [initialSelectedUsers, setInitialSelectedUsers] = useState<string[]>([]);
 
