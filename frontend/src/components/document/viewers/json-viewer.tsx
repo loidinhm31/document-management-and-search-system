@@ -80,7 +80,9 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload, isD
         </Button>
       </div>
       <ScrollArea className="flex-1">
-        <div className="p-4 text-sm font-mono whitespace-pre bg-background text-foreground">{highlightSyntax(content)}</div>
+        <div className="p-4 text-sm font-mono whitespace-pre bg-background text-foreground">
+          {highlightSyntax(content)}
+        </div>
       </ScrollArea>
     </div>
   );

@@ -1,5 +1,5 @@
 import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -15,9 +15,10 @@ import { useProcessing } from "@/context/processing-provider";
 import { RoutePaths } from "@/core/route-config";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { useAppDispatch } from "@/store/hook";
+import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
-import { DocumentInformation } from "@/types/document";
+import { selectProcessingItems } from "@/store/slices/processing-slice";
+import { DocumentInformation, DocumentStatus } from "@/types/document";
 
 export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
@@ -33,8 +34,23 @@ export default function MyDocumentDetailPage() {
   const [documentData, setDocumentData] = useState<DocumentInformation | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [fileChange, setFileChange] = useState<boolean>(false);
   const { toast } = useToast();
+  const [polling, setPolling] = useState(false);
+
+  const processingItems = useAppSelector(selectProcessingItems);
+  const latestProcessingItem = useMemo(
+    () => (processingItems.length > 0 ? processingItems[processingItems.length - 1] : null),
+    [processingItems],
+  );
+
+  useEffect(() => {
+    if (latestProcessingItem) {
+      setPolling(latestProcessingItem?.status !== DocumentStatus.COMPLETED);
+      if (latestProcessingItem?.status === DocumentStatus.COMPLETED) {
+        fetchDocument();
+      }
+    }
+  }, [latestProcessingItem?.status, documentId]);
 
   const fetchDocument = async () => {
     if (!documentId) return;
@@ -103,7 +119,6 @@ export default function MyDocumentDetailPage() {
         }
 
         updateResponse = await handleFileUpdate(documentId, formData);
-        setFileChange(true);
       } else {
         // Metadata-only update
         updateResponse = await documentService.updateDocument(documentId, {
@@ -114,7 +129,6 @@ export default function MyDocumentDetailPage() {
           categories: data.categories,
           tags: data.tags,
         });
-        setFileChange(false);
       }
 
       if (updateResponse) {
@@ -250,6 +264,7 @@ export default function MyDocumentDetailPage() {
                   loading={updating}
                   submitLabel={t("document.detail.buttons.update")}
                   disabled={documentData?.userId !== currentUser?.userId}
+                  polling={polling}
                 />
               )}
             </CardContent>
@@ -270,7 +285,6 @@ export default function MyDocumentDetailPage() {
                   documentType={documentData.documentType}
                   mimeType={documentData.mimeType}
                   fileName={documentData.filename}
-                  fileChange={fileChange}
                 />
               )}
             </CardContent>

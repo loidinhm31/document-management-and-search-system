@@ -16,8 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
-import { selectProcessingItems } from "@/store/slices/processing-slice";
-import { ACCEPT_TYPE_MAP, DocumentStatus, MAX_FILE_SIZE } from "@/types/document";
+import { ACCEPT_TYPE_MAP, MAX_FILE_SIZE } from "@/types/document";
 
 const documentSchema = z.object({
   summary: z
@@ -45,14 +44,14 @@ interface DocumentFormProps {
   loading?: boolean;
   submitLabel?: string;
   disabled?: boolean;
+  polling?: boolean;
 }
 
-export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, disabled }: DocumentFormProps) {
+export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, disabled, polling }: DocumentFormProps) {
   const { t } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
   const [hasFormChanges, setHasFormChanges] = useState(false);
-  const [polling, setPolling] = useState(false);
 
   const dispatch = useAppDispatch();
   const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
@@ -72,18 +71,6 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
 
   const formValues = form.watch();
   const selectedMajors = form.watch("majors");
-
-  const processingItems = useAppSelector(selectProcessingItems);
-  const latestProcessingItem = useMemo(
-    () => (processingItems.length > 0 ? processingItems[processingItems.length - 1] : null),
-    [processingItems],
-  );
-
-  useEffect(() => {
-    if (latestProcessingItem) {
-      setPolling(latestProcessingItem?.status !== DocumentStatus.COMPLETED);
-    }
-  }, [latestProcessingItem?.status, initialValues]);
 
   // Check if form values are different from initial values
   useEffect(() => {
