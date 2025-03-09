@@ -37,7 +37,6 @@ export default function MyDocumentDetailPage() {
   const { toast } = useToast();
 
   const fetchDocument = async () => {
-    console.log("Fetching document");
     if (!documentId) return;
 
     try {
@@ -264,7 +263,7 @@ export default function MyDocumentDetailPage() {
                 {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(3)} KB
               </CardDescription>
             </CardHeader>
-            <CardContent className="h-full max-h-[1000px]">
+            <CardContent className="h-full max-h-[900px]">
               {documentData && (
                 <DocumentViewer
                   documentId={documentData.id}

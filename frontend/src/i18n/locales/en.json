@@ -673,7 +673,8 @@
         "next": "Next",
         "pageInfo": "Page {{current}} of {{total}}",
         "slideInfo": "Slide {{current}} of {{total}}"
-      }
+      },
+      "sheetInfo": "Sheets"
     },
     "search": {
       "placeholder": "Type file name or content to search...",
