@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
-const TIMER_DURATION = 1; // 5 minutes in seconds
+const TIMER_DURATION = 5 * 60; // 5 minutes in seconds
 const MAX_ATTEMPTS = 5;
 const LOCK_DURATION = 1800; // 30 minutes in seconds
 
