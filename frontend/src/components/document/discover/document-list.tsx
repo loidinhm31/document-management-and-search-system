@@ -81,10 +81,10 @@ export const DocumentList = () => {
 
   const columns: SortableColumn[] = [
     { field: "filename", label: t("document.discover.headers.name"), sortable: !!isSearchMode },
-    { field: "major", label: t("document.discover.headers.majors"), sortable: !!isSearchMode },
-    { field: "courseCode", label: t("document.discover.headers.courses"), sortable: !!isSearchMode },
+    { field: "majors", label: t("document.discover.headers.majors"), sortable: false },
+    { field: "courseCodes", label: t("document.discover.headers.courses"), sortable: false },
     { field: "courseLevel", label: t("document.discover.headers.level"), sortable: !!isSearchMode },
-    { field: "category", label: t("document.discover.headers.categories"), sortable: !!isSearchMode },
+    { field: "categories", label: t("document.discover.headers.categories"), sortable: false },
     { field: "tags", label: t("document.discover.headers.tags"), sortable: false },
     // Only show matches column in search mode
     ...(isSearchMode ? [{ field: "highlights", label: t("document.discover.headers.matches"), sortable: false }] : []),
