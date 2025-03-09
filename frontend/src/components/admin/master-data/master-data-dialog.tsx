@@ -3,7 +3,6 @@ import { Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,21 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { createMasterDataFormSchema, MasterDataFormValues } from "@/schemas/master-data-schema";
 import { masterDataService } from "@/services/master-data.service";
 import { MASTER_DATA_HIERARCHY, MasterData, MasterDataType } from "@/types/master-data";
-
-const formSchema = z.object({
-  code: z.string().min(1, "Code is required"),
-  translations: z.object({
-    en: z.string().min(1, "English name is required"),
-    vi: z.string().min(1, "Vietnamese name is required"),
-  }),
-  description: z.string().optional(),
-  isActive: z.boolean(),
-  parentId: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
 
 interface MasterDataDialogProps {
   open: boolean;
@@ -45,7 +32,7 @@ export default function MasterDataDialog({
   onSuccess,
   onClose,
 }: MasterDataDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const isEditing = !!data;
 
@@ -53,8 +40,9 @@ export default function MasterDataDialog({
   const [parentOptions, setParentOptions] = useState<MasterData[]>([]);
   const [loadingParents, setLoadingParents] = useState(false);
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<MasterDataFormValues>({
+    resolver: zodResolver(createMasterDataFormSchema(t)),
+    mode: "onBlur",
     defaultValues: {
       code: "",
       translations: {
@@ -66,6 +54,16 @@ export default function MasterDataDialog({
       parentId: "",
     },
   });
+
+  useEffect(() => {
+    // Get fields that have been touched by the user
+    const touchedFields = Object.keys(form.formState.touchedFields);
+
+    // Only trigger validation for fields the user has interacted with
+    if (touchedFields.length > 0) {
+      form.trigger(touchedFields as any);
+    }
+  }, [i18n.language]);
 
   // Check if this type needs a parent type
   useEffect(() => {
@@ -128,7 +126,7 @@ export default function MasterDataDialog({
     }
   }, [open, data, form]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: MasterDataFormValues) => {
     try {
       const masterDataItem: MasterData = {
         id: data?.id,
@@ -166,7 +164,6 @@ export default function MasterDataDialog({
           variant: "success",
         });
       }
-
 
       // Reset form and close dialog before calling onSuccess
       form.reset();

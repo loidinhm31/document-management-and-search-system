@@ -1,25 +1,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { createTwoFactorSchema, TwoFactorFormValues } from "@/schemas/two-factor-schema";
 import { authService } from "@/services/auth.service";
-
-const MAX_RETRY_ATTEMPTS = 5;
-
-const twoFactorSchema = z.object({
-  code: z.string().min(6, "Code must be 6 digits").max(6),
-});
-
-type TwoFactorFormValues = z.infer<typeof twoFactorSchema>;
 
 interface TwoFactorFormProps {
   username: string;
@@ -27,7 +19,9 @@ interface TwoFactorFormProps {
 }
 
 export const TwoFactorForm = ({ username, onSuccess }: TwoFactorFormProps) => {
-  const { t } = useTranslation();
+  const MAX_RETRY_ATTEMPTS = 5;
+
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -35,11 +29,22 @@ export const TwoFactorForm = ({ username, onSuccess }: TwoFactorFormProps) => {
   const [remainingAttempts, setRemainingAttempts] = useState(MAX_RETRY_ATTEMPTS);
 
   const form = useForm<TwoFactorFormValues>({
-    resolver: zodResolver(twoFactorSchema),
+    resolver: zodResolver(createTwoFactorSchema(t)),
+    mode: "onBlur",
     defaultValues: {
       code: "",
     },
   });
+
+  useEffect(() => {
+    // Get fields that have been touched by the user
+    const touchedFields = Object.keys(form.formState.touchedFields);
+
+    // Only trigger validation for fields the user has interacted with
+    if (touchedFields.length > 0) {
+      form.trigger(touchedFields as any);
+    }
+  }, [i18n.language]);
 
   const onSubmit = async (data: TwoFactorFormValues) => {
     setIsLoading(true);

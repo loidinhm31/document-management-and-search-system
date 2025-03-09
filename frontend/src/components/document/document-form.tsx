@@ -1,11 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import i18n from "i18next";
 import { Loader2, Upload } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import * as z from "zod";
 
 import TagInput from "@/components/common/tag-input";
 import TagInputDebounce from "@/components/common/tag-input-debounce";
@@ -14,29 +12,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { createDocumentSchema, DocumentFormValues } from "@/schemas/document-schema";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { ACCEPT_TYPE_MAP, MAX_FILE_SIZE } from "@/types/document";
-
-const documentSchema = z.object({
-  summary: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || (val.length >= 50 && val.length <= 500),
-      (val) => ({
-        message:
-          val && val.length < 50 ? "Summary must be at least 50 characters" : "Summary must not exceed 500 characters",
-      }),
-    ),
-  majors: z.array(z.string()).min(1, "At least one major is required"),
-  courseCodes: z.array(z.string()).optional(),
-  level: z.string().min(1, "Course level is required"),
-  categories: z.array(z.string()).min(1, "At least one document category is required"),
-  tags: z.array(z.string()).optional(),
-});
-
-export type DocumentFormValues = z.infer<typeof documentSchema>;
 
 interface DocumentFormProps {
   initialValues?: DocumentFormValues;
@@ -48,7 +27,7 @@ interface DocumentFormProps {
 }
 
 export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, disabled, polling }: DocumentFormProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
   const [hasFormChanges, setHasFormChanges] = useState(false);
@@ -57,13 +36,13 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
   const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
   const form = useForm<DocumentFormValues>({
-    resolver: zodResolver(documentSchema),
+    resolver: zodResolver(createDocumentSchema(t)),
     defaultValues: initialValues || {
       summary: "",
       majors: [],
       courseCodes: [],
       level: "",
-      category: [],
+      categories: [],
       tags: [],
     },
     mode: "onBlur",
@@ -71,6 +50,16 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
 
   const formValues = form.watch();
   const selectedMajors = form.watch("majors");
+
+  useEffect(() => {
+    // Get fields that have been touched by the user
+    const touchedFields = Object.keys(form.formState.touchedFields);
+
+    // Only trigger validation for fields the user has interacted with
+    if (touchedFields.length > 0) {
+      form.trigger(touchedFields as any);
+    }
+  }, [i18n.language]);
 
   // Check if form values are different from initial values
   useEffect(() => {

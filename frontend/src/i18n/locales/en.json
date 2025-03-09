@@ -56,7 +56,10 @@
         "error": "Invalid 2FA code. Please try again",
         "maxAttemptsReached": "Maximum verification attempts reached. Please try logging in again.",
         "remainingAttempts": "Invalid code. {{count}} attempts remaining",
-        "attemptsRemaining": "Remaining attempts: {{count}}"
+        "attemptsRemaining": "Remaining attempts: {{count}}",
+        "validation": {
+          "codeLength": "Code must be 6 digits"
+        }
       },
       "form": {
         "username": {
@@ -73,6 +76,11 @@
           "placeholder": "Enter 6-digit code"
         },
         "or": "Or continue with email"
+      },
+      "validation": {
+        "usernameRequired": "Username is required",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character"
       },
       "buttons": {
         "signIn": "Sign In",
@@ -116,7 +124,11 @@
       },
       "validation": {
         "usernameExists": "Username is already taken",
-        "emailExists": "Email is already in use"
+        "emailExists": "Email is already in use",
+        "usernameMinLength": "Username must be at least 3 characters",
+        "invalidEmail": "Invalid email address",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character"
       },
       "error": "Registration failed. Please try again.",
       "otpSent": "Registration successful. Please check your email for verification code"
@@ -221,7 +233,13 @@
         "invalidPassword": "Password must be at least 6 characters and contain uppercase, lowercase, number, and special character"
       },
       "updateSuccess": "Password updated successfully",
-      "updateError": "Failed to update password"
+      "updateError": "Failed to update password",
+      "validation": {
+        "currentRequired": "Current password is required",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character",
+        "passwordMismatch": "Passwords don't match"
+      }
     },
     "twoFactor": {
       "title": "Two-Factor Authentication",
@@ -396,6 +414,11 @@
           "parent": "Select parent type"
         },
         "noParent": "None parent type"
+      },
+      "validation": {
+        "codeRequired": "Code is required",
+        "englishNameRequired": "English name is required",
+        "vietnameseNameRequired": "Vietnamese name is required"
       },
       "delete": {
         "title": "Delete Master Data",
@@ -625,6 +648,12 @@
           "placeholder": "Enter document summary...",
           "count": "characters"
         }
+      },
+      "validation": {
+        "usernameMinLength": "Username must be at least 3 characters",
+        "invalidEmail": "Invalid email address",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character"
       },
       "buttons": {
         "upload": "Upload Document"
@@ -980,7 +1009,8 @@
           "type": {
             "label": "Violation Type",
             "placeholder": "Select violation type",
-            "description": "Select the type of violation you want to report"
+            "description": "Select the type of violation you want to report",
+            "required": "Please select a report type"
           },
           "description": {
             "label": "Additional Details",
@@ -1011,7 +1041,8 @@
         "type": {
           "label": "Violation Type",
           "placeholder": "Select violation type",
-          "description": "Select the type of violation you want to report"
+          "description": "Select the type of violation you want to report",
+          "required": "Please select a report type"
         },
         "description": {
           "label": "Additional Details",

@@ -1,46 +1,45 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
-import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { OAUTH_GOOGLE_REDIRECT_URL } from "@/env";
 import { useToast } from "@/hooks/use-toast";
+import { createLoginSchema, LoginFormValues } from "@/schemas/login-schema";
 import { authService } from "@/services/auth.service";
 import { LoginRequest, TokenResponse } from "@/types/auth";
-
-const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters")
-    .regex(
-      /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
-      "Password must contain at least one digit, lowercase, uppercase, and special character",
-    ),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
 
 interface LoginFormProps {
   onSuccess: (responseData: TokenResponse) => void;
 }
 
 export const LoginForm = ({ onSuccess }: LoginFormProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  useEffect(() => {
+    // Get fields that have been touched by the user
+    const touchedFields = Object.keys(form.formState.touchedFields);
+
+    // Only trigger validation for fields the user has interacted with
+    if (touchedFields.length > 0) {
+      form.trigger(touchedFields as any);
+    }
+  }, [i18n.language]);
+
+  // Create the form with translated schema
+  const form = useForm({
+    resolver: zodResolver(createLoginSchema(t)),
+    mode: "onBlur",
     defaultValues: {
       username: "",
       password: "",
