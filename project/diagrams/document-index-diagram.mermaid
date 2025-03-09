@@ -1,0 +1,31 @@
+classDiagram
+    class DocumentIndex {
+        +String id
+        +String filename
+        +String content
+        +Long fileSize
+        +String mimeType
+        +DocumentType documentType
+        +String summary
+        +Set~String~ majors
+        +Set~String~ courseCodes
+        +String courseLevel
+        +Set~String~ categories
+        +Set~String~ tags
+        +String userId
+        +SharingType sharingType
+        +Set~String~ sharedWith
+        +boolean deleted
+        +DocumentStatus status
+        +String language
+        +Instant createdAt
+        +DocumentReportStatus reportStatus
+        +Integer recommendationCount
+    }
+
+    class DocumentIndexMapper {
+        +DocumentIndex toDocumentIndex(DocumentInformation)
+    }
+
+    DocumentIndexMapper --> DocumentIndex : creates
+    DocumentIndexMapper --> DocumentInformation : uses
