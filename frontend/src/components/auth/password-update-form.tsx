@@ -11,12 +11,14 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { createPasswordSchema, PasswordFormValues } from "@/schemas/password-update-schema";
 import { userService } from "@/services/user.service";
+import { useNavigate } from "react-router-dom";
 
 export default function PasswordUpdateForm() {
   const { t, i18n } = useTranslation();
-  const { currentUser } = useAuth();
+  const { currentUser, clearAuthData } = useAuth();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(createPasswordSchema(t)),
@@ -38,7 +40,6 @@ export default function PasswordUpdateForm() {
     }
   }, [i18n.language]);
 
-
   const onSubmit = async (data: PasswordFormValues) => {
     if (!currentUser?.userId) return;
 
@@ -56,6 +57,10 @@ export default function PasswordUpdateForm() {
       });
 
       form.reset();
+      setTimeout(() => {
+        clearAuthData();
+        navigate("/login");
+      }, 2000)
     } catch (error: any) {
       console.log("error", error?.response);
 

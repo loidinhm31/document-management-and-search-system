@@ -1,7 +1,6 @@
 import { TFunction } from "i18next";
 import * as z from "zod";
 
-// Type definition schema (without translations)
 export const documentSchema = z.object({
   summary: z
     .string()

@@ -1,7 +1,6 @@
 import { TFunction } from "i18next";
 import * as z from "zod";
 
-// Type definition schema (without translations)
 export const twoFactorSchema = z.object({
   code: z.string().min(6).max(6),
 });

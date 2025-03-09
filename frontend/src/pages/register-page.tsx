@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createSignupSchema, SignupFormValues } from "@/schemas/register-schema";
 import { authService } from "@/services/auth.service";
 import { SignupRequest } from "@/types/auth";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 
 export default function RegisterPage() {
   const { t, i18n } = useTranslation();
@@ -98,8 +99,9 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
+      <div className="absolute right-4 top-4 flex items-center gap-2">
         <LanguageSwitcher />
+        <ThemeToggle />
       </div>
 
       <Card className="w-full max-w-md">

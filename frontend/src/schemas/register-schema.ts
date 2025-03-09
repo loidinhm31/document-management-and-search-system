@@ -1,7 +1,6 @@
 import { TFunction } from "i18next";
 import * as z from "zod";
 
-// Type definition schema (without translations)
 export const signupSchema = z.object({
   username: z.string().min(3),
   email: z.string().email(),

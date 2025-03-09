@@ -71,20 +71,21 @@ export default function LoginPage() {
             </CardHeader>
 
             <CardContent>
-              <LoginForm onSuccess={handleLoginSuccess} />
+              <div className="grid gap-6">
+                <LoginForm onSuccess={handleLoginSuccess} />
+                <p className="text-center text-xs text-muted-foreground">
+                  {t("legal.consent")}{" "}
+                  <Button variant="link" className="h-auto p-0 text-xs font-normal">
+                    {t("legal.tos")}
+                  </Button>{" "}
+                  {t("common.and")}{" "}
+                  <Button variant="link" className="h-auto p-0 text-xs font-normal">
+                    {t("legal.privacy")}
+                  </Button>
+                </p>
+              </div>
             </CardContent>
           </Card>
-
-          <p className="text-center text-xs text-muted-foreground">
-            {t("legal.consent")}{" "}
-            <Button variant="link" className="h-auto p-0 text-xs font-normal">
-              {t("legal.tos")}
-            </Button>{" "}
-            {t("common.and")}{" "}
-            <Button variant="link" className="h-auto p-0 text-xs font-normal">
-              {t("legal.privacy")}
-            </Button>
-          </p>
         </div>
       ) : (
         <TwoFactorForm username={username} onSuccess={handle2FASuccess} />

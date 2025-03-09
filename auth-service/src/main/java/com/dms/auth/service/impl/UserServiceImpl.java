@@ -37,7 +37,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
@@ -286,7 +288,7 @@ public class UserServiceImpl extends BaseService implements UserService {
         // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setUpdatedBy(SecurityUtils.getUserIdentifier());
-        user.setCredentialsExpiryDate(Instant.now().plus(6, ChronoUnit.MONTHS)); // Reset credentials expiry
+        user.setCredentialsExpiryDate(OffsetDateTime.now(ZoneOffset.UTC).plusMonths(6).toInstant()); // Reset credentials expiry
 
         // Optionally invalidate any existing password reset tokens
         passwordResetTokenRepository.findAll().stream()

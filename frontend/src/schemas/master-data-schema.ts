@@ -1,7 +1,6 @@
 import { TFunction } from "i18next";
 import * as z from "zod";
 
-// Type definition schema (without translations)
 export const masterDataFormSchema = z.object({
   code: z.string().min(1),
   translations: z.object({

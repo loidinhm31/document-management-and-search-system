@@ -154,6 +154,11 @@ export default function UserProfile() {
     }
   };
 
+  const handleOtpChange = (e) => {
+    const value = e.target.value.replace(/[^\d]/g, "").slice(0, 6);
+    setVerificationCode(value);
+  };
+
   if (loading.page) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -301,7 +306,7 @@ export default function UserProfile() {
                     placeholder={t("profile.twoFactor.verificationCodePlaceholder")}
                     value={verificationCode}
                     maxLength={6}
-                    onChange={(e) => setVerificationCode(e.target.value)}
+                    onChange={handleOtpChange}
                   />
                   <Button onClick={verify2FA} disabled={loading.twoFactor}>
                     {loading.twoFactor && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
