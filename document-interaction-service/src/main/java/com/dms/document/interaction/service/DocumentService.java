@@ -336,7 +336,7 @@ public class DocumentService {
                     .build());
         });
 
-        return updatedDocument;
+        return updatedDocument.withContent(null);
     }
 
     public DocumentInformation updateDocumentWithFile(

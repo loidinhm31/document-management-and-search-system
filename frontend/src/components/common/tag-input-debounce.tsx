@@ -18,7 +18,7 @@ interface TagInputProps {
 const TagInputDebounce = ({
   value,
   onChange,
-  placeholder = "Enter tags...",
+  placeholder = "Enter or select tags...",
   disabled = false,
   error = false,
   className = "",

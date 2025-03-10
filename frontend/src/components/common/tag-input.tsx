@@ -20,7 +20,7 @@ const TagInput = ({
   onChange,
   recommendedTags = [],
   onSearch,
-  placeholder = "Enter tags...",
+  placeholder = "Enter or select tags...",
   disabled = false,
   className = "",
   getTagDisplay = (tag) => tag,

@@ -732,7 +732,7 @@
         },
         "courseCodes": {
           "label": "Course Codes",
-          "placeholder": "Enter course codes"
+          "placeholder": "Select course codes"
         },
         "majors": {
           "label": "Majosr",
@@ -748,7 +748,7 @@
         },
         "tags": {
           "label": "Tags",
-          "placeholder": "Enter tags"
+          "placeholder": "Enter or select tags"
         }
       },
       "fields": {

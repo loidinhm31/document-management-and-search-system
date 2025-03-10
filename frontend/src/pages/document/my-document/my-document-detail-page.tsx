@@ -36,6 +36,7 @@ export default function MyDocumentDetailPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const { toast } = useToast();
   const [polling, setPolling] = useState(false);
+  const [fileChange, setFileChange] = useState<boolean>(false);
 
   const processingItems = useAppSelector(selectProcessingItems);
   const latestProcessingItem = useMemo(
@@ -48,6 +49,7 @@ export default function MyDocumentDetailPage() {
       setPolling(latestProcessingItem?.status !== DocumentStatus.COMPLETED);
       if (latestProcessingItem?.status === DocumentStatus.COMPLETED) {
         fetchDocument();
+        setFileChange(true);
       }
     }
   }, [latestProcessingItem?.status, documentId]);
@@ -131,7 +133,12 @@ export default function MyDocumentDetailPage() {
         });
       }
 
-      if (updateResponse) {
+      if (updateResponse && updateResponse.data) {
+        // Update the document data with the new response
+        const updatedDocument = updateResponse.data;
+        setDocumentData(updatedDocument);
+        dispatch(setCurrentDocument(updatedDocument));
+
         toast({
           title: t("common.success"),
           description: t("document.detail.updateSuccess"),
@@ -285,6 +292,8 @@ export default function MyDocumentDetailPage() {
                   documentType={documentData.documentType}
                   mimeType={documentData.mimeType}
                   fileName={documentData.filename}
+                  fileChange={fileChange}
+                  setFileChange={setFileChange}
                 />
               )}
             </CardContent>

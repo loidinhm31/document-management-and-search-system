@@ -28,6 +28,8 @@ interface DocumentViewerProps {
   versionNumber?: number;
   history?: boolean;
   onDownloadSuccess?: () => void;
+  fileChange?: boolean;
+  setFileChange?: (fileChange: boolean) => void;
 }
 
 export interface ExcelSheet {
@@ -43,6 +45,8 @@ export const DocumentViewer = ({
   versionNumber,
   history = false,
   onDownloadSuccess,
+  fileChange,
+  setFileChange,
 }: DocumentViewerProps) => {
   const { t } = useTranslation();
 
@@ -69,7 +73,13 @@ export const DocumentViewer = ({
         URL.revokeObjectURL(fileUrl);
       }
     };
-  }, [documentId, mimeType, documentType]);
+  }, [documentId, mimeType]);
+
+  useEffect(() => {
+    if (fileChange) {
+      loadDocumentFileContent().then(() => setFileChange(false));
+    }
+  }, [fileChange, documentType]);
 
   const loadDocumentFileContent = async () => {
     setLoading(true);
