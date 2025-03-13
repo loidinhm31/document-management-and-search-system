@@ -1,15 +1,14 @@
-import { Activity, Calendar, FileText, Filter, Search, X } from "lucide-react";
+import { Activity, FileText, Filter, Search } from "lucide-react";
 import moment from "moment-timezone";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
+import DatePicker from "@/components/common/date-picker";
 import TableSkeleton from "@/components/common/table-skeleton";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -69,7 +68,7 @@ export default function DocumentUserHistoryPage() {
   }, [loadHistories]);
 
   // Validate date range
-  const validateDateRange = () => {
+  const validateDateRange = useCallback(() => {
     if (selectedFromDate && selectedToDate) {
       // Create date objects for midnight on the selected dates for proper comparison
       const fromDate = new Date(
@@ -90,12 +89,12 @@ export default function DocumentUserHistoryPage() {
       // If both dates aren't selected, no error
       setDateRangeError(null);
     }
-  };
+  }, [selectedFromDate, selectedToDate, t]);
 
   // Check validation whenever dates change
   useEffect(() => {
     validateDateRange();
-  }, [selectedFromDate, selectedToDate]);
+  }, [selectedFromDate, selectedToDate, validateDateRange]);
 
   const handleSearch = () => {
     // Reset to first page when applying new filters
@@ -283,65 +282,19 @@ export default function DocumentUserHistoryPage() {
 
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="flex-1 justify-start text-left">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {selectedFromDate
-                          ? moment(selectedFromDate).format("DD/MM/YYYY")
-                          : t("document.history.filters.fromDate")}
-                        {selectedFromDate && (
-                          <X
-                            className="ml-auto h-4 w-4 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedFromDate(undefined);
-                            }}
-                          />
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={selectedFromDate}
-                        onSelect={(date) => {
-                          setSelectedFromDate(date);
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DatePicker
+                    value={selectedFromDate}
+                    onChange={setSelectedFromDate}
+                    placeholder={t("document.history.filters.fromDate")}
+                    clearAriaLabel="Clear from date"
+                  />
 
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="flex-1 justify-start text-left">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {selectedToDate
-                          ? moment(selectedToDate).format("DD/MM/YYYY")
-                          : t("document.history.filters.toDate")}
-                        {selectedToDate && (
-                          <X
-                            className="ml-auto h-4 w-4 cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedToDate(undefined);
-                            }}
-                          />
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={selectedToDate}
-                        onSelect={(date) => {
-                          setSelectedToDate(date);
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <DatePicker
+                    value={selectedToDate}
+                    onChange={setSelectedToDate}
+                    placeholder={t("document.history.filters.toDate")}
+                    clearAriaLabel="Clear to date"
+                  />
                 </div>
 
                 {/* Date Range Error Display */}
