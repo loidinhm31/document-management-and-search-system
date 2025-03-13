@@ -38,6 +38,7 @@ export default function DocumentUserHistoryPage() {
   const [selectedActionType, setSelectedActionType] = useState<UserDocumentActionType | undefined>("all");
   const [selectedFromDate, setSelectedFromDate] = useState<Date | undefined>(undefined);
   const [selectedToDate, setSelectedToDate] = useState<Date | undefined>(undefined);
+  const [dateRangeError, setDateRangeError] = useState<string | null>(null);
 
   // Load histories with current filters
   const loadHistories = useCallback(async () => {
@@ -66,6 +67,35 @@ export default function DocumentUserHistoryPage() {
   useEffect(() => {
     loadHistories();
   }, [loadHistories]);
+
+  // Validate date range
+  const validateDateRange = () => {
+    if (selectedFromDate && selectedToDate) {
+      // Create date objects for midnight on the selected dates for proper comparison
+      const fromDate = new Date(
+        selectedFromDate.getFullYear(),
+        selectedFromDate.getMonth(),
+        selectedFromDate.getDate(),
+      );
+
+      const toDate = new Date(selectedToDate.getFullYear(), selectedToDate.getMonth(), selectedToDate.getDate());
+
+      // Compare dates
+      if (fromDate > toDate) {
+        setDateRangeError(t("document.history.validation.dateRange"));
+      } else {
+        setDateRangeError(null);
+      }
+    } else {
+      // If both dates aren't selected, no error
+      setDateRangeError(null);
+    }
+  };
+
+  // Check validation whenever dates change
+  useEffect(() => {
+    validateDateRange();
+  }, [selectedFromDate, selectedToDate]);
 
   const handleSearch = () => {
     // Reset to first page when applying new filters
@@ -109,6 +139,7 @@ export default function DocumentUserHistoryPage() {
     setSelectedActionType("all");
     setSelectedFromDate(undefined);
     setSelectedToDate(undefined);
+    // dateRangeError will be cleared by the useEffect that monitors date changes
     setCurrentPage(0);
     setFilters({
       page: 0,
@@ -250,66 +281,79 @@ export default function DocumentUserHistoryPage() {
                 </SelectContent>
               </Select>
 
-              <div className="flex gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex-1 justify-start text-left">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {selectedFromDate
-                        ? moment(selectedFromDate).format("DD/MM/YYYY")
-                        : t("document.history.filters.fromDate")}
-                      {selectedFromDate && (
-                        <X
-                          className="ml-auto h-4 w-4 cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedFromDate(undefined);
-                          }}
-                        />
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={selectedFromDate}
-                      onSelect={setSelectedFromDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex-1 justify-start text-left">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {selectedFromDate
+                          ? moment(selectedFromDate).format("DD/MM/YYYY")
+                          : t("document.history.filters.fromDate")}
+                        {selectedFromDate && (
+                          <X
+                            className="ml-auto h-4 w-4 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFromDate(undefined);
+                            }}
+                          />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedFromDate}
+                        onSelect={(date) => {
+                          setSelectedFromDate(date);
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
 
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex-1 justify-start text-left">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {selectedToDate
-                        ? moment(selectedToDate).format("DD/MM/YYYY")
-                        : t("document.history.filters.toDate")}
-                      {selectedToDate && (
-                        <X
-                          className="ml-auto h-4 w-4 cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedToDate(undefined);
-                          }}
-                        />
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={selectedToDate}
-                      onSelect={setSelectedToDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex-1 justify-start text-left">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {selectedToDate
+                          ? moment(selectedToDate).format("DD/MM/YYYY")
+                          : t("document.history.filters.toDate")}
+                        {selectedToDate && (
+                          <X
+                            className="ml-auto h-4 w-4 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedToDate(undefined);
+                            }}
+                          />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedToDate}
+                        onSelect={(date) => {
+                          setSelectedToDate(date);
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Date Range Error Display */}
+                {dateRangeError && (
+                  <div className="rounded-md bg-destructive/15 px-3 py-2 text-sm text-destructive">
+                    <span>{dateRangeError}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleSearch}>
+                <Button onClick={handleSearch} disabled={!!dateRangeError}>
                   <Search className="mr-2 h-4 w-4" />
                   {t("document.history.filters.search")}
                 </Button>
@@ -391,9 +435,7 @@ export default function DocumentUserHistoryPage() {
 
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-
-            <span className="text-sm text-muted-foreground">{t("document.discover.pagination.pageSize")}</span>
-
+              <span className="text-sm text-muted-foreground">{t("document.discover.pagination.pageSize")}</span>
               <Select value={filters.size?.toString()} onValueChange={handlePageSizeChange}>
                 <SelectTrigger className="w-[80px]">
                   <SelectValue />
