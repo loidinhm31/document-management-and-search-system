@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { DocumentForm, DocumentFormValues } from "@/components/document/document-form";
+import { DocumentForm } from "@/components/document/document-form";
 import { useProcessing } from "@/context/processing-provider";
 import { useToast } from "@/hooks/use-toast";
+import { DocumentFormValues } from "@/schemas/document-schema";
 import { documentService } from "@/services/document.service";
 
 interface DocumentUploadProps {
@@ -95,5 +96,5 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
     }
   };
 
-  return <DocumentForm onSubmit={handleSubmit} loading={uploading} submitLabel={t("document.detail.buttons.update")} />;
+  return <DocumentForm onSubmit={handleSubmit} loading={uploading} submitLabel={t("document.upload.buttons.upload")} />;
 };

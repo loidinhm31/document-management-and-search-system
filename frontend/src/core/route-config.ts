@@ -14,7 +14,7 @@ const MyDocument = lazy(() => import("@/pages/document/my-document/my-document-p
 const MyDocumentDetail = lazy(() => import("@/pages/document/my-document/my-document-detail-page"));
 const DocumentDetail = lazy(() => import("@/pages/document/discover/document-detail-page"));
 const DocumentPreference = lazy(() => import("@/pages/document/document-preferences-page"));
-const DocumentUserHistory = lazy(() => import("@/pages/document-user-history-page"));
+const DocumentUserHistory = lazy(() => import("@/pages/document/document-user-history-page"));
 const ReportsManagement = lazy(() => import("@/pages/admin/reports-management-page"));
 
 export interface Route {

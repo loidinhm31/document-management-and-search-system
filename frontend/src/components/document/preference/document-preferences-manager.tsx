@@ -235,7 +235,7 @@ export default function DocumentPreferencesManager() {
               {/* Preferred Tags */}
               <div className="space-y-2">
                 <Label>{t("document.preferences.contentPreferences.tags.label")}</Label>
-                <TagInputHybrid
+                <TagInput
                   value={Array.from(preferences?.preferredTags || [])}
                   onChange={(tags) =>
                     setPreferences((prev) => ({
@@ -244,15 +244,6 @@ export default function DocumentPreferencesManager() {
                     }))
                   }
                   recommendedTags={recommendedTags}
-                  onSearch={async (query) => {
-                    try {
-                      const response = await documentService.getTagSuggestions(query);
-                      return response.data;
-                    } catch (error) {
-                      console.info("Error fetching tag suggestions:", error);
-                      return [];
-                    }
-                  }}
                   placeholder={t("document.commonSearch.tagsPlaceholder")}
                 />
               </div>
