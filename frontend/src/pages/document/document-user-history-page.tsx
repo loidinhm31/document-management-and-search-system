@@ -3,19 +3,19 @@ import moment from "moment-timezone";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+
+import TableSkeleton from "@/components/common/table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { UserDocumentActionType, UserHistoryFilter, UserHistoryResponse } from "@/types/document-user-history";
-import { cn } from "@/lib/utils";
-import TableSkeleton from "@/components/common/table-skeleton";
 
 export default function DocumentUserHistoryPage() {
   const { t } = useTranslation();
@@ -26,6 +26,8 @@ export default function DocumentUserHistoryPage() {
   const [histories, setHistories] = useState<UserHistoryResponse[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
+
+  const pageSizeOptions = [10, 20, 50, 100];
 
   const [filters, setFilters] = useState<UserHistoryFilter>({
     page: 0,
@@ -104,7 +106,7 @@ export default function DocumentUserHistoryPage() {
   // Handle filter reset
   const handleReset = () => {
     setSearchInput("");
-    setSelectedActionType(undefined);
+    setSelectedActionType("all");
     setSelectedFromDate(undefined);
     setSelectedToDate(undefined);
     setCurrentPage(0);
@@ -117,6 +119,15 @@ export default function DocumentUserHistoryPage() {
   // Handle page change
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (size: string) => {
+    setCurrentPage(0); // Reset to first page when changing page size
+    setFilters((prev) => ({
+      ...prev,
+      size: parseInt(size),
+    }));
   };
 
   // Format timestamp
@@ -226,7 +237,7 @@ export default function DocumentUserHistoryPage() {
                 value={selectedActionType}
                 onValueChange={(value) => setSelectedActionType(value as UserDocumentActionType)}
               >
-                <SelectTrigger  className="w-[200px]">
+                <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder={t("document.history.filters.actionType")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -378,40 +389,57 @@ export default function DocumentUserHistoryPage() {
             </Table>
           </div>
 
-          {/* Pagination */}
-          {histories.length > 0 && (
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+
+            <span className="text-sm text-muted-foreground">{t("document.discover.pagination.pageSize")}</span>
+
+              <Select value={filters.size?.toString()} onValueChange={handlePageSizeChange}>
+                <SelectTrigger className="w-[80px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizeOptions.map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
                 {t("document.history.pagination.showing", {
-                  start: currentPage * 20 + 1,
-                  end: Math.min((currentPage + 1) * 20, histories.length + currentPage * 20),
-                  total: totalPages * 20,
+                  start: currentPage * filters.size + 1,
+                  end: Math.min((currentPage + 1) * filters.size, histories.length + currentPage * filters.size),
+                  total: totalPages * filters.size,
+                })}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 0 || loading}
+              >
+                {t("document.history.pagination.previous")}
+              </Button>
+              <div className="text-sm">
+                {t("document.history.pagination.page", {
+                  current: currentPage + 1,
+                  total: totalPages || 1,
                 })}
               </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 0 || loading}
-                >
-                  {t("document.history.pagination.previous")}
-                </Button>
-                <div className="text-sm">
-                  {t("document.history.pagination.page", {
-                    current: currentPage + 1,
-                    total: totalPages || 1,
-                  })}
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= totalPages - 1 || loading}
-                >
-                  {t("document.history.pagination.next")}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage >= totalPages - 1 || loading}
+              >
+                {t("document.history.pagination.next")}
+              </Button>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>
