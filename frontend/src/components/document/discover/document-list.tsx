@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Calendar, Download, Eye, Filter, Heart, Loader2, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, Calendar, Download, Eye, Filter, Heart, Loader2, Search } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -250,8 +250,11 @@ export const DocumentList = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("document.discover.title")}</CardTitle>
-        <CardDescription>{t("document.discover.description")}</CardDescription>
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-5 w-5" />
+          <CardTitle>{t("document.discover.title")}</CardTitle>
+          <CardDescription>{t("document.discover.description")}</CardDescription>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

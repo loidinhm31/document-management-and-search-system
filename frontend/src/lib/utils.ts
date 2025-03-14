@@ -33,3 +33,7 @@ export const getMasterDataTranslation = (code: string, type: MasterDataType, mas
   }
   return data ? data.translations[i18n.language] || data.translations.en : code;
 };
+
+export const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleString();
+};

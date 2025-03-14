@@ -1,4 +1,4 @@
-import { Loader2, Plus, Search } from "lucide-react";
+import { Database, Loader2, Plus, Search } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -182,8 +182,13 @@ export default function MasterDataManagement() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("admin.masterData.title")}</CardTitle>
-        <CardDescription>{t("admin.masterData.description")}</CardDescription>
+        <div className="flex items-center gap-2">
+          <Database className="h-5 w-5" />
+          <div>
+            <CardTitle>{t("admin.masterData.title")}</CardTitle>
+            <CardDescription>{t("admin.masterData.description")}</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
