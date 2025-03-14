@@ -59,7 +59,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("@userSecurity.isCurrentUser(#id)")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateStatus(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateStatusRequest request,

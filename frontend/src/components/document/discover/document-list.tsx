@@ -289,7 +289,7 @@ export const DocumentList = () => {
             {/* Filter and Reset Buttons */}
             <div className="flex gap-2">
               {/* Favorite Button */}
-              {!currentUser.roles.includes("ROLE_ADMIN") && (
+              {!currentUser?.roles.includes("ROLE_ADMIN") && (
                 <Button
                   variant={favoriteOnly ? "default" : "outline"}
                   onClick={handleToggleFavorites}

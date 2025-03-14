@@ -1,8 +1,9 @@
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, Eye, EyeOff, KeyRound, Loader2, Lock, Save, Shield, User } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,214 +13,355 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { adminService } from "@/services/admin.service";
 import { Role, UserData } from "@/types/user";
+import RevokeTokensButton from "@/components/admin/reports/revoke-tokens-button";
 
 export default function UserDetail() {
   const { t } = useTranslation();
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [selectedRole, setSelectedRole] = useState("");
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [accountStates, setAccountStates] = useState({
-    accountNonLocked: true,
-    accountNonExpired: true,
-    credentialsNonExpired: true,
-    enabled: true,
-  });
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchUserDetails = async () => {
-      if (!userId) return;
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
 
-      try {
-        const userResponse = await adminService.getUser(userId);
-        const rolesResponse = await adminService.getAllRoles();
+  // Current values in database
+  const [currentRole, setCurrentRole] = useState<string>("");
+  const [currentAccountLocked, setCurrentAccountLocked] = useState(false);
 
-        const userData = userResponse.data;
-        const roles = rolesResponse.data;
+  // Form values (local state)
+  const [selectedRole, setSelectedRole] = useState<string>("");
+  const [accountLocked, setAccountLocked] = useState(false);
 
-        setUserData(userData);
-        setSelectedRole(userData.role?.roleName || "");
-        setAccountStates({
-          accountNonLocked: userData.accountNonLocked,
-          accountNonExpired: userData.accountNonExpired,
-          credentialsNonExpired: userData.credentialsNonExpired,
-          enabled: userData.enabled,
-        });
-        setRoles(roles);
-      } catch (error) {
-        console.log("Error:", error);
-        toast({
-          title: t("common.error"),
-          description: t("admin.users.messages.fetchError"),
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Track if changes have been made
+  const [roleChanged, setRoleChanged] = useState(false);
+  const [accountStatusChanged, setAccountStatusChanged] = useState(false);
 
-    fetchUserDetails();
-  }, [userId, toast, t]);
-
-  const handleRoleChange = async (value: string) => {
+  const fetchUserData = async () => {
     if (!userId) return;
 
+    setLoading(true);
     try {
-      // Updated to use new endpoint
-      await adminService.updateUserRole(userId, {
-        userId: userId,
-        roleName: value,
-      });
-      setSelectedRole(value);
+      const response = await adminService.getUser(userId);
+      const user = response.data;
+      setUserData(user);
+
+      // Set both current DB values and form values
+      const roleName = user.role.roleName;
+      setCurrentRole(roleName);
+      setSelectedRole(roleName);
+
+      const isLocked = !user.accountNonLocked;
+      setCurrentAccountLocked(isLocked);
+      setAccountLocked(isLocked);
+
+      // Reset change trackers
+      setRoleChanged(false);
+      setAccountStatusChanged(false);
     } catch (error) {
-      console.log("Error:", error);
+      console.error("Error fetching user data:", error);
+      toast({
+        title: t("common.error"),
+        description: t("admin.users.messages.fetchError"),
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const response = await adminService.getAllRoles();
+      setRoles(response.data);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
+    fetchRoles();
+  }, [userId]);
+
+  // Track role changes
+  useEffect(() => {
+    if (currentRole && selectedRole) {
+      setRoleChanged(currentRole !== selectedRole);
+    }
+  }, [currentRole, selectedRole]);
+
+  // Track account status changes
+  useEffect(() => {
+    setAccountStatusChanged(currentAccountLocked !== accountLocked);
+  }, [currentAccountLocked, accountLocked]);
+
+  const handleUpdateRole = async () => {
+    if (!userId || !selectedRole || !roleChanged) return;
+
+    setRoleLoading(true);
+    try {
+      await adminService.updateUserRole(userId, {
+        userId,
+        roleName: selectedRole,
+      });
+
+      toast({
+        title: t("common.success"),
+        description: t("admin.users.actions.updateRole.success"),
+        variant: "success",
+      });
+
+      // Refresh user data
+      fetchUserData();
+    } catch (error) {
       toast({
         title: t("common.error"),
         description: t("admin.users.actions.updateRole.error"),
         variant: "destructive",
       });
+    } finally {
+      setRoleLoading(false);
     }
   };
 
-  const handleAccountStateChange = async (key: keyof typeof accountStates, value: boolean) => {
-    if (!userId) return;
+  const handleUpdateAccountStatus = async () => {
+    if (!userId || !accountStatusChanged) return;
 
+    setStatusLoading(true);
     try {
-      const updateData = {
-        accountLocked: key === "accountNonLocked" ? !value : !accountStates.accountNonLocked,
-        accountExpired: key === "accountNonExpired" ? !value : !accountStates.accountNonExpired,
-        credentialsExpired: key === "credentialsNonExpired" ? !value : !accountStates.credentialsNonExpired,
-        enabled: key === "enabled" ? value : accountStates.enabled,
-      };
+      await adminService.updateStatus(userId, {
+        accountLocked: accountLocked,
+      });
 
-      await adminService.updateStatus(userId, updateData);
-      setAccountStates((prev) => ({ ...prev, [key]: value }));
+      toast({
+        title: t("common.success"),
+        description: t("admin.users.actions.updateStatus.success"),
+        variant: "success",
+      });
+
+      // Refresh user data
+      fetchUserData();
     } catch (error) {
       toast({
         title: t("common.error"),
         description: t("admin.users.actions.updateAccount.error"),
         variant: "destructive",
       });
+    } finally {
+      setStatusLoading(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex h-[400px] items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
+  if (!userData) {
+    return (
+      <div className="container mx-auto py-10">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-center">User not found</p>
+            <div className="mt-4 flex justify-center">
+              <Button variant="ghost" onClick={() => navigate("/admin/users")} className="mb-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                {t("admin.users.navigation.backToUsers")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-10">
       <Button variant="ghost" onClick={() => navigate("/admin/users")} className="mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" />
         {t("admin.users.navigation.backToUsers")}
       </Button>
 
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("admin.users.details.title")}</CardTitle>
-            <CardDescription>{t("admin.users.details.description")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>{t("admin.users.details.username")}</Label>
-                <Input value={userData?.username || ""} disabled />
-              </div>
-
-              <div className="space-y-2">
-                <Label>{t("admin.users.details.email")}</Label>
-                <Input value={userData?.email || ""} disabled />
+      {/* User Information Card */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>{t("admin.users.details.title")}</CardTitle>
+          <CardDescription>{t("admin.users.details.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16">
+              <AvatarFallback className="text-lg">{userData.username[0]?.toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="text-xl font-semibold">{userData.username}</h3>
+              <p className="text-muted-foreground">{userData.email}</p>
+              <div className="mt-1 flex items-center">
+                <div className={`mr-2 h-2.5 w-2.5 rounded-full ${userData.enabled ? "bg-green-500" : "bg-red-500"}`}></div>
+                <span className="text-sm text-muted-foreground">
+                  {userData.enabled ? t("admin.users.status.active") : t("admin.users.status.inactive")}
+                </span>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("admin.users.details.roleAndPermissions.title")}</CardTitle>
-            <CardDescription>{t("admin.users.details.roleAndPermissions.description")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label>{t("admin.users.details.roleAndPermissions.userRole")}</Label>
-              <Select value={selectedRole} onValueChange={handleRoleChange}>
-                <SelectTrigger>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="username">{t("admin.users.details.username")}</Label>
+              <Input id="username" value={userData.username} disabled className="bg-muted" />
+            </div>
+            <div>
+              <Label htmlFor="email">{t("admin.users.details.email")}</Label>
+              <Input id="email" value={userData.email} disabled className="bg-muted" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Role & Permissions Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("admin.users.details.roleAndPermissions.title")}</CardTitle>
+          <CardDescription>{t("admin.users.details.roleAndPermissions.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Role Selection with Update Button */}
+          <div className="space-y-2">
+            <Label htmlFor="role">{t("admin.users.details.roleAndPermissions.userRole")}</Label>
+            <div className="flex gap-2">
+              <Select
+                disabled={roleLoading}
+                value={selectedRole}
+                onValueChange={(value) => setSelectedRole(value)}
+              >
+                <SelectTrigger id="role" className="w-full md:w-72">
                   <SelectValue placeholder={t("admin.users.details.roleAndPermissions.selectRole")} />
                 </SelectTrigger>
                 <SelectContent>
                   {roles.map((role) => (
                     <SelectItem key={role.roleId} value={role.roleName}>
-                      {role.roleName.replace("ROLE_", "")}
+                      <div className="flex items-center">
+                        <Shield className="mr-2 h-4 w-4 text-primary" />
+                        {role.roleName}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                onClick={handleUpdateRole}
+                disabled={roleLoading || !roleChanged}
+                size="sm"
+              >
+                {roleLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                {t("common.update")}
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-md border p-4">
+            <h3 className="mb-4 text-lg font-medium">{t("admin.users.details.accountStatus.title")}</h3>
+
+            {/* Account Lock Status */}
+            <div className="flex items-center justify-between py-2">
+              <div className="space-y-0.5">
+                <div className="flex items-center">
+                  <Lock className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <h4 className="font-medium">{t("admin.users.details.accountStatus.locked")}</h4>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {t("admin.users.details.accountStatus.lockedDescription")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={accountLocked}
+                  onCheckedChange={setAccountLocked}
+                  disabled={statusLoading}
+                />
+                <Button
+                  onClick={handleUpdateAccountStatus}
+                  disabled={statusLoading || !accountStatusChanged}
+                  size="sm"
+                >
+                  {statusLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  {t("common.update")}
+                </Button>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>{t("admin.users.details.accountStatus.enabled")}</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {t("admin.users.details.accountStatus.enabledDescription")}
-                  </p>
+            {/* Token Expiration */}
+            <div className="flex items-center justify-between border-t py-4">
+              <div className="space-y-0.5">
+                <div className="flex items-center">
+                  <KeyRound className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <h4 className="font-medium">{t("admin.users.details.accountStatus.tokenExpired")}</h4>
                 </div>
-                <Switch
-                  checked={accountStates.enabled}
-                  onCheckedChange={(checked) => handleAccountStateChange("enabled", checked)}
-                />
+                <p className="text-sm text-muted-foreground">
+                  {t("admin.users.details.accountStatus.tokenExpiredDescription")}
+                </p>
               </div>
+              <RevokeTokensButton
+                userId={userId}
+                onSuccess={fetchUserData}
+              />
+            </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>{t("admin.users.details.accountStatus.locked")}</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {t("admin.users.details.accountStatus.lockedDescription")}
-                  </p>
+            {/* 2FA Status */}
+            <div className="flex items-center justify-between border-t py-4">
+              <div className="space-y-0.5">
+                <div className="flex items-center">
+                  {userData.twoFactorEnabled ? (
+                    <Eye className="mr-2 h-4 w-4 text-green-500" />
+                  ) : (
+                    <EyeOff className="mr-2 h-4 w-4 text-muted-foreground" />
+                  )}
+                  <h4 className="font-medium">Two-Factor Authentication</h4>
                 </div>
-                <Switch
-                  checked={!accountStates.accountNonLocked}
-                  onCheckedChange={(checked) => handleAccountStateChange("accountNonLocked", !checked)}
-                />
+                <p className="text-sm text-muted-foreground">
+                  {userData.twoFactorEnabled
+                    ? "User has enabled two-factor authentication"
+                    : "User has not enabled two-factor authentication"}
+                </p>
               </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>{t("admin.users.details.accountStatus.expired")}</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {t("admin.users.details.accountStatus.expiredDescription")}
-                  </p>
-                </div>
-                <Switch
-                  checked={!accountStates.accountNonExpired}
-                  onCheckedChange={(checked) => handleAccountStateChange("accountNonExpired", !checked)}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>{t("admin.users.details.accountStatus.credentialsExpired")}</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {t("admin.users.details.accountStatus.credentialsExpiredDescription")}
-                  </p>
-                </div>
-                <Switch
-                  checked={!accountStates.credentialsNonExpired}
-                  onCheckedChange={(checked) => handleAccountStateChange("credentialsNonExpired", !checked)}
-                />
+              <div className={`rounded-full px-2 py-1 text-xs ${
+                userData.twoFactorEnabled ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
+              }`}>
+                {userData.twoFactorEnabled ? "Enabled" : "Disabled"}
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+
+            {/* Sign Up Method */}
+            <div className="flex items-center justify-between border-t py-4">
+              <div className="space-y-0.5">
+                <div className="flex items-center">
+                  <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                  <h4 className="font-medium">Sign Up Method</h4>
+                </div>
+              </div>
+              <div className={`rounded-full px-2 py-1 text-xs ${
+                userData.signUpMethod === "google" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"
+              }`}>
+                {userData.signUpMethod === "google" ? "Google" : "Email"}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

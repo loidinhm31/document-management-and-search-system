@@ -7,7 +7,6 @@ import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.time.Instant;
 import java.util.UUID;
 
 
@@ -36,12 +35,7 @@ public class User extends BaseEntity<String> {
     private String password;
 
     private boolean accountNonLocked = true;
-    private boolean accountNonExpired = true;
-    private boolean credentialsNonExpired = true;
-    private boolean enabled = true;
-
-    private Instant credentialsExpiryDate;
-    private Instant accountExpiryDate;
+    private boolean enabled;
 
     private String twoFactorSecret;
     private boolean isTwoFactorEnabled = false;

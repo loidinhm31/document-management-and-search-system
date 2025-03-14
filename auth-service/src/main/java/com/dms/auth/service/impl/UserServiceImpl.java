@@ -28,6 +28,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -37,9 +38,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
@@ -84,14 +82,21 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Override
     public TokenResponse authenticateUser(LoginRequest loginRequest, HttpServletRequest request) {
+        // Check if user exists and get user status before authentication
+        User user = userRepository.findByUsername(loginRequest.getIdentifier())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "username", loginRequest.getIdentifier()));
+
+        // Check if account is locked before attempting authentication
+        if (!user.isAccountNonLocked()) {
+            throw new LockedException("Account is locked. Please contact support.");
+        }
+
+        // Proceed with authentication
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+                new UsernamePasswordAuthenticationToken(loginRequest.getIdentifier(), loginRequest.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
-        User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", loginRequest.getUsername()));
 
         if (!user.isEnabled()) {
             return new TokenResponse()
@@ -152,11 +157,7 @@ public class UserServiceImpl extends BaseService implements UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(role);
         user.setAccountNonLocked(true);
-        user.setAccountNonExpired(true);
-        user.setCredentialsNonExpired(true);
         user.setEnabled(false); // disabled until verified
-        user.setCredentialsExpiryDate(Instant.now().atZone(ZoneId.systemDefault()).plusYears(1).toInstant());
-        user.setAccountExpiryDate(Instant.now().atZone(ZoneId.systemDefault()).plusYears(1).toInstant());
         user.setTwoFactorEnabled(false);
         user.setSignUpMethod("email");
         user.setCreatedAt(Instant.now());
@@ -183,11 +184,7 @@ public class UserServiceImpl extends BaseService implements UserService {
                 user.getUsername(),
                 user.getEmail(),
                 user.isAccountNonLocked(),
-                user.isAccountNonExpired(),
-                user.isCredentialsNonExpired(),
                 user.isEnabled(),
-                user.getCredentialsExpiryDate(),
-                user.getAccountExpiryDate(),
                 user.isTwoFactorEnabled(),
                 user.getCreatedAt(),
                 roles
@@ -288,7 +285,6 @@ public class UserServiceImpl extends BaseService implements UserService {
         // Update password
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setUpdatedBy(SecurityUtils.getUserIdentifier());
-        user.setCredentialsExpiryDate(OffsetDateTime.now(ZoneOffset.UTC).plusMonths(6).toInstant()); // Reset credentials expiry
 
         // Optionally invalidate any existing password reset tokens
         passwordResetTokenRepository.findAll().stream()
@@ -384,13 +380,13 @@ public class UserServiceImpl extends BaseService implements UserService {
 
         // Validate username uniqueness if changed
         if (!user.getUsername().equals(request.getUsername()) &&
-                userRepository.existsByUsername(request.getUsername())) {
+            userRepository.existsByUsername(request.getUsername())) {
             throw new IllegalArgumentException("Username is already taken");
         }
 
         // Validate email uniqueness if changed
         if (!user.getEmail().equals(request.getEmail()) &&
-                userRepository.existsByEmail(request.getEmail())) {
+            userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email is already in use");
         }
 
@@ -407,10 +403,7 @@ public class UserServiceImpl extends BaseService implements UserService {
 
         if (!isAdmin) {
             // Regular users can only update specific fields
-            if (request.getAccountLocked() != null ||
-                    request.getAccountExpired() != null ||
-                    request.getCredentialsExpired() != null ||
-                    request.getEnabled() != null) {
+            if (Objects.nonNull(request.getAccountLocked()) || Objects.nonNull(request.getTokenExpired())) {
                 throw new AccessDeniedException("Operation not allowed for regular users");
             }
         }
@@ -420,20 +413,10 @@ public class UserServiceImpl extends BaseService implements UserService {
             if (Objects.nonNull(request.getAccountLocked())) {
                 user.setAccountNonLocked(!request.getAccountLocked());
             }
-            if (Objects.nonNull(request.getAccountExpired())) {
-                user.setAccountNonExpired(!request.getAccountExpired());
-            }
-            if (Objects.nonNull(request.getCredentialsExpired())) {
-                user.setCredentialsNonExpired(!request.getCredentialsExpired());
-            }
-            if (Objects.nonNull(request.getEnabled())) {
-                user.setEnabled(request.getEnabled());
-            }
-            if (Objects.nonNull(request.getAccountLocked())) {
-                user.setCredentialsExpiryDate(Instant.from(request.getCredentialsExpiryDate()));
-            }
-            if (Objects.nonNull(request.getAccountExpiryDate())) {
-                user.setAccountExpiryDate(Instant.from(request.getAccountExpiryDate()));
+            if (Objects.nonNull(request.getTokenExpired())) {
+                userRepository.findById(userId).ifPresent((targetUser) -> {
+                    refreshTokenService.revokeAllUserTokens(targetUser);
+                });
             }
         }
 

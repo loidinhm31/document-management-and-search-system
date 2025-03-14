@@ -2,7 +2,7 @@ import { TFunction } from "i18next";
 import * as z from "zod";
 
 export const loginSchema = z.object({
-  username: z.string().min(1),
+  identifier: z.string().min(1),
   password: z
     .string()
     .min(6)
@@ -14,7 +14,7 @@ export type LoginFormValues = z.infer<typeof loginSchema>;
 // Factory function to create schema with translations
 export const createLoginSchema = (t: TFunction) => {
   return z.object({
-    username: z.string().min(1, t("auth.login.validation.usernameRequired")),
+    identifier: z.string().min(1, t("auth.login.validation.identifierRequired")),
     password: z
       .string()
       .min(6, t("auth.login.validation.passwordMinLength", "Password must be at least 6 characters"))

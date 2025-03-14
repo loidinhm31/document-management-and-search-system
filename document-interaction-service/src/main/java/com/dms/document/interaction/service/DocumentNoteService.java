@@ -41,11 +41,6 @@ public class DocumentNoteService {
         // Get user info
         UserResponse mentor = getUserByUsername(username);
 
-        // Check role
-        if (!mentor.role().roleName().equals(AppRole.ROLE_MENTOR)) {
-            throw new AccessDeniedException("Only mentors can add notes to documents");
-        }
-
         // Validate content
         if (request.content() == null || request.content().trim().isEmpty()) {
             throw new IllegalArgumentException("Note content cannot be empty");

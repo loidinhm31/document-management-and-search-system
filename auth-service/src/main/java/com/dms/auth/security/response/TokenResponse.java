@@ -52,6 +52,4 @@ public class TokenResponse {
         this.locked = locked;
         this.verified = verified;
     }
-
-
 }

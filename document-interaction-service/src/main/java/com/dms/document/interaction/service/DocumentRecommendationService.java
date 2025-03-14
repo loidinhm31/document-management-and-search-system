@@ -39,11 +39,6 @@ public class DocumentRecommendationService {
     public boolean recommendDocument(String documentId, String username) {
         UserResponse userResponse = getUserInfo(username);
 
-        // Verify user is a mentor
-        if (!userResponse.role().roleName().equals(AppRole.ROLE_MENTOR)) {
-            throw new InvalidDataAccessResourceUsageException("Only mentors can recommend documents");
-        }
-
         // Verify document exists
         DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found or not accessible"));
@@ -86,11 +81,6 @@ public class DocumentRecommendationService {
     @Transactional
     public boolean unrecommendDocument(String documentId, String username) {
         UserResponse userResponse = getUserInfo(username);
-
-        // Verify user is a mentor
-        if (!userResponse.role().roleName().equals(AppRole.ROLE_MENTOR)) {
-            throw new InvalidDataAccessResourceUsageException("Only mentors can unrecommend documents");
-        }
 
         // Verify document exists
         DocumentInformation document = documentRepository.findById(documentId)

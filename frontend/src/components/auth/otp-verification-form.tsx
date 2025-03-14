@@ -65,9 +65,8 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
 
     setIsLoading(true);
     const response = await onVerified(otpValue);
-    if (response.data) {
+    if (response?.data) {
       if (response.data.locked) {
-        console.log("kicj");
         setIsLocked(true);
         setOtpValue("");
       } else if (!response.data.verified) {

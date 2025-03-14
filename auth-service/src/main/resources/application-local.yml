@@ -1,6 +1,6 @@
 app:
   frontend:
-    url: http://localhost:3000
+    url: http://192.168.1.45:3000
   gateway:
     url: http://localhost:8080
   eureka:

@@ -11,6 +11,7 @@
     "create": "Create",
     "confirm": "Confirm",
     "close": "Close",
+    "update": "Update",
     "confirmDelete": {
       "title": "Confirm Delete",
       "description": "Are you sure you want to delete this item? This action cannot be undone."
@@ -62,9 +63,9 @@
         }
       },
       "form": {
-        "username": {
-          "label": "Username",
-          "placeholder": "Enter your username"
+        "identifier": {
+          "label": "Username/ Email",
+          "placeholder": "Enter your username or email"
         },
         "password": {
           "label": "Password",
@@ -78,7 +79,7 @@
         "or": "Or continue with email"
       },
       "validation": {
-        "usernameRequired": "Username is required",
+        "identifierRequired": "Username or Email is required",
         "passwordMinLength": "Password must be at least 6 characters",
         "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character"
       },
@@ -361,14 +362,11 @@
           "selectRole": "Select role"
         },
         "accountStatus": {
-          "enabled": "Account Enabled",
-          "enabledDescription": "Allow or disable user access",
+          "title": "Account Status",
           "locked": "Account Locked",
           "lockedDescription": "Temporarily lock account access",
-          "expired": "Account Expired",
-          "expiredDescription": "Mark account as expired",
-          "credentialsExpired": "Credentials Expired",
-          "credentialsExpiredDescription": "Force password reset"
+          "tokenExpired": "Refresh Token Expired",
+          "tokenExpiredDescription": "Force revoke all refresh tokens"
         }
       }
     },

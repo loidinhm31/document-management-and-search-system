@@ -7,7 +7,7 @@ sequenceDiagram
     User->>Frontend: Enter username and password
     Frontend->>AuthService: POST /api/v1/auth/login
     
-    AuthService->>Database: authenticateUser(username, password)
+    AuthService->>Database: authenticateUser(username/email, password)
     Database-->>AuthService: Authentication result
     
     alt Invalid credentials

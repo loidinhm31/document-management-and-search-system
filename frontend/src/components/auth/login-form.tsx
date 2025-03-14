@@ -41,7 +41,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     resolver: zodResolver(createLoginSchema(t)),
     mode: "onBlur",
     defaultValues: {
-      username: "",
+      identifier: "",
       password: "",
     },
   });
@@ -61,11 +61,6 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       onSuccess(response.data);
     } catch (error) {
       console.log("toast", error);
-      toast({
-        title: t("common.error"),
-        description: t("auth.login.error"),
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -97,16 +92,16 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
           <div className="grid gap-4">
             <FormField
               control={form.control}
-              name="username"
+              name="identifier"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("auth.login.form.username.label")}</FormLabel>
+                  <FormLabel>{t("auth.login.form.identifier.label")}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       type="text"
                       disabled={isLoading}
-                      placeholder={t("auth.login.form.username.placeholder")}
+                      placeholder={t("auth.login.form.identifier.placeholder")}
                     />
                   </FormControl>
                   <FormMessage />

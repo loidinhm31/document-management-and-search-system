@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import LanguageSwitcher from "@/components/common/language-switcher";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -15,7 +16,6 @@ import { useToast } from "@/hooks/use-toast";
 import { createSignupSchema, SignupFormValues } from "@/schemas/register-schema";
 import { authService } from "@/services/auth.service";
 import { SignupRequest } from "@/types/auth";
-import { ThemeToggle } from "@/components/common/theme-toggle";
 
 export default function RegisterPage() {
   const { t, i18n } = useTranslation();
@@ -58,7 +58,6 @@ export default function RegisterPage() {
         username: data.username,
         email: data.email,
         password: data.password,
-        role: ["ROLE_USER"],
       };
       await authService.register(signupData);
 

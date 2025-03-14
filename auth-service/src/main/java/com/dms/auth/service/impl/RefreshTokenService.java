@@ -53,15 +53,21 @@ public class RefreshTokenService {
             throw new RuntimeException("Refresh token was expired. Please make a new signin request");
         }
 
+        // Add check for revoked flag
+        if (token.isRevoked()) {
+            throw new RuntimeException("Refresh token was revoked. Please sign in again");
+        }
+
         return token;
     }
 
     @Transactional
     public void revokeToken(String token) {
-        RefreshToken refreshToken = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Refresh token not found"));
-        refreshToken.setRevoked(true);
-        refreshTokenRepository.save(refreshToken);
+        refreshTokenRepository.findByToken(token)
+                .ifPresent((currToken) -> {
+                    currToken.setRevoked(true);
+                    refreshTokenRepository.save(currToken);
+                });
     }
 
     @Transactional
