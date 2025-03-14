@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
+import RevokeTokensButton from "@/components/admin/reports/revoke-tokens-button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,6 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { adminService } from "@/services/admin.service";
 import { Role, UserData } from "@/types/user";
-import RevokeTokensButton from "@/components/admin/reports/revoke-tokens-button";
 
 export default function UserDetail() {
   const { t } = useTranslation();
@@ -27,15 +27,12 @@ export default function UserDetail() {
   const [roleLoading, setRoleLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
 
-  // Current values in database
   const [currentRole, setCurrentRole] = useState<string>("");
   const [currentAccountLocked, setCurrentAccountLocked] = useState(false);
 
-  // Form values (local state)
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [accountLocked, setAccountLocked] = useState(false);
 
-  // Track if changes have been made
   const [roleChanged, setRoleChanged] = useState(false);
   const [accountStatusChanged, setAccountStatusChanged] = useState(false);
 
