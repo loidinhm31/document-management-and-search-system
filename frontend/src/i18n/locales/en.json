@@ -12,6 +12,7 @@
     "confirm": "Confirm",
     "close": "Close",
     "update": "Update",
+    "all": "All",
     "confirmDelete": {
       "title": "Confirm Delete",
       "description": "Are you sure you want to delete this item? This action cannot be undone."
@@ -314,6 +315,7 @@
         "active": "Active",
         "inactive": "Inactive"
       },
+      "noUser": "No users found",
       "actions": {
         "viewDetails": "View Details",
         "enableAccount": "Enable Account",

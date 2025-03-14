@@ -25,6 +25,7 @@ import com.dms.auth.service.UserService;
 import com.dms.auth.util.SecurityUtils;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -254,9 +255,13 @@ public class UserServiceImpl extends BaseService implements UserService {
     }
 
     @Override
-    public void updateUserRole(UUID userId, String roleName) {
+    public void updateUserRole(UUID userId, String roleName, UserDetails currentUser) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        if (StringUtils.equals(user.getUsername(), currentUser.getUsername())) {
+            throw new IllegalArgumentException("CANNOT_CHANGE_ADMIN_ROLE");
+        }
 
         AppRole appRole = AppRole.valueOf(roleName);
         Role role = roleRepository.findByRoleName(appRole)

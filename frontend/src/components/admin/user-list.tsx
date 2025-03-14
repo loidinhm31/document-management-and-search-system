@@ -19,9 +19,15 @@ export default function UserList() {
   const { toast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedRole, setSelectedRole] = useState<string>("all");
+
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
+  const [appliedStatus, setAppliedStatus] = useState<string>("all");
+  const [appliedRole, setAppliedRole] = useState<string>("all");
+
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -34,9 +40,9 @@ export default function UserList() {
     setLoading(true);
     try {
       const response = await adminService.getAllUsers({
-        search: searchQuery || undefined,
-        enabled: selectedStatus === "active" ? true : selectedStatus === "inactive" ? false : undefined,
-        role: selectedRole !== "all" ? selectedRole : undefined,
+        search: appliedSearchQuery || undefined,
+        enabled: appliedStatus === "active" ? true : appliedStatus === "inactive" ? false : undefined,
+        role: appliedRole !== "all" ? appliedRole : undefined,
         page: currentPage,
         size: pageSize, // Use the pageSize state
       });
@@ -54,7 +60,7 @@ export default function UserList() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, selectedStatus, selectedRole, currentPage, pageSize, toast, t]);
+  }, [appliedSearchQuery, appliedStatus, appliedRole, currentPage, pageSize, toast, t]);
 
   useEffect(() => {
     fetchUsers();
@@ -62,15 +68,23 @@ export default function UserList() {
 
   const handleSearch = () => {
     setCurrentPage(0);
-    fetchUsers();
+    setAppliedSearchQuery(searchQuery);
+    setAppliedStatus(selectedStatus);
+    setAppliedRole(selectedRole);
   };
 
   const handleReset = () => {
+    // Reset form input states
     setSearchQuery("");
     setSelectedStatus("all");
     setSelectedRole("all");
+
+    // Reset applied states
+    setAppliedSearchQuery("");
+    setAppliedStatus("all");
+    setAppliedRole("all");
+
     setCurrentPage(0);
-    // Don't reset page size here as it's a user preference
   };
 
   const handlePageChange = (newPage: number) => {
@@ -117,7 +131,7 @@ export default function UserList() {
                 <SelectValue placeholder={t("admin.users.filters.status")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("document.commonSearch.all")}</SelectItem>
+                <SelectItem value="all">{t("common.all")}</SelectItem>
                 <SelectItem value="active">{t("admin.users.status.active")}</SelectItem>
                 <SelectItem value="inactive">{t("admin.users.status.inactive")}</SelectItem>
               </SelectContent>
@@ -152,7 +166,7 @@ export default function UserList() {
                   <TableHead>{t("admin.users.headers.email")}</TableHead>
                   <TableHead>{t("admin.users.headers.createdDate")}</TableHead>
                   <TableHead>{t("admin.users.headers.status")}</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -161,7 +175,7 @@ export default function UserList() {
                 ) : users.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
-                      No users found.
+                      {t("admin.users.noUser")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -173,11 +187,11 @@ export default function UserList() {
                       <TableCell>
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset 
-                        ${
-                          user.enabled
-                            ? "bg-green-50 text-green-700 ring-green-600/20"
-                            : "bg-red-50 text-red-700 ring-red-600/20"
-                        }`}
+                          ${
+                            user.enabled
+                              ? "bg-green-50 text-green-700 ring-green-600/20"
+                              : "bg-red-50 text-red-700 ring-red-600/20"
+                          }`}
                         >
                           {user.enabled ? t("admin.users.status.active") : t("admin.users.status.inactive")}
                         </span>

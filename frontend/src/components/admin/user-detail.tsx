@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { adminService } from "@/services/admin.service";
 import { Role, UserData } from "@/types/user";
@@ -20,6 +21,7 @@ export default function UserDetail() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
 
   const [userData, setUserData] = useState<UserData | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -35,6 +37,9 @@ export default function UserDetail() {
 
   const [roleChanged, setRoleChanged] = useState(false);
   const [accountStatusChanged, setAccountStatusChanged] = useState(false);
+
+  // Check if current user is viewing their own profile
+  const isOwnProfile = currentUser?.userId === userId;
 
   const fetchUserData = async () => {
     if (!userId) return;
@@ -97,6 +102,20 @@ export default function UserDetail() {
 
   const handleUpdateRole = async () => {
     if (!userId || !selectedRole || !roleChanged) return;
+
+    // Prevent admins from changing their own role
+    if (isOwnProfile) {
+      toast({
+        title: t("common.error"),
+        description: t("admin.users.actions.updateRole.cannotChangeOwnRole", "You cannot change your own role"),
+        variant: "destructive",
+      });
+
+      // Reset to original role
+      setSelectedRole(currentRole);
+      setRoleChanged(false);
+      return;
+    }
 
     setRoleLoading(true);
     try {
@@ -233,7 +252,7 @@ export default function UserDetail() {
             <Label htmlFor="role">{t("admin.users.details.roleAndPermissions.userRole")}</Label>
             <div className="flex gap-2">
               <Select
-                disabled={roleLoading}
+                disabled={roleLoading || isOwnProfile}
                 value={selectedRole}
                 onValueChange={(value) => setSelectedRole(value)}
               >
@@ -253,8 +272,9 @@ export default function UserDetail() {
               </Select>
               <Button
                 onClick={handleUpdateRole}
-                disabled={roleLoading || !roleChanged}
+                disabled={roleLoading || !roleChanged || isOwnProfile}
                 size="sm"
+                title={isOwnProfile ? t("admin.users.actions.updateRole.cannotChangeOwnRole", "You cannot change your own role") : ""}
               >
                 {roleLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -264,6 +284,11 @@ export default function UserDetail() {
                 {t("common.update")}
               </Button>
             </div>
+            {isOwnProfile && (
+              <p className="text-sm text-amber-500 mt-1">
+                {t("admin.users.actions.updateRole.cannotChangeOwnRole", "You cannot change your own role")}
+              </p>
+            )}
           </div>
 
           <div className="rounded-md border p-4">

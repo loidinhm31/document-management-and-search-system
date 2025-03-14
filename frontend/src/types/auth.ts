@@ -3,11 +3,7 @@ export interface User {
   username: string;
   email: string;
   accountNonLocked: boolean;
-  accountNonExpired: boolean;
-  credentialsNonExpired: boolean;
   enabled: boolean;
-  credentialsExpiryDate: string;
-  accountExpiryDate: string;
   twoFactorEnabled: boolean;
   signUpMethod: "email" | "google";
   roles: string[];
