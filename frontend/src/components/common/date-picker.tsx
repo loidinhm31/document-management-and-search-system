@@ -13,6 +13,7 @@ interface DatePickerProps {
   placeholder: string;
   clearAriaLabel?: string;
   disabled?: boolean;
+  className?: string;
 }
 
 const DatePicker = ({
@@ -21,6 +22,7 @@ const DatePicker = ({
   placeholder,
   clearAriaLabel = "Clear date",
   disabled = false,
+  className,
 }: DatePickerProps) => {
   const [open, setOpen] = useState(false);
   const formattedDate = value ? moment(value).format("DD/MM/YYYY") : placeholder;
@@ -44,7 +46,7 @@ const DatePicker = ({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="flex flex-1 justify-start text-left" disabled={disabled}>
+        <Button variant="outline" className={cn("flex justify-start text-left w-full", className)} disabled={disabled}>
           <CalendarIcon className="mr-2 h-4 w-4" />
           <span className={cn("flex-grow", !value && "text-muted-foreground")}>{formattedDate}</span>
           {value && (

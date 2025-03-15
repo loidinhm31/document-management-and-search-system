@@ -25,11 +25,7 @@ export interface UserData {
   email: string;
   role: Role;
   accountNonLocked: boolean;
-  accountNonExpired: boolean;
-  credentialsNonExpired: boolean;
   enabled: boolean;
-  credentialsExpiryDate: string;
-  accountExpiryDate: string;
   twoFactorEnabled: boolean;
   signUpMethod: string;
   createdDate: string;

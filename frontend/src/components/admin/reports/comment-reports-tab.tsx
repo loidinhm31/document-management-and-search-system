@@ -1,23 +1,22 @@
-import { Calendar, FileText, Search, User, X } from "lucide-react";
+import { FileText, Search, User } from "lucide-react";
 import moment from "moment-timezone";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import CommentReportProcessDialog from "@/components/admin/reports/comment-report-process-dialog";
 import CommentReportReasonsDialog from "@/components/admin/reports/comment-report-reasons-dialog";
+import DatePicker from "@/components/common/date-picker";
 import TableSkeleton from "@/components/common/table-skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { reportService } from "@/services/report.service";
-import { CommentReport, ReportStatus, ReportStatusValues, ReportType } from "@/types/document-report";
+import { CommentReport, ReportStatus, ReportType } from "@/types/document-report";
 
 interface CommentReportsResponse {
   content: CommentReport[];
@@ -42,12 +41,38 @@ const CommentReportsTab = () => {
   const [status, setStatus] = useState("all");
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
+  const [dateRangeError, setDateRangeError] = useState<string | null>(null);
 
   const [selectedReport, setSelectedReport] = useState<CommentReport | null>(null);
   const [showReasonsDialog, setShowReasonsDialog] = useState(false);
   const [showResolveDialog, setShowResolveDialog] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
+
+  // Validate date range
+  const validateDateRange = useCallback(() => {
+    if (fromDate && toDate) {
+      // Create date objects for midnight on the selected dates for proper comparison
+      const fromDateObj = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+
+      const toDateObj = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+
+      // Compare dates
+      if (fromDateObj > toDateObj) {
+        setDateRangeError(t("document.history.validation.dateRange"));
+      } else {
+        setDateRangeError(null);
+      }
+    } else {
+      // If both dates aren't selected, no error
+      setDateRangeError(null);
+    }
+  }, [fromDate, toDate, t]);
+
+  // Check validation whenever dates change
+  useEffect(() => {
+    validateDateRange();
+  }, [fromDate, toDate, validateDateRange]);
 
   useEffect(() => {
     loadReportTypes();
@@ -97,6 +122,10 @@ const CommentReportsTab = () => {
   };
 
   const handleSearch = () => {
+    if (dateRangeError) {
+      return;
+    }
+
     setCurrentPage(0);
     fetchReports();
   };
@@ -107,6 +136,7 @@ const CommentReportsTab = () => {
     setStatus("all");
     setFromDate(undefined);
     setToDate(undefined);
+    setDateRangeError(null);
     setCurrentPage(0);
     fetchReports();
   };
@@ -179,20 +209,21 @@ const CommentReportsTab = () => {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <div>
           <Label>{t("admin.reports.comments.filters.commentContent")}</Label>
-          <div className="mt-1">
+          <div className="mt-1 w-full">
             <Input
               value={commentContent}
               onChange={(e) => setCommentContent(e.target.value)}
               placeholder={t("admin.reports.comments.filters.commentContent")}
+              className="w-full"
             />
           </div>
         </div>
 
         <div>
           <Label>{t("admin.reports.comments.filters.reportType")}</Label>
-          <div className="mt-1">
+          <div className="mt-1 w-full">
             <Select value={reportType} onValueChange={setReportType}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder={t("admin.reports.comments.filters.allTypes")} />
               </SelectTrigger>
               <SelectContent>
@@ -209,9 +240,9 @@ const CommentReportsTab = () => {
 
         <div>
           <Label>{t("admin.reports.comments.filters.status")}</Label>
-          <div className="mt-1">
+          <div className="mt-1 w-full">
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder={t("admin.reports.comments.filters.allStatuses")} />
               </SelectTrigger>
               <SelectContent>
@@ -226,66 +257,37 @@ const CommentReportsTab = () => {
 
         <div>
           <Label>{t("admin.reports.comments.filters.fromDate")}</Label>
-          <div className="mt-1">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {fromDate ? (
-                    formatDate(fromDate.toISOString())
-                  ) : (
-                    <span>{t("admin.reports.comments.filters.fromDate")}</span>
-                  )}
-                  {fromDate && (
-                    <X
-                      className="ml-auto h-4 w-4 cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFromDate(undefined);
-                      }}
-                    />
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent mode="single" selected={fromDate} onSelect={setFromDate} initialFocus />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <DatePicker
+            value={fromDate}
+            onChange={setFromDate}
+            placeholder={t("admin.reports.comments.filters.fromDate")}
+            clearAriaLabel="Clear from date"
+            className="w-full mt-1"
+          />
         </div>
 
         <div>
           <Label>{t("admin.reports.comments.filters.toDate")}</Label>
-          <div className="mt-1">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {toDate ? (
-                    formatDate(toDate.toISOString())
-                  ) : (
-                    <span>{t("admin.reports.comments.filters.toDate")}</span>
-                  )}
-                  {toDate && (
-                    <X
-                      className="ml-auto h-4 w-4 cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setToDate(undefined);
-                      }}
-                    />
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent mode="single" selected={toDate} onSelect={setToDate} initialFocus />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <DatePicker
+            value={toDate}
+            onChange={setToDate}
+            placeholder={t("admin.reports.comments.filters.toDate")}
+            clearAriaLabel="Clear to date"
+            className="w-full mt-1"
+          />
         </div>
 
+        {/* Date Range Error Display */}
+        {dateRangeError && (
+          <div className="col-span-full">
+            <div className="rounded-md bg-destructive/15 px-3 py-2 text-sm text-destructive">
+              <span>{dateRangeError}</span>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-end gap-2">
-          <Button onClick={handleSearch} className="flex-1">
+          <Button onClick={handleSearch} className="flex-1" disabled={!!dateRangeError}>
             <Search className="mr-2 h-4 w-4" />
             {t("admin.reports.comments.filters.search")}
           </Button>
@@ -327,9 +329,7 @@ const CommentReportsTab = () => {
                       </Button>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    {truncateContent(report.commentContent)}
-                  </TableCell>
+                  <TableCell>{truncateContent(report.commentContent)}</TableCell>
                   <TableCell>
                     <div className="flex items-center">
                       <User className="mr-2 h-4 w-4 text-muted-foreground" />

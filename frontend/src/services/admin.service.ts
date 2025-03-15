@@ -41,23 +41,6 @@ class AdminService extends BaseService {
       errorMessage: i18next.t("admin.users.actions.updateAccount.error"),
     });
   }
-
-  getStats() {
-    return this.handleApiResponse(axiosInstance.get("/auth/api/v1/admin/stats"));
-  }
-
-  getAuditLogs(
-    params: {
-      username?: string;
-      action?: string;
-      fromDate?: string;
-      toDate?: string;
-      page?: number;
-      size?: number;
-    } = {},
-  ) {
-    return this.handleApiResponse(axiosInstance.get("/auth/api/v1/admin/audit-logs", { params }));
-  }
 }
 
 export const adminService = new AdminService();
