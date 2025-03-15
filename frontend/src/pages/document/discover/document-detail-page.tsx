@@ -243,17 +243,17 @@ export default function DocumentDetailPage() {
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.majors")}</Label>
                       <MultiValueDisplay
-                        value={documentData.majors || documentData.major}
+                        value={documentData.majors}
                         type={MasterDataType.MAJOR}
                         masterData={{ majors }}
                       />
                     </div>
 
-                    {(documentData.courseCodes || documentData.courseCode) && (
+                    {(documentData.courseCodes) && (
                       <div className="space-y-2">
                         <Label>{t("document.detail.fields.courseCodes")}</Label>
                         <MultiValueDisplay
-                          value={documentData.courseCodes || documentData.courseCode}
+                          value={documentData.courseCodes}
                           type={MasterDataType.COURSE_CODE}
                           masterData={{ courseCodes }}
                         />
@@ -271,7 +271,7 @@ export default function DocumentDetailPage() {
                   <div className="space-y-2">
                     <Label>{t("document.detail.fields.categories")}</Label>
                     <MultiValueDisplay
-                      value={documentData.categories || documentData.category}
+                      value={documentData.categories}
                       type={MasterDataType.DOCUMENT_CATEGORY}
                       masterData={{ categories }}
                     />

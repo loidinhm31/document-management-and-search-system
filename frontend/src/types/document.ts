@@ -29,7 +29,6 @@ export interface DocumentInformation {
   majors?: string[];
   courseCodes?: string[];
   courseLevel: string;
-  category: string;
   categories?: string[];
   tags?: string[];
   extractedMetadata?: Record<string, string>;

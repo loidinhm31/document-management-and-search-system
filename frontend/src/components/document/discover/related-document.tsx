@@ -13,6 +13,7 @@ import { useAppSelector } from "@/store/hook";
 import { selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
+import MultiValueDisplay from "@/components/common/multi-value-display";
 
 interface RelatedDocumentsProps {
   documentId: string;
@@ -178,10 +179,13 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
                   </div>
                   <div>
                     <h4 className="font-medium line-clamp-2 text-sm">{doc.filename}</h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })} -{" "}
-                      {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
-                    </p>
+                    <div className="my-2">
+                      <MultiValueDisplay
+                        value={doc.majors}
+                        type={MasterDataType.MAJOR}
+                        masterData={{ majors }}
+                      />
+                    </div>
                   </div>
                 </div>
               </Card>
