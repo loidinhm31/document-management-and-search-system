@@ -2,8 +2,8 @@ package com.dms.processor.consumer;
 
 import com.dms.processor.dto.EmailNotificationPayload;
 import com.dms.processor.dto.NotificationEventRequest;
-import com.dms.processor.dto.PasswordResetEmailPayload;
 import com.dms.processor.enums.EventType;
+import com.dms.processor.exception.InvalidDocumentException;
 import com.dms.processor.service.AuthEmailService;
 import com.dms.processor.service.DocumentEmailService;
 import jakarta.mail.MessagingException;
@@ -39,7 +39,7 @@ public class EmailNotificationConsumer {
     }
 
     @RabbitListener(queues = "${rabbitmq.queues.email-auth}")
-    public void consumeOtpEmail(EmailNotificationPayload payload) throws MessagingException {
+    public void consumeAuthEmail(EmailNotificationPayload payload) throws MessagingException {
         log.info("Received email request for user: {}", payload.getUsername());
         try {
             if (payload.getEventType().equals("VERIFY_OTP")) {

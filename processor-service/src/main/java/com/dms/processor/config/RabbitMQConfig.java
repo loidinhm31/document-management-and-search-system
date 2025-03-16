@@ -8,7 +8,6 @@ import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFacto
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
-import org.springframework.amqp.rabbit.retry.RepublishMessageRecoverer;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +17,10 @@ import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.amqp.support.converter.DefaultJackson2JavaTypeMapper;
+import org.springframework.amqp.support.converter.MessageConversionException;
+import org.springframework.amqp.support.converter.SimpleMessageConverter;
+import org.springframework.amqp.rabbit.listener.ConditionalRejectingErrorHandler;
 
 @Configuration
 @Slf4j
@@ -173,9 +176,9 @@ public class RabbitMQConfig {
     @Bean
     public Binding emailDocumentDlqBinding() {
         return BindingBuilder
-                .bind(emailAuthDlq())
+                .bind(emailDocumentDlq())
                 .to(deadLetterExchange())
-                .with(deadLetterRoutingKey + ".email-document");
+                .with(deadLetterRoutingKey + ".email.document");
     }
 
     @Bean
@@ -208,9 +211,44 @@ public class RabbitMQConfig {
         return factory;
     }
 
+    /**
+     * Configure a special listener factory for the dead letter queues
+     * that doesn't attempt retries or republishing
+     */
+    /**
+     * Special container factory for dead letter queues that uses a simple string converter
+     * to avoid deserialization issues with failed messages
+     */
+    @Bean
+    public SimpleRabbitListenerContainerFactory dlqListenerContainerFactory() {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+
+        // Use a simpler message converter that doesn't try to deserialize to specific types
+        // This way we can handle messages with types that might not exist in our classpath
+        factory.setMessageConverter(new SimpleMessageConverter());
+
+        // Configure error handling
+        factory.setErrorHandler(new ConditionalRejectingErrorHandler(new ConditionalRejectingErrorHandler.DefaultExceptionStrategy() {
+            @Override
+            public boolean isFatal(Throwable t) {
+                if (t instanceof MessageConversionException) {
+                    log.warn("Message conversion error in DLQ handler, treating as non-fatal: {}", t.getMessage());
+                    return false;
+                }
+                return super.isFatal(t);
+            }
+        }));
+
+        // No retry interceptor for DLQ - we don't want to retry failed messages again
+        factory.setConcurrentConsumers(1);
+        factory.setMaxConcurrentConsumers(2);
+        return factory;
+    }
+
     @Bean
     public MessageRecoverer messageRecoverer() {
-        return new RepublishMessageRecoverer(rabbitTemplate(), deadLetterExchange, deadLetterRoutingKey);
+        return new HandleRepublishMessageRecoverer(rabbitTemplate(), deadLetterExchange);
     }
 
     @Bean
@@ -230,6 +268,13 @@ public class RabbitMQConfig {
 
     @Bean
     public MessageConverter jacksonConverter() {
-        return new Jackson2JsonMessageConverter(objectMapper);
+        Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter(objectMapper);
+
+        // Configure type mapping to handle classes from different packages
+        DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
+        typeMapper.setTrustedPackages("*");  // Trust all packages
+        converter.setJavaTypeMapper(typeMapper);
+
+        return converter;
     }
 }

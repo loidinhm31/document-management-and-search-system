@@ -75,15 +75,15 @@ rabbitmq:
     notification: notification.exchange
     dlx: dead.letter.exchange
   queues:
-    document-process: document.process.queue
-    document-process-dlq: document.process.dlq
+    document-process: document-process.queue
+    document-process-dlq: document-process.dlq
     email-document: notification.email.document.queue
     email-document-dlq: notification.email.document.dlq
-    email-auth: notification.email.auth.queue
-    email-auth-dlq: notification.email.auth.dlq
+    email-auth: notification.email-auth.queue
+    email-auth-dlq: notification.email-auth.dlq
   routing-keys:
-    document-process: document.process.routing-key
-    email-auth: notification.email.auth.routing-key
+    document-process: document-process.routing-key
+    email-auth: notification.email-auth.routing-key
     dead-letter: dead.letter.routing-key
 
 aws:

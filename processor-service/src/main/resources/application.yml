@@ -12,7 +12,6 @@ logging:
         data:
           elasticsearch: DEBUG
       elasticsearch: DEBUG
-
 spring:
   application:
     name: processor-service
