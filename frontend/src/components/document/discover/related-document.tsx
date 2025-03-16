@@ -3,17 +3,16 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import MultiValueDisplay from "@/components/common/multi-value-display";
 import { LazyThumbnail } from "@/components/document/my-document/lazy-thumbnail";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
 import { selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentInformation } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
-import MultiValueDisplay from "@/components/common/multi-value-display";
 
 interface RelatedDocumentsProps {
   documentId: string;
@@ -23,7 +22,7 @@ interface RelatedDocumentsProps {
 export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumentsProps) {
   const { t } = useTranslation();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const { majors, categories } = useAppSelector(selectMasterData);
+  const { majors } = useAppSelector(selectMasterData);
   const { toast } = useToast();
 
   const [documents, setDocuments] = useState<DocumentInformation[]>([]);
@@ -180,11 +179,7 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
                   <div>
                     <h4 className="font-medium line-clamp-2 text-sm">{doc.filename}</h4>
                     <div className="my-2">
-                      <MultiValueDisplay
-                        value={doc.majors}
-                        type={MasterDataType.MAJOR}
-                        masterData={{ majors }}
-                      />
+                      <MultiValueDisplay value={doc.majors} type={MasterDataType.MAJOR} masterData={{ majors }} />
                     </div>
                   </div>
                 </div>
