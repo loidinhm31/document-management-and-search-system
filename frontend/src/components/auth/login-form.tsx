@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { OAUTH_GOOGLE_REDIRECT_URL } from "@/env";
-import { useToast } from "@/hooks/use-toast";
 import { createLoginSchema, LoginFormValues } from "@/schemas/login-schema";
 import { authService } from "@/services/auth.service";
 import { LoginRequest, TokenResponse } from "@/types/auth";
@@ -21,7 +20,6 @@ interface LoginFormProps {
 
 export const LoginForm = ({ onSuccess }: LoginFormProps) => {
   const { t, i18n } = useTranslation();
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -53,7 +51,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       if (!response.data.enabled) {
         // Redirect to OTP verification if account is not enabled
         navigate("/verify-otp", {
-          state: { username: data.username },
+          state: { username: data.identifier },
         });
         return;
       }

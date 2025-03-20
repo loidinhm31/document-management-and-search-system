@@ -25,7 +25,10 @@ export const createResetPasswordSchema = (t: TFunction) => {
         .min(6, t("auth.resetPassword.validation.passwordMinLength", "Password must be at least 6 characters"))
         .regex(
           /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
-          t("auth.resetPassword.validation.passwordPattern", "Password must contain at least one digit, lowercase, uppercase, and special character")
+          t(
+            "auth.resetPassword.validation.passwordPattern",
+            "Password must contain at least one digit, lowercase, uppercase, and special character",
+          ),
         ),
       confirmPassword: z.string(),
     })

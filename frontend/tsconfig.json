@@ -17,6 +17,8 @@
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "baseUrl": ".",

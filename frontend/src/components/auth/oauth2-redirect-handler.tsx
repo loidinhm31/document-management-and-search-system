@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { TwoFactorForm } from "@/components/auth/two-factor-form";
+import LanguageSwitcher from "@/components/common/language-switcher";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { JwtPayload, TokenResponse } from "@/types/auth";
-import LanguageSwitcher from "@/components/common/language-switcher";
-import { ThemeToggle } from "@/components/common/theme-toggle";
 
 export default function OAuth2RedirectHandler() {
   const { t } = useTranslation();

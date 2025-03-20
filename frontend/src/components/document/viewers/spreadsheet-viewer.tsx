@@ -131,12 +131,7 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
               </Button>
             )}
 
-            <ScrollArea
-              className="max-w-[500px] px-8"
-              onScroll={handleScrollEvent}
-              ref={scrollRef}
-              orientation="horizontal"
-            >
+            <ScrollArea className="max-w-[500px] px-8" onScroll={handleScrollEvent} ref={scrollRef}>
               <div className="flex gap-2">
                 {sheets.map((sheet, index) => (
                   <Button

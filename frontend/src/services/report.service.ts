@@ -80,11 +80,13 @@ class ReportService extends BaseService {
   }
 
   getCommentReportDetail(commentId: number, status: ReportStatus) {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/comments/${commentId}`, {
-      params: {
-        status
-      }
-    }));
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/reports/comments/${commentId}`, {
+        params: {
+          status,
+        },
+      }),
+    );
   }
 
   resolveCommentReport(reportId: number, status: string) {

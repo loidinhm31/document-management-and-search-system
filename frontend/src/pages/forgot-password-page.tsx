@@ -6,15 +6,15 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 
 import LanguageSwitcher from "@/components/common/language-switcher";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { createForgotPasswordSchema,ForgotPasswordFormValues } from "@/schemas/forgot-password-schema";
+import { createForgotPasswordSchema, ForgotPasswordFormValues } from "@/schemas/forgot-password-schema";
 import { authService } from "@/services/auth.service";
-import { ThemeToggle } from "@/components/common/theme-toggle";
 
 export default function ForgotPasswordPage() {
   const { t, i18n } = useTranslation();
@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
       });
       form.reset();
       navigate("/login");
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("auth.forgotPassword.error"),

@@ -110,7 +110,7 @@ const CommentReportsTab = () => {
 
       setReports(data.content);
       setTotalPages(data.totalPages);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.reports.comments.fetchError"),
@@ -165,7 +165,7 @@ const CommentReportsTab = () => {
         variant: "success",
       });
       fetchReports();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.reports.comments.processError"),

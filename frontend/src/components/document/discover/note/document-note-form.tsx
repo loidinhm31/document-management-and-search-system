@@ -47,7 +47,7 @@ export function DocumentNoteForm({ documentId, currentNote, onSuccess, onCancel 
       });
 
       onSuccess();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: isEditing ? t("document.notes.editError") : t("document.notes.addError"),

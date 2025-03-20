@@ -24,11 +24,7 @@ export default function ReportsManagementPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs
-            defaultValue="documents"
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full">
+          <Tabs defaultValue="documents" value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="documents">{t("admin.reports.tabs.documents")}</TabsTrigger>
               <TabsTrigger value="comments">{t("admin.reports.tabs.comments")}</TabsTrigger>

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { DeleteDialog } from "@/components/common/delete-dialog";
-import { DocumentForm, DocumentFormValues } from "@/components/document/document-form";
+import { DocumentForm } from "@/components/document/document-form";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
 import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
@@ -14,6 +14,7 @@ import { useAuth } from "@/context/auth-context";
 import { useProcessing } from "@/context/processing-provider";
 import { RoutePaths } from "@/core/route-config";
 import { useToast } from "@/hooks/use-toast";
+import { DocumentFormValues } from "@/schemas/document-schema";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
@@ -99,12 +100,12 @@ export default function MyDocumentDetailPage() {
 
         // Handle majors (multiple values)
         if (data.majors && data.majors.length > 0) {
-          data.majors.forEach((major) => formData.append("majors", major));
+          data.majors.forEach((major: string) => formData.append("majors", major));
         }
 
         // Handle course codes (multiple values)
         if (data.courseCodes && data.courseCodes.length > 0) {
-          data.courseCodes.forEach((courseCode) => formData.append("courseCodes", courseCode));
+          data.courseCodes.forEach((courseCode: string) => formData.append("courseCodes", courseCode));
         }
 
         // Single value fields
@@ -112,12 +113,12 @@ export default function MyDocumentDetailPage() {
 
         // Handle categories (multiple values)
         if (data.categories && data.categories.length > 0) {
-          data.categories.forEach((category) => formData.append("categories", category));
+          data.categories.forEach((category: string) => formData.append("categories", category));
         }
 
         // Tags (multiple values)
         if (data.tags && data.tags.length > 0) {
-          data.tags.forEach((tag) => formData.append("tags", tag));
+          data.tags.forEach((tag: string) => formData.append("tags", tag));
         }
 
         updateResponse = await handleFileUpdate(documentId, formData);
@@ -260,11 +261,10 @@ export default function MyDocumentDetailPage() {
                   key={`df-${documentData.id}-${documentData.updatedAt}`}
                   initialValues={{
                     summary: documentData?.summary || "",
-                    majors: documentData?.majors || (documentData?.major ? [documentData.major] : []),
-                    courseCodes:
-                      documentData?.courseCodes || (documentData?.courseCode ? [documentData.courseCode] : []),
+                    majors: documentData?.majors || [],
+                    courseCodes: documentData?.courseCodes || [],
                     level: documentData?.courseLevel || "",
-                    categories: documentData?.categories || (documentData?.category ? [documentData.category] : []),
+                    categories: documentData?.categories || [],
                     tags: documentData?.tags || [],
                   }}
                   onSubmit={handleSubmit}

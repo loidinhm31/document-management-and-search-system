@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Upload } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { FileRejection, useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 
@@ -136,7 +136,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
   }, []);
 
   const onDropRejected = useCallback(
-    (fileRejections) => {
+    (fileRejections: FileRejection[]) => {
       const fileSizeError = fileRejections.find((rejection) =>
         rejection.errors.some((error) => error.code === "file-too-large"),
       );

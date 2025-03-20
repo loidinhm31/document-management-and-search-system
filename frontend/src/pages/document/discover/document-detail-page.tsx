@@ -47,7 +47,6 @@ export default function DocumentDetailPage() {
 
   const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
-
   const handleFavorite = async () => {
     if (!documentId) return;
 
@@ -249,7 +248,7 @@ export default function DocumentDetailPage() {
                       />
                     </div>
 
-                    {(documentData.courseCodes) && (
+                    {documentData.courseCodes && (
                       <div className="space-y-2">
                         <Label>{t("document.detail.fields.courseCodes")}</Label>
                         <MultiValueDisplay

@@ -75,10 +75,10 @@ const SearchSuggestions = ({ onSearch, className = "", placeholder }: SearchSugg
   const handleSuggestionSelect = (suggestion: string) => {
     // Remove highlight markers and clean up whitespace
     const cleanText = suggestion
-      .replace(/@@HIGHLIGHT@@/g, '')          // Remove start highlight marker
-      .replace(/@@E_HIGHLIGHT@@/g, '')        // Remove end highlight marker
-      .replace(/\s+/g, ' ')                   // Replace multiple spaces with a single space
-      .trim();                                // Remove leading/trailing spaces
+      .replace(/@@HIGHLIGHT@@/g, "") // Remove start highlight marker
+      .replace(/@@E_HIGHLIGHT@@/g, "") // Remove end highlight marker
+      .replace(/\s+/g, " ") // Replace multiple spaces with a single space
+      .trim(); // Remove leading/trailing spaces
 
     // Set the cleaned text as the search term
     dispatch(setSearchTerm(cleanText));

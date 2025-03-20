@@ -1,4 +1,5 @@
 import { Download, Eye } from "lucide-react";
+import moment from "moment-timezone";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -6,12 +7,11 @@ import { LazyThumbnail } from "@/components/document/my-document/lazy-thumbnail"
 import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { DocumentInformation } from "@/types/document";
-import moment from "moment-timezone";
-import { Separator } from "@/components/ui/separator";
 
 interface DocumentCardProps {
   documentInformation: DocumentInformation;

@@ -40,7 +40,7 @@ export default function RevokeTokensButton({ userId, onSuccess }: RevokeTokensBu
 
       setShowDialog(false);
       if (onSuccess) onSuccess();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.users.actions.revokeTokens.error", "Failed to revoke tokens"),
@@ -73,24 +73,16 @@ export default function RevokeTokensButton({ userId, onSuccess }: RevokeTokensBu
             <DialogDescription>
               {t(
                 "admin.users.actions.revokeTokens.description",
-                "This action will invalidate all refresh tokens for this user. The user will need to log in again on all devices. This cannot be undone."
+                "This action will invalidate all refresh tokens for this user. The user will need to log in again on all devices. This cannot be undone.",
               )}
             </DialogDescription>
           </DialogHeader>
 
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDialog(false)}
-              disabled={loading}
-            >
+            <Button variant="outline" onClick={() => setShowDialog(false)} disabled={loading}>
               {t("common.cancel")}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRevokeTokens}
-              disabled={loading}
-            >
+            <Button variant="destructive" onClick={handleRevokeTokens} disabled={loading}>
               {loading ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />

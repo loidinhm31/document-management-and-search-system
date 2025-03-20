@@ -10,7 +10,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export const DocumentListActions = ({ onDownload, onShowPreview }) => {
+interface DocumentListActionsProps {
+  onDownload: () => void;
+  onShowPreview: () => void;
+}
+
+export const DocumentListActions: React.FC<DocumentListActionsProps> = ({ onDownload, onShowPreview }) => {
   const { t } = useTranslation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 

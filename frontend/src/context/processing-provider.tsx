@@ -1,7 +1,6 @@
 import React, { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import {
   addProcessingItem,

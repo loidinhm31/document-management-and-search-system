@@ -1,6 +1,5 @@
 export interface Translation {
-  en: string;
-  vi: string;
+  [key: string]: string;
 }
 
 export enum MasterDataType {
@@ -24,8 +23,8 @@ export interface MasterData {
 }
 
 export const MASTER_DATA_HIERARCHY = {
-  [MasterDataType.MAJOR]: [],
-  [MasterDataType.COURSE_CODE]: [MasterDataType.MAJOR],
-  [MasterDataType.COURSE_LEVEL]: [],
-  [MasterDataType.DOCUMENT_CATEGORY]: [],
+  [MasterDataType.MAJOR]: [MasterDataType.MAJOR],
+  [MasterDataType.COURSE_CODE]: [MasterDataType.COURSE_CODE],
+  [MasterDataType.COURSE_LEVEL]: [MasterDataType.COURSE_LEVEL],
+  [MasterDataType.DOCUMENT_CATEGORY]: [MasterDataType.DOCUMENT_CATEGORY],
 };

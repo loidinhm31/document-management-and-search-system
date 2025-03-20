@@ -103,7 +103,7 @@ export function ReportCommentDialog({
       }
 
       setOpen(false);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("comments.report.createError"),

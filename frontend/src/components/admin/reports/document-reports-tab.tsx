@@ -1,5 +1,4 @@
 import { Search, UserRound } from "lucide-react";
-import moment from "moment-timezone";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -112,7 +111,7 @@ const DocumentReportsTab = () => {
 
       setReports(data.content);
       setTotalPages(data.totalPages);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.reports.documents.fetchError"),
@@ -167,7 +166,7 @@ const DocumentReportsTab = () => {
         variant: "success",
       });
       fetchReports();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.reports.documents.processError"),
@@ -177,10 +176,6 @@ const DocumentReportsTab = () => {
       setProcessingReport(false);
       setShowProcessDialog(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return moment(dateString).format("DD/MM/YYYY, h:mm a");
   };
 
   const canResolve = (report: DocumentReport) => {

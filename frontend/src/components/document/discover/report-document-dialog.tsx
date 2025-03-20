@@ -99,7 +99,7 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
         variant: "success",
       });
       setOpen(false);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.report.createError"),

@@ -1,6 +1,6 @@
-import { Label } from "@radix-ui/react-menu";
+import { Label } from "@radix-ui/react-label";
 import { Loader2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,20 @@ const TIMER_DURATION = 5 * 60; // 5 minutes in seconds
 const MAX_ATTEMPTS = 5;
 const LOCK_DURATION = 1800; // 30 minutes in seconds
 
-export default function OtpVerificationForm({ onVerified, onResend }) {
+interface OtpVerificationResponse {
+  data?: {
+    verified: boolean;
+    locked: boolean;
+    otpCount: number;
+  };
+}
+
+interface OtpVerificationFormProps {
+  onVerified: (otp: string) => Promise<OtpVerificationResponse>;
+  onResend: () => Promise<void>;
+}
+
+export default function OtpVerificationForm({ onVerified, onResend }: OtpVerificationFormProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -24,7 +37,7 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
 
   // Timer countdown effect
   useEffect(() => {
-    let interval;
+    let interval: NodeJS.Timeout | undefined;
     if (timer > 0) {
       interval = setInterval(() => {
         setTimer((prev) => prev - 1);
@@ -35,7 +48,7 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
 
   // Lock timer countdown effect
   useEffect(() => {
-    let interval;
+    let interval: NodeJS.Timeout | undefined;
     if (lockTimer > 0) {
       interval = setInterval(() => {
         setLockTimer((prev) => prev - 1);
@@ -46,20 +59,20 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
     return () => clearInterval(interval);
   }, [lockTimer, isLocked]);
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const handleResendOtp = async () => {
+  const handleResendOtp = async (): Promise<void> => {
     setIsLoading(true);
     await onResend();
     setTimer(TIMER_DURATION);
     setIsLoading(false);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (isLockTimer || isLocked || !otpValue || otpValue.length !== 6) return;
 
@@ -99,7 +112,7 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
     setIsLoading(false);
   };
 
-  const handleOtpChange = (e) => {
+  const handleOtpChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const value = e.target.value.replace(/[^\d]/g, "").slice(0, 6);
     setOtpValue(value);
   };

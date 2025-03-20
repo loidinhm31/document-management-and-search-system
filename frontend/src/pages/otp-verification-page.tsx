@@ -44,13 +44,22 @@ export default function OtpVerificationPage() {
 
         navigate("/");
       }
-      return response;
+
+      return {
+        data: {
+          verified: !!response.data.verified,
+          locked: !!response.data.locked,
+          otpCount: response.data.otpCount || 0,
+        },
+      };
     } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("auth.otp.failure"),
         variant: "destructive",
       });
+
+      return { data: undefined };
     }
   };
 

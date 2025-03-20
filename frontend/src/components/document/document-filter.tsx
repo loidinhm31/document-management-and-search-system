@@ -119,7 +119,6 @@ export const DocumentFilter = ({
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.majorPlaceholder")}
           disabled={!availableMajors}
-          allowMultiple={true}
         />
       </div>
 
@@ -133,14 +132,13 @@ export const DocumentFilter = ({
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.courseCodePlaceholder")}
           disabled={!filteredCourseCodes || majors.length === 0 || majors.includes("all")}
-          allowMultiple={true}
         />
       </div>
 
-      {/* Level Filter - Keep as is */}
+      {/* Level Filter */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.levelLabel")}</Label>
-        <Select value={undefined} onValueChange={onLevelChange}>
+        <Select value={level} onValueChange={onLevelChange}>
           <SelectTrigger disabled={!levels}>
             <SelectValue placeholder={t("document.commonSearch.levelPlaceholder")} />
           </SelectTrigger>
@@ -164,7 +162,6 @@ export const DocumentFilter = ({
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.categoryPlaceholder")}
           disabled={!availableCategories}
-          allowMultiple={true}
         />
       </div>
 

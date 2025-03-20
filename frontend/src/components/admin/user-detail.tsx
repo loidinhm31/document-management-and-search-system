@@ -132,7 +132,7 @@ export default function UserDetail() {
 
       // Refresh user data
       fetchUserData();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.users.actions.updateRole.error"),
@@ -160,7 +160,7 @@ export default function UserDetail() {
 
       // Refresh user data
       fetchUserData();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.users.actions.updateAccount.error"),
@@ -219,7 +219,9 @@ export default function UserDetail() {
               <h3 className="text-xl font-semibold">{userData.username}</h3>
               <p className="text-muted-foreground">{userData.email}</p>
               <div className="mt-1 flex items-center">
-                <div className={`mr-2 h-2.5 w-2.5 rounded-full ${userData.enabled ? "bg-green-500" : "bg-red-500"}`}></div>
+                <div
+                  className={`mr-2 h-2.5 w-2.5 rounded-full ${userData.enabled ? "bg-green-500" : "bg-red-500"}`}
+                ></div>
                 <span className="text-sm text-muted-foreground">
                   {userData.enabled ? t("admin.users.status.active") : t("admin.users.status.inactive")}
                 </span>
@@ -274,13 +276,13 @@ export default function UserDetail() {
                 onClick={handleUpdateRole}
                 disabled={roleLoading || !roleChanged || isOwnProfile}
                 size="sm"
-                title={isOwnProfile ? t("admin.users.actions.updateRole.cannotChangeOwnRole", "You cannot change your own role") : ""}
+                title={
+                  isOwnProfile
+                    ? t("admin.users.actions.updateRole.cannotChangeOwnRole", "You cannot change your own role")
+                    : ""
+                }
               >
-                {roleLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
+                {roleLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                 {t("common.update")}
               </Button>
             </div>
@@ -306,16 +308,8 @@ export default function UserDetail() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Switch
-                  checked={accountLocked}
-                  onCheckedChange={setAccountLocked}
-                  disabled={statusLoading}
-                />
-                <Button
-                  onClick={handleUpdateAccountStatus}
-                  disabled={statusLoading || !accountStatusChanged}
-                  size="sm"
-                >
+                <Switch checked={accountLocked} onCheckedChange={setAccountLocked} disabled={statusLoading} />
+                <Button onClick={handleUpdateAccountStatus} disabled={statusLoading || !accountStatusChanged} size="sm">
                   {statusLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : (
@@ -337,10 +331,7 @@ export default function UserDetail() {
                   {t("admin.users.details.accountStatus.tokenExpiredDescription")}
                 </p>
               </div>
-              <RevokeTokensButton
-                userId={userId}
-                onSuccess={fetchUserData}
-              />
+              <RevokeTokensButton userId={userId} onSuccess={fetchUserData} />
             </div>
 
             {/* 2FA Status */}
@@ -360,9 +351,11 @@ export default function UserDetail() {
                     : "User has not enabled two-factor authentication"}
                 </p>
               </div>
-              <div className={`rounded-full px-2 py-1 text-xs ${
-                userData.twoFactorEnabled ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
-              }`}>
+              <div
+                className={`rounded-full px-2 py-1 text-xs ${
+                  userData.twoFactorEnabled ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
+                }`}
+              >
                 {userData.twoFactorEnabled ? "Enabled" : "Disabled"}
               </div>
             </div>
@@ -375,9 +368,11 @@ export default function UserDetail() {
                   <h4 className="font-medium">Sign Up Method</h4>
                 </div>
               </div>
-              <div className={`rounded-full px-2 py-1 text-xs ${
-                userData.signUpMethod === "google" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"
-              }`}>
+              <div
+                className={`rounded-full px-2 py-1 text-xs ${
+                  userData.signUpMethod === "google" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"
+                }`}
+              >
                 {userData.signUpMethod === "google" ? "Google" : "Email"}
               </div>
             </div>

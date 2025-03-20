@@ -1,8 +1,10 @@
 import { Download } from "lucide-react";
-import React from "react";
+import React, { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import type { PluggableList } from "unified";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,9 +21,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content, onDownl
   const { t } = useTranslation();
 
   // Custom components for markdown rendering
-  const components = {
+  const components: Components = {
     // Custom table components using shadcn/ui
-    table: ({ children, ...props }) => (
+    table: ({ children, ...props }: { children: ReactNode; [key: string]: any }) => (
       <div className="my-4 w-full overflow-auto">
         <Table {...props}>{children}</Table>
       </div>
@@ -29,10 +31,26 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content, onDownl
     thead: TableHeader,
     tbody: TableBody,
     tr: TableRow,
-    th: ({ children, ...props }) => <TableHead {...props}>{children}</TableHead>,
-    td: ({ children, ...props }) => <TableCell {...props}>{children}</TableCell>,
+    th: ({ children, ...props }: { children: ReactNode; [key: string]: any }) => (
+      <TableHead {...props}>{children}</TableHead>
+    ),
+    td: ({ children, ...props }: { children: ReactNode; [key: string]: any }) => (
+      <TableCell {...props}>{children}</TableCell>
+    ),
     // Custom code block with syntax highlighting
-    code: ({ _node, inline, className, children, ...props }) => {
+    code: ({
+      _node,
+      inline,
+      className,
+      children,
+      ...props
+    }: {
+      _node?: any;
+      inline?: boolean;
+      className?: string;
+      children: ReactNode;
+      [key: string]: any;
+    }) => {
       const match = /language-(\w+)/.exec(className || "");
       const language = match ? match[1] : "";
 
@@ -55,21 +73,27 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content, onDownl
       );
     },
     // Custom blockquote styling
-    blockquote: ({ children }) => (
+    blockquote: ({ children }: { children: ReactNode }) => (
       <blockquote className="mt-6 border-l-2 border-muted pl-6 italic">{children}</blockquote>
     ),
     // Custom list styling
-    ul: ({ children }) => <ul className="my-6 ml-6 list-disc [&>li]:mt-2">{children}</ul>,
-    ol: ({ children }) => <ol className="my-6 ml-6 list-decimal [&>li]:mt-2">{children}</ol>,
+    ul: ({ children }: { children: ReactNode }) => <ul className="my-6 ml-6 list-disc [&>li]:mt-2">{children}</ul>,
+    ol: ({ children }: { children: ReactNode }) => <ol className="my-6 ml-6 list-decimal [&>li]:mt-2">{children}</ol>,
     // Custom heading styles
-    h1: ({ children }) => (
+    h1: ({ children }: { children: ReactNode }) => (
       <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">{children}</h1>
     ),
-    h2: ({ children }) => <h2 className="scroll-m-20 text-3xl font-semibold tracking-tight mb-4">{children}</h2>,
-    h3: ({ children }) => <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight mb-4">{children}</h3>,
-    h4: ({ children }) => <h4 className="scroll-m-20 text-xl font-semibold tracking-tight mb-4">{children}</h4>,
+    h2: ({ children }: { children: ReactNode }) => (
+      <h2 className="scroll-m-20 text-3xl font-semibold tracking-tight mb-4">{children}</h2>
+    ),
+    h3: ({ children }: { children: ReactNode }) => (
+      <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight mb-4">{children}</h3>
+    ),
+    h4: ({ children }: { children: ReactNode }) => (
+      <h4 className="scroll-m-20 text-xl font-semibold tracking-tight mb-4">{children}</h4>
+    ),
     // Custom paragraph styling
-    p: ({ children }) => <p className="leading-7 [&:not(:first-child)]:mt-6">{children}</p>,
+    p: ({ children }: { children: ReactNode }) => <p className="leading-7 [&:not(:first-child)]:mt-6">{children}</p>,
   };
 
   return (
@@ -82,7 +106,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content, onDownl
       </div>
       <ScrollArea className="flex-1 bg-background">
         <div className="p-6">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+          <ReactMarkdown remarkPlugins={[remarkGfm] as PluggableList} components={components}>
             {content}
           </ReactMarkdown>
         </div>

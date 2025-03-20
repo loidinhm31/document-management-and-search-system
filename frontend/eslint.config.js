@@ -45,6 +45,7 @@ export default [
         clearInterval: true,
         setInterval: true,
         process: true,
+        NodeJS: true,
       },
       ecmaVersion: "latest",
       sourceType: "module",

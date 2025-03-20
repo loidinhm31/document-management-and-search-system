@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { DocumentReport, ReportStatus, ReportStatusValues } from "@/types/document-report";
 import { cn } from "@/lib/utils";
+import { DocumentReport, ReportStatus, ReportStatusValues } from "@/types/document-report";
 
 interface DocumentReportProcessDialogProps {
   open: boolean;

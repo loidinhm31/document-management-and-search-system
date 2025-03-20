@@ -34,7 +34,7 @@ export default function DocumentUserHistoryPage() {
   });
 
   const [searchInput, setSearchInput] = useState("");
-  const [selectedActionType, setSelectedActionType] = useState<UserDocumentActionType | undefined>("all");
+  const [selectedActionType, setSelectedActionType] = useState<UserDocumentActionType | undefined>(undefined);
   const [selectedFromDate, setSelectedFromDate] = useState<Date | undefined>(undefined);
   const [selectedToDate, setSelectedToDate] = useState<Date | undefined>(undefined);
   const [dateRangeError, setDateRangeError] = useState<string | null>(null);
@@ -135,7 +135,7 @@ export default function DocumentUserHistoryPage() {
   // Handle filter reset
   const handleReset = () => {
     setSearchInput("");
-    setSelectedActionType("all");
+    setSelectedActionType(undefined);
     setSelectedFromDate(undefined);
     setSelectedToDate(undefined);
     // dateRangeError will be cleared by the useEffect that monitors date changes

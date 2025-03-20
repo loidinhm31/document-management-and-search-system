@@ -137,7 +137,7 @@ export const DocumentViewer = ({
 
         case DocumentType.CSV: {
           const text = await blob.text();
-          Papa.parse(text, {
+          Papa.parse<Array<unknown>>(text, {
             complete: (results) => {
               // Transform and type the data properly
               const typedData = results.data.map((row) =>
@@ -147,16 +147,18 @@ export const DocumentViewer = ({
                   if (typeof cell === "boolean") return cell;
                   return String(cell);
                 }),
-              ) as Array<Array<string | number | boolean | Date>>;
+              ) as Array<Array<string | number | boolean | Date | null>>;
               setCsvContent(typedData);
             },
-            error: (error) => {
+            error: (error: Error) => {
               console.info("Error parsing CSV:", error);
               setError("Failed to parse CSV file");
             },
             delimiter: ",", // auto-detect delimiter
             dynamicTyping: true, // convert numbers and booleans
             skipEmptyLines: true,
+            worker: false,
+            download: false,
           });
           break;
         }

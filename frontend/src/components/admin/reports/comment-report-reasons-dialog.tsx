@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { reportService } from "@/services/report.service";
-import { CommentReportDetail, ReportStatus, ReportStatusValues, ReportType } from "@/types/document-report";
+import { CommentReportDetail, ReportStatus, ReportType } from "@/types/document-report";
 
 interface CommentReportReasonsDialogProps {
   open: boolean;
@@ -50,7 +50,7 @@ const CommentReportReasonsDialog: React.FC<CommentReportReasonsDialogProps> = ({
       const response = await reportService.getCommentReportDetail(commentId, status);
       console.log("rers", response.data);
       setReportDetails(response.data);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.reports.comments.reasonsError"),
@@ -62,13 +62,12 @@ const CommentReportReasonsDialog: React.FC<CommentReportReasonsDialogProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    console.log("dateString", dateString);
     const date = new Date(dateString);
     return date.toLocaleString();
   };
 
-  const mapReportType = (reportTypeCode: string) => {
-    return reportTypes?.find((type) => type?.code === reportTypeCode);
+  const mapReportType = (reportTypeCode: string): ReportType => {
+    return reportTypes?.find((type: ReportType) => type?.code === reportTypeCode);
   };
 
   return (
@@ -92,9 +91,7 @@ const CommentReportReasonsDialog: React.FC<CommentReportReasonsDialogProps> = ({
                 <div className="rounded-lg border p-4">
                   <div className="space-y-2">
                     <h3 className="font-medium">{t("admin.reports.comments.dialogs.reasons.comment")}</h3>
-                    <div className="bg-muted p-3 rounded-md">
-                      {reportDetails[0].commentContent}
-                    </div>
+                    <div className="bg-muted p-3 rounded-md">{reportDetails[0].commentContent}</div>
                   </div>
                 </div>
               </div>

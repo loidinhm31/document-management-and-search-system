@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -11,7 +12,6 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { createPasswordSchema, PasswordFormValues } from "@/schemas/password-update-schema";
 import { userService } from "@/services/user.service";
-import { useNavigate } from "react-router-dom";
 
 export default function PasswordUpdateForm() {
   const { t, i18n } = useTranslation();
@@ -60,7 +60,7 @@ export default function PasswordUpdateForm() {
       setTimeout(() => {
         clearAuthData();
         navigate("/login");
-      }, 2000)
+      }, 2000);
     } catch (error: any) {
       console.log("error", error?.response);
 

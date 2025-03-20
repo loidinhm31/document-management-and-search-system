@@ -143,7 +143,7 @@ export default function UserProfile() {
         description: t("profile.twoFactor.messages.enableSuccess"),
         variant: "success",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("profile.twoFactor.messages.verifyError"),
@@ -154,7 +154,7 @@ export default function UserProfile() {
     }
   };
 
-  const handleOtpChange = (e) => {
+  const handleOtpChange = (e: { target: { value: string } }) => {
     const value = e.target.value.replace(/[^\d]/g, "").slice(0, 6);
     setVerificationCode(value);
   };

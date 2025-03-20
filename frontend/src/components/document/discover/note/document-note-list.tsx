@@ -36,7 +36,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
     try {
       const response = await documentNoteService.getAllNotes(documentId);
       setNotes(response.data);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.notes.fetchError"),

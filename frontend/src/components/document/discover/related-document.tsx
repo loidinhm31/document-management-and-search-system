@@ -44,7 +44,7 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
 
       setDocuments(newDocs);
       setHasMore(newDocs.length === ITEMS_PER_PAGE);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.related.error"),
@@ -71,11 +71,11 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
 
       setDocuments((prev) => {
         const existingIds = new Set(prev.map((doc) => doc.id));
-        const uniqueNewDocs = newDocs.filter((doc) => !existingIds.has(doc.id));
+        const uniqueNewDocs = newDocs.filter((doc: { id: string }) => !existingIds.has(doc.id));
         return [...prev, ...uniqueNewDocs];
       });
       setHasMore(newDocs.length === ITEMS_PER_PAGE);
-    } catch (error) {
+    } catch (_error) {
       setHasMore(false);
     } finally {
       setLoading(false);

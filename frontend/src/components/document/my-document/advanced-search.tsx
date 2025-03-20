@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export interface SearchFilters {
   search?: string;
   majors?: string[];
+  courseCodes?: string[];
   level?: string;
   categories?: string[];
   sort?: string;

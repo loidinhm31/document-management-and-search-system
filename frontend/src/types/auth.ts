@@ -14,7 +14,7 @@ export interface User {
 
 export interface JwtPayload {
   sub: string;
-  roles: string;
+  roles: string[];
   is2faEnabled?: boolean;
   exp: number;
   iat: number;
@@ -36,10 +36,10 @@ export interface TokenResponse {
   tokenType: string;
   username: string;
   roles: string[];
-  enabled: boolean;
-  otpCount: number;
-  locked: boolean;
-  verified: boolean;
+  enabled?: boolean;
+  otpCount?: number;
+  locked?: boolean;
+  verified?: boolean;
 }
 
 export interface RefreshTokenRequest {

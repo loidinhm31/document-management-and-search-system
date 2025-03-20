@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
+import { Comment, CommentCreateData, CommentEditData, PaginationParams } from "@/types/comment";
 
 const CommentSkeleton = () => (
   <div className="space-y-4">
@@ -21,22 +22,26 @@ const CommentSkeleton = () => (
   </div>
 );
 
-export const CommentSection = ({ documentId }) => {
+interface CommentSectionProps {
+  documentId: string;
+}
+
+export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) => {
   const { t } = useTranslation();
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [commentText, setCommentText] = useState("");
-  const [currentPage, setCurrentPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [replyTo, setReplyTo] = useState(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [commentText, setCommentText] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const { currentUser } = useAuth();
   const { toast } = useToast();
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteInProgress, setDeleteInProgress] = useState(false);
-  const [commentToDelete, setCommentToDelete] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [deleteInProgress, setDeleteInProgress] = useState<boolean>(false);
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
 
-  const commentsRef = useRef(comments);
+  const commentsRef = useRef<Comment[]>(comments);
   useEffect(() => {
     commentsRef.current = comments;
   }, [comments]);
@@ -51,11 +56,11 @@ export const CommentSection = ({ documentId }) => {
           page,
           size: 10,
           sort: "createdAt,desc",
-        });
+        } as PaginationParams);
         setComments(response.data.content);
         setTotalPages(response.data.totalPages);
         setCurrentPage(page);
-      } catch (error) {
+      } catch (_error) {
         toast({
           title: t("common.error"),
           description: t("document.comments.fetchError"),
@@ -91,10 +96,12 @@ export const CommentSection = ({ documentId }) => {
 
     setLoading(true);
     try {
-      const response = await documentService.createComment(documentId, {
+      const payload: CommentCreateData = {
         content: commentTrim,
         parentId: replyTo?.id || null,
-      });
+      };
+
+      const response = await documentService.createComment(documentId, payload);
 
       if (replyTo) {
         // Update comments state with new reply
@@ -117,7 +124,7 @@ export const CommentSection = ({ documentId }) => {
         description: t("document.comments.createSuccess"),
         variant: "success",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.info(error);
       if (error.status === 400) {
         if (error.response?.data?.message === "PARENT_COMMENT_DELETED" && replyTo) {
@@ -134,7 +141,7 @@ export const CommentSection = ({ documentId }) => {
     }
   };
 
-  const removeCommentFromState = (comments, commentId) => {
+  const removeCommentFromState = (comments: Comment[], commentId: number): Comment[] => {
     return comments.filter((comment) => {
       // If this comment matches the ID, remove it
       if (comment.id === commentId) {
@@ -149,7 +156,7 @@ export const CommentSection = ({ documentId }) => {
     });
   };
 
-  const updateCommentInState = (comments, commentId, updatedFields) => {
+  const updateCommentInState = (comments: Comment[], commentId: number, updatedFields: Partial<Comment>): Comment[] => {
     return comments.map((comment) => {
       if (comment.id === commentId) {
         return { ...comment, ...updatedFields };
@@ -165,7 +172,7 @@ export const CommentSection = ({ documentId }) => {
   };
 
   // Handle opening the delete dialog
-  const handleDeleteClick = useCallback((commentId) => {
+  const handleDeleteClick = useCallback((commentId: number) => {
     setCommentToDelete(commentId);
     // Use a timeout to ensure React has processed state changes
     setTimeout(() => {
@@ -216,7 +223,7 @@ export const CommentSection = ({ documentId }) => {
   }, [commentToDelete, documentId, replyTo, toast, t]);
 
   // Handle dialog close
-  const handleDialogClose = useCallback((open) => {
+  const handleDialogClose = useCallback((open: boolean) => {
     if (!open) {
       setDeleteDialogOpen(false);
       // Clear the comment ID after dialog closes
@@ -226,7 +233,7 @@ export const CommentSection = ({ documentId }) => {
     }
   }, []);
 
-  const handleEditComment = async (commentId, { content }) => {
+  const handleEditComment = async (commentId: number, { content }: CommentEditData) => {
     try {
       await documentService.updateComment(documentId, commentId, { content });
 

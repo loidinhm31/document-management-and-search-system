@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import TagInput from "@/components/common/tag-input";
-import TagInputHybrid from "@/components/common/tag-input-hybrid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -82,7 +81,7 @@ export default function DocumentPreferencesManager() {
         );
         setStats(statsRes.data);
         setRecommendedTags(tagsRes.data);
-      } catch (error) {
+      } catch (_error) {
         toast({
           title: t("common.error"),
           description: t("document.preferences.fetchError"),
@@ -113,7 +112,7 @@ export default function DocumentPreferencesManager() {
         description: t("document.preferences.updateSuccess"),
         variant: "success",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.preferences.updateError"),

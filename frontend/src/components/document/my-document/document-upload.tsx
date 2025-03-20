@@ -37,17 +37,17 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
       }
 
       if (data.majors && data.majors.length > 0) {
-        data.majors.forEach(major => formData.append("majors", major));
+        data.majors.forEach((major) => formData.append("majors", major));
       }
 
       if (data.courseCodes && data.courseCodes.length > 0) {
-        data.courseCodes.forEach(courseCode => formData.append("courseCodes", courseCode));
+        data.courseCodes.forEach((courseCode) => formData.append("courseCodes", courseCode));
       }
 
       formData.append("level", data.level);
 
       if (data.categories && data.categories.length > 0) {
-        data.categories.forEach(category => formData.append("categories", category));
+        data.categories.forEach((category) => formData.append("categories", category));
       }
 
       const cleanedTags = (data.tags || []).map((tag) => tag.trim()).filter(Boolean);

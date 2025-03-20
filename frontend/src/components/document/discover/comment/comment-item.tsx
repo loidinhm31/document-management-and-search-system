@@ -14,8 +14,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { Comment, CommentEditData, User } from "@/types/comment";
 
-export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, documentId }) => {
+interface CommentItemProps {
+  comment: Comment;
+  currentUser: User | null;
+  onDelete: (commentId: number) => void;
+  onReply: (comment: Comment) => void;
+  onEdit: (commentId: number, data: CommentEditData) => Promise<boolean>;
+  documentId: string;
+}
+
+export const CommentItem: React.FC<CommentItemProps> = ({
+  comment,
+  currentUser,
+  onDelete,
+  onReply,
+  onEdit,
+  documentId,
+}) => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const isAuthor = currentUser?.username === comment.username;
@@ -30,13 +47,13 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
     if (!isReportedByUser) {
       setIsReportedByUser(comment.reportedByUser && comment.flag !== 1);
     }
-  }, [comment.reportedByUser]);
+  }, [comment.reportedByUser, isReportedByUser]);
 
-  const formatDate = (date) => {
+  const formatDate = (date: string): string => {
     return moment(date).format("DD/MM/YYYY, h:mm a");
   };
 
-  const handleEditSubmit = async () => {
+  const handleEditSubmit = async (): Promise<void> => {
     if (!editedContent.trim()) return;
 
     try {
@@ -47,7 +64,7 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
         description: t("document.comments.editSuccess"),
         variant: "success",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.comments.editError"),
@@ -56,12 +73,12 @@ export const CommentItem = ({ comment, currentUser, onDelete, onReply, onEdit, d
     }
   };
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = (): void => {
     setEditedContent(comment.content);
     setIsEditing(false);
   };
 
-  const handleReportSuccess = () => {
+  const handleReportSuccess = (): void => {
     setIsReportedByUser(true);
 
     toast({

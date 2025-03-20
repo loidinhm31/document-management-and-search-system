@@ -169,7 +169,7 @@ export default function MasterDataDialog({
       form.reset();
       onOpenChange(false);
       onSuccess();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t(isEditing ? "masterData.updateError" : "masterData.createError"),

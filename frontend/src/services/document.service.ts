@@ -1,5 +1,6 @@
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
+import { CommentCreateData } from "@/types/comment";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
 import { UpdatePreferencesRequest } from "@/types/document-preference";
 import { UserHistoryFilter, UserHistoryPage } from "@/types/document-user-history";
@@ -151,25 +152,25 @@ class DocumentService extends BaseService {
     );
   }
 
-  getDocumentComments(documentId, params = {}) {
+  getDocumentComments(documentId: string, params = {}) {
     return this.handleApiResponse(
       axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/comments`, { params }),
     );
   }
 
-  createComment(documentId, data) {
+  createComment(documentId: string, data: CommentCreateData) {
     return this.handleApiResponse(
       axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/comments`, data),
     );
   }
 
-  updateComment(documentId, commentId, data) {
+  updateComment(documentId: string, commentId: number, data: { content: string }) {
     return this.handleApiResponse(
       axiosInstance.put(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`, data),
     );
   }
 
-  deleteComment(documentId, commentId) {
+  deleteComment(documentId: string, commentId: number) {
     return this.handleApiResponse(
       axiosInstance.delete(`/document-interaction/api/v1/documents/${documentId}/comments/${commentId}`),
     );

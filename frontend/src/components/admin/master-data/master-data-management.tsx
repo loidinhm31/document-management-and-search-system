@@ -79,7 +79,7 @@ export default function MasterDataManagement() {
         response = await masterDataService.getAllByType(selectedType);
       }
       setMasterData(response.data);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("masterData.fetchError"),
@@ -114,7 +114,7 @@ export default function MasterDataManagement() {
       } else {
         fetchMasterData();
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.masterData.searchError"),
@@ -163,7 +163,7 @@ export default function MasterDataManagement() {
       const updatedItem = { ...item, active: !item.active };
       await masterDataService.save(updatedItem);
       fetchMasterData();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.masterData.updateError"),

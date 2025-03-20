@@ -49,7 +49,7 @@ export function RecommendationButton({ documentId }: RecommendationButtonProps) 
         });
       }
       setIsRecommended(!isRecommended);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.recommendation.error"),
