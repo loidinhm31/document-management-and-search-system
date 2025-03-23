@@ -9,10 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/**
- * Implementation of the PublishEventService.
- * This service handles higher-level business logic for creating and publishing events.
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -31,12 +27,6 @@ public class PublishEventServiceImpl implements PublishEventService {
 
     private final RabbitMQMessageProducer rabbitMQMessageProducer;
 
-    /**
-     * Send an OTP email notification
-     *
-     * @param user The user to send the OTP to
-     * @param otp The OTP code
-     */
     @Override
     public void sendOtpEmail(User user, String otp) {
         try {
@@ -65,13 +55,6 @@ public class PublishEventServiceImpl implements PublishEventService {
         }
     }
 
-    /**
-     * Send a password reset email notification
-     *
-     * @param user The user to send the password reset to
-     * @param token The reset token
-     * @param expiryMinutes Token expiration time in hours
-     */
     @Override
     public void sendPasswordResetEmail(User user, String token, int expiryMinutes) {
         try {

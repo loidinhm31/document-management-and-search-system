@@ -161,7 +161,7 @@ public class UserServiceImplTest {
         loginRequest.setIdentifier("testuser");
         loginRequest.setPassword("password");
 
-        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsernameOrEmail(anyString(), anyString())).thenReturn(Optional.of(testUser));
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
         when(authentication.getPrincipal()).thenReturn(userDetails);
@@ -176,7 +176,7 @@ public class UserServiceImplTest {
 
         // Assert
         assertNotNull(response);
-        verify(userRepository).findByUsername("testuser");
+        verify(userRepository).findByUsernameOrEmail("testuser", "testuser");
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(jwtUtils).generateTokenFromUsername(any(CustomUserDetails.class));
         verify(refreshTokenService).createRefreshToken(any(User.class), any(HttpServletRequest.class));
@@ -190,12 +190,12 @@ public class UserServiceImplTest {
         loginRequest.setPassword("password");
 
         testUser.setAccountNonLocked(false);
-        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsernameOrEmail(anyString(), anyString())).thenReturn(Optional.of(testUser));
 
         // Act & Assert
         assertThrows(org.springframework.security.authentication.LockedException.class,
                 () -> userService.authenticateUser(loginRequest, httpServletRequest));
-        verify(userRepository).findByUsername("testuser");
+        verify(userRepository).findByUsernameOrEmail("testuser", "testuser");
         verify(authenticationManager, never()).authenticate(any(UsernamePasswordAuthenticationToken.class));
     }
 
@@ -991,16 +991,17 @@ public class UserServiceImplTest {
         loginRequest.setIdentifier("testuser");
         loginRequest.setPassword("wrongpassword");
 
-        when(userRepository.findByUsername(anyString())).thenReturn(Optional.of(testUser));
-        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Bad credentials"));
+        when(userRepository.findByUsernameOrEmail(anyString(), anyString()))
+                .thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThrows(BadCredentialsException.class,
+        ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class,
                 () -> userService.authenticateUser(loginRequest, httpServletRequest));
 
-        verify(userRepository).findByUsername("testuser");
-        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+        assertEquals("USER_NOT_FOUND", exception.getMessage());
+        verify(userRepository).findByUsernameOrEmail("testuser", "testuser");
+        // The authentication manager is never called because the user isn't found first
+        verify(authenticationManager, never()).authenticate(any(UsernamePasswordAuthenticationToken.class));
     }
 
     @Test

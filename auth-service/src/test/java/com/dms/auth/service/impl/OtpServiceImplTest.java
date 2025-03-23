@@ -209,6 +209,26 @@ public class OtpServiceImplTest {
         assertTrue(response.isLocked());
         assertEquals(0, response.getOtpCount());
         assertFalse(response.isVerified());
+        assertFalse(response.isExpired());
+        verifyNoMoreInteractions(otpVerificationRepository);
+    }
+
+    @Test
+    void verifyOtp_ShouldReturnTokenResponse_WhenOtpExpired() {
+        // Arrange
+        otpVerification.setExpiryTime(Instant.now().minus(1, ChronoUnit.MINUTES));
+        when(otpVerificationRepository.findValidOtpByUsername(USERNAME))
+                .thenReturn(Optional.of(otpVerification));
+
+        // Act
+        TokenResponse response = otpService.verifyOtp(USERNAME, OTP, httpServletRequest);
+
+        // Assert
+        verify(otpVerificationRepository).findValidOtpByUsername(USERNAME);
+        assertFalse(response.isLocked());
+        assertEquals(0, response.getOtpCount());
+        assertFalse(response.isVerified());
+        assertTrue(response.isExpired());
         verifyNoMoreInteractions(otpVerificationRepository);
     }
 
@@ -222,6 +242,7 @@ public class OtpServiceImplTest {
         savedOtp.setAttemptCount(1); // Incremented from 0 to 1
         savedOtp.setValidated(false);
         savedOtp.setLockedUntil(null);
+        savedOtp.setExpiryTime(Instant.now().plus(5, ChronoUnit.MINUTES)); // Not expired
 
         when(otpVerificationRepository.findValidOtpByUsername(USERNAME))
                 .thenReturn(Optional.of(otpVerification));
@@ -238,6 +259,7 @@ public class OtpServiceImplTest {
         assertEquals(1, response.getOtpCount());
         assertFalse(response.isLocked());
         assertFalse(response.isVerified());
+        assertFalse(response.isExpired());
 
         // Verify the OTP entity was updated
         assertNull(otpVerification.getLockedUntil());
@@ -252,6 +274,7 @@ public class OtpServiceImplTest {
         OtpVerification savedOtp = new OtpVerification();
         savedOtp.setAttemptCount(5);
         savedOtp.setValidated(false);
+        savedOtp.setExpiryTime(Instant.now().plus(5, ChronoUnit.MINUTES)); // Not expired
         // This is important - we need to make isLocked() return true for the saved OTP
         Instant lockTime = Instant.now().plus(30, ChronoUnit.MINUTES);
         savedOtp.setLockedUntil(lockTime);
@@ -277,6 +300,7 @@ public class OtpServiceImplTest {
         assertEquals(5, response.getOtpCount());
         assertTrue(response.isLocked());
         assertFalse(response.isVerified());
+        assertFalse(response.isExpired());
 
         // Verify the OTP entity was updated with a lock time
         assertNotNull(otpVerification.getLockedUntil());
@@ -292,6 +316,7 @@ public class OtpServiceImplTest {
         OtpVerification savedOtp = new OtpVerification();
         savedOtp.setAttemptCount(1);
         savedOtp.setValidated(false);
+        savedOtp.setExpiryTime(Instant.now().plus(5, ChronoUnit.MINUTES)); // Not expired
 
         when(otpVerificationRepository.findValidOtpByUsername(USERNAME))
                 .thenReturn(Optional.of(otpVerification));
@@ -308,6 +333,7 @@ public class OtpServiceImplTest {
         assertEquals(1, response.getOtpCount());
         assertFalse(response.isLocked());
         assertFalse(response.isVerified());
+        assertFalse(response.isExpired());
     }
 
     @Test
@@ -316,6 +342,7 @@ public class OtpServiceImplTest {
         OtpVerification savedOtp = new OtpVerification();
         savedOtp.setAttemptCount(1);
         savedOtp.setValidated(true);
+        savedOtp.setExpiryTime(Instant.now().plus(5, ChronoUnit.MINUTES)); // Not expired
 
         when(otpVerificationRepository.findValidOtpByUsername(USERNAME))
                 .thenReturn(Optional.of(otpVerification));
@@ -358,5 +385,6 @@ public class OtpServiceImplTest {
         assertEquals(1, response.getOtpCount());
         assertTrue(response.isVerified());
         assertFalse(response.isLocked());
+        assertFalse(response.isExpired());
     }
 }

@@ -7,6 +7,7 @@ import com.dms.auth.repository.OtpVerificationRepository;
 import com.dms.auth.repository.UserRepository;
 import com.dms.auth.security.response.TokenResponse;
 import com.dms.auth.security.service.CustomUserDetails;
+import com.dms.auth.service.OtpService;
 import com.dms.auth.service.PublishEventService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,7 @@ import java.util.Random;
 
 @Service
 @Slf4j
-public class OtpService extends BaseService implements com.dms.auth.service.OtpService {
+public class OtpServiceImpl extends BaseService implements OtpService {
     @Autowired
     private OtpVerificationRepository otpVerificationRepository;
 
@@ -95,17 +96,30 @@ public class OtpService extends BaseService implements com.dms.auth.service.OtpS
                 .findValidOtpByUsername(username)
                 .orElseThrow(() -> new IllegalStateException("No valid OTP found"));
 
+        // Check if verification is locked
         if (verification.isLocked()) {
             return new TokenResponse(
                     verification.getAttemptCount(),
                     verification.isLocked(),
-                    verification.isValidated()
+                    verification.isValidated(),
+                    verification.isExpired()
             );
         } else {
             if (Objects.nonNull(verification.getLockedUntil())) { // If locked before then reset
                 verification.setLockedUntil(null);
                 verification.setAttemptCount(0);
             }
+        }
+
+        // Check if OTP is expired
+        if (verification.isExpired()) {
+            log.info("OTP expired for user: {}", username);
+            return new TokenResponse(
+                    verification.getAttemptCount(),
+                    false,
+                    false,
+                    verification.isExpired()
+            );
         }
 
         verification.setAttemptCount(verification.getAttemptCount() + 1);
@@ -115,8 +129,9 @@ public class OtpService extends BaseService implements com.dms.auth.service.OtpS
             OtpVerification savedOtp = otpVerificationRepository.save(verification);
             return new TokenResponse(
                     savedOtp.getAttemptCount(),
+                    savedOtp.isLocked(),
                     savedOtp.isValidated(),
-                    savedOtp.isLocked()
+                    savedOtp.isExpired()
             );
         }
 
@@ -140,11 +155,13 @@ public class OtpService extends BaseService implements com.dms.auth.service.OtpS
 
         return Objects.isNull(tokenResponse) ? new TokenResponse(
                 savedOtp.getAttemptCount(),
+                savedOtp.isLocked(),
                 savedOtp.isValidated(),
-                savedOtp.isLocked()
+                savedOtp.isExpired()
         ) : tokenResponse
                 .withOtpCount(savedOtp.getAttemptCount())
                 .withVerified(verification.isValidated())
-                .withLocked(verification.isLocked());
+                .withLocked(verification.isLocked())
+                .withExpired(verification.isExpired());
     }
 }
