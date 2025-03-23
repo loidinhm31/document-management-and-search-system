@@ -20,10 +20,7 @@ import com.dms.auth.security.request.Verify2FARequest;
 import com.dms.auth.security.response.TokenResponse;
 import com.dms.auth.security.response.UserInfoResponse;
 import com.dms.auth.security.service.CustomUserDetails;
-import com.dms.auth.service.PublishEventService;
-import com.dms.auth.service.RefreshTokenService;
-import com.dms.auth.service.TotpService;
-import com.dms.auth.service.UserService;
+import com.dms.auth.service.*;
 import com.dms.auth.util.SecurityUtils;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import jakarta.servlet.http.HttpServletRequest;
@@ -86,8 +83,8 @@ public class UserServiceImpl extends BaseService implements UserService {
     @Override
     public TokenResponse authenticateUser(LoginRequest loginRequest, HttpServletRequest request) {
         // Check if user exists and get user status before authentication
-        User user = userRepository.findByUsername(loginRequest.getIdentifier())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", loginRequest.getIdentifier()));
+        User user = userRepository.findByUsernameOrEmail(loginRequest.getIdentifier(), loginRequest.getIdentifier())
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND"));
 
         // Check if account is locked before attempting authentication
         if (!user.isAccountNonLocked()) {
