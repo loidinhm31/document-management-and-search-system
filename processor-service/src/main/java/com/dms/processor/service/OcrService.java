@@ -13,8 +13,7 @@ import java.nio.file.Path;
 public interface OcrService {
 
     /**
-     * Extracts text from a PDF file. If the PDF contains extractable text,
-     * it will be returned directly. Otherwise, OCR will be performed.
+     * Extracts text from a PDF file using OCR.
      *
      * @param pdfPath Path to the PDF file
      * @return Extracted text from the PDF
@@ -24,6 +23,19 @@ public interface OcrService {
     String extractTextFromPdf(Path pdfPath) throws IOException, TesseractException;
 
     /**
+     * Processes a PDF with OCR. The decision to use OCR has already been made
+     * by the caller, so this method will always perform OCR.
+     *
+     * @param pdfPath Path to the PDF file
+     * @param pageCount Number of pages in the document
+     * @return Extracted text from the PDF using OCR
+     * @throws IOException If there is an error reading the file
+     * @throws TesseractException If there is an error during OCR processing
+     */
+    String processWithOcr(Path pdfPath, int pageCount)
+            throws IOException, TesseractException;
+
+    /**
      * Performs OCR on an image to extract text.
      *
      * @param image BufferedImage to process
@@ -31,13 +43,4 @@ public interface OcrService {
      * @throws TesseractException If there is an error during OCR processing
      */
     String performOcrOnImage(BufferedImage image) throws TesseractException;
-
-    /**
-     * Determines if a PDF is image-based (requires OCR) or text-based.
-     *
-     * @param pdfPath Path to the PDF file
-     * @return true if the PDF is image-based, false otherwise
-     * @throws IOException If there is an error reading the file
-     */
-    boolean isImageBasedPdf(Path pdfPath) throws IOException;
 }

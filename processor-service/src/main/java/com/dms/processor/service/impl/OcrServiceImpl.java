@@ -1,13 +1,13 @@
 package com.dms.processor.service.impl;
 
 import com.dms.processor.service.OcrService;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -15,18 +15,16 @@ import org.springframework.stereotype.Service;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
 public class OcrServiceImpl implements OcrService {
-
-    @Value("${app.ocr.minimum-text-length}")
-    private int minimumTextLength;
-
-    @Value("${app.ocr.dpi}")
+    @Value("${app.ocr.dpi:300}")
     private float dpi;
 
-    @Value("${app.ocr.image-type}")
+    @Value("${app.ocr.image-type:RGB}")
     private String imageType;
 
     private final Tesseract tesseract;
@@ -38,37 +36,50 @@ public class OcrServiceImpl implements OcrService {
 
     @Override
     public String extractTextFromPdf(Path pdfPath) throws IOException, TesseractException {
-        StringBuilder extractedText = new StringBuilder();
-        boolean usedOcr = false;
+        try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
+            String extractedText = processWithOcr(pdfPath, document.getNumberOfPages());
+            log.info("PDF processing completed. Used OCR: true");
+            return extractedText;
+        }
+    }
+
+    @Override
+    public String processWithOcr(Path pdfPath, int pageCount)
+            throws IOException, TesseractException {
+
+        log.debug("Performing OCR on PDF with {} pages", pageCount);
 
         try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
-            PDFTextStripper textStripper = new PDFTextStripper();
-            String pdfText = textStripper.getText(document);
-
-            if (pdfText.trim().length() > minimumTextLength) {
-                return pdfText;
-            }
-
             PDFRenderer pdfRenderer = new PDFRenderer(document);
-            int pageCount = document.getNumberOfPages();
 
-            for (int page = 0; page < pageCount; page++) {
-                BufferedImage image = pdfRenderer.renderImageWithDPI(
-                        page,
-                        dpi,
-                        imageType.equals("RGB") ? ImageType.RGB : ImageType.BINARY
-                );
+            return processOcrSequentially(pdfRenderer, pageCount);
+        }
+    }
 
-                String pageText = performOcrOnImage(image);
-                if (pageText != null && !pageText.trim().isEmpty()) {
-                    extractedText.append(pageText).append("\n");
-                    usedOcr = true;
-                }
+    private String processOcrSequentially(PDFRenderer pdfRenderer, int pageCount)
+            throws IOException, TesseractException {
+
+        StringBuilder extractedText = new StringBuilder();
+
+        for (int page = 0; page < pageCount; page++) {
+            log.debug("Processing page {} of {}", page + 1, pageCount);
+            BufferedImage image = renderPage(pdfRenderer, page);
+            String pageText = performOcrOnImage(image);
+
+            if (pageText != null && !pageText.trim().isEmpty()) {
+                extractedText.append(pageText).append("\n");
             }
         }
 
-        log.info("PDF processing completed. Used OCR: {}", usedOcr);
         return extractedText.toString();
+    }
+
+    private BufferedImage renderPage(PDFRenderer pdfRenderer, int page) throws IOException {
+        return pdfRenderer.renderImageWithDPI(
+                page,
+                dpi,
+                imageType.equals("RGB") ? ImageType.RGB : ImageType.BINARY
+        );
     }
 
     @Override
@@ -82,16 +93,6 @@ public class OcrServiceImpl implements OcrService {
                 return tesseract.doOCR(image);
             }
             throw e;
-        }
-    }
-
-
-    @Override
-    public boolean isImageBasedPdf(Path pdfPath) throws IOException {
-        try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
-            PDFTextStripper textStripper = new PDFTextStripper();
-            String pdfText = textStripper.getText(document);
-            return pdfText.trim().length() < minimumTextLength;
         }
     }
 }
