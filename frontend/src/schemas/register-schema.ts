@@ -7,7 +7,7 @@ export const signupSchema = z.object({
   password: z
     .string()
     .min(6)
-    .regex(/^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/),
+    .regex(/^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@!#$%^&+=*]).*$/),
 });
 
 export type SignupFormValues = z.infer<typeof signupSchema>;
@@ -23,7 +23,7 @@ export const createSignupSchema = (t: TFunction) => {
       .string()
       .min(6, t("auth.register.validation.passwordMinLength", "Password must be at least 6 characters"))
       .regex(
-        /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
+        /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@!#$%^&+=*]).*$/,
         t(
           "auth.register.validation.passwordPattern",
           "Password must contain at least one digit, lowercase, uppercase, and special character",

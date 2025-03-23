@@ -94,6 +94,7 @@
         "link": "Đăng ký"
       },
       "success": "Đăng nhập thành công",
+      "incorrect": "Thông tin đăng nhập không chính xác",
       "error": "Thông tin đăng nhập không hợp lệ",
       "required": "Vui lòng đăng nhập để tiếp tục"
     },
@@ -147,6 +148,7 @@
       "verifyError": "Mã không hợp lệ. Còn {{remaining}} lần thử",
       "resendSuccess": "Đã gửi mã xác thực mới",
       "resendError": "Không thể gửi mã xác thực",
+      "resending": "Đang gửi lại mã xác thực...",
       "maxAttemptsReached": "Đã đạt đến số lần thử tối đa. Vui lòng thử lại sau",
       "otpExpired": "Mã OTP đã hết hạn"
     },

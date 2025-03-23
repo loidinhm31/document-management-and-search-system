@@ -35,6 +35,7 @@ export default function OtpVerificationForm({ onVerified, onResend }: OtpVerific
   const [isLockTimer, setIsLockTimer] = useState(false);
   const [lockTimer, setLockTimer] = useState(0);
   const [otpValue, setOtpValue] = useState("");
+  const [resending, setResending] = useState(false);
 
   // Timer countdown effect
   useEffect(() => {
@@ -67,10 +68,24 @@ export default function OtpVerificationForm({ onVerified, onResend }: OtpVerific
   };
 
   const handleResendOtp = async (): Promise<void> => {
-    setIsLoading(true);
-    await onResend();
-    setTimer(TIMER_DURATION);
-    setIsLoading(false);
+    setResending(true);
+    try {
+      await onResend();
+      setTimer(TIMER_DURATION);
+      toast({
+        title: t("common.success"),
+        description: t("auth.otp.resendSuccess"),
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("auth.otp.resendError"),
+        variant: "destructive",
+      });
+    } finally {
+      setResending(false);
+    }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
@@ -168,11 +183,18 @@ export default function OtpVerificationForm({ onVerified, onResend }: OtpVerific
                 <Button
                   type="button"
                   variant="link"
-                  disabled={isLoading || timer > 0}
+                  disabled={resending || timer > 0}
                   onClick={handleResendOtp}
                   className="w-full"
                 >
-                  {t("auth.otp.resend")}
+                  {resending ? (
+                    <span className="flex items-center">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t("auth.otp.resending")}
+                    </span>
+                  ) : (
+                    t("auth.otp.resend")
+                  )}
                 </Button>
               </>
             )}

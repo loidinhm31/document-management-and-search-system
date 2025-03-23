@@ -7,7 +7,7 @@ export const passwordSchema = z
     newPassword: z
       .string()
       .min(6)
-      .regex(/^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/),
+      .regex(/^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@!#$%^&+=*]).*$/),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -28,7 +28,7 @@ export const createPasswordSchema = (t: TFunction) => {
         .string()
         .min(6, t("profile.password.validation.passwordMinLength", "Password must be at least 6 characters"))
         .regex(
-          /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
+          /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@!#$%^&+=*]).*$/,
           t(
             "profile.password.validation.passwordPattern",
             "Password must contain at least one digit, lowercase, uppercase, and special character",

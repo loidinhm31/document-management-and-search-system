@@ -40,6 +40,7 @@ export interface TokenResponse {
   otpCount?: number;
   locked?: boolean;
   verified?: boolean;
+  expired?: boolean;
 }
 
 export interface RefreshTokenRequest {

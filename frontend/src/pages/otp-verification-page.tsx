@@ -67,12 +67,14 @@ export default function OtpVerificationPage() {
   const handleResend = async () => {
     try {
       await authService.resendOtp({ username });
+      return Promise.resolve();
     } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("auth.otp.resendError"),
         variant: "destructive",
       });
+      return Promise.reject(_error);
     }
   };
 

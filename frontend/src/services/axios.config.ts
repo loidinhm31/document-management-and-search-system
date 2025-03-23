@@ -74,8 +74,11 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // If error is 401, and it's not a refresh token request
-    if (error.response?.status === 401 && !originalRequest.url?.includes("refresh-token")) {
+    // Extract the request URL path
+    const requestUrl = originalRequest.url || '';
+
+    // Only handle 401 errors for non-auth endpoints
+    if (error.response?.status === 401 && !requestUrl.startsWith("/auth")) {
       if (!isRefreshing) {
         isRefreshing = true;
 

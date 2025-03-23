@@ -94,6 +94,7 @@
         "link": "Sign up"
       },
       "success": "Login successful",
+      "incorrect": "Incorrect login credentials",
       "error": "Invalid credentials",
       "required": "Please login to continue"
     },
@@ -147,6 +148,7 @@
       "verifyError": "Invalid code. {{remaining}} attempts remaining",
       "resendSuccess": "New verification code sent",
       "resendError": "Failed to send verification code",
+      "resending": "Resending...",
       "maxAttemptsReached": "Maximum attempts reached. Please try again later",
       "otpExpired": "OTP expired"
     },
