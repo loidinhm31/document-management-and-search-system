@@ -50,6 +50,7 @@ export default function OtpVerificationPage() {
           verified: !!response.data.verified,
           locked: !!response.data.locked,
           otpCount: response.data.otpCount || 0,
+          expired: !!response.data.expired
         },
       };
     } catch (_error) {

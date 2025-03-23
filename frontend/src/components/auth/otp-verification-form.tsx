@@ -17,6 +17,7 @@ interface OtpVerificationResponse {
     verified: boolean;
     locked: boolean;
     otpCount: number;
+    expired: boolean;
   };
 }
 
@@ -83,7 +84,14 @@ export default function OtpVerificationForm({ onVerified, onResend }: OtpVerific
         setIsLocked(true);
         setOtpValue("");
       } else if (!response.data.verified) {
-        if (response.data.otpCount >= MAX_ATTEMPTS) {
+        if (response.data.expired) {
+          setOtpValue("");
+          toast({
+            title: t("common.error"),
+            description: t("auth.otp.otpExpired"),
+            variant: "destructive",
+          });
+        } else if (response.data.otpCount >= MAX_ATTEMPTS) {
           setIsLocked(true);
           setLockTimer(LOCK_DURATION);
           toast({
