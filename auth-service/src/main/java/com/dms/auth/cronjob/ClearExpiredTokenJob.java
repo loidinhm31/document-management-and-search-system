@@ -1,6 +1,6 @@
 package com.dms.auth.cronjob;
 
-import com.dms.auth.service.impl.RefreshTokenService;
+import com.dms.auth.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;

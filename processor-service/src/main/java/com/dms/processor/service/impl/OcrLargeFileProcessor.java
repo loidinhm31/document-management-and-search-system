@@ -1,5 +1,6 @@
-package com.dms.processor.service;
+package com.dms.processor.service.impl;
 
+import com.dms.processor.service.OcrService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -97,9 +98,6 @@ public class OcrLargeFileProcessor {
             try {
                 for (int pageNum = startPage; pageNum < endPage; pageNum++) {
                     BufferedImage image = renderer.renderImageWithDPI(pageNum, 300);
-
-                    // Preprocess the image
-                    image = ocrService.preprocessImage(image);
 
                     // Save image temporarily
                     File tempImage = new File(tempDirectory, UUID.randomUUID() + ".png");

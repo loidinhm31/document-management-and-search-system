@@ -1,6 +1,7 @@
-package com.dms.processor.service;
+package com.dms.processor.service.impl;
 
 import com.dms.processor.dto.ExtractedText;
+import com.dms.processor.service.OcrService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.TesseractException;

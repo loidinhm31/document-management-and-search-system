@@ -3,19 +3,20 @@ package com.dms.auth.service.impl;
 import com.dms.auth.dto.EmailNotificationPayload;
 import com.dms.auth.entity.User;
 import com.dms.auth.producer.RabbitMQMessageProducer;
+import com.dms.auth.service.PublishEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for publishing events to the message broker.
+ * Implementation of the PublishEventService.
  * This service handles higher-level business logic for creating and publishing events.
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class PublishEventService {
+public class PublishEventServiceImpl implements PublishEventService {
     @Value("${app.otp.expiry-minutes:5}")
     private int otpExpiryMinutes;
 
@@ -36,6 +37,7 @@ public class PublishEventService {
      * @param user The user to send the OTP to
      * @param otp The OTP code
      */
+    @Override
     public void sendOtpEmail(User user, String otp) {
         try {
             EmailNotificationPayload payload = EmailNotificationPayload.builder()
@@ -70,6 +72,7 @@ public class PublishEventService {
      * @param token The reset token
      * @param expiryMinutes Token expiration time in hours
      */
+    @Override
     public void sendPasswordResetEmail(User user, String token, int expiryMinutes) {
         try {
             EmailNotificationPayload payload = EmailNotificationPayload.builder()

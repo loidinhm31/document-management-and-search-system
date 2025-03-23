@@ -1,4 +1,4 @@
-package com.dms.processor.service;
+package com.dms.processor.service.impl;
 
 import com.dms.processor.model.User;
 import jakarta.mail.MessagingException;

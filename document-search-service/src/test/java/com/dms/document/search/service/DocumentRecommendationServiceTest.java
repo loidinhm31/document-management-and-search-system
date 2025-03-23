@@ -12,6 +12,7 @@ import com.dms.document.search.enums.AppRole;
 import com.dms.document.search.exception.InvalidDocumentException;
 import com.dms.document.search.model.DocumentPreferences;
 import com.dms.document.search.repository.DocumentPreferencesRepository;
+import com.dms.document.search.service.DocumentRecommendationService;
 import org.apache.lucene.search.TotalHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

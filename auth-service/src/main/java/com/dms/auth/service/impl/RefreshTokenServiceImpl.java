@@ -3,6 +3,7 @@ package com.dms.auth.service.impl;
 import com.dms.auth.entity.RefreshToken;
 import com.dms.auth.entity.User;
 import com.dms.auth.repository.RefreshTokenRepository;
+import com.dms.auth.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,19 +11,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class RefreshTokenService {
+public class RefreshTokenServiceImpl implements RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
 
     @Value("${spring.app.refreshTokenExpirationMs}")
     private Long refreshTokenDurationMs;
 
+    @Override
     @Transactional
     public RefreshToken createRefreshToken(User user, HttpServletRequest request) {
         // Revoke any existing refresh tokens for security
@@ -42,10 +43,12 @@ public class RefreshTokenService {
         return refreshTokenRepository.save(refreshToken);
     }
 
+    @Override
     public Optional<RefreshToken> findByToken(String token) {
         return refreshTokenRepository.findByToken(token);
     }
 
+    @Override
     @Transactional
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiryDate().compareTo(Instant.now()) < 0) {
@@ -61,6 +64,7 @@ public class RefreshTokenService {
         return token;
     }
 
+    @Override
     @Transactional
     public void revokeToken(String token) {
         refreshTokenRepository.findByToken(token)
@@ -70,16 +74,18 @@ public class RefreshTokenService {
                 });
     }
 
+    @Override
     @Transactional
     public void revokeAllUserTokens(User user) {
         refreshTokenRepository.revokeAllUserTokens(user);
     }
 
+    @Override
     public List<RefreshToken> findActiveTokensByUser(User user) {
         return refreshTokenRepository.findActiveTokensByUser(user);
     }
 
-
+    @Override
     @Transactional
     public void removeExpiredTokens() {
         refreshTokenRepository.deleteAllExpiredTokens(Instant.now());

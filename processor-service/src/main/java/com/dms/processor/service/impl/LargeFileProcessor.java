@@ -1,4 +1,4 @@
-package com.dms.processor.service;
+package com.dms.processor.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.metadata.Metadata;

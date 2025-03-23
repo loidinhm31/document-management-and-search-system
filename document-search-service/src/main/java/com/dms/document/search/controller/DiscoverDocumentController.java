@@ -3,16 +3,16 @@ package com.dms.document.search.controller;
 import com.dms.document.search.dto.DocumentResponseDto;
 import com.dms.document.search.dto.DocumentSearchRequest;
 import com.dms.document.search.dto.SuggestionRequest;
-import com.dms.document.search.service.DiscoverDocumentSearchService;
+import com.dms.document.search.service.DocumentSearchService;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/search")
 public class DiscoverDocumentController {
-    private final DiscoverDocumentSearchService discoverDocumentSearchService;
+    private final DocumentSearchService discoverDocumentSearchService;
 
     @PostMapping
     public ResponseEntity<Page<DocumentResponseDto>> searchDocuments(

@@ -1,4 +1,4 @@
-package com.dms.document.search.service;
+package com.dms.document.search.service.impl;
 
 import com.dms.document.search.dto.DocumentResponseDto;
 import com.dms.document.search.dto.SearchContext;

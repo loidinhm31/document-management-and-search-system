@@ -1,45 +1,28 @@
 package com.dms.processor.service;
 
 import jakarta.mail.MessagingException;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
 
-@Service
-@Slf4j
-public class AuthEmailService extends EmailService {
-    @Value("${app.base-url}")
-    private String baseUrl;
+public interface AuthEmailService {
+    /**
+     * Sends an OTP verification email to the specified recipient.
+     *
+     * @param to            Email address of the recipient
+     * @param username      Username of the recipient
+     * @param otp           One-time password for verification
+     * @param expiryMinutes OTP expiry time in minutes
+     * @param maxAttempts   Maximum number of verification attempts allowed
+     * @throws MessagingException If there is an error sending the email
+     */
+    void sendOtpEmail(String to, String username, String otp, int expiryMinutes, int maxAttempts) throws MessagingException;
 
-    @Autowired
-    private TemplateEngine templateEngine;
-
-    public void sendOtpEmail(String to, String username, String otp,
-                             int expiryMinutes, int maxAttempts) throws MessagingException {
-        Context context = new Context();
-        context.setVariable("username", username);
-        context.setVariable("otp", otp);
-        context.setVariable("expiryMinutes", expiryMinutes);
-        context.setVariable("maxAttempts", maxAttempts);
-
-        String htmlContent = templateEngine.process("otp-verification", context);
-
-        sendEmail(to, "OTP Verification", htmlContent);
-    }
-
-    public void sendPasswordResetEmail(String to, String username, String token, int expiryMinutes) throws MessagingException {
-        String resetUrl = String.format("%s/reset-password?token=%s", baseUrl, token);
-
-        Context context = new Context();
-        context.setVariable("username", username);
-        context.setVariable("resetUrl", resetUrl);
-        context.setVariable("expiryMinutes", expiryMinutes);
-
-        String htmlContent = templateEngine.process("password-reset", context);
-
-        sendEmail(to, "Password Reset Request", htmlContent);
-    }
+    /**
+     * Sends a password reset email to the specified recipient.
+     *
+     * @param to            Email address of the recipient
+     * @param username      Username of the recipient
+     * @param token         Reset password token
+     * @param expiryMinutes Token expiry time in minutes
+     * @throws MessagingException If there is an error sending the email
+     */
+    void sendPasswordResetEmail(String to, String username, String token, int expiryMinutes) throws MessagingException;
 }

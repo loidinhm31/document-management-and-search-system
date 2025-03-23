@@ -1,10 +1,12 @@
-package com.dms.document.search.service;
+package com.dms.document.search.service.impl;
 
 import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.*;
 import com.dms.document.search.enums.QueryType;
 import com.dms.document.search.model.DocumentPreferences;
 import com.dms.document.search.repository.DocumentPreferencesRepository;
+import com.dms.document.search.service.DocumentFavoriteService;
+import com.dms.document.search.service.DocumentSearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -37,7 +39,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class DiscoverDocumentSearchService extends OpenSearchBaseService {
+public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService implements DocumentSearchService {
     private final RestHighLevelClient openSearchClient;
     private final UserClient userClient;
     private final DocumentPreferencesRepository documentPreferencesRepository;
@@ -69,6 +71,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         return text.matches(".*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ].*");
     }
 
+    @Override
     public Page<DocumentResponseDto> searchDocuments(DocumentSearchRequest request, String username) {
         try {
             ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
@@ -297,6 +300,7 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
         );
     }
 
+    @Override
     public List<String> getSuggestions(SuggestionRequest request, String username) {
         try {
             if (request.getQuery().length() < MIN_SEARCH_LENGTH) {
@@ -459,5 +463,4 @@ public class DiscoverDocumentSearchService extends OpenSearchBaseService {
 
         queryBuilder.minimumShouldMatch(1);
     }
-
 }

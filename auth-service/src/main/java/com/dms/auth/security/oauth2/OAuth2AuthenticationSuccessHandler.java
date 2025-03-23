@@ -8,7 +8,7 @@ import com.dms.auth.repository.RoleRepository;
 import com.dms.auth.repository.UserRepository;
 import com.dms.auth.security.jwt.JwtUtils;
 import com.dms.auth.security.service.CustomUserDetails;
-import com.dms.auth.service.impl.RefreshTokenService;
+import com.dms.auth.service.RefreshTokenService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

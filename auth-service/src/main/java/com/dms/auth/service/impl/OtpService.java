@@ -7,6 +7,7 @@ import com.dms.auth.repository.OtpVerificationRepository;
 import com.dms.auth.repository.UserRepository;
 import com.dms.auth.security.response.TokenResponse;
 import com.dms.auth.security.service.CustomUserDetails;
+import com.dms.auth.service.PublishEventService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +24,7 @@ import java.util.Random;
 
 @Service
 @Slf4j
-public class OtpService extends BaseService {
+public class OtpService extends BaseService implements com.dms.auth.service.OtpService {
     @Autowired
     private OtpVerificationRepository otpVerificationRepository;
 
@@ -41,6 +42,7 @@ public class OtpService extends BaseService {
 
     private final Random random = new SecureRandom();
 
+    @Override
     @Transactional
     public void resendOtp(String username) {
         User user = userRepository.findByUsername(username)
@@ -53,6 +55,7 @@ public class OtpService extends BaseService {
         generateAndSendOtp(user);
     }
 
+    @Override
     public void generateAndSendOtp(User user) {
         // Check if user is locked
         if (otpVerificationRepository.existsByEmailAndLockedUntilAfter(
@@ -85,6 +88,7 @@ public class OtpService extends BaseService {
         publishEventService.sendOtpEmail(user, otp);
     }
 
+    @Override
     @Transactional
     public TokenResponse verifyOtp(String username, String otp, HttpServletRequest request) {
         OtpVerification verification = otpVerificationRepository

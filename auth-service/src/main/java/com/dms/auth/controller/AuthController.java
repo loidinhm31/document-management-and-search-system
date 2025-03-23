@@ -2,7 +2,6 @@ package com.dms.auth.controller;
 
 import com.dms.auth.dto.request.*;
 import com.dms.auth.dto.response.OtpVerificationResponse;
-import com.dms.auth.entity.OtpVerification;
 import com.dms.auth.exception.ResourceNotFoundException;
 import com.dms.auth.security.request.RefreshTokenRequest;
 import com.dms.auth.security.request.Verify2FARequest;
