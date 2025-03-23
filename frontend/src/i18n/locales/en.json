@@ -147,7 +147,8 @@
       "verifyError": "Invalid code. {{remaining}} attempts remaining",
       "resendSuccess": "New verification code sent",
       "resendError": "Failed to send verification code",
-      "maxAttemptsReached": "Maximum attempts reached. Please try again later"
+      "maxAttemptsReached": "Maximum attempts reached. Please try again later",
+      "otpExpired": "OTP expired"
     },
     "forgotPassword": {
       "title": "Forgot Password",
