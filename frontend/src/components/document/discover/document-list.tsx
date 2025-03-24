@@ -252,8 +252,10 @@ export const DocumentList = () => {
       <CardHeader>
         <div className="flex items-center gap-2">
           <BookOpen className="h-5 w-5" />
-          <CardTitle>{t("document.discover.title")}</CardTitle>
-          <CardDescription>{t("document.discover.description")}</CardDescription>
+          <div>
+            <CardTitle className="flex items-center gap-2">{t("document.discover.title")}</CardTitle>
+            <CardDescription>{t("document.discover.description")}</CardDescription>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

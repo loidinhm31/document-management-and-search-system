@@ -12,32 +12,30 @@ export default function ReportsManagementPage() {
   const [activeTab, setActiveTab] = useState("documents");
 
   return (
-    <div className="container mx-auto py-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-start gap-2">
-            <AlertCircle className="h-5 w-5 text-destructive mt-1" />
-            <div>
-              <CardTitle>{t("admin.reports.title")}</CardTitle>
-              <CardDescription>{t("admin.reports.description")}</CardDescription>
-            </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-destructive" />
+          <div>
+            <CardTitle>{t("admin.reports.title")}</CardTitle>
+            <CardDescription>{t("admin.reports.description")}</CardDescription>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="documents" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="documents">{t("admin.reports.tabs.documents")}</TabsTrigger>
-              <TabsTrigger value="comments">{t("admin.reports.tabs.comments")}</TabsTrigger>
-            </TabsList>
-            <TabsContent value="documents">
-              <DocumentReportsTab />
-            </TabsContent>
-            <TabsContent value="comments">
-              <CommentReportsTab />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="documents" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="documents">{t("admin.reports.tabs.documents")}</TabsTrigger>
+            <TabsTrigger value="comments">{t("admin.reports.tabs.comments")}</TabsTrigger>
+          </TabsList>
+          <TabsContent value="documents">
+            <DocumentReportsTab />
+          </TabsContent>
+          <TabsContent value="comments">
+            <CommentReportsTab />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 }

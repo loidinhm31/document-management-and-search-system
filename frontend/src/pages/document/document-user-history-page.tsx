@@ -237,206 +237,206 @@ export default function DocumentUserHistoryPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            {t("document.history.title")}
-          </CardTitle>
-          <CardDescription>{t("document.history.description")}</CardDescription>
-        </CardHeader>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          <div>
+            <CardTitle className="flex items-center gap-2">{t("document.history.title")}</CardTitle>
+            <CardDescription>{t("document.history.description")}</CardDescription>
+          </div>
+        </div>
+      </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* Filters */}
-          <div className="space-y-4">
-            <div className="flex flex-col gap-4 lg:flex-row">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder={t("document.history.searchPlaceholder")}
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
+      <CardContent className="space-y-6">
+        {/* Filters */}
+        <div className="space-y-4">
+          <div className="flex flex-col gap-4 lg:flex-row">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t("document.history.searchPlaceholder")}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-9"
+                />
               </div>
+            </div>
 
-              <Select
-                value={selectedActionType}
-                onValueChange={(value) => setSelectedActionType(value as UserDocumentActionType)}
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder={t("document.history.filters.actionType")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("document.history.filters.allActions")}</SelectItem>
-                  {Object.values(UserDocumentActionType).map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {getActionTypeDetails(type).label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Select
+              value={selectedActionType}
+              onValueChange={(value) => setSelectedActionType(value as UserDocumentActionType)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder={t("document.history.filters.actionType")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("document.history.filters.allActions")}</SelectItem>
+                {Object.values(UserDocumentActionType).map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {getActionTypeDetails(type).label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <DatePicker
-                    value={selectedFromDate}
-                    onChange={setSelectedFromDate}
-                    placeholder={t("document.history.filters.fromDate")}
-                    clearAriaLabel="Clear from date"
-                  />
-
-                  <DatePicker
-                    value={selectedToDate}
-                    onChange={setSelectedToDate}
-                    placeholder={t("document.history.filters.toDate")}
-                    clearAriaLabel="Clear to date"
-                  />
-                </div>
-
-                {/* Date Range Error Display */}
-                {dateRangeError && (
-                  <div className="rounded-md bg-destructive/15 px-3 py-2 text-sm text-destructive">
-                    <span>{dateRangeError}</span>
-                  </div>
-                )}
-              </div>
-
+            <div className="flex flex-col gap-2">
               <div className="flex gap-2">
-                <Button onClick={handleSearch} disabled={!!dateRangeError}>
-                  <Search className="mr-2 h-4 w-4" />
-                  {t("document.history.filters.search")}
-                </Button>
+                <DatePicker
+                  value={selectedFromDate}
+                  onChange={setSelectedFromDate}
+                  placeholder={t("document.history.filters.fromDate")}
+                  clearAriaLabel="Clear from date"
+                />
 
-                <Button variant="outline" onClick={handleReset}>
-                  <Filter className="mr-2 h-4 w-4" />
-                  {t("document.history.filters.reset")}
-                </Button>
+                <DatePicker
+                  value={selectedToDate}
+                  onChange={setSelectedToDate}
+                  placeholder={t("document.history.filters.toDate")}
+                  clearAriaLabel="Clear to date"
+                />
               </div>
+
+              {/* Date Range Error Display */}
+              {dateRangeError && (
+                <div className="rounded-md bg-destructive/15 px-3 py-2 text-sm text-destructive">
+                  <span>{dateRangeError}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSearch} disabled={!!dateRangeError}>
+                <Search className="mr-2 h-4 w-4" />
+                {t("document.history.filters.search")}
+              </Button>
+
+              <Button variant="outline" onClick={handleReset}>
+                <Filter className="mr-2 h-4 w-4" />
+                {t("document.history.filters.reset")}
+              </Button>
             </div>
           </div>
+        </div>
 
-          {/* History Table */}
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("document.history.tableHeaders.actionType")}</TableHead>
-                  <TableHead>{t("document.history.tableHeaders.documentTitle")}</TableHead>
-                  <TableHead className="hidden md:table-cell">{t("document.history.tableHeaders.details")}</TableHead>
-                  <TableHead className="hidden lg:table-cell">{t("document.history.tableHeaders.version")}</TableHead>
-                  <TableHead>{t("document.history.tableHeaders.timestamp")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableSkeleton rows={5} cells={5} />
-                ) : histories.length > 0 ? (
-                  histories.map((history) => {
-                    const { label, variant } = getActionTypeDetails(history.actionType);
-                    return (
-                      <TableRow key={history.id}>
-                        <TableCell>
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset",
-                              variant,
-                            )}
-                          >
-                            {label}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {history.documentId ? (
-                            <div className="flex items-center">
-                              <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
-                              <Button
-                                variant="link"
-                                className="p-0 h-auto"
-                                onClick={() => handleDocumentClick(history.documentId)}
-                              >
-                                {history.documentTitle}
-                              </Button>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              {history.documentTitle || t("document.history.documentNotAvailable")}
-                            </span>
+        {/* History Table */}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("document.history.tableHeaders.actionType")}</TableHead>
+                <TableHead>{t("document.history.tableHeaders.documentTitle")}</TableHead>
+                <TableHead className="hidden md:table-cell">{t("document.history.tableHeaders.details")}</TableHead>
+                <TableHead className="hidden lg:table-cell">{t("document.history.tableHeaders.version")}</TableHead>
+                <TableHead>{t("document.history.tableHeaders.timestamp")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableSkeleton rows={5} cells={5} />
+              ) : histories.length > 0 ? (
+                histories.map((history) => {
+                  const { label, variant } = getActionTypeDetails(history.actionType);
+                  return (
+                    <TableRow key={history.id}>
+                      <TableCell>
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset",
+                            variant,
                           )}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">{history.detail || "-"}</TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          {history.version !== null ? history.version + 1 : "-"}
-                        </TableCell>
-                        <TableCell>{formatTimestamp(history.timestamp)}</TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6">
-                      {t("document.history.noResults")}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                        >
+                          {label}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {history.documentId ? (
+                          <div className="flex items-center">
+                            <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+                            <Button
+                              variant="link"
+                              className="p-0 h-auto"
+                              onClick={() => handleDocumentClick(history.documentId)}
+                            >
+                              {history.documentTitle}
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {history.documentTitle || t("document.history.documentNotAvailable")}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{history.detail || "-"}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {history.version !== null ? history.version + 1 : "-"}
+                      </TableCell>
+                      <TableCell>{formatTimestamp(history.timestamp)}</TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-6">
+                    {t("document.history.noResults")}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">{t("document.discover.pagination.pageSize")}</span>
+            <Select value={filters.size?.toString()} onValueChange={handlePageSizeChange}>
+              <SelectTrigger className="w-[80px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {pageSizeOptions.map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{t("document.discover.pagination.pageSize")}</span>
-              <Select value={filters.size?.toString()} onValueChange={handlePageSizeChange}>
-                <SelectTrigger className="w-[80px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {pageSizeOptions.map((size) => (
-                    <SelectItem key={size} value={size.toString()}>
-                      {size}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {t("document.history.pagination.showing", {
-                  start: currentPage * filters.size + 1,
-                  end: Math.min((currentPage + 1) * filters.size, histories.length + currentPage * filters.size),
-                  total: totalPages * filters.size,
-                })}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 0 || loading}
-              >
-                {t("document.history.pagination.previous")}
-              </Button>
-              <div className="text-sm">
-                {t("document.history.pagination.page", {
-                  current: currentPage + 1,
-                  total: totalPages || 1,
-                })}
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages - 1 || loading}
-              >
-                {t("document.history.pagination.next")}
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {t("document.history.pagination.showing", {
+                start: currentPage * filters.size + 1,
+                end: Math.min((currentPage + 1) * filters.size, histories.length + currentPage * filters.size),
+                total: totalPages * filters.size,
+              })}
+            </span>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 0 || loading}
+            >
+              {t("document.history.pagination.previous")}
+            </Button>
+            <div className="text-sm">
+              {t("document.history.pagination.page", {
+                current: currentPage + 1,
+                total: totalPages || 1,
+              })}
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage >= totalPages - 1 || loading}
+            >
+              {t("document.history.pagination.next")}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
