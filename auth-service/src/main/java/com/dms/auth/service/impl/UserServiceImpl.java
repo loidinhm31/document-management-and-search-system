@@ -88,7 +88,7 @@ public class UserServiceImpl extends BaseService implements UserService {
 
         // Check if account is locked before attempting authentication
         if (!user.isAccountNonLocked()) {
-            throw new LockedException("Account is locked. Please contact support.");
+            throw new LockedException("USER_LOCKED");
         }
 
         // Proceed with authentication

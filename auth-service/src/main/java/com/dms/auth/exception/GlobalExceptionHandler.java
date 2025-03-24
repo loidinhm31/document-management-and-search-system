@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleLockedException(LockedException ex) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body("Account is locked. Please contact support.");
+                .body(ex.getMessage());
     }
 
     @ExceptionHandler(AuthenticationException.class)
