@@ -61,15 +61,20 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       onSuccess(response.data);
     } catch (error: any) {
       console.log("error", error);
-      if (
-        error.response &&
-        ((error.response.status === 404 && error.response.data === "USER_NOT_FOUND") || error.response.status === 401)
-      ) {
-        toast({
-          title: t("common.error"),
-          description: t("auth.login.incorrect"),
-          variant: "destructive",
-        });
+      if (error.response) {
+        if ((error.response.status === 404 && error.response.data === "USER_NOT_FOUND") || error.response.status === 401) {
+          toast({
+            title: t("common.error"),
+            description: t("auth.login.incorrect"),
+            variant: "destructive",
+          });
+        } else if (error.response.status === 403 && error.response.data === "USER_LOCKED") {
+          toast({
+            title: t("common.error"),
+            description: t("auth.login.locked"),
+            variant: "destructive",
+          });
+        }
       }
     } finally {
       setIsLoading(false);

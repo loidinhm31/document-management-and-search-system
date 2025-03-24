@@ -96,6 +96,7 @@
       "success": "Login successful",
       "incorrect": "Incorrect login credentials",
       "error": "Invalid credentials",
+      "locked": "Your account has been locked",
       "required": "Please login to continue"
     },
     "logout": {
