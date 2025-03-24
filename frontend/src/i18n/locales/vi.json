@@ -633,6 +633,7 @@
         "sizeLimitError": "Kích thước tệp vượt quá giới hạn tối đa {{maxFileSize}} MB. Tệp đã chọn là {{fileSizeError}} MB"
       },
       "form": {
+        "selectedFile": "Đã chọn",
         "majors": {
           "label": "Chuyên ngành *",
           "placeholder": "Chọn chuyên ngành"

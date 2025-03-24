@@ -633,6 +633,7 @@
         "sizeLimitError": "File size exceeds the maximum limit {{maxFileSize}} MB. Selected file is {{fileSizeError}} MB"
       },
       "form": {
+        "selectedFile": "Selected",
         "majors": {
           "label": "Majors *",
           "placeholder": "Select majors"

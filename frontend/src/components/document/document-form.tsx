@@ -216,7 +216,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
         )}
         {selectedFile && (
           <p className="mt-2 font-bold text-primary bg-primary/10 px-3 py-1 rounded-md inline-block">
-            Selected: {selectedFile.name}
+            {t("document.upload.form.selectedFile")}: {selectedFile.name}
           </p>
         )}
       </div>
