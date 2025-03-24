@@ -1,4 +1,4 @@
-package com.dms.document.search.service;
+package com.dms.document.search.service.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
-class DocumentServiceTest {
+class DocumentServiceImplTest {
 
     @Mock
     private MongoTemplate mongoTemplate;
@@ -39,7 +39,7 @@ class DocumentServiceTest {
     private UserClient userClient;
 
     @InjectMocks
-    private DocumentService documentService;
+    private DocumentServiceImpl documentService;
 
     private UUID userId;
     private String username;

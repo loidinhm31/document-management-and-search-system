@@ -1,14 +1,10 @@
-package com.dms.document.search.service;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+package com.dms.document.search.service.impl;
 
 import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.*;
 import com.dms.document.search.enums.AppRole;
-import com.dms.document.search.model.DocumentPreferences;
 import com.dms.document.search.repository.DocumentPreferencesRepository;
+import com.dms.document.search.service.DocumentFavoriteService;
 import org.apache.lucene.search.TotalHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,8 +27,12 @@ import org.springframework.http.ResponseEntity;
 import java.io.IOException;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
-class DiscoverDocumentSearchServiceTest {
+class DiscoverDocumentSearchServiceImplTest {
 
     @Mock
     private RestHighLevelClient openSearchClient;
@@ -47,7 +47,7 @@ class DiscoverDocumentSearchServiceTest {
     private DocumentFavoriteService documentFavoriteService;
 
     @InjectMocks
-    private DiscoverDocumentSearchService discoverDocumentSearchService;
+    private DiscoverDocumentSearchServiceImpl discoverDocumentSearchService;
 
     private UUID userId;
     private String username;

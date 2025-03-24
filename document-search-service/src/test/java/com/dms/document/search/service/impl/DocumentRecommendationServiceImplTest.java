@@ -1,4 +1,4 @@
-package com.dms.document.search.service;
+package com.dms.document.search.service.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -12,7 +12,7 @@ import com.dms.document.search.enums.AppRole;
 import com.dms.document.search.exception.InvalidDocumentException;
 import com.dms.document.search.model.DocumentPreferences;
 import com.dms.document.search.repository.DocumentPreferencesRepository;
-import com.dms.document.search.service.DocumentRecommendationService;
+import com.dms.document.search.service.DocumentFavoriteService;
 import org.apache.lucene.search.TotalHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ import java.time.Instant;
 import java.util.*;
 
 @ExtendWith(MockitoExtension.class)
-class DocumentRecommendationServiceTest {
+class DocumentRecommendationServiceImplTest {
 
     @Mock
     private RestHighLevelClient openSearchClient;
@@ -53,7 +53,7 @@ class DocumentRecommendationServiceTest {
     private DocumentFavoriteService documentFavoriteService;
 
     @InjectMocks
-    private DocumentRecommendationService documentRecommendationService;
+    private DocumentRecommendationServiceImpl documentRecommendationService;
 
     private UUID userId;
     private String username;

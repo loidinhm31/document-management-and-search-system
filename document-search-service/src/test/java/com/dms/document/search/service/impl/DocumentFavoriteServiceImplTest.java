@@ -1,4 +1,4 @@
-package com.dms.document.search.service;
+package com.dms.document.search.service.impl;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -18,13 +18,13 @@ import java.util.Set;
 import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
-class DocumentFavoriteServiceTest {
+class DocumentFavoriteServiceImplTest {
 
     @Mock
     private DocumentFavoriteRepository documentFavoriteRepository;
 
     @InjectMocks
-    private DocumentFavoriteService documentFavoriteService;
+    private DocumentFavoriteServiceImpl documentFavoriteService;
 
     private UUID userId;
     private Set<String> favoriteDocIds;
