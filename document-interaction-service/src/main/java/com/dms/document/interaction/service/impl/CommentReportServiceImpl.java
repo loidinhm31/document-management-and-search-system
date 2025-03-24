@@ -155,6 +155,7 @@ public class CommentReportServiceImpl implements CommentReportService {
                 report.setProcessed(Boolean.TRUE);
             }
         });
+        commentReportRepository.saveAll(commentReports);
 
         // Resolve actual comment
         AtomicReference<String> documentId = new AtomicReference<>();
@@ -169,8 +170,8 @@ public class CommentReportServiceImpl implements CommentReportService {
                     } else if (newStatus == CommentReportStatus.REJECTED) {
                         dc.setFlag(1);
                     }
+                    documentCommentRepository.save(dc);
                 });
-
 
         CompletableFuture.runAsync(() -> {
             // Notify user of resolution

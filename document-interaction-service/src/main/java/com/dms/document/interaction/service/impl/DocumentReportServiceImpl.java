@@ -16,6 +16,7 @@ import com.dms.document.interaction.repository.DocumentRepository;
 import com.dms.document.interaction.repository.MasterDataRepository;
 import com.dms.document.interaction.service.DocumentReportService;
 import com.dms.document.interaction.service.PublishEventService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
@@ -49,6 +50,7 @@ public class DocumentReportServiceImpl implements DocumentReportService {
     @Transactional
     @Override
     public ReportResponse createReport(String documentId, ReportRequest request, String username) {
+        // Get user information
         UserResponse userResponse = getUserFromUsername(username);
 
         // Verify document exists
@@ -65,7 +67,7 @@ public class DocumentReportServiceImpl implements DocumentReportService {
         }
 
         // Find user's processed report if it exists
-        List<DocumentReport> processedReports = documentReportRepository.findByDocumentIdAndProcessed(documentId, Boolean.TRUE);
+        List<DocumentReport> processedReports = documentReportRepository.findByDocumentIdAndProcessed(documentId, true);
         Optional<DocumentReport> maxTimeProcessedReport = processedReports.stream()
                 .max(Comparator.comparing(report -> report.getTimes() != null ? report.getTimes() : 0));
 
@@ -127,6 +129,7 @@ public class DocumentReportServiceImpl implements DocumentReportService {
                 dr.setProcessed(Boolean.TRUE);
             }
         });
+        documentReportRepository.saveAll(documentReports);
 
         // Update main document status
         DocumentInformation document = documentRepository.findById(documentId)
@@ -152,11 +155,7 @@ public class DocumentReportServiceImpl implements DocumentReportService {
     @Transactional(readOnly = true)
     @Override
     public Optional<ReportResponse> getUserReport(String documentId, String username) {
-        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
-        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
-            throw new InvalidDataAccessResourceUsageException("User not found");
-        }
-        UserResponse userResponse = response.getBody();
+        UserResponse userResponse = getUserFromUsername(username);
 
         return documentReportRepository.findByDocumentIdAndUserIdAndProcessed(documentId, userResponse.userId(), false)
                 .map(report -> {

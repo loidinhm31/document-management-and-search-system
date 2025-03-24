@@ -1,0 +1,420 @@
+package com.dms.document.interaction.service.impl;
+
+import com.dms.document.interaction.client.UserClient;
+import com.dms.document.interaction.dto.*;
+import com.dms.document.interaction.enums.AppRole;
+import com.dms.document.interaction.enums.CommentReportStatus;
+import com.dms.document.interaction.enums.MasterDataType;
+import com.dms.document.interaction.mapper.ReportTypeMapper;
+import com.dms.document.interaction.model.CommentReport;
+import com.dms.document.interaction.model.DocumentComment;
+import com.dms.document.interaction.model.MasterData;
+import com.dms.document.interaction.model.Translation;
+import com.dms.document.interaction.model.projection.CommentReportProjection;
+import com.dms.document.interaction.repository.CommentReportRepository;
+import com.dms.document.interaction.repository.DocumentCommentRepository;
+import com.dms.document.interaction.repository.MasterDataRepository;
+import com.dms.document.interaction.service.DocumentNotificationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+
+import java.time.Instant;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class CommentReportServiceImplTest {
+
+    @Mock
+    private CommentReportRepository commentReportRepository;
+
+    @Mock
+    private DocumentCommentRepository documentCommentRepository;
+
+    @Mock
+    private MasterDataRepository masterDataRepository;
+
+    @Mock
+    private UserClient userClient;
+
+    @Mock
+    private ReportTypeMapper reportTypeMapper;
+
+    @Mock
+    private DocumentNotificationService documentNotificationService;
+
+    @InjectMocks
+    private CommentReportServiceImpl commentReportService;
+
+    private final UUID userId = UUID.randomUUID();
+    private final String documentId = "doc123";
+    private final Long commentId = 1L;
+    private final String username = "testuser";
+    private UserResponse userResponse;
+    private MasterData reportType;
+    private DocumentComment comment;
+    private CommentReport report;
+    private CommentReportResponse reportResponse;
+
+    @BeforeEach
+    void setUp() {
+        // Setup user response
+        RoleResponse roleResponse = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_USER);
+        userResponse = new UserResponse(userId, username, "test@example.com", roleResponse);
+
+        // Setup report type
+        reportType = new MasterData();
+        reportType.setId("rt1");
+        reportType.setCode("SPAM");
+        reportType.setType(MasterDataType.REPORT_COMMENT_TYPE);
+        Translation translation = new Translation();
+        translation.setEn("Spam");
+        translation.setVi("Thư rác");
+        reportType.setTranslations(translation);
+
+        // Setup comment
+        comment = new DocumentComment();
+        comment.setId(commentId);
+        comment.setDocumentId(documentId);
+        comment.setUserId(UUID.randomUUID());
+        comment.setContent("Test comment");
+        comment.setCreatedAt(Instant.now());
+
+        // Setup report
+        report = new CommentReport();
+        report.setId(1L);
+        report.setDocumentId(documentId);
+        report.setCommentId(commentId);
+        report.setUserId(userId);
+        report.setReportTypeCode("SPAM");
+        report.setDescription("This is spam");
+        report.setStatus(CommentReportStatus.PENDING);
+        report.setProcessed(false);
+        report.setCreatedAt(Instant.now());
+        report.setComment(comment);
+        report.setTimes(1); // Set times to avoid NullPointerException
+
+        // Setup report response
+        TranslationDTO translationDTO = new TranslationDTO();
+        translationDTO.setEn("Spam");
+        translationDTO.setVi("Thư rác");
+        reportResponse = new CommentReportResponse(
+                1L, documentId, commentId, "SPAM", translationDTO, "This is spam", Instant.now()
+        );
+    }
+
+    @Test
+    void createReport_Success() {
+        // Arrange
+        CommentReportRequest request = new CommentReportRequest("SPAM", "This is spam");
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentCommentRepository.findByDocumentIdAndId(documentId, commentId)).thenReturn(Optional.of(comment));
+        when(masterDataRepository.findByTypeAndCode(MasterDataType.REPORT_COMMENT_TYPE, "SPAM")).thenReturn(Optional.of(reportType));
+        when(commentReportRepository.existsByCommentIdAndUserIdAndProcessed(commentId, userId, false)).thenReturn(false);
+        when(commentReportRepository.findByCommentIdAndProcessed(commentId, true)).thenReturn(Collections.emptyList());
+        when(commentReportRepository.save(any(CommentReport.class))).thenReturn(report);
+        when(reportTypeMapper.mapToResponse(any(CommentReport.class), any(MasterData.class))).thenReturn(reportResponse);
+
+        // Act
+        CommentReportResponse result = commentReportService.createReport(documentId, commentId, request, username);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(documentId, result.documentId());
+        assertEquals(commentId, result.commentId());
+        assertEquals("SPAM", result.reportTypeCode());
+
+        // Verify the report was saved with correct details
+        ArgumentCaptor<CommentReport> reportCaptor = ArgumentCaptor.forClass(CommentReport.class);
+        verify(commentReportRepository).save(reportCaptor.capture());
+        CommentReport savedReport = reportCaptor.getValue();
+        assertEquals(documentId, savedReport.getDocumentId());
+        assertEquals(commentId, savedReport.getCommentId());
+        assertEquals(userId, savedReport.getUserId());
+        assertEquals("SPAM", savedReport.getReportTypeCode());
+        assertEquals("This is spam", savedReport.getDescription());
+        assertEquals(CommentReportStatus.PENDING, savedReport.getStatus());
+        assertFalse(savedReport.getProcessed());
+    }
+
+    @Test
+    void createReport_UserAlreadyReported_ThrowsException() {
+        // Arrange
+        CommentReportRequest request = new CommentReportRequest("SPAM", "This is spam");
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentCommentRepository.findByDocumentIdAndId(documentId, commentId)).thenReturn(Optional.of(comment));
+        when(masterDataRepository.findByTypeAndCode(MasterDataType.REPORT_COMMENT_TYPE, "SPAM")).thenReturn(Optional.of(reportType));
+        when(commentReportRepository.existsByCommentIdAndUserIdAndProcessed(commentId, userId, false)).thenReturn(true);
+
+        // Act & Assert
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                commentReportService.createReport(documentId, commentId, request, username)
+        );
+        assertEquals("You have already reported this comment", exception.getMessage());
+    }
+
+    @Test
+    void createReport_CommentNotFound_ThrowsException() {
+        // Arrange
+        CommentReportRequest request = new CommentReportRequest("SPAM", "This is spam");
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentCommentRepository.findByDocumentIdAndId(documentId, commentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                commentReportService.createReport(documentId, commentId, request, username)
+        );
+        assertEquals("Comment not found", exception.getMessage());
+    }
+
+    @Test
+    void createReport_InvalidReportType_ThrowsException() {
+        // Arrange
+        CommentReportRequest request = new CommentReportRequest("INVALID", "This is spam");
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentCommentRepository.findByDocumentIdAndId(documentId, commentId)).thenReturn(Optional.of(comment));
+        when(masterDataRepository.findByTypeAndCode(MasterDataType.REPORT_COMMENT_TYPE, "INVALID")).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                commentReportService.createReport(documentId, commentId, request, username)
+        );
+        assertEquals("Invalid report type", exception.getMessage());
+    }
+
+    @Test
+    void getUserReport_Success() {
+        // Arrange
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(commentReportRepository.findByDocumentIdAndCommentIdAndUserIdAndProcessed(documentId, commentId, userId, false))
+                .thenReturn(Optional.of(report));
+        when(masterDataRepository.findByTypeAndCode(MasterDataType.REPORT_COMMENT_TYPE, "SPAM"))
+                .thenReturn(Optional.of(reportType));
+        when(reportTypeMapper.mapToResponse(report, reportType)).thenReturn(reportResponse);
+
+        // Act
+        Optional<CommentReportResponse> result = commentReportService.getUserReport(documentId, commentId, username);
+
+        // Assert
+        assertTrue(result.isPresent());
+        assertEquals(documentId, result.get().documentId());
+        assertEquals(commentId, result.get().commentId());
+        assertEquals("SPAM", result.get().reportTypeCode());
+    }
+
+    @Test
+    void getUserReport_NotFound_ReturnsEmpty() {
+        // Arrange
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(commentReportRepository.findByDocumentIdAndCommentIdAndUserIdAndProcessed(documentId, commentId, userId, false))
+                .thenReturn(Optional.empty());
+
+        // Act
+        Optional<CommentReportResponse> result = commentReportService.getUserReport(documentId, commentId, username);
+
+        // Assert
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void getReportTypes_Success() {
+        // Arrange
+        List<MasterData> reportTypes = new ArrayList<>();
+        reportTypes.add(reportType);
+
+        when(masterDataRepository.findByTypeAndIsActive(MasterDataType.REPORT_COMMENT_TYPE, true)).thenReturn(reportTypes);
+        when(reportTypeMapper.mapToReportTypeResponse(reportType)).thenReturn(new ReportTypeResponse("SPAM", new TranslationDTO(), ""));
+
+        // Act
+        List<ReportTypeResponse> result = commentReportService.getReportTypes();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("SPAM", result.get(0).code());
+    }
+
+    @Test
+    void resolveCommentReport_Success() {
+        // Arrange
+        // Setup admin user
+        RoleResponse adminRole = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN);
+        UserResponse adminUser = new UserResponse(UUID.randomUUID(), "admin", "admin@example.com", adminRole);
+
+        // Setup a proper report with different status than what we're updating to
+        CommentReport pendingReport = new CommentReport();
+        pendingReport.setId(1L);
+        pendingReport.setDocumentId(documentId);
+        pendingReport.setCommentId(commentId);
+        pendingReport.setUserId(userId);
+        pendingReport.setReportTypeCode("SPAM");
+        pendingReport.setDescription("This is spam");
+        pendingReport.setStatus(CommentReportStatus.PENDING); // This must be different from RESOLVED
+        pendingReport.setProcessed(false); // Must be false for the update to happen
+        pendingReport.setCreatedAt(Instant.now());
+        pendingReport.setComment(comment);
+        pendingReport.setTimes(1);
+
+        // Use a spy to capture actual behavior changes
+        CommentReport spyReport = spy(pendingReport);
+        List<CommentReport> reports = Collections.singletonList(spyReport);
+
+        when(userClient.getUserByUsername("admin")).thenReturn(ResponseEntity.ok(adminUser));
+        when(commentReportRepository.findByCommentIdAndProcessed(commentId, false)).thenReturn(reports);
+
+        // Mock comment retrieval
+        comment.setFlag(1); // Normal flag value
+        when(documentCommentRepository.findByDocumentIdAndId(eq(documentId), eq(commentId))).thenReturn(Optional.of(comment));
+
+        // Setup saveAll for batch saving (not save!)
+        when(commentReportRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Setup document comment save
+        when(documentCommentRepository.save(any(DocumentComment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Mock notification service
+        lenient().doNothing().when(documentNotificationService).sendCommentReportResolvedNotification(
+                anyString(), anyLong(), any(UUID.class), anyInt());
+
+        // Act
+        commentReportService.resolveCommentReport(commentId, CommentReportStatus.RESOLVED, "admin");
+
+        // Assert
+        // Verify the report was updated with the correct status
+        verify(spyReport).setStatus(CommentReportStatus.RESOLVED);
+        verify(spyReport).setProcessed(true);
+        verify(spyReport).setUpdatedBy(adminUser.userId());
+
+        // Verify saveAll was called (not save)
+        verify(commentReportRepository).saveAll(anyList());
+
+        // Verify comment was updated
+        verify(documentCommentRepository).save(any(DocumentComment.class));
+    }
+
+    @Test
+    void resolveCommentReport_NonAdmin_ThrowsException() {
+        // Arrange
+        String nonAdminUsername = "user";
+
+        when(userClient.getUserByUsername(nonAdminUsername)).thenReturn(ResponseEntity.ok(userResponse)); // Non-admin user
+
+        // Act & Assert
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
+                commentReportService.resolveCommentReport(commentId, CommentReportStatus.RESOLVED, nonAdminUsername)
+        );
+        assertEquals("Only administrators can resolve reports", exception.getMessage());
+    }
+
+    @Test
+    void getAdminCommentReports_Success() {
+        // Arrange
+        Instant fromDate = Instant.now().minus(7, java.time.temporal.ChronoUnit.DAYS);
+        Instant toDate = Instant.now();
+        String commentContent = "test";
+        String reportTypeCode = "SPAM";
+        CommentReportStatus status = CommentReportStatus.PENDING;
+        Pageable pageable = Pageable.unpaged();
+
+        // Mock CommentReportProjection
+        CommentReportProjection projection = mock(CommentReportProjection.class);
+        when(projection.getCommentId()).thenReturn(commentId);
+        when(projection.getDocumentId()).thenReturn(documentId);
+        when(projection.getCommentContent()).thenReturn("Test comment");
+        when(projection.getProcessed()).thenReturn(false);
+        when(projection.getStatus()).thenReturn(CommentReportStatus.PENDING);
+        when(projection.getReportCount()).thenReturn(1);
+        when(projection.getReporterId()).thenReturn(userId);
+        when(projection.getCommentUserId()).thenReturn(UUID.randomUUID());
+        when(projection.getUpdatedBy()).thenReturn(null);
+        when(projection.getReportTypeCode()).thenReturn("SPAM");
+        when(projection.getDescription()).thenReturn("This is spam");
+        when(projection.getCreatedAt()).thenReturn(Instant.now());
+        when(projection.getUpdatedAt()).thenReturn(null);
+
+        List<CommentReportProjection> projections = List.of(projection);
+        Page<CommentReportProjection> projectionPage = new PageImpl<>(projections, pageable, projections.size());
+
+        when(commentReportRepository.findCommentReportsGroupedByProcessed(
+                fromDate, toDate, commentContent, reportTypeCode, status != null ? status.name() : null, pageable
+        )).thenReturn(projectionPage);
+
+        // Mock user lookup
+        List<UserResponse> users = new ArrayList<>();
+        users.add(userResponse);
+        when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(users));
+
+        // Act
+        Page<AdminCommentReportResponse> result = commentReportService.getAdminCommentReports(
+                fromDate, toDate, commentContent, reportTypeCode, status, pageable
+        );
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        AdminCommentReportResponse response = result.getContent().get(0);
+        assertEquals(documentId, response.documentId());
+        assertEquals(commentId, response.commentId());
+        assertEquals("Test comment", response.commentContent());
+    }
+
+    @Test
+    void getCommentReportsByCommentId_Success() {
+        // Arrange
+        CommentReportStatus status = CommentReportStatus.PENDING;
+
+        when(documentCommentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(commentReportRepository.findByCommentIdAndStatus(commentId, status)).thenReturn(List.of(report));
+
+        // Mock user lookup
+        Set<UUID> userIds = new HashSet<>();
+        userIds.add(userId);
+        userIds.add(comment.getUserId());
+
+        List<UserResponse> users = new ArrayList<>();
+        users.add(userResponse);
+        when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(users));
+
+        // Act
+        List<CommentReportDetailResponse> result = commentReportService.getCommentReportsByCommentId(commentId, status);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        CommentReportDetailResponse response = result.get(0);
+        assertEquals(documentId, response.getDocumentId());
+        assertEquals(commentId, response.getCommentId());
+        assertEquals("Test comment", response.getCommentContent());
+        assertEquals(userId, response.getReporterUserId());
+        assertEquals(username, response.getReporterUsername());
+    }
+
+    @Test
+    void getUserFromUsername_UserNotFound_ThrowsException() {
+        // Arrange
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(null));
+
+        // Act & Assert
+        InvalidDataAccessResourceUsageException exception = assertThrows(InvalidDataAccessResourceUsageException.class, () ->
+                commentReportService.createReport(documentId, commentId, new CommentReportRequest("SPAM", "This is spam"), username)
+        );
+        assertEquals("User not found", exception.getMessage());
+    }
+}
