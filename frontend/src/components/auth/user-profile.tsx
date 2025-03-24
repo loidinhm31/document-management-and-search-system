@@ -279,12 +279,55 @@ export default function UserProfile() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    navigator.clipboard.writeText(secret);
-                                    toast({
-                                      title: t("common.success"),
-                                      description: t("profile.twoFactor.codeCopied"),
-                                      variant: "success",
-                                    });
+                                    // Function to show success message
+                                    const showSuccess = () => {
+                                      toast({
+                                        title: t("common.success"),
+                                        description: t("profile.twoFactor.codeCopied"),
+                                        variant: "success",
+                                      });
+                                    };
+
+                                    // Function to show error message
+                                    const showError = (error) => {
+                                      console.error("Failed to copy to clipboard:", error);
+                                      toast({
+                                        title: t("common.error"),
+                                        description: t("profile.twoFactor.copyFailed") || "Failed to copy code to clipboard",
+                                        variant: "destructive",
+                                      });
+                                    };
+
+                                    // Try modern clipboard API first
+                                    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                                      navigator.clipboard.writeText(secret)
+                                        .then(showSuccess)
+                                        .catch(showError);
+                                    } else {
+                                      // Fallback method using temporary textarea element
+                                      try {
+                                        const textarea = document.createElement('textarea');
+                                        textarea.value = secret;
+                                        // Make the textarea out of viewport
+                                        textarea.style.position = 'fixed';
+                                        textarea.style.left = '-999999px';
+                                        textarea.style.top = '-999999px';
+                                        document.body.appendChild(textarea);
+                                        textarea.focus();
+                                        textarea.select();
+
+                                        const successful = document.execCommand('copy');
+                                        document.body.removeChild(textarea);
+
+                                        if (successful) {
+                                          showSuccess();
+                                        } else {
+                                          showError(new Error('execCommand returned false'));
+                                        }
+                                      } catch (error) {
+                                        showError(error);
+                                      }
+                                    }
                                   }}
                                 >
                                   {t("profile.twoFactor.copy")}

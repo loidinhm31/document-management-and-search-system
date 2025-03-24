@@ -65,8 +65,10 @@ export const TwoFactorForm = ({ username, onSuccess }: TwoFactorFormProps) => {
             description: t("auth.login.2fa.maxAttemptsReached"),
             variant: "destructive",
           });
-          navigate("/login");
-          window.location.reload();
+          setTimeout(() => {
+            navigate("/login");
+            window.location.reload();
+          }, 3000);
           return;
         }
 
