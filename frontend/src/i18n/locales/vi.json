@@ -272,15 +272,15 @@
       "verificationCodePlaceholder": "Nhập mã 6 chữ số",
       "manualCode": "Nếu bạn không thể quét mã QR, hãy nhập mã này theo cách thủ công vào ứng dụng xác thực của bạn",
       "copy": "Sao chép",
-      "codeCopied": "Đã sao chép mã bí mật vào clipboard",
+      "codeCopied": "Đã sao chép mã vào clipboard",
       "messages": {
-        "enableSuccess": "Đã bật 2FA",
-        "disableSuccess": "Đã tắt 2FA",
-        "enableError": "Không thể bật 2FA",
-        "disableError": "Không thể tắt 2FA",
+        "enableSuccess": "Đã bật xác thực 2 yếu tố",
+        "disableSuccess": "Đã tắt xác thực 2 yếu tố",
+        "enableError": "Không thể bật xác thực 2 yếu tố",
+        "disableError": "Không thể tắt xác thực 2 yếu tố",
         "verifyError": "Mã xác thực không hợp lệ",
         "verificationRequired": "Vui lòng nhập mã xác thực",
-        "statusError": "Không thể lấy trạng thái 2FA"
+        "statusError": "Không thể lấy trạng thái xác thực 2 yếu tố"
       }
     },
     "updateProfile": {
