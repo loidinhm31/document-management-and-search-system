@@ -1,18 +1,6 @@
-# Track username and login status
+# Track login status
 LOGIN_STATUS_FILE := .docker_login_status
 USERNAME_FILE := .docker_username
-
-# Function to get Docker Hub username
-define get_username
-	$(shell if [ ! -f $(USERNAME_FILE) ]; then \
-		read -p "Docker Hub username: " username; \
-		echo "$$username" > $(USERNAME_FILE); \
-	fi; \
-	cat $(USERNAME_FILE))
-endef
-
-# Docker Hub username - read from file or prompt once
-DOCKER_HUB_USERNAME := $(call get_username)
 
 # Available services
 SERVICES := eureka-discovery-server api-gateway auth-service document-interaction-service document-search-service document-processor-service
@@ -32,6 +20,19 @@ help:
 	@echo ""
 	@echo "Available services:"
 	@echo "  $(SERVICES)"
+
+# Get username (stored or prompt)
+.PHONY: get-username
+get-username:
+	@if [ ! -f $(USERNAME_FILE) ]; then \
+		read -p "Docker Hub username: " username; \
+		echo -n "$$username" > $(USERNAME_FILE); \
+	fi
+
+# Get the stored username
+define get_docker_username
+$(shell cat $(USERNAME_FILE) 2>/dev/null || echo "")
+endef
 
 # Check if already logged in
 .PHONY: check-login
@@ -53,22 +54,37 @@ login:
 
 # Build all services
 .PHONY: build-all
-build-all:
+build-all: get-username
+	$(eval DOCKER_HUB_USERNAME := $(call get_docker_username))
+	@if [ -z "$(DOCKER_HUB_USERNAME)" ]; then \
+		echo "Error: Docker Hub username is empty. Please run 'make clean' and try again."; \
+		exit 1; \
+	fi
+	@echo "Building all services using username: $(DOCKER_HUB_USERNAME)"
 	DOCKER_HUB_USERNAME=$(DOCKER_HUB_USERNAME) docker compose -f docker-compose.build.yml build
 
 # Push all services
 .PHONY: push-all
-push-all: check-login
+push-all: check-login get-username
+	$(eval DOCKER_HUB_USERNAME := $(call get_docker_username))
+	@if [ -z "$(DOCKER_HUB_USERNAME)" ]; then \
+		echo "Error: Docker Hub username is empty. Please run 'make clean' and try again."; \
+		exit 1; \
+	fi
+	@echo "Pushing all services using username: $(DOCKER_HUB_USERNAME)"
 	DOCKER_HUB_USERNAME=$(DOCKER_HUB_USERNAME) docker compose -f docker-compose.build.yml push
 
 # Build and push all services
 .PHONY: build-push-all
-build-push-all:
+build-push-all: get-username
+	$(eval DOCKER_HUB_USERNAME := $(call get_docker_username))
+	@echo "Building and pushing all services using username: $(DOCKER_HUB_USERNAME)"
 	@make build-all && make push-all
 
 # Build specific service
 .PHONY: build
-build:
+build: get-username
+	$(eval DOCKER_HUB_USERNAME := $(call get_docker_username))
 ifndef SERVICE
 	@echo "Error: SERVICE is not set. Usage: make build SERVICE=<service-name>"
 	@echo "Available services: $(SERVICES)"
@@ -79,11 +95,13 @@ ifeq ($(filter $(SERVICE),$(SERVICES)),)
 	@echo "Available services: $(SERVICES)"
 	@exit 1
 endif
+	@echo "Building $(SERVICE) using username: $(DOCKER_HUB_USERNAME)"
 	DOCKER_HUB_USERNAME=$(DOCKER_HUB_USERNAME) docker compose -f docker-compose.build.yml build $(SERVICE)
 
 # Push specific service
 .PHONY: push
-push: check-login
+push: check-login get-username
+	$(eval DOCKER_HUB_USERNAME := $(call get_docker_username))
 ifndef SERVICE
 	@echo "Error: SERVICE is not set. Usage: make push SERVICE=<service-name>"
 	@echo "Available services: $(SERVICES)"
@@ -94,11 +112,13 @@ ifeq ($(filter $(SERVICE),$(SERVICES)),)
 	@echo "Available services: $(SERVICES)"
 	@exit 1
 endif
+	@echo "Pushing $(SERVICE) using username: $(DOCKER_HUB_USERNAME)"
 	DOCKER_HUB_USERNAME=$(DOCKER_HUB_USERNAME) docker compose -f docker-compose.build.yml push $(SERVICE)
 
 # Build and push specific service
 .PHONY: build-push
-build-push:
+build-push: get-username
+	$(eval DOCKER_HUB_USERNAME := $(call get_docker_username))
 ifndef SERVICE
 	@echo "Error: SERVICE is not set. Usage: make build-push SERVICE=<service-name>"
 	@echo "Available services: $(SERVICES)"
@@ -109,12 +129,13 @@ ifeq ($(filter $(SERVICE),$(SERVICES)),)
 	@echo "Available services: $(SERVICES)"
 	@exit 1
 endif
-	@echo "Building $(SERVICE)..."
+	@echo "Building $(SERVICE) using username: $(DOCKER_HUB_USERNAME)"
 	@if DOCKER_HUB_USERNAME=$(DOCKER_HUB_USERNAME) docker compose -f docker-compose.build.yml build $(SERVICE); then \
 		echo "Build successful! Preparing to push..."; \
 		read -p "Do you want to push the image to Docker Hub? [y/N] " answer; \
 		if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
 			make check-login && \
+			echo "Pushing $(SERVICE) using username: $(DOCKER_HUB_USERNAME)" && \
 			DOCKER_HUB_USERNAME=$(DOCKER_HUB_USERNAME) docker compose -f docker-compose.build.yml push $(SERVICE); \
 		else \
 			echo "Push cancelled."; \
