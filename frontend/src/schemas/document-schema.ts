@@ -41,7 +41,7 @@ export const createDocumentSchema = (t: TFunction) => {
     level: z.string().min(1, t("document.upload.validation.levelRequired")),
     categories: z
       .array(z.string())
-      .min(1, t("document.upload.validation.categoryRequired", "At least one document category is required")),
+      .min(1, t("document.upload.validation.categoryRequired")),
     tags: z.array(z.string()).optional(),
   });
 };
