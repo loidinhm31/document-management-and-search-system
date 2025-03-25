@@ -661,10 +661,11 @@
         }
       },
       "validation": {
-        "usernameMinLength": "Username must be at least 3 characters",
-        "invalidEmail": "Invalid email address",
-        "passwordMinLength": "Password must be at least 6 characters",
-        "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character"
+        "summaryMinLength": "Summary must be at least 50 characters",
+        "summaryMaxLength": "Summary must not exceed 500 characters",
+        "majorRequired": "At least one major is required",
+        "levelRequired": "Course level is required",
+        "categoryRequired": "At least one document category is required"
       },
       "buttons": {
         "upload": "Upload Document"

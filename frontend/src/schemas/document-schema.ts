@@ -32,13 +32,13 @@ export const createDocumentSchema = (t: TFunction) => {
         (val) => ({
           message:
             val && val.length < 50
-              ? t("document.upload.validation.summaryMinLength", "Summary must be at least 50 characters")
-              : t("document.upload.validation.summaryMaxLength", "Summary must not exceed 500 characters"),
+              ? t("document.upload.validation.summaryMinLength")
+              : t("document.upload.validation.summaryMaxLength"),
         }),
       ),
-    majors: z.array(z.string()).min(1, t("document.upload.validation.majorRequired", "At least one major is required")),
+    majors: z.array(z.string()).min(1, t("document.upload.validation.majorRequired")),
     courseCodes: z.array(z.string()).optional(),
-    level: z.string().min(1, t("document.upload.validation.levelRequired", "Course level is required")),
+    level: z.string().min(1, t("document.upload.validation.levelRequired")),
     categories: z
       .array(z.string())
       .min(1, t("document.upload.validation.categoryRequired", "At least one document category is required")),

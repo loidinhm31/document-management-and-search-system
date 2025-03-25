@@ -661,10 +661,11 @@
         }
       },
       "validation": {
-        "usernameMinLength": "Tên đăng nhập phải có ít nhất 3 ký tự",
-        "invalidEmail": "Địa chỉ email không hợp lệ",
-        "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
-        "passwordPattern": "Mật khẩu phải chứa ít nhất một chữ số, chữ thường, chữ hoa và ký tự đặc biệt"
+        "summaryMinLength": "Tóm tắt phải có ít nhất 50 ký tự",
+        "summaryMaxLength": "Tóm tắt không được vượt quá 500 ký tự",
+        "majorRequired": "Yêu cầu ít nhất một chuyên ngành",
+        "levelRequired": "Yêu cầu cấp độ khóa học",
+        "categoryRequired": "Yêu cầu ít nhất một danh mục tài liệu"
       },
       "buttons": {
         "upload": "Tải lên tài liệu"
