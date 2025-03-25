@@ -29,7 +29,7 @@
     "admin": {
       "title": "Quản trị",
       "userManagement": "Quản lý người dùng",
-      "masterData": "Dữ liệu gốc",
+      "masterData": "Dữ liệu hệ thống",
       "reports": "Quản lý báo cáo"
     }
   },
@@ -43,7 +43,7 @@
       "title": "Quản trị",
       "users": "Quản lý người dùng",
       "userDetail": "Chi tiết người dùng",
-      "masterData": "Dữ liệu gốc",
+      "masterData": "Dữ liệu hệ thống",
       "roles": "Quản lý vai trò",
       "reports": "Quản lý báo cáo"
     }
@@ -377,10 +377,10 @@
       }
     },
     "masterData": {
-      "title": "Quản lý dữ liệu gốc",
-      "description": "Quản lý dữ liệu gốc hệ thống như chuyên ngành, cấp độ khóa học và danh mục tài liệu",
+      "title": "Quản lý dữ liệu hệ thống",
+      "description": "Quản lý dữ liệu hệ thống hệ thống như chuyên ngành, cấp độ khóa học và danh mục tài liệu",
       "selectType": "Chọn loại",
-      "searchPlaceholder": "Tìm kiếm dữ liệu gốc...",
+      "searchPlaceholder": "Tìm kiếm dữ liệu hệ thống...",
       "selectParent": "Chọn loại cha",
       "allParents": "Tất cả loại cha",
       "search": "Tìm kiếm",
@@ -405,9 +405,9 @@
         "document_category": "Danh mục tài liệu"
       },
       "dialog": {
-        "createTitle": "Tạo dữ liệu gốc",
-        "editTitle": "Sửa dữ liệu gốc",
-        "description": "Điền thông tin bên dưới để tạo hoặc cập nhật dữ liệu gốc.",
+        "createTitle": "Tạo dữ liệu hệ thống",
+        "editTitle": "Sửa dữ liệu hệ thống",
+        "description": "Điền thông tin bên dưới để tạo hoặc cập nhật dữ liệu hệ thống.",
         "fields": {
           "code": "Mã",
           "nameEn": "Tên tiếng Anh",
@@ -431,19 +431,19 @@
         "vietnameseNameRequired": "Tên tiếng Việt là bắt buộc"
       },
       "delete": {
-        "title": "Xóa dữ liệu gốc",
+        "title": "Xóa dữ liệu hệ thống",
         "description": "Bạn có chắc chắn muốn xóa {name}? Hành động này không thể hoàn tác."
       },
-      "createSuccess": "Tạo dữ liệu gốc thành công",
-      "updateFullSuccess": "Cập nhật dữ liệu gốc thành công",
+      "createSuccess": "Tạo dữ liệu hệ thống thành công",
+      "updateFullSuccess": "Cập nhật dữ liệu hệ thống thành công",
       "updateNonFullSuccess": "Chỉ cập nhật các trường an toàn (mô tả, dịch, trạng thái hoạt động)",
-      "createError": "Không thể tạo dữ liệu gốc",
-      "updateError": "Không thể cập nhật dữ liệu gốc",
-      "deleteSuccess": "Xóa dữ liệu gốc thành công",
-      "deleteError": "Không thể xóa dữ liệu gốc",
-      "fetchError": "Không thể lấy dữ liệu gốc",
-      "searchError": "Không thể tìm kiếm dữ liệu gốc",
-      "inUseError": "Dữ liệu gốc đang được sử dụng"
+      "createError": "Không thể tạo dữ liệu hệ thống",
+      "updateError": "Không thể cập nhật dữ liệu hệ thống",
+      "deleteSuccess": "Xóa dữ liệu hệ thống thành công",
+      "deleteError": "Không thể xóa dữ liệu hệ thống",
+      "fetchError": "Không thể lấy dữ liệu hệ thống",
+      "searchError": "Không thể tìm kiếm dữ liệu hệ thống",
+      "inUseError": "Dữ liệu hệ thống đang được sử dụng"
     },
     "reports": {
       "title": "Quản lý báo cáo",
