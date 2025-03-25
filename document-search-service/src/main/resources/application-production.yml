@@ -1,6 +1,6 @@
 app:
   eureka:
-    url: http://${EUREKA_URI}:8081
+    url: ${EUREKA_URI}
   auth-service:
     api-key: ${AUTH_SERVICE_API_KEY:document-search-api-key}
 
@@ -9,11 +9,11 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://${AUTH_SERVICE_ENDPOINT_URL}:8082
-          jwk-set-uri: http://${AUTH_SERVICE_ENDPOINT_URL}:8082/.well-known/jwks.json
+          issuer-uri: ${AUTH_SERVICE_ENDPOINT_URL}
+          jwk-set-uri: ${AUTH_SERVICE_ENDPOINT_URL}/.well-known/jwks.json
   data:
     mongodb:
-      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}:27017/dms?authSource=admin
+      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
 
 # Eureka Client
 eureka:

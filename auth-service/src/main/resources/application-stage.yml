@@ -1,8 +1,10 @@
 app:
+  frontend:
+    url: ${FRONTEND_URL}
   gateway:
-    url: http://${GATEWAY_URL}:8080
+    url: ${GATEWAY_URL}
   eureka:
-    url: http://${EUREKA_URI}:8081
+    url: ${EUREKA_URI}
   auth-service:
     service-api-keys:
       document-interaction-service: ${DOCUMENT_INTERACTION_SERVICE_API_KEY:document-interaction-api-key}
@@ -14,7 +16,7 @@ app:
 spring:
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres?currentSchema=dms
+    url: jdbc:postgresql://${POSTGRES_URL}/postgres?currentSchema=dms
     username: ${POSTGRES_USERNAME}
     password: ${POSTGRES_PASSWORD}
   jpa:

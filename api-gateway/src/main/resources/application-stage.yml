@@ -1,6 +1,6 @@
 app:
   frontend:
-    url: http://${FRONT_END_URL}:3000
+    url: ${FRONT_END_URL}
 
 # Eureka Client
 eureka:
@@ -8,7 +8,7 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     serviceUrl:
-      defaultZone: http://${EUREKA_URI}:8081/eureka/
+      defaultZone: ${EUREKA_URI}/eureka/
   instance:
     preferIpAddress: true
     lease-renewal-interval-in-seconds: 10

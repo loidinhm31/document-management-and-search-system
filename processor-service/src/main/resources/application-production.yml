@@ -1,5 +1,5 @@
 app:
-  base-url: http://${FRONT_END_URL}:3000
+  base-url: ${FRONT_END_URL}
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     chunk-size: 10
@@ -19,10 +19,10 @@ app:
 spring:
   data:
     mongodb:
-      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}:27017/dms?authSource=admin
+      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://${POSTGRES_URL}:5432/postgres?currentSchema=dms
+    url: jdbc:postgresql://${POSTGRES_URL}/postgres?currentSchema=dms
     username: ${POSTGRES_USERNAME}
     password: ${POSTGRES_PASSWORD}
   jpa:
