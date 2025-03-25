@@ -107,17 +107,10 @@ public class JwtUtils {
                     .build()
                     .parseSignedClaims(authToken);
             return true;
-        } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            log.error("JWT token is expired: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            log.error("JWT token is unsupported: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty: {}", e.getMessage());
-        } catch (SecurityException e) {
-            log.error("Invalid JWT signature: {}", e.getMessage());
+        } catch (Exception e) {
+            // Log with less severity since this is expected after restarts
+            log.info("Invalid JWT token: {}", e.getMessage());
+            return false;
         }
-        return false;
     }
 }

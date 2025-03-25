@@ -7,10 +7,8 @@ class AuthService extends BaseService {
     return this.handleApiResponse(axiosInstance.post<TokenResponse>("/auth/api/v1/auth/login", data));
   }
 
-  refreshToken(refreshToken: string) {
-    return this.handleApiResponse(
-      axiosInstance.post<TokenResponse>("/auth/api/v1/auth/refresh-token", { refreshToken }),
-    );
+  async refreshToken(refreshToken: string) {
+    return axiosInstance.post<TokenResponse>("/auth/api/v1/auth/refresh-token", { refreshToken })
   }
 
   async register(data: SignupRequest) {
