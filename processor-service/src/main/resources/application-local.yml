@@ -1,7 +1,5 @@
 app:
   base-url: http://localhost:3000
-  document:
-    max-size-threshold-mb: 25MB
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
@@ -10,6 +8,7 @@ app:
     temp-dir: /tmp/ocr
     dpi: 300
     image-type: RGB
+    large-size-threshold-mb: 8MB
   pdf:
     quality-threshold: 0.8
     min-text-density: 0.01
@@ -48,7 +47,7 @@ spring:
     publisher-returns: true
 
   mail:
-    host: smtp.gmail.com
+    host:
     port: 587
     username:
     password:

@@ -41,11 +41,13 @@ public class SmartPdfExtractor {
 
     public ExtractedText extractText(Path pdfPath) throws IOException, TesseractException {
         try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
+            int pageCount = document.getNumberOfPages();
+
             // Extract text and calculate metrics
             PDFTextStripper textStripper = new PDFTextStripper();
             String pdfText = textStripper.getText(document);
 
-            PdfTextMetrics metrics = calculateTextMetrics(pdfText, document.getNumberOfPages());
+            PdfTextMetrics metrics = calculateTextMetrics(pdfText, pageCount);
             log.debug("PDF metrics - Density: {}, Quality: {}, HasMeaningfulText: {}",
                     metrics.getTextDensity(), metrics.getTextQuality(), metrics.isHasMeaningfulText());
 

@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class ContentExtractorServiceImpl implements ContentExtractorService {
 
-    @Value("${app.document.max-size-threshold-mb}")
-    private DataSize maxSizeThreshold;
+    @Value("${app.ocr.large-size-threshold-mb}")
+    private DataSize largeSizeThreshold;
 
     private final AutoDetectParser parser = new AutoDetectParser();
     private final SmartPdfExtractor smartPdfExtractor;
@@ -58,7 +58,7 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
                 extractedText = handlePdfExtraction(filePath, metadata);
                 return new DocumentExtractContent(extractedText, metadata);
             } else {
-                if (Files.size(filePath) > maxSizeThreshold.toBytes()) {
+                if (Files.size(filePath) > largeSizeThreshold.toBytes()) {
                     // Use new large file handler for non-PDF large files
                     CompletableFuture<String> future = largeFileProcessor.processLargeFile(filePath);
                     String content = future.get(30, TimeUnit.MINUTES);
@@ -107,14 +107,16 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
     }
 
     private String handlePdfExtraction(Path filePath, Map<String, String> metadata) throws IOException, TesseractException {
-        long fileSizeInMb = Files.size(filePath) / (1024 * 1024);
+        long fileSize = Files.size(filePath);
+        long fileSizeInMb = fileSize / (1024 * 1024);
         metadata.put("File-Size-MB", String.valueOf(fileSizeInMb));
 
         // Extract PDF-specific metadata
         Map<String, String> pdfMetadata = extractMetadata(filePath);
         metadata.putAll(pdfMetadata);
 
-        if (fileSizeInMb > maxSizeThreshold.toBytes()) {
+        log.info("File size: ({}MB)", fileSizeInMb);
+        if (fileSize > largeSizeThreshold.toBytes()) {
             log.info("Large PDF detected ({}MB). Using chunked processing.", fileSizeInMb);
             metadata.put("Processing-Method", "chunked");
             return ocrLargeFileProcessor.processLargePdf(filePath);
