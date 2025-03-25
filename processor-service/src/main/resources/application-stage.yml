@@ -1,12 +1,12 @@
 app:
-  base-url: http://${FRONT_END_URL:100.104.245.71}:3000
+  base-url: http://${FRONT_END_URL}:3000
   document:
     max-size-threshold-mb: 25MB
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
-    chunk-size: 5
-    max-threads: 2
+    chunk-size: 10
+    max-threads: 4
     temp-dir: /tmp/ocr
     dpi: 300
     image-type: RGB
@@ -19,21 +19,21 @@ app:
 spring:
   data:
     mongodb:
-      uri: mongodb://mongodb:mongodbpw@${RESOURCE_URL:100.104.245.71}:27017/dms?authSource=admin
+      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}:27017/dms?authSource=admin
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://${RESOURCE_URL:100.104.245.71}:5432/postgres?currentSchema=dms
-    username: postgres
-    password: postgrespw
+    url: jdbc:postgresql://${POSTGRES_URL}:5432/postgres?currentSchema=dms
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: none
     show-sql: true
   rabbitmq:
-    host: ${RESOURCE_URL:100.104.245.71}
+    host: ${RABBITMQ_URL}
     port: 5672
-    username: guest
-    password: guest
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
     listener:
       simple:
         retry:
@@ -61,12 +61,12 @@ mail-sender:
   from-email: no-reply@dms.com
 
 opensearch:
-  host: ${RESOURCE_URL:100.104.245.71}
+  host: ${OPENSEARCH_URL}
   port: 9200
-  username: admin
-  password: admin
-  scheme: http
-  aws: false
+  username: ${OPENSEARCH_USERNAME}
+  password: ${OPENSEARCH_PASSWORD}
+  scheme: https
+  aws: true
 
 # RabbitMQ
 rabbitmq:
