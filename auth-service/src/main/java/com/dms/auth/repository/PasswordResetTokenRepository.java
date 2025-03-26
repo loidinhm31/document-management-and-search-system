@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @Repository
 public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, UUID> {
-    Optional<PasswordResetToken> findByTokenAndUsed(String toke, boolean used);
+    Optional<PasswordResetToken> findByToken(String token);
 
     @Query("SELECT t FROM PasswordResetToken t WHERE t.user.email = :email AND t.used = false ORDER BY t.createdAt DESC LIMIT 1")
     Optional<PasswordResetToken> findLatestByUserEmail(@Param("email") String email);
