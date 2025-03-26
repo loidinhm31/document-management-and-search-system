@@ -226,7 +226,7 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Override
     public void resetPassword(String token, String newPassword) {
-        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenAndUsed(token, false)
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
                 .orElseThrow(() -> new IllegalArgumentException("INVALID_PASSWORD_RESET_TOKEN"));
 
         if (resetToken.isUsed()) {

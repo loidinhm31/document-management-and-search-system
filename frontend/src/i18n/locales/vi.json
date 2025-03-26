@@ -184,9 +184,9 @@
       "error": "Không thể đặt lại mật khẩu",
       "backToLogin": "Quay lại đăng nhập",
       "validation": {
-        "invalidPasswordResetToken": "Mã đặt lại mật khẩu không hợp lệ",
-        "passwordResetTokenUsed": "Mã đặt lại mật khẩu đã được sử dụng",
-        "passwordResetTokenExpired": "Mã đặt lại mật khẩu đã hết hạn",
+        "invalidPasswordResetToken": "Liên kết đặt lại mật khẩu không hợp lệ",
+        "passwordResetTokenUsed": "Liên kết đặt lại mật khẩu đã được sử dụng",
+        "passwordResetTokenExpired": "Liên kết đặt lại mật khẩu đã hết hạn",
         "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
         "passwordPattern": "Mật khẩu phải chứa ít nhất một chữ số, chữ thường, chữ hoa và ký tự đặc biệt",
         "passwordMismatch": "Mật khẩu không khớp"
