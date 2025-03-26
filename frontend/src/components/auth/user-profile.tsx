@@ -289,7 +289,7 @@ export default function UserProfile() {
                                     };
 
                                     // Function to show error message
-                                    const showError = (error) => {
+                                    const showError = (error: any) => {
                                       console.error("Failed to copy to clipboard:", error);
                                       toast({
                                         title: t("common.error"),

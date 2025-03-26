@@ -1,23 +1,23 @@
 app:
   eureka:
-    url: http://localhost:8081
+    url: ${EUREKA_URI}
+  auth-service:
+    api-key: ${AUTH_SERVICE_API_KEY:document-search-api-key}
 
 spring:
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: ${app.document.max-file-size:50MB}
-      max-request-size: ${app.document.max-file-size:50MB}
-      file-size-threshold: 2MB
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8082
-          jwk-set-uri: http://localhost:8082/.well-known/jwks.json
+          issuer-uri: ${AUTH_SERVICE_ENDPOINT_URL}
+          jwk-set-uri: ${AUTH_SERVICE_ENDPOINT_URL}/.well-known/jwks.json
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_URL}/postgres?currentSchema=dms
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
   data:
     mongodb:
-      uri: mongodb://mongodb:mongodbpw@localhost:27017/
+      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
 
 # Eureka Client
 eureka:
@@ -29,14 +29,14 @@ eureka:
     enabled: true
   instance:
     preferIpAddress: true
-    hostname: localhost
-    lease-renewal-interval-in-seconds: 5
-    lease-expiration-duration-in-seconds: 10
+    hostname: ${EUREKA_HOST}
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 20
 
 opensearch:
-  host: localhost
+  host: ${OPENSEARCH_URL}
   port: 9200
-  username: admin
-  password: admin
+  username: ${OPENSEARCH_USERNAME}
+  password: ${OPENSEARCH_PASSWORD}
   scheme: http
   aws: false

@@ -1,5 +1,5 @@
 app:
-  base-url: ${FRONT_END_URL}
+  base-url: ${FRONTEND_URL}
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     chunk-size: 10

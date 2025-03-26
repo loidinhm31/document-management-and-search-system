@@ -1,0 +1,28 @@
+# Versioning and metadata
+.git
+.gitignore
+.dockerignore
+
+# Build dependencies
+dist
+node_modules
+coverage
+
+# Environment (contains sensitive data)
+.env
+.env.local
+.env.development
+.env.test
+# Don't ignore docker and production env
+# .env.docker
+# .env.production
+
+# Files not required for production
+README.md
+CHANGELOG.md
+docker-compose.yml
+Dockerfile
+.prettierrc.json
+.eslintrc.js
+*.log
+*.md

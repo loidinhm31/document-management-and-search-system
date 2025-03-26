@@ -22,7 +22,12 @@ export interface MasterData {
   fullUpdate?: boolean;
 }
 
-export const MASTER_DATA_HIERARCHY = {
+// Define the type for the hierarchy
+type MasterDataHierarchy = {
+  [key in MasterDataType]: MasterDataType[];
+};
+
+export const MASTER_DATA_HIERARCHY: MasterDataHierarchy = {
   [MasterDataType.MAJOR]: [],
   [MasterDataType.COURSE_CODE]: [MasterDataType.MAJOR],
   [MasterDataType.COURSE_LEVEL]: [],

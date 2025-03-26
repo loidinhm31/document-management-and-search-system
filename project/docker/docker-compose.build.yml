@@ -34,3 +34,9 @@ services:
       context: ../../processor-service
       dockerfile: src/main/docker/Dockerfile
     image: ${DOCKER_HUB_USERNAME}/dms-processor:latest
+  
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: docker/Dockerfile
+    image: ${DOCKER_HUB_USERNAME}/dms-frontend:latest
