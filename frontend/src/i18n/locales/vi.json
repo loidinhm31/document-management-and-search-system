@@ -16,7 +16,12 @@
     "confirmDelete": {
       "title": "Xác nhận xóa",
       "description": "Bạn có chắc chắn muốn xóa mục này? Hành động này không thể hoàn tác."
-    }
+    },
+    "created": "Tạo lúc",
+    "updated": "Cập nhật lúc",
+    "size": "Kích thước tệp",
+    "language": "Ngôn ngữ chính",
+    "sharedBy": "Chia sẻ bởi"
   },
   "navigation": {
     "main": {

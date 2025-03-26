@@ -71,24 +71,24 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
           </div>
           <div className="mt-2">
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Created at:</span>
+              <span className="text-sm text-muted-foreground">{t("common.created")}:</span>
               <span className="text-sm font-semibold">
                 {moment(documentInformation?.createdAt).format("DD/MM/YYYY, h:mm a")}
               </span>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">File size:</span>
+              <span className="text-sm text-muted-foreground">{t("common.fileSize")}:</span>
               <span className="text-sm font-semibold">
                 {(documentInformation.fileSize / (1024 * 1024)).toFixed(3)} MB
               </span>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Language:</span>
+              <span className="text-sm text-muted-foreground">{t("common.language")}:</span>
               <span className="text-sm font-semibold">{documentInformation.language}</span>
             </div>
             {documentInformation.sharedWith.includes(currentUser?.userId) && (
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Shared by:</span>
+                <span className="text-sm text-muted-foreground">{t("common.sharedBy")}:</span>
                 <span className="text-sm font-semibold">{documentInformation.createdBy}</span>
               </div>
             )}

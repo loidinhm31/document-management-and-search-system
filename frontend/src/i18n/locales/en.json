@@ -16,7 +16,12 @@
     "confirmDelete": {
       "title": "Confirm Delete",
       "description": "Are you sure you want to delete this item? This action cannot be undone."
-    }
+    },
+    "created": "Created At",
+    "updated": "Updated At",
+    "fileSize": "File size",
+    "language": "Main Language",
+    "sharedBy": "Shared By"
   },
   "navigation": {
     "main": {

@@ -1,4 +1,12 @@
-import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarPlus2Icon,
+  FilePenLineIcon,
+  FileType2Icon,
+  Loader2,
+  Package2Icon,
+  Trash2,
+} from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
@@ -199,6 +207,19 @@ export default function MyDocumentDetailPage() {
     }
   };
 
+  // Format dates for display
+  const formatDate = (date: Date) => {
+    if (!date) return "";
+    const formatDate = new Date(date);
+    return formatDate.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <>
       <div className="container mx-auto py-6 space-y-6">
@@ -280,10 +301,35 @@ export default function MyDocumentDetailPage() {
           {/* Document Preview */}
           <Card>
             <CardHeader>
-              <CardTitle>{documentData?.filename}</CardTitle>
-              <CardDescription>
-                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(3)} KB
-              </CardDescription>
+              <div>
+                <CardTitle className="truncate mb-2">{documentData?.filename}</CardTitle>
+                <div className="grid grid-cols-2 gap-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <FileType2Icon className="mr-2 h-4 w-4" />
+                    <span>{documentData?.documentType}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Package2Icon className="mr-2 h-4 w-4" />
+                    <span>{(documentData?.fileSize / 1024).toFixed(3)} KB</span>
+                  </div>
+                  {documentData?.createdAt && (
+                    <div className="flex items-center gap-1.5">
+                      <CalendarPlus2Icon className="mr-2 h-4 w-4" />
+                      <span>
+                        {t("common.created")}: {formatDate(documentData.createdAt)}
+                      </span>
+                    </div>
+                  )}
+                  {documentData?.updatedAt && (
+                    <div className="flex items-center gap-1.5">
+                      <FilePenLineIcon className="mr-2 h-4 w-4" />
+                      <span>
+                        {t("common.updated")}: {formatDate(documentData.updatedAt)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="h-full max-h-[900px]">
               {documentData && (
