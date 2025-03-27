@@ -52,10 +52,7 @@ public class DocumentServiceImpl implements DocumentService {
         // Access criteria for ownership and sharing
         Criteria ownedCriteria = Criteria.where("userId").is(userResponse.userId().toString());
 
-        Criteria sharedCriteria = new Criteria().andOperator(
-                Criteria.where("sharingType").is(SharingType.SPECIFIC.name()),
-                Criteria.where("sharedWith").in(userResponse.userId().toString())
-        );
+        Criteria sharedCriteria = Criteria.where("sharedWith").in(userResponse.userId().toString());
 
         criteriaList.add(new Criteria().orOperator(ownedCriteria, sharedCriteria));
 
