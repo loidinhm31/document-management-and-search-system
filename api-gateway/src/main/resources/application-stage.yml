@@ -1,6 +1,6 @@
 app:
   frontend:
-    url: ${FRONT_END_URL}
+    url: ${FRONTEND_URL}
 
 # Eureka Client
 eureka:

@@ -35,8 +35,9 @@ spring:
     mongodb:
       uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
   rabbitmq:
+    addresses: ${RABBITMQ_URL}:5671
     host: ${RABBITMQ_URL}
-    port: 5672
+    port: 5671
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
 
@@ -50,7 +51,7 @@ eureka:
     enabled: true
   instance:
     preferIpAddress: true
-    hostname: ${EUREKA_URI}
+    hostname: ${EUREKA_HOST}
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20
 
@@ -60,3 +61,10 @@ aws:
     region: ${AWS_REGION:ap-southeast-1}
     access-key: ${AWS_ACCESS_KEY:test}
     secret-key: ${AWS_SECRET_KEY:test}
+
+rabbitmq:
+  exchanges:
+    document: document.exchange
+    notification: notification.exchange
+  routing-keys:
+    document-process: document-process.routing-key

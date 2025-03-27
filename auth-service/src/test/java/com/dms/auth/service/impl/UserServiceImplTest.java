@@ -34,7 +34,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -641,14 +640,14 @@ public class UserServiceImplTest {
         String token = "valid-token";
         String newPassword = "NewPassword1@";
 
-        when(passwordResetTokenRepository.findByTokenAndUsed(token, false)).thenReturn(Optional.of(passwordResetToken));
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(passwordResetToken));
         when(passwordEncoder.encode(newPassword)).thenReturn("encoded-new-password");
 
         // Act
         userService.resetPassword(token, newPassword);
 
         // Assert
-        verify(passwordResetTokenRepository).findByTokenAndUsed(token, false);
+        verify(passwordResetTokenRepository).findByToken(token);
         verify(passwordEncoder).encode(newPassword);
         verify(userRepository).save(testUser);
         verify(passwordResetTokenRepository).save(passwordResetToken);
@@ -663,14 +662,14 @@ public class UserServiceImplTest {
         String token = "invalid-token";
         String newPassword = "NewPassword1@";
 
-        when(passwordResetTokenRepository.findByTokenAndUsed(token, false)).thenReturn(Optional.empty());
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.empty());
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> userService.resetPassword(token, newPassword));
         assertEquals("INVALID_PASSWORD_RESET_TOKEN", exception.getMessage());
 
-        verify(passwordResetTokenRepository).findByTokenAndUsed(token, false);
+        verify(passwordResetTokenRepository).findByToken(token);
         verify(passwordEncoder, never()).encode(anyString());
         verify(userRepository, never()).save(any());
     }
@@ -682,14 +681,14 @@ public class UserServiceImplTest {
         String newPassword = "NewPassword1@";
 
         passwordResetToken.setUsed(true);
-        when(passwordResetTokenRepository.findByTokenAndUsed(token, false)).thenReturn(Optional.empty());
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.empty());
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> userService.resetPassword(token, newPassword));
         assertEquals("INVALID_PASSWORD_RESET_TOKEN", exception.getMessage());
 
-        verify(passwordResetTokenRepository).findByTokenAndUsed(token, false);
+        verify(passwordResetTokenRepository).findByToken(token);
         verify(passwordEncoder, never()).encode(anyString());
     }
 
@@ -700,14 +699,14 @@ public class UserServiceImplTest {
         String newPassword = "NewPassword1@";
 
         passwordResetToken.setExpiryDate(Instant.now().minusSeconds(3600)); // Token expired 1 hour ago
-        when(passwordResetTokenRepository.findByTokenAndUsed(token, false)).thenReturn(Optional.of(passwordResetToken));
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(passwordResetToken));
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> userService.resetPassword(token, newPassword));
         assertEquals("PASSWORD_RESET_TOKEN_EXPIRED", exception.getMessage());
 
-        verify(passwordResetTokenRepository).findByTokenAndUsed(token, false);
+        verify(passwordResetTokenRepository).findByToken(token);
         verify(passwordEncoder, never()).encode(anyString());
     }
 

@@ -2,7 +2,7 @@ app:
   frontend:
     url: http://localhost:3000
   gateway:
-    url: http://localhost:8080
+    url: http://localhost:8085
   eureka:
     url: http://localhost:8081
   auth-service:

@@ -3,7 +3,7 @@ LOGIN_STATUS_FILE := .docker_login_status
 USERNAME_FILE := .docker_username
 
 # Available services
-SERVICES := eureka-discovery-server api-gateway auth-service document-interaction-service document-search-service document-processor-service
+SERVICES := eureka-discovery-server api-gateway auth-service document-interaction-service document-search-service document-processor-service frontend
 
 # Default target
 .PHONY: help

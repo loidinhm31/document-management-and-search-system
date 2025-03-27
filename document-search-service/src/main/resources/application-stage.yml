@@ -11,6 +11,10 @@ spring:
         jwt:
           issuer-uri: ${AUTH_SERVICE_ENDPOINT_URL}
           jwk-set-uri: ${AUTH_SERVICE_ENDPOINT_URL}/.well-known/jwks.json
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_URL}/postgres?currentSchema=dms
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
   data:
     mongodb:
       uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
@@ -25,14 +29,14 @@ eureka:
     enabled: true
   instance:
     preferIpAddress: true
-    hostname: ${EUREKA_URI}
+    hostname: ${EUREKA_HOST}
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20
 
 opensearch:
-  host: ${RESOURCE_URL:100.104.245.71}
-  port: 9200
-  username: admin
-  password: admin
-  scheme: http
-  aws: false
+  host: ${OPENSEARCH_URL}
+  port: 443
+  username: ${OPENSEARCH_USERNAME}
+  password: ${OPENSEARCH_PASSWORD}
+  scheme: https
+  aws: true

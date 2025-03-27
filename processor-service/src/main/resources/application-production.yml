@@ -1,5 +1,5 @@
 app:
-  base-url: ${FRONT_END_URL}
+  base-url: ${FRONTEND_URL}
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     chunk-size: 10
@@ -30,8 +30,9 @@ spring:
       ddl-auto: none
     show-sql: true
   rabbitmq:
+    addresses: ${RABBITMQ_URL}:5671
     host: ${RABBITMQ_URL}
-    port: 5672
+    port: 5671
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
     listener:
@@ -62,7 +63,7 @@ mail-sender:
 
 opensearch:
   host: ${OPENSEARCH_URL}
-  port: 9200
+  port: 443
   username: ${OPENSEARCH_USERNAME}
   password: ${OPENSEARCH_PASSWORD}
   scheme: https
