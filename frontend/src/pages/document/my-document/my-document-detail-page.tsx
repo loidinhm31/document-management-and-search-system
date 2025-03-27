@@ -53,6 +53,22 @@ export default function MyDocumentDetailPage() {
     [processingItems],
   );
 
+  // Prevent access share document public for my document
+  useEffect(() => {
+    if (
+      currentUser?.userId &&
+      documentData &&
+      (documentData.userId !== currentUser.userId && !documentData?.sharedWith.includes(currentUser.userId))
+    ) {
+      toast({
+        title: t("common.error"),
+        description: t("document.detail.fetchError"),
+        variant: "destructive",
+      });
+      navigate("/documents/me");
+    }
+  }, [documentData, currentUser]);
+
   useEffect(() => {
     if (latestProcessingItem) {
       setPolling(latestProcessingItem?.status !== DocumentStatus.COMPLETED);
