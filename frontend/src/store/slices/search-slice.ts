@@ -95,7 +95,7 @@ export const fetchSuggestions = createAsyncThunk(
       const filters = {
         majors: isFilterEmpty(selectedMajors) ? undefined : selectedMajors,
         courseCodes: isFilterEmpty(selectedCourseCodes) ? undefined : selectedCourseCodes,
-        level: selectedLevel === "all" ? undefined : selectedLevel,
+        level: selectedLevel === "" ? undefined : selectedLevel,
         categories: isFilterEmpty(selectedCategories) ? undefined : selectedCategories,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
       };
@@ -134,7 +134,7 @@ export const fetchSearchDocuments = createAsyncThunk(
         search: searchTerm,
         majors: isFilterEmpty(selectedMajors) ? undefined : selectedMajors,
         courseCodes: isFilterEmpty(selectedCourseCodes) ? undefined : selectedCourseCodes,
-        level: selectedLevel === "all" ? undefined : selectedLevel,
+        level: selectedLevel === "" ? undefined : selectedLevel,
         categories: isFilterEmpty(selectedCategories) ? undefined : selectedCategories,
         tags: selectedTags.length > 0 ? selectedTags : undefined,
         sortField: selectSortParts.length > 0 ? selectSortParts[0] : undefined,

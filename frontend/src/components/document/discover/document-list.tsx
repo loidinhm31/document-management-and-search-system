@@ -67,11 +67,11 @@ export const DocumentList = () => {
     currentPage,
     pageSize,
     favoriteOnly,
+    isSearchMode,
+    searchTerm,
   } = useAppSelector(selectSearchState);
 
   const { majors, levels, categories } = useAppSelector(selectMasterData);
-  const { searchTerm } = useAppSelector(selectSearchState);
-  const { isSearchMode } = useAppSelector(selectSearchState);
 
   const pageSizeOptions = [10, 20, 50, 100];
 
@@ -129,11 +129,11 @@ export const DocumentList = () => {
   // Initial fetch
   useEffect(() => {
     if (
-      searchTerm ||
-      !selectedMajors.includes("all") ||
-      !selectedCourseCodes.includes("all") ||
-      selectedLevel !== "all" ||
-      !selectedCategories.includes("all") ||
+      searchTerm !== "" ||
+      selectedMajors.length > 0 ||
+      selectedCourseCodes.length > 0 ||
+      selectedCategories.length > 0 ||
+      selectedLevel !== "" ||
       selectedTags.length > 0 ||
       favoriteOnly
     ) {
@@ -145,18 +145,18 @@ export const DocumentList = () => {
 
   const handleSearch = () => {
     if (
-      !searchTerm.trim() &&
-      selectedMajors.includes("all") &&
-      selectedCourseCodes.includes("all") &&
-      selectedLevel === "all" &&
-      selectedCategories.includes("all") &&
-      selectedTags.length === 0 &&
-      !favoriteOnly
+      searchTerm !== "" ||
+      selectedMajors.length > 0 ||
+      selectedCourseCodes.length > 0 ||
+      selectedCategories.length > 0 ||
+      selectedLevel !== "" ||
+      selectedTags.length > 0 ||
+      favoriteOnly
     ) {
-      dispatch(fetchRecommendedDocuments());
-    } else {
       dispatch(setPage(0));
       dispatch(fetchSearchDocuments());
+    } else {
+      dispatch(fetchRecommendedDocuments());
     }
   };
 
@@ -164,7 +164,7 @@ export const DocumentList = () => {
     dispatch(setPageSize(parseInt(newSize)));
     dispatch(setPage(0)); // Reset to first page when changing page size
     if (isSearchMode) {
-      dispatch(fetchSearchDocuments());
+      // dispatch(fetchSearchDocuments());
     } else {
       dispatch(fetchRecommendedDocuments());
     }
