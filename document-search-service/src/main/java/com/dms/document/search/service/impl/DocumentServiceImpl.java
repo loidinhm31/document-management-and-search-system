@@ -64,8 +64,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (StringUtils.isNotBlank(criteria.getSearch())) {
             Criteria searchCriteria = new Criteria().orOperator(
                     Criteria.where("filename").regex(criteria.getSearch(), "i"),
-                    Criteria.where("content").regex(criteria.getSearch(), "i"),
-                    Criteria.where("tags").regex(criteria.getSearch(), "i")
+                    Criteria.where("content").regex(criteria.getSearch(), "i")
             );
             criteriaList.add(searchCriteria);
         }
