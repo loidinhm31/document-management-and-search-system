@@ -20,8 +20,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,8 +61,16 @@ public class DocumentShareServiceImpl implements DocumentShareService {
         DocumentInformation doc = getDocumentWithAccessCheck(documentId, username);
 
         // Validate shared users exist if specific sharing is requested
-        if (!request.isPublic() && request.sharedWith() != null && !request.sharedWith().isEmpty()) {
-            validateSharedUsers(request.sharedWith());
+        List<UserResponse> userDetailsForHistory = new ArrayList<>();
+        if (!request.isPublic() && Objects.nonNull(request.sharedWith()) && CollectionUtils.isNotEmpty(request.sharedWith())) {
+            // Fetch user details
+            if (CollectionUtils.isNotEmpty(request.sharedWith())) {
+                ResponseEntity<List<UserResponse>> usersResponse = userClient.getUsersByIds(new ArrayList<>(request.sharedWith()));
+                if (usersResponse.hasBody()) {
+                    userDetailsForHistory = usersResponse.getBody();
+                }
+            }
+            validateSharedUsers(request.sharedWith(), userDetailsForHistory);
         }
 
         // Update sharing settings
@@ -83,11 +89,7 @@ public class DocumentShareServiceImpl implements DocumentShareService {
         DocumentInformation updatedDoc = documentRepository.save(doc);
         updatedDoc.setContent(null);
 
-        // Fetch user details before starting async operation
-        List<UserResponse> userDetailsForHistory = Collections.emptyList();
-        if (CollectionUtils.isNotEmpty(request.sharedWith())) {
-            userDetailsForHistory = getShareableUserDetails(new ArrayList<>(request.sharedWith()));
-        }
+
         final List<UserResponse> finalUserDetails = userDetailsForHistory;
 
         // Send sync event to indexing document
@@ -130,10 +132,17 @@ public class DocumentShareServiceImpl implements DocumentShareService {
     }
 
     @Override
-    public List<UserResponse> searchShareableUsers(String query) {
+    public List<UserResponse> searchShareableUsers(String query, String username) {
         try {
-            return userClient.searchUsers(query)
-                    .getBody();
+            ResponseEntity<List<UserResponse>> usersResponse = userClient.searchUsers(query);
+            if (!usersResponse.hasBody()) {
+                return List.of();
+            }
+            List<UserResponse> users = usersResponse.getBody();
+            if (CollectionUtils.isNotEmpty(users)) {
+                users.removeIf(user -> user.username().equals(username));
+            }
+            return users;
         } catch (Exception e) {
             log.error("Error searching users with query: {}", query, e);
             return List.of();
@@ -166,13 +175,25 @@ public class DocumentShareServiceImpl implements DocumentShareService {
                 .orElseThrow(() -> new InvalidDocumentException("Document not found or access denied"));
     }
 
-    private void validateSharedUsers(Set<UUID> userIds) {
-        List<UserResponse> users = getShareableUserDetails(
-                userIds.stream().toList()
-        );
-
+    private void validateSharedUsers(Set<UUID> userIds, List<UserResponse> users) {
+        if (CollectionUtils.isEmpty(userIds)) {
+            return;
+        }
         if (users.size() != userIds.size()) {
-            throw new InvalidDocumentException("One or more shared users do not exist");
+            Set<UUID> foundUserIds = users.stream()
+                    .map(UserResponse::userId)
+                    .collect(Collectors.toSet());
+
+            Set<UUID> missingUserIds = new HashSet<>(userIds);
+            missingUserIds.removeAll(foundUserIds);
+
+            String errorMessage = "One or more shared users do not exist";
+            if (!missingUserIds.isEmpty()) {
+                errorMessage += ": " + String.join(", ",
+                        missingUserIds.stream().map(UUID::toString).toList());
+            }
+
+            throw new InvalidDocumentException(errorMessage);
         }
     }
 }

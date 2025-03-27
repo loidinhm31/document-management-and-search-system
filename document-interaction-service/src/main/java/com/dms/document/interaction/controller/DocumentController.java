@@ -206,8 +206,8 @@ public class DocumentController {
             description = "Search users that document can be shared with")
     @GetMapping("/sharing/users")
     public ResponseEntity<List<UserResponse>> searchShareableUsers(
-            @RequestParam String query) {
-        return ResponseEntity.ok(documentShareService.searchShareableUsers(query));
+            @RequestParam String query, @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(documentShareService.searchShareableUsers(query, jwt.getSubject()));
     }
 
     @Operation(summary = "Get shared users details",

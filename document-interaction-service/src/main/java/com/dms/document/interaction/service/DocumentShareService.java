@@ -35,10 +35,11 @@ public interface DocumentShareService {
     /**
      * Search for users that can be shared with
      *
-     * @param query the search query
+     * @param query    the search query
+     * @param username
      * @return list of matching users
      */
-    List<UserResponse> searchShareableUsers(String query);
+    List<UserResponse> searchShareableUsers(String query, String username);
 
     /**
      * Get details for a list of users by their IDs

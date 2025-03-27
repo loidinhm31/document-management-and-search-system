@@ -27,7 +27,6 @@ import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -352,7 +351,7 @@ public class DocumentShareServiceImplTest {
         when(userClient.searchUsers(query)).thenReturn(ResponseEntity.ok(expectedUsers));
 
         // Act
-        List<UserResponse> result = documentShareService.searchShareableUsers(query);
+        List<UserResponse> result = documentShareService.searchShareableUsers(query, username);
 
         // Assert
         assertNotNull(result);
@@ -367,7 +366,7 @@ public class DocumentShareServiceImplTest {
         when(userClient.searchUsers(query)).thenThrow(new RuntimeException("API Error"));
 
         // Act
-        List<UserResponse> result = documentShareService.searchShareableUsers(query);
+        List<UserResponse> result = documentShareService.searchShareableUsers(query, username);
 
         // Assert
         assertNotNull(result);
