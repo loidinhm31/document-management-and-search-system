@@ -866,7 +866,8 @@
         "completed": "Processed",
         "pending": "Pending process",
         "failed": "Failed"
-      }
+      },
+      "revertSuccess": "Revert successfully"
     },
     "related": {
       "title": "Related Documents",

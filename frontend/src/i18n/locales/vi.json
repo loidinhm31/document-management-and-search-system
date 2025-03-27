@@ -866,7 +866,8 @@
         "completed": "Đã xử lý",
         "pending": "Đang chờ xử lý",
         "failed": "Thất bại"
-      }
+      },
+      "revertSuccess": "Khôi phục thành công"
     },
     "related": {
       "title": "Tài liệu liên quan",
@@ -930,101 +931,132 @@
       },
       "updateSuccess": "Cập nhật tùy chọn thành công",
       "updateError": "Không thể cập nhật tùy chọn"
-    }
-  },
-  "history": {
-    "title": "Lịch sử hoạt động",
-    "description": "Xem lịch sử tương tác tài liệu của bạn",
-    "searchPlaceholder": "Tìm kiếm theo tên tệp hoặc chi tiết tài liệu",
-    "documentNotAvailable": "Tài liệu không khả dụng",
-    "loading": "Đang tải lịch sử...",
-    "noResults": "Không tìm thấy bản ghi hoạt động nào",
-    "fetchError": "Không thể tải lịch sử hoạt động",
-    "filters": {
-      "actionType": "Loại hành động",
-      "allActions": "Tất cả hành động",
-      "fromDate": "Từ ngày",
-      "toDate": "Đến ngày",
-      "search": "Tìm kiếm",
-      "reset": "Đặt lại bộ lọc"
     },
-    "tableHeaders": {
-      "actionType": "Hành động",
-      "documentTitle": "Tài liệu",
-      "details": "Chi tiết",
-      "version": "Phiên bản",
-      "timestamp": "Thời gian"
+    "history": {
+      "title": "Lịch sử hoạt động",
+      "description": "Xem lịch sử tương tác tài liệu của bạn",
+      "searchPlaceholder": "Tìm kiếm theo tên tệp hoặc chi tiết tài liệu",
+      "documentNotAvailable": "Tài liệu không khả dụng",
+      "loading": "Đang tải lịch sử...",
+      "noResults": "Không tìm thấy bản ghi hoạt động nào",
+      "fetchError": "Không thể tải lịch sử hoạt động",
+      "filters": {
+        "actionType": "Loại hành động",
+        "allActions": "Tất cả hành động",
+        "fromDate": "Từ ngày",
+        "toDate": "Đến ngày",
+        "search": "Tìm kiếm",
+        "reset": "Đặt lại bộ lọc"
+      },
+      "tableHeaders": {
+        "actionType": "Hành động",
+        "documentTitle": "Tài liệu",
+        "details": "Chi tiết",
+        "version": "Phiên bản",
+        "timestamp": "Thời gian"
+      },
+      "actionTypes": {
+        "uploadDocument": "Tải lên tài liệu",
+        "viewDocument": "Xem tài liệu",
+        "updateDocument": "Cập nhật thông tin",
+        "updateDocumentFile": "Cập nhật tệp",
+        "deleteDocument": "Xóa tài liệu",
+        "downloadFile": "Tải xuống tệp",
+        "downloadVersion": "Tải xuống phiên bản",
+        "revertVersion": "Khôi phục về phiên bản",
+        "share": "Chia sẻ tài liệu",
+        "favorite": "Yêu thích tài liệu",
+        "comment": "Bình luận",
+        "recommend": "Đề xuất tài liệu",
+        "addNote": "Thêm ghi chú"
+      },
+      "pagination": {
+        "showing": "Hiển thị {{start}} đến {{end}} trong tổng số {{total}} hoạt động",
+        "page": "Trang {{current}} / {{total}}",
+        "previous": "Trước",
+        "next": "Tiếp"
+      },
+      "validation": {
+        "dateRange": "Ngày bắt đầu không thể lớn hơn ngày kết thúc"
+      }
     },
-    "actionTypes": {
-      "uploadDocument": "Tải lên tài liệu",
-      "viewDocument": "Xem tài liệu",
-      "updateDocument": "Cập nhật thông tin",
-      "updateDocumentFile": "Cập nhật tệp",
-      "deleteDocument": "Xóa tài liệu",
-      "downloadFile": "Tải xuống tệp",
-      "downloadVersion": "Tải xuống phiên bản",
-      "revertVersion": "Khôi phục về phiên bản",
-      "share": "Chia sẻ tài liệu",
-      "favorite": "Yêu thích tài liệu",
-      "comment": "Bình luận",
-      "recommend": "Đề xuất tài liệu",
-      "addNote": "Thêm ghi chú"
-    },
-    "pagination": {
-      "showing": "Hiển thị {{start}} đến {{end}} trong tổng số {{total}} hoạt động",
-      "page": "Trang {{current}} / {{total}}",
+    "comments": {
+      "title": "Bình luận",
+      "description": "Tham gia thảo luận về mục này",
+      "placeholder": "Viết bình luận...",
+      "submit": "Đăng bình luận",
+      "reply": "Trả lời",
+      "delete": "Xóa",
+      "confirmDeleteMessage": "Bạn có chắc chắn muốn xóa bình luận này? Hành động này không thể hoàn tác.",
+      "edit": "Sửa",
+      "edited": "đã chỉnh sửa",
+      "replyingTo": "Đang trả lời @{{username}}",
+      "cancelReply": "Hủy trả lời",
       "previous": "Trước",
-      "next": "Tiếp"
-    },
-    "validation": {
-      "dateRange": "Ngày bắt đầu không thể lớn hơn ngày kết thúc"
-    }
-  },
-  "comments": {
-    "title": "Bình luận",
-    "description": "Tham gia thảo luận về mục này",
-    "placeholder": "Viết bình luận...",
-    "submit": "Đăng bình luận",
-    "reply": "Trả lời",
-    "delete": "Xóa",
-    "confirmDeleteMessage": "Bạn có chắc chắn muốn xóa bình luận này? Hành động này không thể hoàn tác.",
-    "edit": "Sửa",
-    "edited": "đã chỉnh sửa",
-    "replyingTo": "Đang trả lời @{{username}}",
-    "cancelReply": "Hủy trả lời",
-    "previous": "Trước",
-    "next": "Tiếp",
-    "empty": "Chưa có bình luận nào",
-    "createSuccess": "Đăng bình luận thành công",
-    "createError": "Không thể đăng bình luận",
-    "updateSuccess": "Cập nhật bình luận thành công",
-    "updateError": "Không thể cập nhật bình luận",
-    "deleteSuccess": "Xóa bình luận thành công",
-    "deleteError": "Không thể xóa bình luận",
-    "fetchError": "Không thể tải bình luận",
-    "editSuccess": "Cập nhật bình luận thành công",
-    "editError": "Không thể cập nhật bình luận",
-    "save": "Lưu",
-    "cancel": "Hủy",
-    "actions": {
-      "report": "Báo cáo",
-      "reported": "Đã báo cáo"
+      "next": "Tiếp",
+      "empty": "Chưa có bình luận nào",
+      "createSuccess": "Đăng bình luận thành công",
+      "createError": "Không thể đăng bình luận",
+      "updateSuccess": "Cập nhật bình luận thành công",
+      "updateError": "Không thể cập nhật bình luận",
+      "deleteSuccess": "Xóa bình luận thành công",
+      "deleteError": "Không thể xóa bình luận",
+      "fetchError": "Không thể tải bình luận",
+      "editSuccess": "Cập nhật bình luận thành công",
+      "editError": "Không thể cập nhật bình luận",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "actions": {
+        "report": "Báo cáo",
+        "reported": "Đã báo cáo"
+      },
+      "report": {
+        "title": "Báo cáo vi phạm bình luận",
+        "description": "Báo cáo bình luận của @{{author}} do vi phạm",
+        "reason": "Lý do báo cáo",
+        "type": "Loại báo cáo",
+        "statusLabel": "Trạng thái",
+        "submit": "Gửi báo cáo",
+        "removedContent": "Bình luận này đã bị xóa do vi phạm.",
+        "alreadyReported": {
+          "title": "Đã báo cáo",
+          "description": "Bạn đã báo cáo bình luận này. Dưới đây là chi tiết báo cáo của bạn:"
+        },
+        "status": {
+          "resolved": "Vi phạm đã được xử lý",
+          "pending": "Đang chờ xem xét"
+        },
+        "form": {
+          "type": {
+            "label": "Loại vi phạm",
+            "placeholder": "Chọn loại vi phạm",
+            "description": "Chọn loại vi phạm bạn muốn báo cáo",
+            "required": "Vui lòng chọn loại báo cáo"
+          },
+          "description": {
+            "label": "Chi tiết bổ sung",
+            "placeholder": "Cung cấp thêm chi tiết về vi phạm...",
+            "description": "(Tùy chọn) Cung cấp thêm thông tin về vi phạm"
+          }
+        },
+        "createSuccess": "Gửi báo cáo thành công",
+        "createError": "Không thể gửi báo cáo"
+      }
     },
     "report": {
-      "title": "Báo cáo vi phạm bình luận",
-      "description": "Báo cáo bình luận của @{{author}} do vi phạm",
-      "reason": "Lý do báo cáo",
+      "title": "Báo cáo vi phạm tài liệu",
+      "reason": "Báo cáo {{name}} vì lý do",
       "type": "Loại báo cáo",
       "statusLabel": "Trạng thái",
       "submit": "Gửi báo cáo",
-      "removedContent": "Bình luận này đã bị xóa do vi phạm.",
       "alreadyReported": {
         "title": "Đã báo cáo",
-        "description": "Bạn đã báo cáo bình luận này. Dưới đây là chi tiết báo cáo của bạn:"
+        "description": "Bạn đã báo cáo tài liệu này. Dưới đây là chi tiết báo cáo của bạn:"
       },
       "status": {
-        "resolved": "Vi phạm đã được xử lý",
-        "pending": "Đang chờ xem xét"
+        "resolved": "Đã xử lý",
+        "pending": "Đang chờ xem xét",
+        "removed": "Đã gỡ báo cáo"
       },
       "form": {
         "type": {
@@ -1041,63 +1073,32 @@
       },
       "createSuccess": "Gửi báo cáo thành công",
       "createError": "Không thể gửi báo cáo"
-    }
-  },
-  "report": {
-    "title": "Báo cáo vi phạm tài liệu",
-    "reason": "Báo cáo {{name}} vì lý do",
-    "type": "Loại báo cáo",
-    "statusLabel": "Trạng thái",
-    "submit": "Gửi báo cáo",
-    "alreadyReported": {
-      "title": "Đã báo cáo",
-      "description": "Bạn đã báo cáo tài liệu này. Dưới đây là chi tiết báo cáo của bạn:"
     },
-    "status": {
-      "resolved": "Đã xử lý",
-      "pending": "Đang chờ xem xét",
-      "removed": "Đã gỡ báo cáo"
+    "recommendation": {
+      "addSuccess": "Đánh dấu tài liệu là đã đề xuất thành công",
+      "removeSuccess": "Gỡ đề xuất tài liệu thành công",
+      "error": "Không thể cập nhật trạng thái đề xuất"
     },
-    "form": {
-      "type": {
-        "label": "Loại vi phạm",
-        "placeholder": "Chọn loại vi phạm",
-        "description": "Chọn loại vi phạm bạn muốn báo cáo",
-        "required": "Vui lòng chọn loại báo cáo"
-      },
-      "description": {
-        "label": "Chi tiết bổ sung",
-        "placeholder": "Cung cấp thêm chi tiết về vi phạm...",
-        "description": "(Tùy chọn) Cung cấp thêm thông tin về vi phạm"
+    "notes": {
+      "title": "Ghi chú của người hướng dẫn",
+      "description": "Ghi chú hướng dẫn từ người hướng dẫn giúp bạn hiểu rõ hơn về tài liệu này",
+      "add": "Thêm ghi chú",
+      "addNew": "Ghi chú mới",
+      "edit": "Sửa ghi chú",
+      "save": "Lưu ghi chú",
+      "update": "Cập nhật ghi chú",
+      "placeholder": "Thêm ghi chú hướng dẫn của bạn (tối đa 200 ký tự)...",
+      "characters": "ký tự",
+      "tooLong": "Quá nhiều ký tự",
+      "empty": "Chưa có ghi chú nào từ người hướng dẫn cho tài liệu này",
+      "addSuccess": "Thêm ghi chú thành công",
+      "editSuccess": "Cập nhật ghi chú thành công",
+      "addError": "Không thể thêm ghi chú",
+      "editError": "Không thể cập nhật ghi chú",
+      "fetchError": "Không thể tải ghi chú",
+      "error": {
+        "tooLong": "Ghi chú không thể vượt quá {{max}} ký tự"
       }
-    },
-    "createSuccess": "Gửi báo cáo thành công",
-    "createError": "Không thể gửi báo cáo"
-  },
-  "recommendation": {
-    "addSuccess": "Đánh dấu tài liệu là đã đề xuất thành công",
-    "removeSuccess": "Gỡ đề xuất tài liệu thành công",
-    "error": "Không thể cập nhật trạng thái đề xuất"
-  },
-  "notes": {
-    "title": "Ghi chú của người hướng dẫn",
-    "description": "Ghi chú hướng dẫn từ người hướng dẫn giúp bạn hiểu rõ hơn về tài liệu này",
-    "add": "Thêm ghi chú",
-    "addNew": "Ghi chú mới",
-    "edit": "Sửa ghi chú",
-    "save": "Lưu ghi chú",
-    "update": "Cập nhật ghi chú",
-    "placeholder": "Thêm ghi chú hướng dẫn của bạn (tối đa 200 ký tự)...",
-    "characters": "ký tự",
-    "tooLong": "Quá nhiều ký tự",
-    "empty": "Chưa có ghi chú nào từ người hướng dẫn cho tài liệu này",
-    "addSuccess": "Thêm ghi chú thành công",
-    "editSuccess": "Cập nhật ghi chú thành công",
-    "addError": "Không thể thêm ghi chú",
-    "editError": "Không thể cập nhật ghi chú",
-    "fetchError": "Không thể tải ghi chú",
-    "error": {
-      "tooLong": "Ghi chú không thể vượt quá {{max}} ký tự"
     }
   }
 }
