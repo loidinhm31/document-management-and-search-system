@@ -30,8 +30,9 @@ spring:
     baseline-on-migrate: true
     table: schema_history
   rabbitmq:
+    addresses: ${RABBITMQ_URL}:5671
     host: ${RABBITMQ_URL}
-    port: 5672
+    port: 5671
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
 

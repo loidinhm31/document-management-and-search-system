@@ -35,8 +35,9 @@ spring:
     mongodb:
       uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
   rabbitmq:
+    addresses: ${RABBITMQ_URL}:5671
     host: ${RABBITMQ_URL}
-    port: 5672
+    port: 5671
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
 

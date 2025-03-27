@@ -13,10 +13,6 @@ RUN npm ci
 # Copy all project files
 COPY . .
 
-# Build environment variables
-ARG GATEWAY_URL=http://localhost:8086
-ENV GATEWAY_URL=${GATEWAY_URL}
-
 # Build app with environment variables injected
 RUN npm run build
 
@@ -30,7 +26,7 @@ RUN npm install -g serve
 COPY --from=build /app/dist /app
 
 # Expose port
-EXPOSE 80
+EXPOSE 3000
 
 # Start server
-CMD ["serve", "-s", "/app", "-l", "80"]
+CMD ["serve", "-s", "/app", "-l", "3000"]

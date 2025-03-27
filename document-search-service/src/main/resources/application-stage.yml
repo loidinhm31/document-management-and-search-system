@@ -35,7 +35,7 @@ eureka:
 
 opensearch:
   host: ${OPENSEARCH_URL}
-  port: 9200
+  port: 443
   username: ${OPENSEARCH_USERNAME}
   password: ${OPENSEARCH_PASSWORD}
   scheme: https
