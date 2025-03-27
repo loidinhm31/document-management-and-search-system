@@ -617,7 +617,7 @@
         "views": "Views",
         "downloads": "Downloads"
       },
-      "empty": "Not document found",
+      "empty": "No document found",
       "emptyFavorites": "No favorite documents found",
       "pagination": {
         "previous": "Previous",
