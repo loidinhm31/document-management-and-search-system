@@ -17,8 +17,11 @@ import com.dms.document.interaction.service.PublishEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +39,9 @@ public class DocumentShareServiceImpl implements DocumentShareService {
     private final DocumentRepository documentRepository;
     private final DocumentPreferencesService documentPreferencesService;
     private final DocumentUserHistoryRepository documentUserHistoryRepository;
+
+    @Value("${app.auth-service.api-key}")
+    private String serviceApiKey;
 
     @Override
     public ShareSettings getDocumentShareSettings(String documentId, String username) {
@@ -77,15 +83,31 @@ public class DocumentShareServiceImpl implements DocumentShareService {
         DocumentInformation updatedDoc = documentRepository.save(doc);
         updatedDoc.setContent(null);
 
+        // Fetch user details before starting async operation
+        List<UserResponse> userDetailsForHistory = Collections.emptyList();
+        if (CollectionUtils.isNotEmpty(request.sharedWith())) {
+            userDetailsForHistory = getShareableUserDetails(new ArrayList<>(request.sharedWith()));
+        }
+        final List<UserResponse> finalUserDetails = userDetailsForHistory;
+
         // Send sync event to indexing document
         CompletableFuture.runAsync(() -> {
             // History
+            StringBuilder sharingDetail = new StringBuilder();
+            sharingDetail.append(doc.getSharingType());
+
+            if (CollectionUtils.isNotEmpty(finalUserDetails)) {
+                String sharedWith = String.join(", ", finalUserDetails.stream()
+                        .map(UserResponse::username).toList());
+                sharingDetail.append(" - ").append(sharedWith);
+            }
+
             documentUserHistoryRepository.save(DocumentUserHistory.builder()
                     .userId(doc.getUserId())
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.SHARE)
                     .version(doc.getCurrentVersion())
-                    .detail(updatedDoc.getSharingType().name())
+                    .detail(sharingDetail.toString())
                     .createdAt(Instant.now())
                     .build());
 
@@ -121,8 +143,8 @@ public class DocumentShareServiceImpl implements DocumentShareService {
     @Override
     public List<UserResponse> getShareableUserDetails(List<UUID> userIds) {
         try {
-            return userClient.getUsersByIds(userIds)
-                    .getBody();
+            ResponseEntity<List<UserResponse>> response = userClient.getUsersByIds(userIds);
+            return response.getBody() != null ? response.getBody() : List.of();
         } catch (Exception e) {
             log.error("Error fetching user details for IDs: {}", userIds, e);
             return List.of();
