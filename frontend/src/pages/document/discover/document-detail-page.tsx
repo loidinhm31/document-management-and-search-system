@@ -103,12 +103,16 @@ export default function DocumentDetailPage() {
         documentService.getDocumentStatistics(documentId).then((statisticsResponse) => {
           setStatistics(statisticsResponse.data);
         });
-      } catch (_error) {
+      } catch (error: any) {
         toast({
           title: t("common.error"),
           description: t("document.detail.fetchError"),
           variant: "destructive",
         });
+
+        if (error.response?.status === 400) {
+          navigate("/");
+        }
       } finally {
         setLoading(false);
       }
