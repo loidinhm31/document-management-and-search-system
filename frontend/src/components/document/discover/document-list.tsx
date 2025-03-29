@@ -71,7 +71,7 @@ export const DocumentList = () => {
     searchTerm,
   } = useAppSelector(selectSearchState);
 
-  const { majors, levels, categories } = useAppSelector(selectMasterData);
+  const { majors, courseCodes, levels, categories } = useAppSelector(selectMasterData);
 
   const pageSizeOptions = [10, 20, 50, 100];
 
@@ -373,13 +373,23 @@ export const DocumentList = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.majors")}:</span>
                           <span className="text-sm">
-                            <MultiValueDisplay value={doc.majors} className="line-clamp-1" />
+                            <MultiValueDisplay
+                              value={doc.majors}
+                              type={MasterDataType.MAJOR}
+                              masterData={{ majors }}
+                              className="line-clamp-1"
+                            />
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.courses")}:</span>
                           <span className="text-sm">
-                            <MultiValueDisplay value={doc.courseCodes} className="line-clamp-1" />
+                            <MultiValueDisplay
+                              value={doc.courseCodes}
+                              type={MasterDataType.COURSE_CODE}
+                              masterData={{ courseCodes }}
+                              className="line-clamp-1"
+                            />
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
@@ -391,7 +401,12 @@ export const DocumentList = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.categories")}:</span>
                           <span className="text-sm">
-                            <MultiValueDisplay value={doc.categories} className="line-clamp-1" />
+                            <MultiValueDisplay
+                              value={doc.categories}
+                              type={MasterDataType.DOCUMENT_CATEGORY}
+                              masterData={{ categories }}
+                              className="line-clamp-1"
+                            />{" "}
                           </span>
                         </div>
                         {doc.highlights && doc.highlights.length > 0 && (
@@ -456,7 +471,12 @@ export const DocumentList = () => {
                             />
                           </TableCell>
                           <TableCell className="truncate">
-                            <MultiValueDisplay value={doc.courseCodes} className="line-clamp-1" />
+                            <MultiValueDisplay
+                              value={doc.courseCodes}
+                              type={MasterDataType.COURSE_CODE}
+                              masterData={{ courseCodes }}
+                              className="line-clamp-1"
+                            />
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             {getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
