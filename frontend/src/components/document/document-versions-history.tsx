@@ -197,7 +197,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                             variant="outline"
                             size="sm"
                             onClick={() => handleRevertVersion(version.versionNumber)}
-                            disabled={loading}
+                            disabled={loading || version.status !== DocumentStatus.COMPLETED}
                             className="h-7 w-full sm:w-auto"
                           >
                             {loading && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
