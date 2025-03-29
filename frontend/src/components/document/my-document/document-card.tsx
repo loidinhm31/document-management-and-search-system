@@ -31,7 +31,7 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
       const response = await documentService.downloadDocument({
         id: documentInformation.id,
         action: "download",
-        history: true,
+        history: false,
       });
       const url = URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
