@@ -343,12 +343,12 @@ export default function UserDetail() {
                   ) : (
                     <EyeOff className="mr-2 h-4 w-4 text-muted-foreground" />
                   )}
-                  <h4 className="font-medium">Two-Factor Authentication</h4>
+                  <h4 className="font-medium">{t("admin.users.details.accountStatus.twoFactor")}</h4>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {userData.twoFactorEnabled
-                    ? "User has enabled two-factor authentication"
-                    : "User has not enabled two-factor authentication"}
+                    ? t("admin.users.details.accountStatus.twoFactorEnabledDescription")
+                    : t("admin.users.details.accountStatus.twoFactorNotEnabledDescription")}
                 </p>
               </div>
               <div
@@ -356,7 +356,7 @@ export default function UserDetail() {
                   userData.twoFactorEnabled ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
                 }`}
               >
-                {userData.twoFactorEnabled ? "Enabled" : "Disabled"}
+                {userData.twoFactorEnabled ? t("admin.users.details.accountStatus.twoFactorEnabled") : t("admin.users.details.accountStatus.twoFactorNotEnabled")}
               </div>
             </div>
 
@@ -365,7 +365,7 @@ export default function UserDetail() {
               <div className="space-y-0.5">
                 <div className="flex items-center">
                   <User className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <h4 className="font-medium">Sign Up Method</h4>
+                  <h4 className="font-medium">{t("admin.users.details.accountStatus.signUpMethod")}</h4>
                 </div>
               </div>
               <div

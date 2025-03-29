@@ -378,7 +378,13 @@
           "locked": "Tài khoản bị khóa",
           "lockedDescription": "Tạm thời khóa quyền truy cập tài khoản",
           "tokenExpired": "Token làm mới đã hết hạn",
-          "tokenExpiredDescription": "Buộc thu hồi tất cả token làm mới"
+          "tokenExpiredDescription": "Buộc thu hồi tất cả token làm mới",
+          "twoFactor": "Xác thực 2 yếu tố",
+          "twoFactorEnabledDescription": "Người dùng đã bật xác thực hai yếu tố",
+          "twoFactorEnabled": "Đã bật",
+          "twoFactorNotEnabledDescription": "Người dùng chưa bật xác thực hai yếu tố",
+          "twoFactorNotEnabled": "Đã tắt",
+          "signUpMethod": "Phương thức đăng ký"
         }
       }
     },

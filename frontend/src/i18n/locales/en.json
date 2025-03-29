@@ -378,7 +378,13 @@
           "locked": "Account Locked",
           "lockedDescription": "Temporarily lock account access",
           "tokenExpired": "Refresh Token Expired",
-          "tokenExpiredDescription": "Force revoke all refresh tokens"
+          "tokenExpiredDescription": "Force revoke all refresh tokens",
+          "twoFactor": "Two-Factor Authentication",
+          "twoFactorEnabledDescription": "User has enabled two-factor authentication",
+          "twoFactorEnabled": "Enabled",
+          "twoFactorNotEnabledDescription": "User has not enabled two-factor authentication",
+          "twoFactorNotEnabled": "Disabled",
+          "signUpMethod": "Sign Up Method"
         }
       }
     },
