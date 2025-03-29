@@ -27,12 +27,12 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
   const { t } = useTranslation();
 
   const sortOptions = [
-    { label: "Created Date (Newest)", value: "createdAt,desc" },
-    { label: "Created Date (Oldest)", value: "createdAt,asc" },
-    { label: "Name (A-Z)", value: "filename,asc" },
-    { label: "Name (Z-A)", value: "filename,desc" },
-    { label: "Size (Largest)", value: "fileSize,desc" },
-    { label: "Size (Smallest)", value: "fileSize,asc" },
+    { label: t("document.myDocuments.search.sortOptions.createdDateNewest"), value: "createdAt,desc" },
+    { label: t("document.myDocuments.search.sortOptions.createdDateOldest"), value: "createdAt,asc" },
+    { label: t("document.myDocuments.search.sortOptions.nameAz"), value: "filename,asc" },
+    { label: t("document.myDocuments.search.sortOptions.nameZa"), value: "filename,desc" },
+    { label: t("document.myDocuments.search.sortOptions.sizeLargest"), value: "fileSize,desc" },
+    { label: t("document.myDocuments.search.sortOptions.sizeSmallest"), value: "fileSize,asc" },
   ];
 
   const [showAdvanced, setShowAdvanced] = useState(false);

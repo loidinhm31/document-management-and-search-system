@@ -818,6 +818,14 @@
         "advancedSearch": {
           "searchPlaceholder": "Search documents..."
         },
+        "sortOptions": {
+          "createdDateNewest": "Created Date (Newest)",
+          "createdDateOldest": "Created Date (Oldest)",
+          "nameAz": "Name (A-Z)",
+          "nameZa": "Name (Z-A)",
+          "sizeLargest": "Size (Largest)",
+          "sizeSmallest": "Size (Smallest)"
+        },
         "error": "Failed to search documents"
       }
     },

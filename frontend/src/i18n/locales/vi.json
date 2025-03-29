@@ -818,6 +818,14 @@
         "advancedSearch": {
           "searchPlaceholder": "Tìm kiếm tài liệu..."
         },
+        "sortOptions": {
+          "createdDateNewest": "Ngày tạo (Mới nhất)",
+          "createdDateOldest": "Ngày tạo (Cũ nhất)",
+          "nameAz": "Tên (A-Z)",
+          "nameZa": "Tên (Z-A)",
+          "sizeLargest": "Kích thước (Lớn nhất)",
+          "sizeSmallest": "Kích thước (Nhỏ nhất)"
+        },
         "error": "Không thể tìm kiếm tài liệu"
       }
     },
