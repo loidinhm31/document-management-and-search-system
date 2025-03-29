@@ -260,7 +260,7 @@ export default function MasterDataDialog({
                         <SelectItem value="none">{t("admin.masterData.dialog.noParent")}</SelectItem>
                         {parentOptions.map((parent) => (
                           <SelectItem key={parent.id} value={parent.id}>
-                            {parent.translations.en}
+                            {parent.translations[i18n.language] || parent.translations.en}
                           </SelectItem>
                         ))}
                       </SelectContent>

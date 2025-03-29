@@ -13,9 +13,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { masterDataService } from "@/services/master-data.service";
 import { MasterData, MasterDataType } from "@/types/master-data";
+import { getMasterDataTranslation } from "@/lib/utils";
 
 export default function MasterDataManagement() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -217,7 +218,7 @@ export default function MasterDataManagement() {
                   <SelectItem value="all">{t("admin.masterData.allParents")}</SelectItem>
                   {parentOptions.map((parent) => (
                     <SelectItem key={parent.id} value={parent.id}>
-                      {parent.translations.en})
+                      {parent.translations[i18n.language] || parent.translations.en}
                     </SelectItem>
                   ))}
                 </SelectContent>
