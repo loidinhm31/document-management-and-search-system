@@ -114,7 +114,7 @@ export const DocumentFilter = ({
         <Label>{t("document.commonSearch.majorLabel")}</Label>
         <TagInput
           value={majors.includes("all") ? [] : majors}
-          onChange={(values) => onMajorsChange(values.length > 0 ? values : ["all"])}
+          onChange={(values) => onMajorsChange(values.length > 0 ? values : [])}
           recommendedTags={availableMajors?.map((major) => major.code) || []}
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.majorPlaceholder")}
@@ -127,7 +127,7 @@ export const DocumentFilter = ({
         <Label>{t("document.commonSearch.courseCodeLabel")}</Label>
         <TagInput
           value={courseCodes.includes("all") ? [] : courseCodes}
-          onChange={(values) => onCourseCodesChange(values.length > 0 ? values : ["all"])}
+          onChange={(values) => onCourseCodesChange(values.length > 0 ? values : [])}
           recommendedTags={filteredCourseCodes?.map((course) => course.code) || []}
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.courseCodePlaceholder")}
@@ -157,7 +157,7 @@ export const DocumentFilter = ({
         <Label>{t("document.commonSearch.categoryLabel")}</Label>
         <TagInput
           value={categories.includes("all") ? [] : categories}
-          onChange={(values) => onCategoriesChange(values.length > 0 ? values : ["all"])}
+          onChange={(values) => onCategoriesChange(values.length > 0 ? values : [])}
           recommendedTags={availableCategories?.map((category) => category.code) || []}
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.categoryPlaceholder")}
