@@ -1,5 +1,6 @@
 {
   "common": {
+    "logout": "Đăng xuất",
     "error": "Lỗi",
     "success": "Thành công",
     "warning": "Cảnh báo",

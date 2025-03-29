@@ -1,5 +1,6 @@
 {
   "common": {
+    "logout": "Log out",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",

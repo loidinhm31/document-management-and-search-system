@@ -1,4 +1,5 @@
 import { ChevronsUpDown, LogOut, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +17,7 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 
 export function NavUser() {
+  const { t } = useTranslation();
   const { isMobile, state } = useSidebar();
   const { currentUser, clearAuthData } = useAuth();
   const navigate = useNavigate();
@@ -91,13 +93,13 @@ export function NavUser() {
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => navigate("/profile")}>
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <span>{t("profile.title")}</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+              <span>{t("common.logout")}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
