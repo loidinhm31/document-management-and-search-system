@@ -53,7 +53,7 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
       search: searchTerm,
       majors: selectedMajors.length <= 0 ? undefined : selectedMajors,
       courseCodes: selectedCourseCodes.length <= 0 ? undefined : selectedCategories,
-      level: selectedLevel ? undefined : selectedLevel,
+      level: selectedLevel ? selectedLevel : undefined,
       categories: selectedCategories.length <= 0 ? undefined : selectedCategories,
       sort: selectedSort,
       tags: selectedTags.length > 0 ? selectedTags : undefined,
