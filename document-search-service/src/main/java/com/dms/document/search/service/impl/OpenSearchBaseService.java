@@ -81,7 +81,6 @@ public abstract class OpenSearchBaseService {
         }
 
         // Add scoring boosts for individual term matches
-        // This will make documents matching multiple criteria rank higher
         if (CollectionUtils.isNotEmpty(majors)) {
             for (String major : majors) {
                 queryBuilder.should(QueryBuilders.termQuery("majors", major).boost(1.0f));
@@ -198,6 +197,9 @@ public abstract class OpenSearchBaseService {
 
                     return DocumentResponseDto.builder()
                             .id(hit.getId())
+                            .status(Optional.ofNullable(source.get("status"))
+                                    .map(Object::toString)
+                                    .orElse(""))
                             .filename(Optional.ofNullable(source.get("filename"))
                                     .map(Object::toString)
                                     .orElse(""))

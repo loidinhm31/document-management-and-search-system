@@ -717,7 +717,8 @@
         "title": "Lỗi",
         "loading": "Không thể tải xem trước tài liệu",
         "download": "Không thể tải xuống tệp",
-        "unsupported": "Không có xem trước cho {{type}}"
+        "unsupported": "Không có xem trước cho {{type}}",
+        "processFailStatus": "Không thể xem trước tài liệu này do lỗi xử lý"
       },
       "buttons": {
         "download": "Tải xuống",

@@ -81,6 +81,7 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
             <DocumentViewer
               documentId={documentId}
               documentType={documentData.documentType}
+              documentStatus={documentData.status}
               mimeType={documentData.mimeType}
               fileName={isVersion ? documentData.filename : documentData.filename}
               versionNumber={isVersion ? (documentData as DocumentVersion).versionNumber : undefined}

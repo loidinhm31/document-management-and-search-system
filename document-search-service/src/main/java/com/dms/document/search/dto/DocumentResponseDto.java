@@ -14,6 +14,8 @@ import java.util.Set;
 public class DocumentResponseDto {
     private String id;
 
+    private String status;
+
     private String filename;
 
     private String content;

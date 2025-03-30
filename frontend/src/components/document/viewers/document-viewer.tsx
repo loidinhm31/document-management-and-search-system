@@ -18,10 +18,11 @@ import { XmlViewer } from "@/components/document/viewers/xml-viewer";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { DocumentType } from "@/types/document";
+import { DocumentStatus, DocumentType } from "@/types/document";
 
 interface DocumentViewerProps {
   documentId: string;
+  documentStatus?: DocumentStatus;
   mimeType: string;
   documentType: DocumentType;
   fileName: string;
@@ -39,6 +40,7 @@ export interface ExcelSheet {
 
 export const DocumentViewer = ({
   documentId,
+  documentStatus,
   mimeType,
   documentType,
   fileName,
@@ -80,6 +82,13 @@ export const DocumentViewer = ({
       loadDocumentFileContent().then(() => setFileChange(false));
     }
   }, [fileChange, documentType]);
+
+  useEffect(() => {
+    if (documentStatus === DocumentStatus.FAILED) {
+      setError(t("document.viewer.error.processFailStatus"));
+
+    }
+  }, [documentStatus]);
 
   const loadDocumentFileContent = async () => {
     setLoading(true);
@@ -274,7 +283,7 @@ export const DocumentViewer = ({
   }
 
   // Show error message if loading failed
-  if (error) {
+  if (error || (documentStatus && documentStatus === DocumentStatus.FAILED)) {
     return (
       <div className="flex flex-col items-center h-full gap-4">
         <p className="text-destructive">{error}</p>
@@ -285,6 +294,7 @@ export const DocumentViewer = ({
       </div>
     );
   }
+
 
   // Only render the viewer when data is loaded
   if (!dataLoaded) {
