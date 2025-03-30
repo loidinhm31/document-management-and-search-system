@@ -286,13 +286,6 @@ export const DocumentViewer = ({
     );
   }
 
-  console.log(
-    "b",
-    documentStatus &&
-      !bypass &&
-      (documentStatus === DocumentStatus.FAILED || documentStatus === DocumentStatus.PROCESSING),
-  );
-  console.log("s", documentStatus === DocumentStatus.FAILED || documentStatus === DocumentStatus.PROCESSING);
   // Show error message if loading failed
   if (
     error ||

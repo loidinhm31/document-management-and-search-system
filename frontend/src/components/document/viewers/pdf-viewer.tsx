@@ -78,7 +78,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     setScale((currentScale) => Math.max(0.5, currentScale - 0.1));
   }, []);
 
-  console.log("daa", documentStatus);
 
   if (error) {
     return (

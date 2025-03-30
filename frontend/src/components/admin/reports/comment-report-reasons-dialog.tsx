@@ -48,7 +48,6 @@ const CommentReportReasonsDialog: React.FC<CommentReportReasonsDialogProps> = ({
     setLoading(true);
     try {
       const response = await reportService.getCommentReportDetail(commentId, status);
-      console.log("rers", response.data);
       setReportDetails(response.data);
     } catch (_error) {
       toast({

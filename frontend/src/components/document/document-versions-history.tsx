@@ -209,6 +209,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                             variant="outline"
                             size="sm"
                             onClick={() => handleOpenViewVersion(version)}
+                            disabled={version.status === DocumentStatus.PENDING}
                             className="h-7 w-full sm:w-auto"
                           >
                             {t("document.versions.actions.view")}
@@ -219,7 +220,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                           size="sm"
                           onClick={() => handleVersionDownload(version.versionNumber, version.filename)}
                           className="h-7 w-full sm:w-auto"
-                          disabled={isDownloading || loading}
+                          disabled={isDownloading || loading || version.status === DocumentStatus.PENDING}
                         >
                           {!isDownloading
                             ? t("document.versions.actions.download")
