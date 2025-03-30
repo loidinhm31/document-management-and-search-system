@@ -357,6 +357,8 @@ export default function MyDocumentDetailPage() {
                   fileName={documentData.filename}
                   fileChange={fileChange}
                   setFileChange={setFileChange}
+                  documentStatus={documentData.status === DocumentStatus.PROCESSING ? documentData.status : null}
+                  bypass={true}
                 />
               )}
             </CardContent>

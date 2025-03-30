@@ -31,6 +31,7 @@ interface DocumentViewerProps {
   onDownloadSuccess?: () => void;
   fileChange?: boolean;
   setFileChange?: (fileChange: boolean) => void;
+  bypass?: boolean;
 }
 
 export interface ExcelSheet {
@@ -49,6 +50,7 @@ export const DocumentViewer = ({
   onDownloadSuccess,
   fileChange,
   setFileChange,
+  bypass,
 }: DocumentViewerProps) => {
   const { t } = useTranslation();
 
@@ -63,6 +65,7 @@ export const DocumentViewer = ({
   const [powerPointContent, setPowerPointContent] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Load document content when component mounts or when documentId changes
@@ -85,9 +88,9 @@ export const DocumentViewer = ({
 
   useEffect(() => {
     if (documentStatus === DocumentStatus.FAILED) {
-      setError(t("document.viewer.error.processFailStatus"));
+      setMessage(t("document.viewer.error.processFailStatus"));
     } else if (documentStatus === DocumentStatus.PROCESSING) {
-      setError(t("document.viewer.error.processingStatus"));
+      setMessage(t("document.viewer.error.processingStatus"));
     }
   }, [documentStatus]);
 
@@ -283,11 +286,21 @@ export const DocumentViewer = ({
     );
   }
 
+  console.log(
+    "b",
+    documentStatus &&
+      !bypass &&
+      (documentStatus === DocumentStatus.FAILED || documentStatus === DocumentStatus.PROCESSING),
+  );
+  console.log("s", documentStatus === DocumentStatus.FAILED || documentStatus === DocumentStatus.PROCESSING);
   // Show error message if loading failed
   if (
     error ||
-    (documentStatus && (documentStatus === DocumentStatus.FAILED || documentStatus === DocumentStatus.PROCESSING))
+    (documentStatus &&
+      !bypass &&
+      (documentStatus === DocumentStatus.FAILED || documentStatus === DocumentStatus.PROCESSING))
   ) {
+    console.log("error");
     return (
       <div className="flex flex-col items-center h-full gap-4">
         <p className="text-destructive">{error}</p>
@@ -315,19 +328,32 @@ export const DocumentViewer = ({
   switch (documentType) {
     case DocumentType.PDF:
       return fileUrl ? (
-        <PDFViewer fileUrl={fileUrl} onDownload={handleDownload} isDownloading={isDownloading} loading={loading} />
+        <PDFViewer
+          documentStatus={documentStatus}
+          fileUrl={fileUrl}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
       ) : null;
 
     case DocumentType.WORD:
     case DocumentType.WORD_DOCX:
       return wordContent ? (
-        <WordViewer content={wordContent} onDownload={handleDownload} isDownloading={isDownloading} loading={loading} />
+        <WordViewer
+          documentStatus={documentStatus}
+          content={wordContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
       ) : null;
 
     case DocumentType.EXCEL:
     case DocumentType.EXCEL_XLSX:
       return excelContent.length > 0 ? (
         <SpreadsheetViewer
+          documentStatus={documentStatus}
           sheets={excelContent}
           activeSheet={activeSheet}
           onSheetChange={setActiveSheet}
@@ -340,6 +366,7 @@ export const DocumentViewer = ({
     case DocumentType.CSV:
       return csvContent.length > 0 ? (
         <SpreadsheetViewer
+          documentStatus={documentStatus}
           sheets={[{ name: "Sheet1", data: csvContent }]}
           activeSheet={0}
           onSheetChange={() => {}}
@@ -353,6 +380,7 @@ export const DocumentViewer = ({
     case DocumentType.POWERPOINT_PPTX:
       return powerPointContent.length > 0 ? (
         <PowerPointViewer
+          documentStatus={documentStatus}
           content={powerPointContent}
           onDownload={handleDownload}
           isDownloading={isDownloading}
@@ -362,22 +390,41 @@ export const DocumentViewer = ({
 
     case DocumentType.TEXT_PLAIN:
       return textContent ? (
-        <TextViewer content={textContent} onDownload={handleDownload} isDownloading={isDownloading} loading={loading} />
+        <TextViewer
+          documentStatus={documentStatus}
+          content={textContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
       ) : null;
 
     case DocumentType.JSON:
       return textContent ? (
-        <JsonViewer content={textContent} onDownload={handleDownload} isDownloading={isDownloading} loading={loading} />
+        <JsonViewer
+          documentStatus={documentStatus}
+          content={textContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
       ) : null;
 
     case DocumentType.XML:
       return textContent ? (
-        <XmlViewer content={textContent} onDownload={handleDownload} isDownloading={isDownloading} loading={loading} />
+        <XmlViewer
+          documentStatus={documentStatus}
+          content={textContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
       ) : null;
 
     case DocumentType.MARKDOWN:
       return textContent ? (
         <MarkdownViewer
+          documentStatus={documentStatus}
           content={textContent}
           onDownload={handleDownload}
           isDownloading={isDownloading}

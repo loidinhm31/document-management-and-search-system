@@ -9,15 +9,23 @@ import type { PluggableList } from "unified";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DocumentStatus } from "@/types/document";
 
 interface MarkdownViewerProps {
+  documentStatus: DocumentStatus;
   content: string;
   onDownload: () => void;
   isDownloading?: boolean;
   loading?: boolean;
 }
 
-export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content, onDownload, isDownloading, loading }) => {
+export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
+  documentStatus,
+  content,
+  onDownload,
+  isDownloading,
+  loading,
+}) => {
   const { t } = useTranslation();
 
   // Custom components for markdown rendering
@@ -99,10 +107,12 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content, onDownl
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
-        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
-          <Download className="h-4 w-4 mr-2" />
-          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
-        </Button>
+        {documentStatus !== DocumentStatus.PROCESSING && (
+          <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
+            <Download className="h-4 w-4 mr-2" />
+            {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
+          </Button>
+        )}
       </div>
       <ScrollArea className="flex-1 bg-background">
         <div className="p-6">

@@ -4,8 +4,10 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DocumentStatus } from "@/types/document";
 
 interface JsonViewerProps {
+  documentStatus: DocumentStatus;
   content: string;
   onDownload: () => void;
   isDownloading?: boolean;
@@ -17,7 +19,13 @@ type LineElement = {
   indent: number;
 };
 
-export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload, isDownloading, loading }) => {
+export const JsonViewer: React.FC<JsonViewerProps> = ({
+  documentStatus,
+  content,
+  onDownload,
+  isDownloading,
+  loading,
+}) => {
   const { t } = useTranslation();
 
   const processJsonLine = (line: string): LineElement => {
@@ -74,10 +82,12 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({ content, onDownload, isD
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
-        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
-          <Download className="h-4 w-4 mr-2" />
-          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
-        </Button>
+        {documentStatus !== DocumentStatus.PROCESSING && (
+          <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
+            <Download className="h-4 w-4 mr-2" />
+            {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
+          </Button>
+        )}
       </div>
       <ScrollArea className="flex-1">
         <div className="p-4 text-sm font-mono whitespace-pre bg-background text-foreground">

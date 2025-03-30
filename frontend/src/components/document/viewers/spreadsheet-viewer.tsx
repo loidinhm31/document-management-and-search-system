@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DocumentStatus } from "@/types/document";
 
 interface SpreadsheetViewerProps {
+  documentStatus: DocumentStatus;
   sheets: Array<{
     name: string;
     data: Array<Array<string | number | boolean | Date | null>>;
@@ -20,6 +22,7 @@ interface SpreadsheetViewerProps {
 }
 
 export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
+  documentStatus,
   sheets,
   activeSheet,
   onSheetChange,
@@ -160,10 +163,12 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
           </div>
         )}
 
-        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
-          <Download className="h-4 w-4 mr-2" />
-          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
-        </Button>
+        {documentStatus !== DocumentStatus.PROCESSING && (
+          <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
+            <Download className="h-4 w-4 mr-2" />
+            {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
+          </Button>
+        )}
       </div>
       <div className="flex-1 overflow-auto bg-background">
         <Table>
