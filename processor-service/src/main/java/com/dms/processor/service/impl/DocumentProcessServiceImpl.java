@@ -225,6 +225,9 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
         document.setUpdatedAt(Instant.now());
 
         documentRepository.save(document);
+
+        // Update document index
+        indexDocument(document);
     }
 
     @Override
