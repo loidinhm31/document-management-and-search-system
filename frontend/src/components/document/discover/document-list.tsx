@@ -83,7 +83,7 @@ export const DocumentList = () => {
     { field: "filename", label: t("document.discover.headers.name"), sortable: !!isSearchMode },
     { field: "majors", label: t("document.discover.headers.majors"), sortable: false },
     { field: "courseCodes", label: t("document.discover.headers.courses"), sortable: false },
-    { field: "courseLevel", label: t("document.discover.headers.level"), sortable: !!isSearchMode },
+    { field: "courseLevel", label: t("document.discover.headers.level"), sortable: false },
     { field: "categories", label: t("document.discover.headers.categories"), sortable: false },
     { field: "tags", label: t("document.discover.headers.tags"), sortable: false },
     // Only show matches column in search mode
