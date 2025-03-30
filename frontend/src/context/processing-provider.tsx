@@ -8,16 +8,7 @@ import {
   selectProcessingItems,
   updateProcessingItem,
 } from "@/store/slices/processing-slice";
-import { DocumentStatus } from "@/types/document";
-
-interface ProcessingItem {
-  id: string;
-  documentId: string;
-  filename: string;
-  status: DocumentStatus;
-  error?: string;
-  addedAt: number;
-}
+import { DocumentStatus, ProcessingItem } from "@/types/document";
 
 interface ProcessingContextType {
   items: ProcessingItem[];

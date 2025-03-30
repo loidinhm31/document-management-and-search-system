@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { createDocumentSchema, DocumentFormValues } from "@/schemas/document-schema";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
-import { ACCEPT_TYPE_MAP, MAX_FILE_SIZE } from "@/types/document";
+import { ACCEPT_TYPE_MAP, DocumentStatus, MAX_FILE_SIZE, ProcessingItem } from "@/types/document";
 
 interface DocumentFormProps {
   initialValues?: DocumentFormValues;
@@ -23,14 +23,16 @@ interface DocumentFormProps {
   loading?: boolean;
   submitLabel?: string;
   disabled?: boolean;
-  polling?: boolean;
+  documentId?: string;
+  pollingItem?: ProcessingItem;
 }
 
-export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, disabled, polling }: DocumentFormProps) {
+export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, disabled,  documentId, pollingItem }: DocumentFormProps) {
   const { t, i18n } = useTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
   const [hasFormChanges, setHasFormChanges] = useState(false);
+  const [polling, setPolling] = useState<boolean>(false);
 
   const dispatch = useAppDispatch();
   const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
@@ -80,6 +82,15 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
 
     setHasFormChanges(hasChanges || !!selectedFile);
   }, [formValues, initialValues, selectedFile]);
+
+  // Check polling for current item
+  useEffect(() => {
+    if (pollingItem && documentId) {
+      if (pollingItem.documentId === documentId) {
+        setPolling(pollingItem?.status !== DocumentStatus.COMPLETED)
+      }
+    }
+  }, [initialValues, pollingItem]);
 
   // Helper function to compare arrays
   const areArraysEqual = (arr1: string[], arr2: string[]): boolean => {

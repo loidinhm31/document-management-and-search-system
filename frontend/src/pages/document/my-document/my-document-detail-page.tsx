@@ -27,7 +27,7 @@ import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
 import { selectProcessingItems } from "@/store/slices/processing-slice";
-import { DocumentInformation, DocumentStatus } from "@/types/document";
+import { DocumentInformation, DocumentStatus, ProcessingItem } from "@/types/document";
 
 export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
@@ -44,7 +44,7 @@ export default function MyDocumentDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const { toast } = useToast();
-  const [polling, setPolling] = useState(false);
+  const [pollingItem, setPollingItem] = useState<ProcessingItem>();
   const [fileChange, setFileChange] = useState<boolean>(false);
 
   const processingItems = useAppSelector(selectProcessingItems);
@@ -71,7 +71,7 @@ export default function MyDocumentDetailPage() {
 
   useEffect(() => {
     if (latestProcessingItem) {
-      setPolling(latestProcessingItem?.status !== DocumentStatus.COMPLETED);
+      setPollingItem(latestProcessingItem);
       if (latestProcessingItem?.status === DocumentStatus.COMPLETED) {
         fetchDocument();
         setFileChange(true);
@@ -308,7 +308,8 @@ export default function MyDocumentDetailPage() {
                   loading={updating}
                   submitLabel={t("document.detail.buttons.update")}
                   disabled={documentData?.userId !== currentUser?.userId}
-                  polling={polling}
+                  documentId={documentData.id}
+                  pollingItem={pollingItem}
                 />
               )}
             </CardContent>

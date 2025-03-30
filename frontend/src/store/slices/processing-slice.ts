@@ -1,20 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { RootState } from "@/store";
-import { DocumentStatus } from "@/types/document";
-
-interface ProcessingItem {
-  id: string;
-  documentId: string;
-  filename: string;
-  status: DocumentStatus;
-  error?: string;
-  addedAt: number;
-}
-
-export interface ProcessingState {
-  items: ProcessingItem[];
-}
+import { DocumentStatus, ProcessingItem } from "@/types/document";
 
 const initialState = {
   items: [] as ProcessingItem[],

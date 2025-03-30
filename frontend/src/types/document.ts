@@ -124,3 +124,12 @@ export const ACCEPT_TYPE_MAP = {
   "text/x-markdown": [".md"],
   "application/markdown": [".md"],
 };
+
+export interface ProcessingItem {
+  id: string;
+  documentId: string;
+  filename: string;
+  status: DocumentStatus;
+  error?: string;
+  addedAt: number;
+}
