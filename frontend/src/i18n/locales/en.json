@@ -969,7 +969,7 @@
         "actionType": "Action",
         "documentTitle": "Document",
         "details": "Details",
-        "version": "Version",
+        "version": "Current Version",
         "timestamp": "Timestamp"
       },
       "actionTypes": {
