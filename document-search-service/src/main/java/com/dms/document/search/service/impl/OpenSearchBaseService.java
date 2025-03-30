@@ -29,10 +29,12 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 @Slf4j
 @RequiredArgsConstructor
 public abstract class OpenSearchBaseService {
     protected static final String INDEX_NAME = "documents";
+    public static final int MAX_SUGGESTIONS = 10;
 
     protected void addSharingAccessFilter(BoolQueryBuilder queryBuilder, String userId) {
         // Exclude deleted documents
@@ -61,6 +63,7 @@ public abstract class OpenSearchBaseService {
     }
 
     protected void addFilterConditions(BoolQueryBuilder queryBuilder, Set<String> majors, Set<String> courseCodes, String courseLevel, Set<String> categories, Set<String> tags) {
+        // Keep original filter conditions to ensure basic matching
         if (CollectionUtils.isNotEmpty(majors)) {
             queryBuilder.filter(QueryBuilders.termsQuery("majors", majors));
         }
@@ -75,6 +78,32 @@ public abstract class OpenSearchBaseService {
         }
         if (CollectionUtils.isNotEmpty(tags)) {
             queryBuilder.filter(QueryBuilders.termsQuery("tags", tags));
+        }
+
+        // Add scoring boosts for individual term matches
+        // This will make documents matching multiple criteria rank higher
+        if (CollectionUtils.isNotEmpty(majors)) {
+            for (String major : majors) {
+                queryBuilder.should(QueryBuilders.termQuery("majors", major).boost(1.0f));
+            }
+        }
+        if (CollectionUtils.isNotEmpty(courseCodes)) {
+            for (String courseCode : courseCodes) {
+                queryBuilder.should(QueryBuilders.termQuery("courseCodes", courseCode).boost(1.0f));
+            }
+        }
+        if (StringUtils.isNotBlank(courseLevel)) {
+            queryBuilder.should(QueryBuilders.termQuery("courseLevel", courseLevel).boost(1.0f));
+        }
+        if (CollectionUtils.isNotEmpty(categories)) {
+            for (String category : categories) {
+                queryBuilder.should(QueryBuilders.termQuery("categories", category).boost(1.0f));
+            }
+        }
+        if (CollectionUtils.isNotEmpty(tags)) {
+            for (String tag : tags) {
+                queryBuilder.should(QueryBuilders.termQuery("tags", tag).boost(1.0f));
+            }
         }
     }
 
@@ -233,19 +262,57 @@ public abstract class OpenSearchBaseService {
     }
 
     protected List<String> processSuggestionResults(SearchHit[] hits) {
-        return Arrays.stream(hits)
-                .map(hit -> {
-                    List<String> highlights = new ArrayList<>();
+        // Collect content highlights first (higher priority)
+        List<String> contentHighlights = new ArrayList<>();
+        // Collect filename highlights second (lower priority)
+        List<String> filenameHighlights = new ArrayList<>();
 
-                    Map<String, HighlightField> highlightFields = hit.getHighlightFields();
-                    if (highlightFields != null) {
-                        addHighlightsFromField(highlightFields.get("filename.analyzed"), highlights);
-                        addHighlightsFromField(highlightFields.get("filename.search"), highlights);
-                        addHighlightsFromField(highlightFields.get("content"), highlights);
-                    }
-                    return highlights;
-                })
-                .flatMap(List::stream)
+        for (SearchHit hit : hits) {
+            Map<String, HighlightField> highlightFields = hit.getHighlightFields();
+            if (highlightFields != null) {
+                // Process content highlights
+                HighlightField contentField = highlightFields.get("content");
+                if (contentField != null && contentField.fragments() != null) {
+                    Arrays.stream(contentField.fragments())
+                            .map(Text::string)
+                            .forEach(contentHighlights::add);
+                }
+
+                // Process filename highlights
+                HighlightField filenameAnalyzedField = highlightFields.get("filename.analyzed");
+                HighlightField filenameSearchField = highlightFields.get("filename.search");
+
+                if (filenameAnalyzedField != null && filenameAnalyzedField.fragments() != null) {
+                    Arrays.stream(filenameAnalyzedField.fragments())
+                            .map(Text::string)
+                            .forEach(filenameHighlights::add);
+                }
+
+                if (filenameSearchField != null && filenameSearchField.fragments() != null) {
+                    Arrays.stream(filenameSearchField.fragments())
+                            .map(Text::string)
+                            .forEach(filenameHighlights::add);
+                }
+            }
+        }
+
+        // Remove duplicates from both lists
+        List<String> uniqueContentHighlights = contentHighlights.stream().distinct().toList();
+        List<String> uniqueFilenameHighlights = filenameHighlights.stream().distinct().toList();
+
+        // Combine with priority to content highlights, up to MAX_SUGGESTIONS
+        List<String> result = new ArrayList<>(uniqueContentHighlights);
+
+        // If we have fewer than MAX_SUGGESTIONS from content, add filename highlights
+        if (result.size() < MAX_SUGGESTIONS) {
+            int remainingSlots = MAX_SUGGESTIONS - result.size();
+            result.addAll(uniqueFilenameHighlights.stream()
+                    .limit(remainingSlots)
+                    .toList());
+        }
+
+        return result.stream()
+                .limit(MAX_SUGGESTIONS)
                 .collect(Collectors.toList());
     }
 

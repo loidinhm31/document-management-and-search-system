@@ -46,7 +46,6 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
     private final DocumentFavoriteService documentFavoriteService;
 
     private static final int MIN_SEARCH_LENGTH = 2;
-    private static final int MAX_SUGGESTIONS = 10;
 
     private float getMinScore(String query, SearchContext context) {
         int length = query.trim().length();
@@ -245,38 +244,31 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
     }
 
     private void addSorting(SearchSourceBuilder searchSourceBuilder, DocumentSearchRequest request) {
-        // For search queries, prioritize relevance
-        if (StringUtils.isNotEmpty(request.getSearch())) {
-            searchSourceBuilder.trackScores(true);
+        // Always track scores for both search queries and filter-based queries
+        searchSourceBuilder.trackScores(true);
 
-            // If there's an explicit sort field requested
-            if (StringUtils.isNotBlank(request.getSortField())) {
-                SortOrder sortOrder = SortOrder.DESC;
-                if (StringUtils.isNotBlank(request.getSortDirection())) {
-                    sortOrder = SortOrder.valueOf(request.getSortDirection().toUpperCase());
-                }
-                String sortField = getSortableFieldName(request.getSortField());
+        boolean hasExplicitSort = StringUtils.isNotBlank(request.getSortField());
 
-                // Add both score and field sorting
-                searchSourceBuilder
-                        .sort(SortBuilders.fieldSort(sortField).order(sortOrder));
-            } else {
-                // If no explicit sort field, sort by score only
-                searchSourceBuilder.sort(SortBuilders.scoreSort().order(SortOrder.DESC));
+        // If there's an explicit sort field requested
+        if (hasExplicitSort) {
+            SortOrder sortOrder = SortOrder.DESC;
+            if (StringUtils.isNotBlank(request.getSortDirection())) {
+                sortOrder = SortOrder.valueOf(request.getSortDirection().toUpperCase());
             }
-            return;
+            String sortField = getSortableFieldName(request.getSortField());
+
+            // First sort by the explicit field
+            searchSourceBuilder.sort(SortBuilders.fieldSort(sortField).order(sortOrder));
+
+            // Then sort by score as a secondary criterion
+            searchSourceBuilder.sort(SortBuilders.scoreSort().order(SortOrder.DESC));
+        } else {
+            // If no explicit sort field, prioritize score-based sorting
+            searchSourceBuilder.sort(SortBuilders.scoreSort().order(SortOrder.DESC));
+
+            // Add a secondary sort by createdAt for consistent ordering when scores are equal
+            searchSourceBuilder.sort(SortBuilders.fieldSort("createdAt").order(SortOrder.DESC));
         }
-
-        // For non-search queries, use standard sorting
-        SortOrder sortOrder = SortOrder.DESC;
-        if (StringUtils.isNotBlank(request.getSortDirection())) {
-            sortOrder = SortOrder.valueOf(request.getSortDirection().toUpperCase());
-        }
-
-        String sortField = StringUtils.isNotBlank(request.getSortField()) ?
-                getSortableFieldName(request.getSortField()) : "createdAt";
-
-        searchSourceBuilder.sort(SortBuilders.fieldSort(sortField).order(sortOrder));
     }
 
     private String getSortableFieldName(String field) {
