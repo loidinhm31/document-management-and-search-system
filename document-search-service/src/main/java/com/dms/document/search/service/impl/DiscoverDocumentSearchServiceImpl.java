@@ -200,7 +200,7 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         // Standard content match
         contentQuery.should(QueryBuilders.matchQuery("content", context.originalQuery())
                 .analyzer("vietnamese_analyzer")
-                .minimumShouldMatch("60%")
+                .minimumShouldMatch("70%")
                 .boost(4.0f));
 
         queryBuilder.should(contentQuery);

@@ -6,8 +6,8 @@
         "tokenizer": "standard",
         "filter": [
           "lowercase",
-          "asciifolding",
           "vietnamese_stop",
+          "asciifolding",
           "vietnamese_word_delimiter"
         ]
       },
