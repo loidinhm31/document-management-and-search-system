@@ -24,7 +24,7 @@ import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
-import { DocumentInformation, DocumentStatus } from "@/types/document";
+import { DocumentInformation, DocumentStatus, VIEWED_DOCUMENTS_KEY } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
 
 export default function DocumentDetailPage() {
@@ -46,6 +46,22 @@ export default function DocumentDetailPage() {
   } | null>(null);
 
   const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
+
+  // Function to check if the document has been viewed in this session
+  const checkIfDocumentViewed = (docId: string): boolean => {
+    const viewedDocuments = JSON.parse(sessionStorage.getItem(VIEWED_DOCUMENTS_KEY) || "[]");
+    console.log("view", viewedDocuments);
+    return viewedDocuments.includes(docId);
+  };
+
+  // Function to mark document as viewed in this session
+  const markDocumentAsViewed = (docId: string): void => {
+    const viewedDocuments = JSON.parse(sessionStorage.getItem(VIEWED_DOCUMENTS_KEY) || "[]");
+    if (!viewedDocuments.includes(docId)) {
+      viewedDocuments.push(docId);
+      sessionStorage.setItem(VIEWED_DOCUMENTS_KEY, JSON.stringify(viewedDocuments));
+    }
+  };
 
   const handleFavorite = async () => {
     if (!documentId) return;
@@ -92,7 +108,9 @@ export default function DocumentDetailPage() {
       if (!documentId) return;
 
       try {
-        const docResponse = await documentService.getDocumentDetails(documentId, true);
+        // Get document details (with a parameter to track view or not)
+        const isFirstView = !checkIfDocumentViewed(documentId);
+        const docResponse = await documentService.getDocumentDetails(documentId, isFirstView);
         setDocumentData(docResponse.data);
         dispatch(setCurrentDocument(docResponse.data));
 
@@ -103,6 +121,11 @@ export default function DocumentDetailPage() {
         documentService.getDocumentStatistics(documentId).then((statisticsResponse) => {
           setStatistics(statisticsResponse.data);
         });
+
+        if (isFirstView) {
+          // Mark this document as viewed in this session
+          markDocumentAsViewed(documentId);
+        }
       } catch (error: any) {
         toast({
           title: t("common.error"),

@@ -46,6 +46,7 @@ export default [
         setInterval: true,
         process: true,
         NodeJS: true,
+        sessionStorage: true,
       },
       ecmaVersion: "latest",
       sourceType: "module",

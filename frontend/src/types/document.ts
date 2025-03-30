@@ -1,3 +1,6 @@
+ // Session storage key for tracking viewed documents
+ export const VIEWED_DOCUMENTS_KEY = "viewedDocuments";
+
 export enum DocumentType {
   PDF = "PDF",
   WORD = "WORD",

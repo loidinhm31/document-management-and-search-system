@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import { authService } from "@/services/auth.service";
 import { userService } from "@/services/user.service";
 import { JwtPayload, TokenResponse, User } from "@/types/auth";
+import { VIEWED_DOCUMENTS_KEY } from "@/types/document";
 
 // Constants for retry mechanism
 const MAX_REFRESH_RETRIES = 3;
@@ -65,6 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setRefreshToken(null);
       setCurrentUser(null);
       stopRefreshTimer();
+
+      // Clear viewed documents session
+      sessionStorage.removeItem(VIEWED_DOCUMENTS_KEY);
     });
   };
 
