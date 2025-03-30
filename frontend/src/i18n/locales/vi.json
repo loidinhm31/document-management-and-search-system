@@ -107,7 +107,7 @@
       "required": "Vui lòng đăng nhập để tiếp tục"
     },
     "logout": {
-      "success": "Đăng xuất thành công"
+      "success": "Bạn đã đăng xuất thành công"
     },
     "register": {
       "title": "Tạo tài khoản",
@@ -1021,6 +1021,7 @@
       "fetchError": "Không thể tải bình luận",
       "editSuccess": "Cập nhật bình luận thành công",
       "editError": "Không thể cập nhật bình luận",
+      "reportSuccess": "Báo cáo bình luận thành công",
       "save": "Lưu",
       "cancel": "Hủy",
       "actions": {

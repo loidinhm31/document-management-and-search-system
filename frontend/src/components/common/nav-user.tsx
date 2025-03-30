@@ -29,7 +29,7 @@ export function NavUser() {
     clearAuthData();
     toast({
       title: "Success",
-      description: "You have been logged out successfully.",
+      description: t("auth.logout.success"),
       variant: "success",
     });
     navigate("/login");

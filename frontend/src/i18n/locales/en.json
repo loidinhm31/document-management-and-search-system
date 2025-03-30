@@ -107,7 +107,7 @@
       "required": "Please login to continue"
     },
     "logout": {
-      "success": "Logout successful"
+      "success": "You have been logged out successfully"
     },
     "register": {
       "title": "Create an Account",
@@ -1021,6 +1021,7 @@
       "fetchError": "Failed to load comments",
       "editSuccess": "Comment updated successfully",
       "editError": "Failed to update comment",
+      "reportSuccess": "Report comment successfully",
       "save": "Save",
       "cancel": "Cancel",
       "actions": {
