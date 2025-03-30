@@ -273,7 +273,7 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
 
     private String getSortableFieldName(String field) {
         return switch (field) {
-            case "filename" -> "filename.raw";
+            case "filename" -> "filename.lowercase";
             case "content" -> "content.keyword";
             case "created_at", "createdAt" -> "createdAt";
             default -> field;
