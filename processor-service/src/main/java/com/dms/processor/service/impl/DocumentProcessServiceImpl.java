@@ -50,6 +50,9 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
             document.setProcessingError(null);
             documentRepository.save(document);
 
+            // Update document index with status to PROCESSING
+            indexDocument(document);
+
             // Download file to temp location if needed
             if (eventType == EventType.SYNC_EVENT ||
                 eventType == EventType.UPDATE_EVENT_WITH_FILE) {

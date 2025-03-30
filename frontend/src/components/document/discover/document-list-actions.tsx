@@ -9,13 +9,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DocumentStatus } from "@/types/document";
 
 interface DocumentListActionsProps {
+  documentStatus: DocumentStatus;
   onDownload: () => void;
   onShowPreview: () => void;
 }
 
-export const DocumentListActions: React.FC<DocumentListActionsProps> = ({ onDownload, onShowPreview }) => {
+export const DocumentListActions: React.FC<DocumentListActionsProps> = ({
+  documentStatus,
+  onDownload,
+  onShowPreview,
+}) => {
   const { t } = useTranslation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -38,15 +44,17 @@ export const DocumentListActions: React.FC<DocumentListActionsProps> = ({ onDown
             <Eye className="mr-2 h-4 w-4" />
             {t("document.actions.view")}
           </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              setDropdownOpen(false);
-              onDownload();
-            }}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            {t("document.actions.download")}
-          </DropdownMenuItem>
+          {documentStatus !== DocumentStatus.PROCESSING && (
+            <DropdownMenuItem
+              onClick={() => {
+                setDropdownOpen(false);
+                onDownload();
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {t("document.actions.download")}
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </>

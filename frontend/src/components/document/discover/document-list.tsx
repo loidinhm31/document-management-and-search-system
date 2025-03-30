@@ -37,7 +37,7 @@ import {
   setTags,
   toggleFavoriteOnly,
 } from "@/store/slices/search-slice";
-import { DocumentInformation } from "@/types/document";
+import { DocumentInformation, DocumentStatus } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
 
 interface SortableColumn {
@@ -418,9 +418,11 @@ export const DocumentList = () => {
                           <Button variant="outline" size="sm" onClick={() => handlePreview(doc)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDownload(doc.id, doc.filename)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          {doc.status !== DocumentStatus.PROCESSING && (
+                            <Button variant="outline" size="sm" onClick={() => handleDownload(doc.id, doc.filename)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -505,6 +507,7 @@ export const DocumentList = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <DocumentListActions
+                              documentStatus={doc.status}
                               onDownload={() => handleDownload(doc.id, doc.filename)}
                               onShowPreview={() => handlePreview(doc)}
                             />

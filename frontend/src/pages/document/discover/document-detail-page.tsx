@@ -24,7 +24,7 @@ import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
-import { DocumentInformation } from "@/types/document";
+import { DocumentInformation, DocumentStatus } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
 
 export default function DocumentDetailPage() {
@@ -125,6 +125,13 @@ export default function DocumentDetailPage() {
     };
   }, [documentId]);
 
+  const handleDownloadSuccess = async () => {
+    const statisticsResponse = await documentService.getDocumentStatistics(documentId);
+    setStatistics(statisticsResponse.data);
+  };
+
+  const isMentor = currentUser?.roles.includes("ROLE_MENTOR");
+
   if (loading || masterDataLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -134,13 +141,6 @@ export default function DocumentDetailPage() {
   }
 
   if (!documentData) return null;
-
-  const handleDownloadSuccess = async () => {
-    const statisticsResponse = await documentService.getDocumentStatistics(documentId);
-    setStatistics(statisticsResponse.data);
-  };
-
-  const isMentor = currentUser?.roles.includes("ROLE_MENTOR");
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -169,6 +169,7 @@ export default function DocumentDetailPage() {
                   fileName={documentData.filename}
                   history={true}
                   onDownloadSuccess={handleDownloadSuccess}
+                  documentStatus={documentData.status === DocumentStatus.PROCESSING ? documentData.status : null}
                 />
               )}
             </CardContent>

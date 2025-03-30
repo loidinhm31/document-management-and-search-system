@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { DocumentInformation } from "@/types/document";
+import { DocumentInformation, DocumentStatus } from "@/types/document";
 
 interface DocumentCardProps {
   documentInformation: DocumentInformation;
@@ -104,14 +104,16 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
             >
               <Eye className="h-4 w-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center justify-center w-10 h-10 p-0"
-              onClick={handleDownload}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
+            {documentInformation.status !== DocumentStatus.PROCESSING && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center justify-center w-10 h-10 p-0"
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </CardFooter>
       </Card>

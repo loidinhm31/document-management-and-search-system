@@ -15,10 +15,10 @@ import { TextViewer } from "@/components/document/viewers/text-viewer";
 import { UnsupportedViewer } from "@/components/document/viewers/unsupported-viewer";
 import { WordViewer } from "@/components/document/viewers/word-viewer";
 import { XmlViewer } from "@/components/document/viewers/xml-viewer";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { DocumentStatus, DocumentType } from "@/types/document";
+import { Button } from "@/components/ui/button";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -86,7 +86,8 @@ export const DocumentViewer = ({
   useEffect(() => {
     if (documentStatus === DocumentStatus.FAILED) {
       setError(t("document.viewer.error.processFailStatus"));
-
+    } else if (documentStatus === DocumentStatus.PROCESSING) {
+      setError(t("document.viewer.error.processingStatus"));
     }
   }, [documentStatus]);
 
@@ -283,18 +284,22 @@ export const DocumentViewer = ({
   }
 
   // Show error message if loading failed
-  if (error || (documentStatus && documentStatus === DocumentStatus.FAILED)) {
+  if (
+    error ||
+    (documentStatus && (documentStatus === DocumentStatus.FAILED || documentStatus === DocumentStatus.PROCESSING))
+  ) {
     return (
       <div className="flex flex-col items-center h-full gap-4">
         <p className="text-destructive">{error}</p>
-        <Button onClick={handleDownload} variant="outline" disabled={isDownloading || loading}>
-          <Download className="h-4 w-4 mr-2" />
-          {!isDownloading ? t("document.viewer.buttons.downloadInstead") : t("document.viewer.buttons.downloading")}
-        </Button>
+        {documentStatus !== DocumentStatus.PROCESSING && (
+          <Button onClick={handleDownload} variant="outline" disabled={isDownloading || loading}>
+            <Download className="h-4 w-4 mr-2" />
+            {!isDownloading ? t("document.viewer.buttons.downloadInstead") : t("document.viewer.buttons.downloading")}
+          </Button>
+        )}
       </div>
     );
   }
-
 
   // Only render the viewer when data is loaded
   if (!dataLoaded) {
