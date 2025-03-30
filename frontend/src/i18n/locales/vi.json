@@ -22,7 +22,8 @@
     "updated": "Cập nhật lúc",
     "size": "Kích thước tệp",
     "language": "Ngôn ngữ chính",
-    "sharedBy": "Chia sẻ bởi"
+    "sharedBy": "Chia sẻ bởi",
+    "noMatchingOptions": "Không tìm thấy tùy chọn phù hợp"
   },
   "navigation": {
     "main": {
@@ -613,7 +614,7 @@
         "level": "Cấp độ",
         "categories": "Danh mục",
         "tags": "Thẻ",
-        "matches": "Kết quả",
+        "matches": "Kết quả phù hợp",
         "created": "Ngày tạo",
         "actions": "Hành động"
       },

@@ -22,7 +22,8 @@
     "updated": "Updated At",
     "fileSize": "File size",
     "language": "Main Language",
-    "sharedBy": "Shared By"
+    "sharedBy": "Shared By",
+    "noMatchingOptions": "No matching options found"
   },
   "navigation": {
     "main": {
@@ -614,7 +615,7 @@
         "categories": "Categories",
         "tags": "Tags",
         "matches": "Matches",
-        "created": "Created",
+        "created": "Created At",
         "actions": "Actions"
       },
       "status": {
