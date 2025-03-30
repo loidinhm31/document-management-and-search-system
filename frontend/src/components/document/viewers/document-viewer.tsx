@@ -165,7 +165,6 @@ export const DocumentViewer = ({
 
         case DocumentType.POWERPOINT:
         case DocumentType.POWERPOINT_PPTX: {
-          console.log("???", documentType);
           const arrayBuffer = await blob.arrayBuffer();
           const data = new Uint8Array(arrayBuffer);
           const zip = await JSZip.loadAsync(data);

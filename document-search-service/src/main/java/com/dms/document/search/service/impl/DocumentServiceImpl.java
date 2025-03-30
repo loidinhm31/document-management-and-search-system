@@ -74,7 +74,7 @@ public class DocumentServiceImpl implements DocumentService {
             criteriaList.add(Criteria.where("majors").in(criteria.getMajors()));
         }
         if (CollectionUtils.isNotEmpty(criteria.getCourseCodes())) {
-            criteriaList.add(Criteria.where("course_codes").in(criteria.getCourseCodes()));
+            criteriaList.add(Criteria.where("courseCodes").in(criteria.getCourseCodes()));
         }
         if (StringUtils.isNotBlank(criteria.getLevel())) {
             criteriaList.add(Criteria.where("courseLevel").is(criteria.getLevel()));

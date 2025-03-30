@@ -44,7 +44,7 @@ interface SearchState {
 const initialState: SearchState = {
   isSearchMode: false,
   searchTerm: "",
-  selectedSort: "created_at,desc",
+  selectedSort: "",
   selectedMajors: [],
   selectedCourseCodes: [],
   selectedLevel: "",
