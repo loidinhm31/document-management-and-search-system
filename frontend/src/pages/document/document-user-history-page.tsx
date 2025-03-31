@@ -224,12 +224,12 @@ export default function DocumentUserHistoryPage() {
         label: t("document.history.actionTypes.comment"),
         variant: "bg-secondary/25 text-secondary ring-secondary/30",
       },
-      [UserDocumentActionType.RECOMMEND]: {
+      [UserDocumentActionType.RECOMMENDATION]: {
         label: t("document.history.actionTypes.recommend"),
         variant: "bg-primary/20 text-primary ring-primary/30",
       },
-      [UserDocumentActionType.ADD_NOTE]: {
-        label: t("document.history.actionTypes.addNote"),
+      [UserDocumentActionType.NOTE]: {
+        label: t("document.history.actionTypes.note"),
         variant: "bg-secondary/30 text-secondary ring-secondary/30",
       },
     };

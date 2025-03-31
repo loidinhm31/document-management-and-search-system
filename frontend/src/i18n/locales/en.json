@@ -986,7 +986,7 @@
         "favorite": "Favorite Document",
         "comment": "Comment",
         "recommend": "Recommend Document",
-        "addNote": "Add Note"
+        "note": "Note"
       },
       "pagination": {
         "showing": "Showing {{start}} to {{end}} of {{total}} activities",

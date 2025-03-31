@@ -986,7 +986,7 @@
         "favorite": "Yêu thích tài liệu",
         "comment": "Bình luận",
         "recommend": "Đề xuất tài liệu",
-        "addNote": "Thêm ghi chú"
+        "note": "Ghi chú"
       },
       "pagination": {
         "showing": "Hiển thị {{start}} đến {{end}} trong tổng số {{total}} hoạt động",

@@ -11,8 +11,8 @@ export enum UserDocumentActionType {
   SHARE = "SHARE",
   FAVORITE = "FAVORITE",
   COMMENT = "COMMENT",
-  RECOMMEND = "RECOMMEND",
-  ADD_NOTE = "ADD_NOTE",
+  RECOMMENDATION = "RECOMMENDATION",
+  NOTE = "NOTE",
 }
 
 export interface UserHistoryResponse {
