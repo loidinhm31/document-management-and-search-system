@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -56,14 +57,10 @@ public class DocumentCommentServiceImpl implements DocumentCommentService {
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
         // Get all comments with their replies using recursive query
-        List<DocumentComment> allComments = documentCommentRepository.findCommentsWithReplies(
+        Page<DocumentComment> allComments = documentCommentRepository.findCommentsWithReplies(
                 documentInformation.getId(),
-                pageable.getPageSize(),
-                (int) pageable.getOffset()
+                pageable
         );
-
-        // Count total top-level comments for pagination
-        long totalComments = documentCommentRepository.countTopLevelComments(documentId);
 
         // Get all unique user IDs from all comments
         Set<UUID> userIds = allComments.stream()
@@ -86,9 +83,9 @@ public class DocumentCommentServiceImpl implements DocumentCommentService {
                 ));
 
         // Build comment tree structure, including report information
-        List<CommentResponse> commentTree = buildCommentTree(allComments, userMap, commentReportMap);
+        List<CommentResponse> commentTree = buildCommentTree(allComments.getContent(), userMap, commentReportMap);
 
-        return new PageImpl<>(commentTree, pageable, totalComments);
+        return new PageImpl<>(commentTree, pageable, allComments.getTotalElements());
     }
 
     @Transactional
@@ -118,9 +115,6 @@ public class DocumentCommentServiceImpl implements DocumentCommentService {
 
         DocumentComment savedComment = documentCommentRepository.save(comment);
 
-        // Initialize empty replies list for new comment
-        savedComment.setReplies(Collections.emptyList());
-
         CompletableFuture.runAsync(() -> {
             // History
             documentUserHistoryRepository.save(DocumentUserHistory.builder()
@@ -142,7 +136,10 @@ public class DocumentCommentServiceImpl implements DocumentCommentService {
 
             documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.COMMENT);
         });
-        return mapToCommentResponse(savedComment, Collections.singletonMap(userResponse.userId(), userResponse), Map.of());
+
+        return mapToCommentResponse(savedComment,
+                Collections.singletonMap(userResponse.userId(), userResponse),
+                Map.of());
     }
 
     @Transactional
@@ -162,7 +159,9 @@ public class DocumentCommentServiceImpl implements DocumentCommentService {
         comment.setUpdatedAt(Instant.now());
 
         DocumentComment updatedComment = documentCommentRepository.save(comment);
-        return mapToCommentResponse(updatedComment, Collections.singletonMap(userResponse.userId(), userResponse), Map.of());
+        return mapToCommentResponse(updatedComment,
+                Collections.singletonMap(userResponse.userId(), userResponse),
+                Map.of());
     }
 
     @Transactional
@@ -206,25 +205,13 @@ public class DocumentCommentServiceImpl implements DocumentCommentService {
             Map<UUID, UserResponse> userMap,
             Map<Long, CommentReport> commentReportMap) {
         // Use LinkedHashMap to maintain order
-        Map<Long, CommentResponse> responseMap = new LinkedHashMap<>();
         List<CommentResponse> rootComments = new ArrayList<>();
 
         // Single pass comment tree building
         for (DocumentComment comment : comments) {
             CommentResponse response = mapToCommentResponse(comment, userMap, commentReportMap);
-            responseMap.put(comment.getId(), response);
 
-            if (comment.getParentId() == null) {
-                rootComments.add(response);
-            } else {
-                CommentResponse parentResponse = responseMap.get(comment.getParentId());
-                if (parentResponse != null) {
-                    if (parentResponse.getReplies() == null) {
-                        parentResponse.setReplies(new ArrayList<>());
-                    }
-                    parentResponse.getReplies().add(response);
-                }
-            }
+            rootComments.add(response);
         }
 
         return rootComments;
@@ -256,6 +243,7 @@ public class DocumentCommentServiceImpl implements DocumentCommentService {
                 .updatedAt(comment.getUpdatedAt())
                 .edited(comment.isEdited())
                 .flag(comment.getFlag())
+                .parentId(comment.getParentId())
                 .reportedByUser(reportedByUser)
                 .build();
     }

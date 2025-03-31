@@ -1023,6 +1023,8 @@
       "editSuccess": "Cập nhật bình luận thành công",
       "editError": "Không thể cập nhật bình luận",
       "reportSuccess": "Báo cáo bình luận thành công",
+      "loading": "Đang tải",
+      "loadMore": "Tải thêm bình luận...",
       "save": "Lưu",
       "cancel": "Hủy",
       "actions": {

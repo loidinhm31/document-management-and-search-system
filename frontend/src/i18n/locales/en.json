@@ -1023,6 +1023,8 @@
       "editSuccess": "Comment updated successfully",
       "editError": "Failed to update comment",
       "reportSuccess": "Report comment successfully",
+      "loading": "Loading",
+      "loadMore": "Load More Comments...",
       "save": "Save",
       "cancel": "Cancel",
       "actions": {
