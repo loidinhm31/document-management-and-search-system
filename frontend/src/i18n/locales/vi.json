@@ -550,7 +550,7 @@
           "comment": "Bình luận",
           "commenter": "Người bình luận",
           "document": "Tài liệu",
-          "commentDate": "Ngày bình luận",
+          "commentDate": "Ngày báo cáo bình luận gần nhất",
           "reportCount": "Số báo cáo",
           "status": "Trạng thái",
           "actions": "Hành động",

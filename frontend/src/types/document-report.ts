@@ -51,7 +51,7 @@ export interface CommentReport {
   documentId: string;
   documentTitle: string;
   commentContent: string;
-  commentDate: string;
+  createdAt: Date;
   commentUsername: string;
   reportCount: number;
   status: ReportStatus;

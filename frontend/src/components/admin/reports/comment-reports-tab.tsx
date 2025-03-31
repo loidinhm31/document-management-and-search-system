@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { reportService } from "@/services/report.service";
 import { CommentReport, ReportStatus, ReportType } from "@/types/document-report";
+import { formatDate, formatDateMoment } from "@/lib/utils";
 
 interface CommentReportsResponse {
   content: CommentReport[];
@@ -177,10 +178,6 @@ const CommentReportsTab = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return moment(dateString).format("DD/MM/YYYY, h:mm a");
-  };
-
   const truncateContent = (content: string, maxLength = 50) => {
     if (content?.length <= maxLength) return content;
     return content?.substring(0, maxLength) + "...";
@@ -336,7 +333,7 @@ const CommentReportsTab = () => {
                       {report.commentUsername}
                     </div>
                   </TableCell>
-                  <TableCell>{formatDate(report.commentDate)}</TableCell>
+                  <TableCell>{formatDateMoment(report.createdAt.toString())}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{report.reportCount}</Badge>
                   </TableCell>

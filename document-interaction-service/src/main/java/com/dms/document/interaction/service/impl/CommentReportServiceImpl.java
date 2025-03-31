@@ -253,9 +253,7 @@ public class CommentReportServiceImpl implements CommentReportService {
                 .collect(Collectors.toList());
 
         // Return paginated results
-        return new PageImpl<>(responseList, pageable,
-                commentReportRepository.countCommentReportsGroupedByProcessed(
-                        fromDate, toDate, commentContent, reportTypeCode, statusStr));
+        return new PageImpl<>(responseList, pageable, reportProjections.getTotalElements());
     }
 
     @Transactional(readOnly = true)

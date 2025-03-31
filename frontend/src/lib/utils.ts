@@ -3,6 +3,7 @@ import i18n from "i18next";
 import { twMerge } from "tailwind-merge";
 
 import { MasterData, MasterDataType } from "@/types/master-data";
+import moment from "moment-timezone";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -36,4 +37,8 @@ export const getMasterDataTranslation = (code: string, type: MasterDataType, mas
 
 export const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString();
+};
+
+export const formatDateMoment = (dateString: string) => {
+  return moment(dateString).format("DD/MM/YYYY, h:mm a");
 };

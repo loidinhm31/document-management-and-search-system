@@ -550,7 +550,7 @@
           "comment": "Comment",
           "commenter": "Commenter",
           "document": "Document",
-          "commentDate": "Comment Date",
+          "commentDate": "Most Recent Comment Report Date",
           "reportCount": "Reports",
           "status": "Status",
           "actions": "Actions",

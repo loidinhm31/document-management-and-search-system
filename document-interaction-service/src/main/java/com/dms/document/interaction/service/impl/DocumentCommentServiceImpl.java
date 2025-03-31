@@ -102,7 +102,8 @@ public class DocumentCommentServiceImpl implements DocumentCommentService {
         // Check parent id is still valid
         if (Objects.nonNull(request.parentId())) {
             Optional<DocumentComment> parentComment = documentCommentRepository.findById(request.parentId());
-            if (parentComment.isPresent() && parentComment.get().getFlag() == 0) {
+            if (parentComment.isPresent() &&
+                (parentComment.get().getFlag() == 0 || parentComment.get().getFlag() == -1)) {
                 throw new InvalidDocumentException("PARENT_COMMENT_DELETED");
             }
         }
