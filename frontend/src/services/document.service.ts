@@ -3,7 +3,7 @@ import { BaseService } from "@/services/base.service";
 import { CommentCreateData } from "@/types/comment";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
 import { UpdatePreferencesRequest } from "@/types/document-preference";
-import { UserHistoryFilter, UserHistoryPage } from "@/types/document-user-history";
+import { UserDocumentActionType, UserHistoryFilter, UserHistoryPage } from "@/types/document-user-history";
 import { UserSearchResponse } from "@/types/user";
 
 class DocumentService extends BaseService {
@@ -205,7 +205,7 @@ class DocumentService extends BaseService {
   async getUserHistory(filters: UserHistoryFilter = {}): Promise<UserHistoryPage> {
     const params = new URLSearchParams();
 
-    if (filters.actionType) params.append("actionType", filters.actionType);
+    if (filters.actionType && filters.actionType !== UserDocumentActionType.ALL) params.append("actionType", filters.actionType);
     if (filters.fromDate) params.append("fromDate", filters.fromDate);
     if (filters.toDate) params.append("toDate", filters.toDate);
     if (filters.documentName) params.append("documentName", filters.documentName);

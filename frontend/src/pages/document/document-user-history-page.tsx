@@ -34,7 +34,9 @@ export default function DocumentUserHistoryPage() {
   });
 
   const [searchInput, setSearchInput] = useState("");
-  const [selectedActionType, setSelectedActionType] = useState<UserDocumentActionType | undefined>(undefined);
+  const [selectedActionType, setSelectedActionType] = useState<UserDocumentActionType | undefined>(
+    UserDocumentActionType.ALL,
+  );
   const [selectedFromDate, setSelectedFromDate] = useState<Date | undefined>(undefined);
   const [selectedToDate, setSelectedToDate] = useState<Date | undefined>(undefined);
   const [dateRangeError, setDateRangeError] = useState<string | null>(null);
@@ -135,7 +137,7 @@ export default function DocumentUserHistoryPage() {
   // Handle filter reset
   const handleReset = () => {
     setSearchInput("");
-    setSelectedActionType(undefined);
+    setSelectedActionType(UserDocumentActionType.ALL);
     setSelectedFromDate(undefined);
     setSelectedToDate(undefined);
     // dateRangeError will be cleared by the useEffect that monitors date changes
@@ -174,6 +176,10 @@ export default function DocumentUserHistoryPage() {
         variant: string;
       }
     > = {
+      [UserDocumentActionType.ALL]: {
+        label: t("document.history.filters.allActions"),
+        variant: "",
+      },
       [UserDocumentActionType.UPLOAD_DOCUMENT]: {
         label: t("document.history.actionTypes.uploadDocument"),
         variant: "bg-primary/10 text-primary ring-primary/30",
@@ -272,7 +278,6 @@ export default function DocumentUserHistoryPage() {
                 <SelectValue placeholder={t("document.history.filters.actionType")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("document.history.filters.allActions")}</SelectItem>
                 {Object.values(UserDocumentActionType).map((type) => (
                   <SelectItem key={type} value={type}>
                     {getActionTypeDetails(type).label}
