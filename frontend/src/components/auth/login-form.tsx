@@ -85,15 +85,15 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid gap-6">
-          <Link
-            to={`${OAUTH_GOOGLE_REDIRECT_URL}/oauth2/authorization/google`}
+          <a
+            href={`${OAUTH_GOOGLE_REDIRECT_URL}/oauth2/authorization/google`}
             className="flex items-center justify-center gap-1 rounded-md border p-2 shadow-sm shadow-slate-200 transition-all duration-300 hover:bg-slate-300"
           >
             <span>
               <FcGoogle className="text-2xl" />
             </span>
             <span className="text-xs font-semibold sm:text-customText">{t("auth.login.buttons.google")}</span>
-          </Link>
+          </a>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
