@@ -293,10 +293,10 @@ export const DocumentViewer = ({
       !bypass &&
       (documentStatus === DocumentStatus.FAILED || documentStatus === DocumentStatus.PROCESSING))
   ) {
-    console.log("error");
     return (
       <div className="flex flex-col items-center h-full gap-4">
-        <p className="text-destructive">{error}</p>
+        {error && <p className="text-destructive">{error}</p>}
+        {message && <p className="text-destructive">{message}</p>}
         {documentStatus !== DocumentStatus.PROCESSING && (
           <Button onClick={handleDownload} variant="outline" disabled={isDownloading || loading}>
             <Download className="h-4 w-4 mr-2" />
