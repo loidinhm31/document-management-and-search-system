@@ -113,6 +113,9 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
             documentFavoriteService.addFavoriteFilter(queryBuilder, userId);
         }
 
+        // Boost documents based on recommendation count
+        addRecommendationBoost(queryBuilder);
+
         // Add filter conditions
         addFilterConditions(queryBuilder, request.getMajors(), request.getCourseCodes(), request.getLevel(), request.getCategories(), request.getTags());
 
