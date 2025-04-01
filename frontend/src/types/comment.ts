@@ -6,8 +6,8 @@ export interface Comment {
   id: number;
   content: string;
   username: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   edited: boolean;
   replies?: Comment[];
   parentId?: string | null;

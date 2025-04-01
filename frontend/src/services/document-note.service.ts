@@ -9,12 +9,6 @@ class DocumentNoteService extends BaseService {
     );
   }
 
-  getMentorNote(documentId: string) {
-    return this.handleApiResponse<NoteResponse>(
-      axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/notes/creator`),
-    );
-  }
-
   hasNote(documentId: string) {
     return this.handleApiResponse<boolean>(
       axiosInstance.get(`/document-interaction/api/v1/documents/${documentId}/notes/status`),

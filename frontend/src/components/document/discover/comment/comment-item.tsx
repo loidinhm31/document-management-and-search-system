@@ -95,7 +95,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <span className="font-medium">{comment.username}</span>
-            <span className="text-sm text-muted-foreground">{formatDateMoment(comment.updatedAt)}</span>
+            <span className="text-sm text-muted-foreground">{formatDateMoment(comment.updatedAt ?  comment.updatedAt.toString() : comment.createdAt.toString())}</span>
             {comment.edited && <span className="text-xs text-muted-foreground">({t("document.comments.edited")})</span>}
             {isCommentResolved && (
               <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">
