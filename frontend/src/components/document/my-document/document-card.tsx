@@ -77,14 +77,18 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
               </span>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">{t("common.fileSize")}:</span>
+              <span className="text-sm text-muted-foreground">{t("common.size")}:</span>
               <span className="text-sm font-semibold">
-                {(documentInformation.fileSize / (1024 * 1024)).toFixed(3)} MB
+                {documentInformation.fileSize < 1024 * 1024
+                  ? `${(documentInformation.fileSize / 1024).toFixed(2)} KB`
+                  : `${(documentInformation.fileSize / (1024 * 1024)).toFixed(2)} MB`}
               </span>
             </div>
             <div className="mt-2 flex items-center gap-2">
               <span className="text-sm text-muted-foreground">{t("common.language")}:</span>
-              <span className="text-sm font-semibold">{documentInformation.language ? documentInformation.language : t("common.noLang")}</span>
+              <span className="text-sm font-semibold">
+                {documentInformation.language ? documentInformation.language : t("common.noLang")}
+              </span>
             </div>
             {documentInformation.sharedWith.includes(currentUser?.userId) && (
               <div className="mt-2 flex items-center gap-2">

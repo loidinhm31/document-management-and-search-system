@@ -12,6 +12,7 @@ import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
 import { selectProcessingItemByDocumentId } from "@/store/slices/processing-slice";
 import { DocumentInformation, DocumentStatus, DocumentVersion } from "@/types/document";
+import { getDescriptionType } from "@/lib/utils";
 
 interface VersionHistoryProps {
   versions: DocumentVersion[];
@@ -245,7 +246,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                     <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span className="truncate max-w-full sm:max-w-[200px]">{version.filename}</span>
                       <span className="whitespace-nowrap">
-                        {version.documentType} • {(version.fileSize / 1024).toFixed(3)} KB
+                        {getDescriptionType(version.documentType)} • {(version.fileSize / 1024).toFixed(3)} KB
                       </span>
                     </div>
 

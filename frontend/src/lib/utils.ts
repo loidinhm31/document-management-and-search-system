@@ -42,3 +42,29 @@ export const formatDate = (dateString: string) => {
 export const formatDateMoment = (dateString: string) => {
   return moment(dateString).format("DD/MM/YYYY, h:mm a");
 };
+
+export const getDescriptionType = (type: string) => {
+  switch (type) {
+    case "WORD":
+    case "WORD_DOCX":
+      return i18n["t"]("document.preferences.analytics.contentTypes.word");
+    case "PDF":
+      return i18n["t"]("document.preferences.analytics.contentTypes.pdf");
+    case "EXCEL":
+    case "EXCEL_XLSX":
+      return i18n["t"]("document.preferences.analytics.contentTypes.excel");
+    case "POWERPOINT":
+    case "POWERPOINT_PPTX":
+      return i18n["t"]("document.preferences.analytics.contentTypes.ppt");
+    case "TEXT_PLAIN":
+      return i18n["t"]("document.preferences.analytics.contentTypes.text");
+    case "CSV":
+      return i18n["t"]("document.preferences.analytics.contentTypes.csv");
+    case "XML":
+      return i18n["t"]("document.preferences.analytics.contentTypes.xml");
+    case "JSON":
+      return i18n["t"]("document.preferences.analytics.contentTypes.json");
+    case "MARKDOWN":
+      return i18n["t"]("document.preferences.analytics.contentTypes.markdown");
+  }
+};

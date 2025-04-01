@@ -14,6 +14,7 @@ import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentPreferences, InteractionStats, PreferenceCategory } from "@/types/document-preference";
+import { getDescriptionType } from "@/lib/utils";
 
 const SUPPORTED_LANGUAGES = [
   { code: "en", display: "English" },
@@ -120,32 +121,6 @@ export default function DocumentPreferencesManager() {
       });
     } finally {
       setSaving(false);
-    }
-  };
-
-  const getDescriptionType = (type: string) => {
-    switch (type) {
-      case "WORD":
-      case "WORD_DOCX":
-        return t("document.preferences.analytics.contentTypes.word");
-      case "PDF":
-        return t("document.preferences.analytics.contentTypes.pdf");
-      case "EXCEL":
-      case "EXCEL_XLSX":
-        return t("document.preferences.analytics.contentTypes.excel");
-      case "POWERPOINT":
-      case "POWERPOINT_PPTX":
-        return t("document.preferences.analytics.contentTypes.ppt");
-      case "TEXT_PLAIN":
-        return t("document.preferences.analytics.contentTypes.text");
-      case "CSV":
-        return t("document.preferences.analytics.contentTypes.csv");
-      case "XML":
-        return t("document.preferences.analytics.contentTypes.xml");
-      case "JSON":
-        return t("document.preferences.analytics.contentTypes.json");
-      case "MARKDOWN":
-        return t("document.preferences.analytics.contentTypes.markdown");
     }
   };
 

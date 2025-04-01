@@ -28,6 +28,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
 import { selectProcessingItems } from "@/store/slices/processing-slice";
 import { DocumentInformation, DocumentStatus, ProcessingItem } from "@/types/document";
+import { getDescriptionType } from "@/lib/utils";
 
 export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
@@ -323,7 +324,7 @@ export default function MyDocumentDetailPage() {
                 <div className="grid grid-cols-2 gap-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <FileType2Icon className="mr-2 h-4 w-4" />
-                    <span>{documentData?.documentType}</span>
+                    <span>{getDescriptionType(documentData?.documentType)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Package2Icon className="mr-2 h-4 w-4" />
