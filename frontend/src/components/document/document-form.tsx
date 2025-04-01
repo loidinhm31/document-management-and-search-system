@@ -135,7 +135,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
     }
   }, [initialValues, form]);
 
-  // When majors change, update course codes if necessary, but only after user interaction
+  // When majors change, update course codes if necessary
   useEffect(() => {
     // Skip this effect during initial render to prevent losing initial courseCodes
     if (!formInitializedRef.current) {
@@ -144,17 +144,21 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
 
     const currentCourseCodes = form.getValues("courseCodes") || [];
 
-    if (selectedMajors && currentCourseCodes.length > 0 && filteredCourseCodes.length > 0) {
-      // Get the valid course code options for current selected majors
-      const validCourseCodeOptions = filteredCourseCodes.map((course) => course.code);
+    // Skip if there are no course codes to filter
+    if (currentCourseCodes.length === 0) {
+      return;
+    }
 
-      // Filter out any course codes that are no longer valid based on selected majors
-      const validCourseCodes = currentCourseCodes.filter((code) => validCourseCodeOptions.includes(code));
+    // Get the valid course code options for current selected majors
+    const validCourseCodeOptions = filteredCourseCodes.map((course) => course.code);
 
-      // If the valid list is different from current list, update form value
-      if (validCourseCodes.length !== currentCourseCodes.length) {
-        form.setValue("courseCodes", validCourseCodes);
-      }
+    // Filter out any course codes that are no longer valid based on selected majors
+    const validCourseCodes = currentCourseCodes.filter((code) => validCourseCodeOptions.includes(code));
+
+    // If the valid list is different from current list, update form value
+    // This ensures course codes are removed when their parent majors are removed
+    if (validCourseCodes.length !== currentCourseCodes.length) {
+      form.setValue("courseCodes", validCourseCodes);
     }
   }, [selectedMajors, filteredCourseCodes, form]);
 
@@ -296,9 +300,11 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
                     <TagInput
                       value={field.value || []}
                       onChange={(value) => {
-                        field.onChange(value);
                         // Mark the form as initialized after user interaction with majors
                         formInitializedRef.current = true;
+
+                        // Apply the change
+                        field.onChange(value);
                       }}
                       recommendedTags={majors?.map((major) => major.code) || []}
                       getTagDisplay={getTagDisplay}
