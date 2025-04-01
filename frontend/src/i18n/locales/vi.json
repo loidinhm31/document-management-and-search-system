@@ -1101,8 +1101,8 @@
       "error": "Không thể cập nhật trạng thái đề xuất"
     },
     "notes": {
-      "title": "Ghi chú của người hướng dẫn",
-      "description": "Ghi chú hướng dẫn từ người hướng dẫn giúp bạn hiểu rõ hơn về tài liệu này",
+      "title": "Ghi chú của các mentor",
+      "description": "Ghi chú hướng dẫn từ các mentor giúp bạn hiểu rõ hơn về tài liệu này",
       "add": "Thêm ghi chú",
       "addNew": "Ghi chú mới",
       "edit": "Sửa ghi chú",
@@ -1111,7 +1111,7 @@
       "placeholder": "Thêm ghi chú hướng dẫn của bạn (tối đa 200 ký tự)...",
       "characters": "ký tự",
       "tooLong": "Quá nhiều ký tự",
-      "empty": "Chưa có ghi chú nào từ người hướng dẫn cho tài liệu này",
+      "empty": "Chưa có ghi chú nào từ các mentor cho tài liệu này",
       "addSuccess": "Thêm ghi chú thành công",
       "editSuccess": "Cập nhật ghi chú thành công",
       "addError": "Không thể thêm ghi chú",

@@ -26,6 +26,9 @@ interface CommentSectionProps {
   documentId: string;
 }
 
+// Number of comments to load per page
+const COMMENTS_PER_PAGE = 10;
+
 export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) => {
   const { t } = useTranslation();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -42,7 +45,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
   const [deleteInProgress, setDeleteInProgress] = useState<boolean>(false);
   const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
 
+  // Refs
   const commentsRef = useRef<Comment[]>(comments);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Update ref when comments change
   useEffect(() => {
     commentsRef.current = comments;
   }, [comments]);
@@ -54,7 +62,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
 
     // Helper function to populate the map with existing comments and their replies
     const populateCommentMap = (comments: Comment[]) => {
-      comments.forEach(comment => {
+      comments.forEach((comment) => {
         existingCommentMap.set(comment.id, comment);
         if (comment.replies && comment.replies.length > 0) {
           populateCommentMap(comment.replies);
@@ -70,7 +78,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
     const rootComments: Comment[] = [...existingComments]; // Start with existing comments
 
     // First pass: add all new comments to the map
-    flatComments.forEach(comment => {
+    flatComments.forEach((comment) => {
       // Skip if comment already exists in the tree
       if (existingCommentMap.has(comment.id)) {
         return;
@@ -79,7 +87,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
       // Initialize replies array if not present
       const commentWithReplies = {
         ...comment,
-        replies: []
+        replies: [] as Comment[],
       };
       newCommentMap.set(comment.id, commentWithReplies);
     });
@@ -88,8 +96,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
     for (const [id, comment] of newCommentMap.entries()) {
       if (comment.parentId) {
         // This is a reply - check if parent exists in either existing or new comments
-        const parentComment = existingCommentMap.get(Number(comment.parentId)) ||
-          newCommentMap.get(Number(comment.parentId));
+        const parentComment =
+          existingCommentMap.get(Number(comment.parentId)) || newCommentMap.get(Number(comment.parentId));
 
         if (parentComment) {
           // Parent found, add as reply
@@ -106,9 +114,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
     }
 
     // Sort root comments by created date (newest first)
-    return rootComments.sort((a, b) =>
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return rootComments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, []);
 
   const fetchComments = useCallback(
@@ -124,15 +130,27 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
       try {
         const response = await documentService.getDocumentComments(documentId, {
           page: pageNum,
-          size: 10,
+          size: COMMENTS_PER_PAGE,
         } as PaginationParams);
+
+        // Save the current scroll position before adding new comments
+        const scrollPosition = scrollContainerRef.current?.scrollTop || 0;
+        const oldHeight = scrollContainerRef.current?.scrollHeight || 0;
 
         if (append && pageNum > 0) {
           // Use the current comments as the existing tree when appending
-          setComments(prevComments => {
+          setComments((prevComments) => {
             // Integrate new comments with the existing tree
             return buildCommentTree(response.data.content, prevComments);
           });
+
+          // After state update, scroll to show a bit of the new content
+          setTimeout(() => {
+            if (scrollContainerRef.current) {
+              // Scroll to show just a bit of the new content (e.g., 100px into the new content)
+              scrollContainerRef.current.scrollTop = scrollPosition + 80;
+            }
+          }, 200);
         } else {
           // For initial load, build a fresh tree
           setComments(buildCommentTree(response.data.content));
@@ -182,7 +200,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
 
       if (replyTo) {
         // Update state to add the new reply
-        setComments(prevComments => {
+        setComments((prevComments) => {
           // Clone the current comment tree to avoid direct state mutations
           const updatedComments = [...prevComments];
 
@@ -215,7 +233,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
         });
       } else {
         // Add new top-level comment at the beginning of the list
-        setComments(prevComments => [{ ...newComment, replies: [] }, ...prevComments]);
+        setComments((prevComments) => [{ ...newComment, replies: [] as Comment[] }, ...prevComments]);
+
+        // Scroll to top after adding a new comment
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = 0;
+        }
       }
 
       // Clear form
@@ -261,20 +284,23 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
   }, []);
 
   // Recursively update comment in nested structure
-  const updateCommentInState = useCallback((comments: Comment[], commentId: number, updatedFields: Partial<Comment>): Comment[] => {
-    return comments.map((comment) => {
-      if (comment.id === commentId) {
-        return { ...comment, ...updatedFields };
-      }
-      if (comment.replies?.length > 0) {
-        return {
-          ...comment,
-          replies: updateCommentInState(comment.replies, commentId, updatedFields),
-        };
-      }
-      return comment;
-    });
-  }, []);
+  const updateCommentInState = useCallback(
+    (comments: Comment[], commentId: number, updatedFields: Partial<Comment>): Comment[] => {
+      return comments.map((comment) => {
+        if (comment.id === commentId) {
+          return { ...comment, ...updatedFields };
+        }
+        if (comment.replies?.length > 0) {
+          return {
+            ...comment,
+            replies: updateCommentInState(comment.replies, commentId, updatedFields),
+          };
+        }
+        return comment;
+      });
+    },
+    [],
+  );
 
   // Handle opening the delete dialog
   const handleDeleteClick = useCallback((commentId: number) => {
@@ -385,62 +411,55 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
           </Button>
         </div>
 
-        {/* Comments list with scrollable container */}
-        <div className="space-y-4 max-h-screen overflow-y-auto pr-2">
-          {loading && page === 0 ? (
-            <>
-              <CommentSkeleton />
-              <CommentSkeleton />
-              <CommentSkeleton />
-            </>
-          ) : (
-            <>
-              {comments.map((comment) => (
-                <CommentItem
-                  key={comment.id}
-                  comment={comment}
-                  currentUser={currentUser}
-                  onDelete={handleDeleteClick}
-                  onReply={setReplyTo}
-                  onEdit={handleEditComment}
-                  documentId={documentId}
-                />
-              ))}
+        {/* Comments list */}
+        {loading && page === 0 ? (
+          <>
+            <CommentSkeleton />
+            <CommentSkeleton />
+            <CommentSkeleton />
+          </>
+        ) : (
+          <div ref={scrollContainerRef} className="space-y-6 max-h-[700px] overflow-y-auto pr-2">
+            {comments.length === 0 && !loading ? (
+              <p className="flex justify-center py-4">{t("document.comments.empty")}</p>
+            ) : (
+              <div className="space-y-6">
+                {comments.map((comment) => (
+                  <CommentItem
+                    key={comment.id}
+                    comment={comment}
+                    currentUser={currentUser}
+                    onDelete={handleDeleteClick}
+                    onReply={setReplyTo}
+                    onEdit={handleEditComment}
+                    documentId={documentId}
+                  />
+                ))}
 
-              {/* Load more button */}
-              {hasMore && (
-                <div className="flex justify-center pt-2">
-                  <Button
-                    variant="outline"
-                    onClick={loadMoreComments}
-                    disabled={loadingMore}
-                  >
-                    {loadingMore ? (
-                      t("document.comments.loading")
-                    ) : (
-                      t("document.comments.loadMore")
-                    )}
-                  </Button>
+                {/* Load more section */}
+                <div ref={loadMoreRef}>
+                  {hasMore && (
+                    <div className="flex justify-center pt-4">
+                      <Button variant="outline" onClick={loadMoreComments} disabled={loadingMore}>
+                        {loadingMore ? t("document.comments.loading") : t("document.comments.loadMore")}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Loading indicator */}
+                  {loadingMore && (
+                    <div className="pt-4">
+                      <CommentSkeleton />
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {/* Loading indicator for more comments */}
-              {loadingMore && (
-                <CommentSkeleton />
-              )}
-
-              {/* Empty state */}
-              {comments.length === 0 && !loading && (
-                <p className="flex justify-center">
-                  {t("document.comments.empty")}
-                </p>
-              )}
-            </>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Delete confirmation dialog - always render it but control visibility with open prop */}
+      {/* Delete confirmation dialog */}
       <DeleteDialog
         open={deleteDialogOpen}
         onOpenChange={handleDialogClose}
