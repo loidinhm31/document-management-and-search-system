@@ -500,8 +500,9 @@
         "actions": {
           "viewReasons": "Xem lý do",
           "process": "Xử lý",
-          "resolve": "Giải quyết",
-          "remediate": "Khắc phục"
+          "resolve": "Gỡ bỏ",
+          "remediate": "Khắc phục",
+          "reject": "Từ chối"
         },
         "pagination": {
           "previous": "Trước",
