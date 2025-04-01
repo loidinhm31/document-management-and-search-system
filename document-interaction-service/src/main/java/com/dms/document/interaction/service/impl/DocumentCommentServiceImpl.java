@@ -4,6 +4,7 @@ import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.CommentRequest;
 import com.dms.document.interaction.dto.CommentResponse;
 import com.dms.document.interaction.dto.UserResponse;
+import com.dms.document.interaction.enums.AppRole;
 import com.dms.document.interaction.enums.InteractionType;
 import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
@@ -53,8 +54,14 @@ public class DocumentCommentServiceImpl implements DocumentCommentService {
     public Page<CommentResponse> getDocumentComments(String documentId, Pageable pageable, String username) {
         UserResponse userResponse = getUserByUsername(username);
 
-        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
-                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+        DocumentInformation documentInformation;
+        if (userResponse.role().roleName().equals(AppRole.ROLE_ADMIN)) {
+            documentInformation = documentRepository.findAccessibleDocumentById(documentId)
+                    .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+        } else {
+            documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
+                    .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+        }
 
         // Get all comments with their replies using recursive query
         Page<DocumentComment> allComments = documentCommentRepository.findCommentsWithReplies(

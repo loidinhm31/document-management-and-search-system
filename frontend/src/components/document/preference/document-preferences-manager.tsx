@@ -123,6 +123,32 @@ export default function DocumentPreferencesManager() {
     }
   };
 
+  const getDescriptionType = (type: string) => {
+    switch (type) {
+      case "WORD":
+      case "WORD_DOCX":
+        return t("document.preferences.analytics.contentTypes.word");
+      case "PDF":
+        return t("document.preferences.analytics.contentTypes.pdf");
+      case "EXCEL":
+      case "EXCEL_XLSX":
+        return t("document.preferences.analytics.contentTypes.excel");
+      case "POWERPOINT":
+      case "POWERPOINT_PPTX":
+        return t("document.preferences.analytics.contentTypes.ppt");
+      case "TEXT_PLAIN":
+        return t("document.preferences.analytics.contentTypes.text");
+      case "CSV":
+        return t("document.preferences.analytics.contentTypes.csv");
+      case "XML":
+        return t("document.preferences.analytics.contentTypes.xml");
+      case "JSON":
+        return t("document.preferences.analytics.contentTypes.json");
+      case "MARKDOWN":
+        return t("document.preferences.analytics.contentTypes.markdown");
+    }
+  };
+
   if (loading || masterDataLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -272,9 +298,7 @@ export default function DocumentPreferencesManager() {
                       <div key={type} className="flex items-center justify-between space-x-2">
                         <div className="flex-1">
                           <p className="font-medium">{type}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {t(`preferences.contentType.${type.toLowerCase()}`)}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{getDescriptionType(type)}</p>
                         </div>
                         <div className="w-24 text-right">
                           <span className="text-sm font-medium">{(weight * 100).toFixed(1)}%</span>

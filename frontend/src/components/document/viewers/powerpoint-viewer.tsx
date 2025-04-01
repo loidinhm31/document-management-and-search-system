@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DocumentStatus } from "@/types/document";
 
 interface PowerPointViewerProps {
+  isAdmin: boolean;
   documentStatus: DocumentStatus;
   content: string[];
   onDownload: () => void;
@@ -14,6 +15,7 @@ interface PowerPointViewerProps {
 }
 
 export const PowerPointViewer: React.FC<PowerPointViewerProps> = ({
+  isAdmin,
   documentStatus,
   content,
   onDownload,
@@ -61,7 +63,7 @@ export const PowerPointViewer: React.FC<PowerPointViewerProps> = ({
             })}
           </span>
         </div>
-        {documentStatus !== DocumentStatus.PROCESSING && (
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
           <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
             <Download className="h-4 w-4 mr-2" />
             {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}

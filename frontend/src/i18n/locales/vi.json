@@ -937,6 +937,17 @@
           "label": "Thống kê tương tác",
           "comments": "Tổng số bình luận",
           "uniqueDocuments": "Số tài liệu đã truy cập"
+        },
+        "contentTypes": {
+          "word": "Tài liệu Word",
+          "pdf": "Tài liệu PDF",
+          "excel": "Tài liệu Excel",
+          "ppt": "PowerPoint",
+          "text": "Tài liệu Văn bản",
+          "csv": "Tài liệu CSV",
+          "xml": "Tài liệu XML",
+          "json": "Tài liệu JSON",
+          "markdown": "Tài liệu Markdown"
         }
       },
       "contentType": {

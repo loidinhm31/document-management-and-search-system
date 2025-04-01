@@ -1,11 +1,9 @@
 package com.dms.document.search.service.impl;
 
 import com.dms.document.search.dto.DocumentResponseDto;
+import com.dms.document.search.dto.RoleResponse;
 import com.dms.document.search.dto.SearchContext;
-import com.dms.document.search.enums.DocumentReportStatus;
-import com.dms.document.search.enums.DocumentType;
-import com.dms.document.search.enums.QueryType;
-import com.dms.document.search.enums.SharingType;
+import com.dms.document.search.enums.*;
 import com.dms.document.search.model.DocumentPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,24 +34,26 @@ public abstract class OpenSearchBaseService {
     protected static final String INDEX_NAME = "documents";
     public static final int MAX_SUGGESTIONS = 10;
 
-    protected void addSharingAccessFilter(BoolQueryBuilder queryBuilder, String userId) {
+    protected void addSharingAccessFilter(BoolQueryBuilder queryBuilder, String userId, AppRole userRole) {
         // Exclude deleted documents
         queryBuilder.filter(QueryBuilders.termQuery("deleted", false));
 
         // Add sharing access filters
         BoolQueryBuilder sharingFilter = QueryBuilders.boolQuery();
 
-        // Owner access
-        sharingFilter.should(QueryBuilders.termQuery("userId", userId));
+        if (!userRole.equals(AppRole.ROLE_ADMIN)) {
+            // Owner access
+            sharingFilter.should(QueryBuilders.termQuery("userId", userId));
 
-        // Public access
-        sharingFilter.should(QueryBuilders.termQuery("sharingType", SharingType.PUBLIC.name()));
+            // Public access
+            sharingFilter.should(QueryBuilders.termQuery("sharingType", SharingType.PUBLIC.name()));
 
-        // Specific users access
-        BoolQueryBuilder specificAccess = QueryBuilders.boolQuery()
-                .must(QueryBuilders.termQuery("sharingType", SharingType.SPECIFIC.name()))
-                .must(QueryBuilders.termsQuery("sharedWith", Collections.singletonList(userId)));
-        sharingFilter.should(specificAccess);
+            // Specific users access
+            BoolQueryBuilder specificAccess = QueryBuilders.boolQuery()
+                    .must(QueryBuilders.termQuery("sharingType", SharingType.SPECIFIC.name()))
+                    .must(QueryBuilders.termsQuery("sharedWith", Collections.singletonList(userId)));
+            sharingFilter.should(specificAccess);
+        }
 
         // Violation access: Exclude reported documents
         sharingFilter.mustNot(QueryBuilders.termQuery("reportStatus", DocumentReportStatus.RESOLVED.name()));

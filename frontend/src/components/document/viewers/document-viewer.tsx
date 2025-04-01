@@ -15,10 +15,11 @@ import { TextViewer } from "@/components/document/viewers/text-viewer";
 import { UnsupportedViewer } from "@/components/document/viewers/unsupported-viewer";
 import { WordViewer } from "@/components/document/viewers/word-viewer";
 import { XmlViewer } from "@/components/document/viewers/xml-viewer";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
 import { DocumentStatus, DocumentType } from "@/types/document";
-import { Button } from "@/components/ui/button";
 
 interface DocumentViewerProps {
   documentId: string;
@@ -66,7 +67,10 @@ export const DocumentViewer = ({
   const [activeSheet, setActiveSheet] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const { currentUser } = useAuth();
   const { toast } = useToast();
+
+  const isAdmin = currentUser?.roles.includes("ROLE_ADMIN");
 
   // Load document content when component mounts or when documentId changes
   useEffect(() => {
@@ -297,7 +301,7 @@ export const DocumentViewer = ({
       <div className="flex flex-col items-center h-full gap-4">
         {error && <p className="text-destructive">{error}</p>}
         {message && <p className="text-destructive">{message}</p>}
-        {documentStatus !== DocumentStatus.PROCESSING && (
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
           <Button onClick={handleDownload} variant="outline" disabled={isDownloading || loading}>
             <Download className="h-4 w-4 mr-2" />
             {!isDownloading ? t("document.viewer.buttons.downloadInstead") : t("document.viewer.buttons.downloading")}
@@ -322,6 +326,7 @@ export const DocumentViewer = ({
     case DocumentType.PDF:
       return fileUrl ? (
         <PDFViewer
+          isAdmin={isAdmin}
           documentStatus={documentStatus}
           fileUrl={fileUrl}
           onDownload={handleDownload}
@@ -334,6 +339,7 @@ export const DocumentViewer = ({
     case DocumentType.WORD_DOCX:
       return wordContent ? (
         <WordViewer
+          isAdmin={isAdmin}
           documentStatus={documentStatus}
           content={wordContent}
           onDownload={handleDownload}
@@ -346,6 +352,7 @@ export const DocumentViewer = ({
     case DocumentType.EXCEL_XLSX:
       return excelContent.length > 0 ? (
         <SpreadsheetViewer
+          isAdmin={isAdmin}
           documentStatus={documentStatus}
           sheets={excelContent}
           activeSheet={activeSheet}
@@ -359,6 +366,7 @@ export const DocumentViewer = ({
     case DocumentType.CSV:
       return csvContent.length > 0 ? (
         <SpreadsheetViewer
+          isAdmin={isAdmin}
           documentStatus={documentStatus}
           sheets={[{ name: "Sheet1", data: csvContent }]}
           activeSheet={0}
@@ -373,6 +381,7 @@ export const DocumentViewer = ({
     case DocumentType.POWERPOINT_PPTX:
       return powerPointContent.length > 0 ? (
         <PowerPointViewer
+          isAdmin={isAdmin}
           documentStatus={documentStatus}
           content={powerPointContent}
           onDownload={handleDownload}
@@ -384,6 +393,7 @@ export const DocumentViewer = ({
     case DocumentType.TEXT_PLAIN:
       return textContent ? (
         <TextViewer
+          isAdmin={isAdmin}
           documentStatus={documentStatus}
           content={textContent}
           onDownload={handleDownload}
@@ -395,6 +405,7 @@ export const DocumentViewer = ({
     case DocumentType.JSON:
       return textContent ? (
         <JsonViewer
+          isAdmin={isAdmin}
           documentStatus={documentStatus}
           content={textContent}
           onDownload={handleDownload}
@@ -406,6 +417,7 @@ export const DocumentViewer = ({
     case DocumentType.XML:
       return textContent ? (
         <XmlViewer
+          isAdmin={isAdmin}
           documentStatus={documentStatus}
           content={textContent}
           onDownload={handleDownload}
@@ -417,6 +429,7 @@ export const DocumentViewer = ({
     case DocumentType.MARKDOWN:
       return textContent ? (
         <MarkdownViewer
+          isAdmin={isAdmin}
           documentStatus={documentStatus}
           content={textContent}
           onDownload={handleDownload}
@@ -428,6 +441,7 @@ export const DocumentViewer = ({
     default:
       return (
         <UnsupportedViewer
+          isAdmin={isAdmin}
           documentType={documentType}
           onDownload={handleDownload}
           isDownloading={isDownloading}

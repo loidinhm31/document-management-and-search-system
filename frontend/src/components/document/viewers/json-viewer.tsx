@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DocumentStatus } from "@/types/document";
 
 interface JsonViewerProps {
+  isAdmin: boolean;
   documentStatus: DocumentStatus;
   content: string;
   onDownload: () => void;
@@ -20,6 +21,7 @@ type LineElement = {
 };
 
 export const JsonViewer: React.FC<JsonViewerProps> = ({
+  isAdmin,
   documentStatus,
   content,
   onDownload,
@@ -82,7 +84,7 @@ export const JsonViewer: React.FC<JsonViewerProps> = ({
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
-        {documentStatus !== DocumentStatus.PROCESSING && (
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
           <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
             <Download className="h-4 w-4 mr-2" />
             {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}

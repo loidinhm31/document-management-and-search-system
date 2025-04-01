@@ -16,6 +16,7 @@ import { DocumentStatus } from "@/types/document";
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
 interface PDFViewerProps {
+  isAdmin: boolean;
   documentStatus: DocumentStatus;
   fileUrl: string;
   onDownload: () => void;
@@ -24,6 +25,7 @@ interface PDFViewerProps {
 }
 
 export const PDFViewer: React.FC<PDFViewerProps> = ({
+  isAdmin,
   documentStatus,
   fileUrl,
   onDownload,
@@ -95,7 +97,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     <div className="h-full flex flex-col">
       {/* Header with download button */}
       <div className="flex justify-end p-2 bg-muted">
-        {documentStatus !== DocumentStatus.PROCESSING && (
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
           <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
             <Download className="h-4 w-4 mr-2" />
             {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}

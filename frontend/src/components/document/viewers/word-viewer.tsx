@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DocumentStatus } from "@/types/document";
 
 interface WordViewerProps {
+  isAdmin: boolean;
   documentStatus: DocumentStatus;
   content: string;
   onDownload: () => void;
@@ -14,6 +15,7 @@ interface WordViewerProps {
 }
 
 export const WordViewer: React.FC<WordViewerProps> = ({
+  isAdmin,
   documentStatus,
   content,
   onDownload,
@@ -25,7 +27,7 @@ export const WordViewer: React.FC<WordViewerProps> = ({
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
-        {documentStatus !== DocumentStatus.PROCESSING && (
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
           <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
             <Download className="h-4 w-4 mr-2" />
             {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}

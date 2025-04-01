@@ -241,7 +241,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
           ...newComment,
           createdAt: newComment.createdAt || new Date().toISOString(),
           updatedAt: newComment.updatedAt || new Date().toISOString(),
-          replies: [] as Comment[]
+          replies: [] as Comment[],
         };
 
         // Add new top-level comment at the beginning of the list
@@ -399,29 +399,32 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
       throw error;
     }
   };
+  console.log("c", currentUser);
 
   return (
     <div className="space-y-6" key={documentId}>
       {/* Comment input section */}
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Textarea
-            placeholder={t("document.comments.placeholder")}
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-          />
-          {replyTo && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>{t("document.comments.replyingTo", { username: replyTo.username })}</span>
-              <Button variant="ghost" size="sm" onClick={() => setReplyTo(null)}>
-                {t("document.comments.cancelReply")}
-              </Button>
-            </div>
-          )}
-          <Button onClick={handleSubmitComment} disabled={!commentText.trim()}>
-            {t("document.comments.submit")}
-          </Button>
-        </div>
+        {!currentUser?.roles.includes("ROLE_ADMIN") && (
+          <div className="space-y-2">
+            <Textarea
+              placeholder={t("document.comments.placeholder")}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+            />
+            {replyTo && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{t("document.comments.replyingTo", { username: replyTo.username })}</span>
+                <Button variant="ghost" size="sm" onClick={() => setReplyTo(null)}>
+                  {t("document.comments.cancelReply")}
+                </Button>
+              </div>
+            )}
+            <Button onClick={handleSubmitComment} disabled={!commentText.trim()}>
+              {t("document.comments.submit")}
+            </Button>
+          </div>
+        )}
 
         {/* Comments list */}
         {loading && page === 0 ? (

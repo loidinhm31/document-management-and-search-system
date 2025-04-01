@@ -35,6 +35,14 @@ public interface DocumentRepository extends MongoRepository<DocumentInformation,
             """)
     Optional<DocumentInformation> findAccessibleDocumentByIdAndUserId(String id, String userId);
 
+    @Query("""
+            { '_id': ?0,
+            'deleted': {'$ne': true},
+            'report_status': {$ne: 'RESOLVED'}
+            }
+            """)
+    Optional<DocumentInformation> findAccessibleDocumentById(String id);
+
     @Query(value = "{'majors': ?0, 'deleted': {$ne: true}}", exists = true)
     boolean existsByMajorCode(String code);
 

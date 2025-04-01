@@ -2,7 +2,9 @@ package com.dms.document.search.service.impl;
 
 import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.DocumentResponseDto;
+import com.dms.document.search.dto.RoleResponse;
 import com.dms.document.search.dto.UserResponse;
+import com.dms.document.search.enums.AppRole;
 import com.dms.document.search.exception.InvalidDocumentException;
 import com.dms.document.search.model.DocumentPreferences;
 import com.dms.document.search.repository.DocumentPreferencesRepository;
@@ -62,8 +64,8 @@ public class DocumentRecommendationServiceImpl extends OpenSearchBaseService imp
             DocumentPreferences preferences = getOrCreatePreferences(userResponse.userId().toString());
 
             return StringUtils.isNotEmpty(documentId)
-                    ? getContentBasedRecommendations(documentId, userResponse.userId().toString(), preferences, pageable)
-                    : getPreferenceBasedRecommendations(userResponse.userId(), preferences, favoriteOnly, pageable);
+                    ? getContentBasedRecommendations(documentId, userResponse.userId().toString(), userResponse.role().roleName(), preferences, pageable)
+                    : getPreferenceBasedRecommendations(userResponse.userId(), userResponse.role().roleName(), preferences, favoriteOnly, pageable);
         } catch (IOException e) {
             log.error("Error getting recommendations: {}", e.getMessage());
             throw new RuntimeException("Failed to get recommendations", e);
@@ -84,6 +86,7 @@ public class DocumentRecommendationServiceImpl extends OpenSearchBaseService imp
     private Page<DocumentResponseDto> getContentBasedRecommendations(
             String documentId,
             String userId,
+            AppRole userRole,
             DocumentPreferences preferences,
             Pageable pageable) throws IOException {
 
@@ -102,7 +105,7 @@ public class DocumentRecommendationServiceImpl extends OpenSearchBaseService imp
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Add sharing access filter
-        addSharingAccessFilter(queryBuilder, userId);
+        addSharingAccessFilter(queryBuilder, userId, userRole);
 
         // Exclude source document
         queryBuilder.mustNot(QueryBuilders.termQuery("_id", documentId));
@@ -283,6 +286,7 @@ public class DocumentRecommendationServiceImpl extends OpenSearchBaseService imp
 
     private Page<DocumentResponseDto> getPreferenceBasedRecommendations(
             UUID userId,
+            AppRole userRole,
             DocumentPreferences preferences,
             Boolean favoriteOnly,
             Pageable pageable) throws IOException {
@@ -292,7 +296,7 @@ public class DocumentRecommendationServiceImpl extends OpenSearchBaseService imp
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Add sharing access filter
-        addSharingAccessFilter(queryBuilder, userId.toString());
+        addSharingAccessFilter(queryBuilder, userId.toString(), userRole);
 
         // Add favorite filter if requested
         if (Boolean.TRUE.equals(favoriteOnly)) {

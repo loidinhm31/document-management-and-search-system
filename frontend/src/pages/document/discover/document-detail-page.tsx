@@ -333,7 +333,9 @@ export default function DocumentDetailPage() {
         </div>
 
         {/* Related Documents Section */}
-        <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
+        {!currentUser?.roles.includes("ROLE_ADMIN") && (
+          <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
+        )}
 
         {/* Mentor Notes Section */}
         <DocumentNoteList documentId={documentId} />

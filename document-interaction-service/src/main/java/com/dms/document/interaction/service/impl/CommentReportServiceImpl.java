@@ -50,6 +50,9 @@ public class CommentReportServiceImpl implements CommentReportService {
     public CommentReportResponse createReport(String documentId, Long commentId, CommentReportRequest request, String username) {
         // Get user information
         UserResponse userResponse = getUserFromUsername(username);
+        if (userResponse.role().roleName().equals(AppRole.ROLE_ADMIN)) {
+            throw new InvalidDataAccessResourceUsageException("You are not allowed to create a comment report");
+        }
 
         // Verify comment exists
         DocumentComment documentComment = documentCommentRepository.findByDocumentIdAndId(documentId, commentId)

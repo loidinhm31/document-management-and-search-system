@@ -140,7 +140,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 {t("document.comments.reply")}
               </Button>
 
-              {!isAuthor && (
+              {(!isAuthor && !currentUser.roles.includes("ROLE_ADMIN")) && (
                 <ReportCommentDialog
                   documentId={documentId}
                   commentId={comment.id}

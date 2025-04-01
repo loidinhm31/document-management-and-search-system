@@ -937,6 +937,17 @@
           "label": "Interaction Statistics",
           "comments": "Total Comments",
           "uniqueDocuments": "Unique Documents Accessed"
+        },
+        "contentTypes": {
+          "word": "Word Document",
+          "pdf": "PDF Document",
+          "excel": "Excel Document",
+          "ppt": "PowerPoint",
+          "text": "Text Document",
+          "csv": "CSV Document",
+          "xml": "XML Document",
+          "json": "JSON Document",
+          "markdown": "Markdown Document"
         }
       },
       "contentType": {
