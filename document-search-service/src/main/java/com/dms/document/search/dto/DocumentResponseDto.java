@@ -44,6 +44,10 @@ public class DocumentResponseDto {
 
     private Date createdAt;
 
+    private Date updatedAt;
+
+    private Integer currentVersion;
+
     private List<String> highlights;
 
 }

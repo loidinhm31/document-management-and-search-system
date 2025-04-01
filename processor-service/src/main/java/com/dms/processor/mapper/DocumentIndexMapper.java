@@ -27,8 +27,10 @@ public class DocumentIndexMapper {
                 .status(doc.getStatus())
                 .language(doc.getLanguage())
                 .createdAt(doc.getCreatedAt())
+                .updatedAt(doc.getUpdatedAt())
                 .reportStatus(doc.getReportStatus())
                 .recommendationCount(doc.getRecommendationCount() != null ? doc.getRecommendationCount() : 0)
+                .currentVersion(doc.getCurrentVersion() != null ? doc.getCurrentVersion() : 0)
                 .build();
     }
 }

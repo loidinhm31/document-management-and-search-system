@@ -195,6 +195,22 @@ public abstract class OpenSearchBaseService {
                         }
                     }
 
+                    Date updatedAt = null;
+                    Object updatedAtObj = source.get("updatedAt");
+                    if (updatedAtObj != null) {
+                        if (updatedAtObj instanceof String) {
+                            // Parse ISO date string
+                            try {
+                                updatedAt = Date.from(Instant.parse((String) updatedAtObj));
+                            } catch (DateTimeParseException e) {
+                                log.warn("Failed to parse updatedAt date string: {}", updatedAtObj);
+                            }
+                        } else if (updatedAtObj instanceof Number) {
+                            // Handle timestamp in milliseconds
+                            updatedAt = new Date(((Number) createdAtObj).longValue());
+                        }
+                    }
+
                     return DocumentResponseDto.builder()
                             .id(hit.getId())
                             .status(Optional.ofNullable(source.get("status"))
@@ -255,6 +271,10 @@ public abstract class OpenSearchBaseService {
                                     .map(Object::toString)
                                     .orElse(""))
                             .createdAt(createdAt)
+                            .updatedAt(updatedAt)
+                            .currentVersion(Optional.ofNullable(source.get("currentVersion"))
+                                    .map(size -> ((Number) size).intValue())
+                                    .orElse(0))
                             .highlights(highlights)
                             .build();
                 })
