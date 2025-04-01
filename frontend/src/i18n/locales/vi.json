@@ -23,7 +23,8 @@
     "size": "Kích thước tệp",
     "language": "Ngôn ngữ chính",
     "sharedBy": "Chia sẻ bởi",
-    "noMatchingOptions": "Không tìm thấy tùy chọn phù hợp"
+    "noMatchingOptions": "Không tìm thấy tùy chọn phù hợp",
+    "noLang": "Không thể xác định ngôn ngữ"
   },
   "navigation": {
     "main": {

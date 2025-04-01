@@ -84,7 +84,7 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
             </div>
             <div className="mt-2 flex items-center gap-2">
               <span className="text-sm text-muted-foreground">{t("common.language")}:</span>
-              <span className="text-sm font-semibold">{documentInformation.language}</span>
+              <span className="text-sm font-semibold">{documentInformation.language ? documentInformation.language : t("common.noLang")}</span>
             </div>
             {documentInformation.sharedWith.includes(currentUser?.userId) && (
               <div className="mt-2 flex items-center gap-2">

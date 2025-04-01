@@ -253,7 +253,7 @@ export default function DocumentDetailPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Languages className="h-4 w-4" />
-                    {documentData.language}
+                    {documentData.language ? documentData.language : t("common.noLang")}
                   </div>
                 </div>
 
