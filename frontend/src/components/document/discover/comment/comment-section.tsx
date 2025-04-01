@@ -135,7 +135,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
 
         // Save the current scroll position before adding new comments
         const scrollPosition = scrollContainerRef.current?.scrollTop || 0;
-        const oldHeight = scrollContainerRef.current?.scrollHeight || 0;
 
         if (append && pageNum > 0) {
           // Use the current comments as the existing tree when appending
@@ -209,7 +208,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
             for (let i = 0; i < comments.length; i++) {
               if (comments[i].id === replyTo.id) {
                 // Found the parent, add the reply
-                comments[i].replies = [...(comments[i].replies || []), newComment];
+                const replyWithValidDates = {
+                  ...newComment,
+                  createdAt: newComment.createdAt || new Date().toISOString(),
+                  updatedAt: newComment.updatedAt || new Date().toISOString(),
+                };
+                comments[i].replies = [...(comments[i].replies || []), replyWithValidDates];
                 return true;
               }
 
@@ -232,8 +236,16 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
           return updatedComments;
         });
       } else {
+        // Ensure the new comment has proper date fields before adding to state
+        const commentWithValidDates = {
+          ...newComment,
+          createdAt: newComment.createdAt || new Date().toISOString(),
+          updatedAt: newComment.updatedAt || new Date().toISOString(),
+          replies: [] as Comment[]
+        };
+
         // Add new top-level comment at the beginning of the list
-        setComments((prevComments) => [{ ...newComment, replies: [] as Comment[] }, ...prevComments]);
+        setComments((prevComments) => [commentWithValidDates, ...prevComments]);
 
         // Scroll to top after adding a new comment
         if (scrollContainerRef.current) {
