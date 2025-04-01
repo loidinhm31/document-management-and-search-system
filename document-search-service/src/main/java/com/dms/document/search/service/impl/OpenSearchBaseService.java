@@ -346,10 +346,10 @@ public abstract class OpenSearchBaseService {
         // Add preferred fields with moderate boost values
         // Note: These are intentionally lower than search term boosts (which go up to 15.0f)
         // to ensure search relevance remains the primary factor
-        addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 1.5f);
-        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 1.5f);
+        addPreferredFieldBoost(queryBuilder, "majors", preferences.getPreferredMajors(), 1.5f);
+        addPreferredFieldBoost(queryBuilder, "courseCodes", preferences.getPreferredCourseCodes(), 1.5f);
         addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 1.0f);
-        addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 1.0f);
+        addPreferredFieldBoost(queryBuilder, "categories", preferences.getPreferredCategories(), 1.0f);
         addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 1.0f);
 
         // Language preferences

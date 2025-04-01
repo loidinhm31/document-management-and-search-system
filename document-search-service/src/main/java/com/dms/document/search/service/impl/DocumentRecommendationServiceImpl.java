@@ -230,16 +230,16 @@ public class DocumentRecommendationServiceImpl extends OpenSearchBaseService imp
         if (preferences == null) return;
 
         // Add preferred majors boost
-        addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 3.0f * PREFERENCE_BOOST_MULTIPLIER);
+        addPreferredFieldBoost(queryBuilder, "majors", preferences.getPreferredMajors(), 3.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred course code boost
-        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 3.0f * PREFERENCE_BOOST_MULTIPLIER);
+        addPreferredFieldBoost(queryBuilder, "courseCodes", preferences.getPreferredCourseCodes(), 3.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred levels boost
         addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 2.0f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred categories boost
-        addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 2.5f * PREFERENCE_BOOST_MULTIPLIER);
+        addPreferredFieldBoost(queryBuilder, "categories", preferences.getPreferredCategories(), 2.5f * PREFERENCE_BOOST_MULTIPLIER);
 
         // Add preferred tags boost
         addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 2.0f * PREFERENCE_BOOST_MULTIPLIER);

@@ -341,10 +341,10 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         // since personalization is more expected and helpful in typeahead
         if (preferences != null) {
             // Apply stronger preference boosts for suggestions (higher values than in search)
-            addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 2.5f);
-            addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 2.5f);
+            addPreferredFieldBoost(queryBuilder, "majors", preferences.getPreferredMajors(), 2.5f);
+            addPreferredFieldBoost(queryBuilder, "courseCodes", preferences.getPreferredCourseCodes(), 2.5f);
             addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 2.0f);
-            addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 2.0f);
+            addPreferredFieldBoost(queryBuilder, "categories", preferences.getPreferredCategories(), 2.0f);
             addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 2.0f);
 
             // Language preferences with stronger boost
