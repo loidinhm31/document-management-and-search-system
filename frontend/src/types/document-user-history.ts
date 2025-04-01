@@ -1,4 +1,5 @@
 export enum UserDocumentActionType {
+  ALL = 'ALL',
   UPLOAD_DOCUMENT = "UPLOAD_DOCUMENT",
   VIEW_DOCUMENT = "VIEW_DOCUMENT",
   UPDATE_DOCUMENT = "UPDATE_DOCUMENT",
@@ -10,8 +11,8 @@ export enum UserDocumentActionType {
   SHARE = "SHARE",
   FAVORITE = "FAVORITE",
   COMMENT = "COMMENT",
-  RECOMMEND = "RECOMMEND",
-  ADD_NOTE = "ADD_NOTE",
+  RECOMMENDATION = "RECOMMENDATION",
+  NOTE = "NOTE",
 }
 
 export interface UserHistoryResponse {

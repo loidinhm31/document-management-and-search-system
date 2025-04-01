@@ -32,20 +32,10 @@ import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class DocumentCommentServiceImplTest {
@@ -100,6 +90,7 @@ public class DocumentCommentServiceImplTest {
         documentComment.setUserId(USER_ID);
         documentComment.setContent("Test comment");
         documentComment.setCreatedAt(Instant.now());
+        documentComment.setFlag(1); // Active comment
         documentComment.setReplies(new ArrayList<>());
     }
 
@@ -108,13 +99,13 @@ public class DocumentCommentServiceImplTest {
         // Arrange
         Pageable pageable = Pageable.ofSize(10);
         List<DocumentComment> comments = Collections.singletonList(documentComment);
+        Page<DocumentComment> commentPage = new PageImpl<>(comments, pageable, 1);
 
         when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
         when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
                 .thenReturn(Optional.of(documentInformation));
-        when(documentCommentRepository.findCommentsWithReplies(eq(DOCUMENT_ID), anyInt(), anyInt()))
-                .thenReturn(comments);
-        when(documentCommentRepository.countTopLevelComments(DOCUMENT_ID)).thenReturn(1L);
+        when(documentCommentRepository.findCommentsWithReplies(eq(DOCUMENT_ID), any(Pageable.class)))
+                .thenReturn(commentPage);
         when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(List.of(userResponse)));
         when(commentReportRepository.findReportsByUserAndDocument(USER_ID, DOCUMENT_ID, false))
                 .thenReturn(Collections.emptyList());
@@ -129,8 +120,7 @@ public class DocumentCommentServiceImplTest {
         assertEquals(documentComment.getContent(), result.getContent().get(0).getContent());
 
         verify(documentRepository).findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString());
-        verify(documentCommentRepository).findCommentsWithReplies(eq(DOCUMENT_ID), anyInt(), anyInt());
-        verify(documentCommentRepository).countTopLevelComments(DOCUMENT_ID);
+        verify(documentCommentRepository).findCommentsWithReplies(eq(DOCUMENT_ID), eq(pageable));
     }
 
     @Test
@@ -148,7 +138,7 @@ public class DocumentCommentServiceImplTest {
         );
 
         verify(documentRepository).findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString());
-        verify(documentCommentRepository, never()).findCommentsWithReplies(anyString(), anyInt(), anyInt());
+        verify(documentCommentRepository, never()).findCommentsWithReplies(anyString(), any(Pageable.class));
     }
 
     @Test
@@ -156,6 +146,7 @@ public class DocumentCommentServiceImplTest {
         // Arrange
         Pageable pageable = Pageable.ofSize(10);
         List<DocumentComment> comments = Collections.singletonList(documentComment);
+        Page<DocumentComment> commentPage = new PageImpl<>(comments, pageable, 1);
 
         CommentReport report = new CommentReport();
         report.setCommentId(documentComment.getId());
@@ -164,9 +155,8 @@ public class DocumentCommentServiceImplTest {
         when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
         when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
                 .thenReturn(Optional.of(documentInformation));
-        when(documentCommentRepository.findCommentsWithReplies(eq(DOCUMENT_ID), anyInt(), anyInt()))
-                .thenReturn(comments);
-        when(documentCommentRepository.countTopLevelComments(DOCUMENT_ID)).thenReturn(1L);
+        when(documentCommentRepository.findCommentsWithReplies(eq(DOCUMENT_ID), any(Pageable.class)))
+                .thenReturn(commentPage);
         when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(List.of(userResponse)));
         when(commentReportRepository.findReportsByUserAndDocument(USER_ID, DOCUMENT_ID, false))
                 .thenReturn(reports);
@@ -195,8 +185,6 @@ public class DocumentCommentServiceImplTest {
             return saved;
         });
 
-        // No need to mock static CompletableFuture.runAsync, we'll use test-friendly approach instead
-
         // Act
         CommentResponse result = documentCommentService.createComment(DOCUMENT_ID, request, USERNAME);
 
@@ -224,6 +212,27 @@ public class DocumentCommentServiceImplTest {
         DocumentComment parentComment = new DocumentComment();
         parentComment.setId(parentId);
         parentComment.setFlag(0); // Deleted comment
+
+        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
+                .thenReturn(Optional.of(documentInformation));
+        when(documentCommentRepository.findById(parentId)).thenReturn(Optional.of(parentComment));
+
+        // Act & Assert
+        assertThrows(InvalidDocumentException.class, () ->
+                documentCommentService.createComment(DOCUMENT_ID, request, USERNAME)
+        );
+    }
+
+    @Test
+    void createComment_WithFlaggedParent() {
+        // Arrange
+        Long parentId = 2L;
+        CommentRequest request = new CommentRequest("Reply to flagged comment", parentId);
+
+        DocumentComment parentComment = new DocumentComment();
+        parentComment.setId(parentId);
+        parentComment.setFlag(-1); // Flagged as deleted by report
 
         when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
         when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
@@ -362,55 +371,33 @@ public class DocumentCommentServiceImplTest {
     }
 
     @Test
-    void buildCommentTree_WithReplies() {
+    void getDocumentComments_AdminAccess() {
         // Arrange
         Pageable pageable = Pageable.ofSize(10);
+        List<DocumentComment> comments = Collections.singletonList(documentComment);
+        Page<DocumentComment> commentPage = new PageImpl<>(comments, pageable, 1);
 
-        // Parent comment
-        DocumentComment parentComment = new DocumentComment();
-        parentComment.setId(1L);
-        parentComment.setDocumentId(DOCUMENT_ID);
-        parentComment.setUserId(USER_ID);
-        parentComment.setContent("Parent comment");
-        parentComment.setCreatedAt(Instant.now());
-        parentComment.setReplies(new ArrayList<>());
+        // Create admin user
+        RoleResponse adminRole = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN);
+        UserResponse adminUser = new UserResponse(UUID.randomUUID(), "admin", "admin@example.com", adminRole);
 
-        // Reply comment
-        DocumentComment replyComment = new DocumentComment();
-        replyComment.setId(2L);
-        replyComment.setDocumentId(DOCUMENT_ID);
-        replyComment.setUserId(USER_ID);
-        replyComment.setContent("Reply comment");
-        replyComment.setParentId(1L);
-        replyComment.setCreatedAt(Instant.now());
-        replyComment.setReplies(new ArrayList<>());
-
-        List<DocumentComment> comments = Arrays.asList(parentComment, replyComment);
-
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
-        when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
+        when(userClient.getUserByUsername("admin")).thenReturn(ResponseEntity.ok(adminUser));
+        when(documentRepository.findAccessibleDocumentById(DOCUMENT_ID))
                 .thenReturn(Optional.of(documentInformation));
-        when(documentCommentRepository.findCommentsWithReplies(eq(DOCUMENT_ID), anyInt(), anyInt()))
-                .thenReturn(comments);
-        when(documentCommentRepository.countTopLevelComments(DOCUMENT_ID)).thenReturn(1L);
+        when(documentCommentRepository.findCommentsWithReplies(eq(DOCUMENT_ID), any(Pageable.class)))
+                .thenReturn(commentPage);
         when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(List.of(userResponse)));
-        when(commentReportRepository.findReportsByUserAndDocument(USER_ID, DOCUMENT_ID, false))
+        when(commentReportRepository.findReportsByUserAndDocument(any(), eq(DOCUMENT_ID), eq(false)))
                 .thenReturn(Collections.emptyList());
 
         // Act
-        Page<CommentResponse> result = documentCommentService.getDocumentComments(DOCUMENT_ID, pageable, USERNAME);
+        Page<CommentResponse> result = documentCommentService.getDocumentComments(DOCUMENT_ID, pageable, "admin");
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
-        assertEquals(1, result.getContent().size()); // Only parent comments at top level
 
-        CommentResponse parentResponse = result.getContent().get(0);
-        assertEquals("Parent comment", parentResponse.getContent());
-        assertNotNull(parentResponse.getReplies());
-        assertEquals(1, parentResponse.getReplies().size());
-
-        CommentResponse replyResponse = parentResponse.getReplies().get(0);
-        assertEquals("Reply comment", replyResponse.getContent());
+        // Verify admin path was used
+        verify(documentRepository).findAccessibleDocumentById(DOCUMENT_ID);
     }
 }

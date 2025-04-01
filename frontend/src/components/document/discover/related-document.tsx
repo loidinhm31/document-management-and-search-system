@@ -57,14 +57,17 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
   }, [documentId, t, toast]);
 
   const fetchMoreDocuments = useCallback(async () => {
-    if (!documentId || !hasMore || loading) return;
+    if (!documentId || !hasMore) return;
+
+    // Prevent duplicate requests while loading
+    if (loading) return;
 
     setLoading(true);
     try {
       const response = await documentService.getRecommendationDocuments(documentId, ITEMS_PER_PAGE, currentPage);
       const newDocs = response.data.content;
 
-      if (!newDocs.length) {
+      if (newDocs.length === 0) {
         setHasMore(false);
         return;
       }
@@ -74,16 +77,18 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
         const uniqueNewDocs = newDocs.filter((doc: { id: string }) => !existingIds.has(doc.id));
         return [...prev, ...uniqueNewDocs];
       });
+
+      // Update hasMore based on if we received a full page of results
       setHasMore(newDocs.length === ITEMS_PER_PAGE);
     } catch (_error) {
       setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, [documentId, currentPage, hasMore, loading, t, toast]);
+  }, [documentId, currentPage, hasMore, t, toast]);
 
+  // Reset component when document ID changes
   useEffect(() => {
-    console.log("Document ID changed, resetting state");
     setDocuments([]);
     setCurrentPage(0);
     setHasMore(true);
@@ -92,38 +97,39 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
     fetchInitialDocuments();
   }, [documentId, fetchInitialDocuments]);
 
+  // Fetch more documents when page changes
   useEffect(() => {
     if (currentPage > 0) {
-      console.log("Page changed, fetching more:", currentPage);
       fetchMoreDocuments();
     }
   }, [currentPage, fetchMoreDocuments]);
 
   const handleScroll = useCallback(
     (direction: "left" | "right") => {
-      const newIndex = direction === "left" ? Math.max(0, currentIndex - VISIBLE_ITEMS) : currentIndex + VISIBLE_ITEMS;
-
-      console.log("Handle scroll:", {
-        direction,
-        currentIndex,
-        newIndex,
-        documentsLength: documents.length,
-      });
+      const newIndex = direction === "left"
+        ? Math.max(0, currentIndex - VISIBLE_ITEMS)
+        : currentIndex + VISIBLE_ITEMS;
 
       setCurrentIndex(newIndex);
 
-      // Load more data if needed
-      if (direction === "right" && newIndex + VISIBLE_ITEMS >= documents.length && hasMore) {
+      // Only load more data if scrolling right, approaching the end, and not currently loading
+      if (
+        direction === "right" &&
+        !loading &&
+        newIndex + VISIBLE_ITEMS >= documents.length &&
+        hasMore
+      ) {
         setCurrentPage((prev) => prev + 1);
       }
     },
-    [currentIndex, documents.length, hasMore],
+    [currentIndex, documents.length, hasMore, loading],
   );
 
   if (!documents.length && !loading) return null;
 
   const showLeftButton = currentIndex > 0;
-  const showRightButton = currentIndex + VISIBLE_ITEMS < documents.length || hasMore;
+  // Only show right button if there are more items to show OR we're loading more
+  const showRightButton = (currentIndex + VISIBLE_ITEMS < documents.length) || (hasMore && !loading);
 
   return (
     <div className="relative w-full">

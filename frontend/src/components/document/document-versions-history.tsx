@@ -12,6 +12,7 @@ import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
 import { selectProcessingItemByDocumentId } from "@/store/slices/processing-slice";
 import { DocumentInformation, DocumentStatus, DocumentVersion } from "@/types/document";
+import { getDescriptionType } from "@/lib/utils";
 
 interface VersionHistoryProps {
   versions: DocumentVersion[];
@@ -168,7 +169,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                     key={version.versionNumber}
                     className="relative flex flex-col gap-1.5 rounded-lg border bg-card p-2 shadow-sm transition-colors hover:bg-accent/5"
                   >
-                    {/* Version Header - Made responsive */}
+                    {/* Version Header */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-sm">
@@ -190,7 +191,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                         </span>
                       </div>
 
-                      {/* Action Buttons - Wrap on small screens */}
+                      {/* Action Buttons */}
                       <div className="flex flex-wrap items-center gap-1">
                         {allowRevert && version.versionNumber !== currentVersion && isDocumentCreator && (
                           <Button
@@ -229,7 +230,7 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                       </div>
                     </div>
 
-                    {/* Version Details - Made responsive */}
+                    {/* Version Details */}
                     <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <User className="h-3 w-3" />
@@ -241,15 +242,15 @@ const DocumentVersionHistory: React.FC<VersionHistoryProps> = ({
                       </div>
                     </div>
 
-                    {/* File Details - Made responsive with truncation */}
+                    {/* File Details */}
                     <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span className="truncate max-w-full sm:max-w-[200px]">{version.filename}</span>
                       <span className="whitespace-nowrap">
-                        {version.mimeType} • {(version.fileSize / 1024).toFixed(3)} KB
+                        {getDescriptionType(version.documentType)} • {(version.fileSize / 1024).toFixed(3)} KB
                       </span>
                     </div>
 
-                    {/* Error Message - Made responsive */}
+                    {/* Error Message */}
                     {version.processingError && (
                       <div className="mt-1 flex items-center gap-1 text-xs text-destructive">
                         <AlertCircle className="h-3 w-3 shrink-0" />

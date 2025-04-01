@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DocumentStatus } from "@/types/document";
 
 interface XmlViewerProps {
+  isAdmin: boolean;
   documentStatus: DocumentStatus;
   content: string;
   onDownload: () => void;
@@ -20,6 +21,7 @@ interface FormattedXmlPart {
 }
 
 export const XmlViewer: React.FC<XmlViewerProps> = ({
+  isAdmin,
   documentStatus,
   content,
   onDownload,
@@ -200,7 +202,7 @@ export const XmlViewer: React.FC<XmlViewerProps> = ({
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
-        {documentStatus !== DocumentStatus.PROCESSING && (
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
           <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
             <Download className="h-4 w-4 mr-2" />
             {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}

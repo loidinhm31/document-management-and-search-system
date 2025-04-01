@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DocumentStatus } from "@/types/document";
 
 interface SpreadsheetViewerProps {
+  isAdmin: boolean;
   documentStatus: DocumentStatus;
   sheets: Array<{
     name: string;
@@ -22,6 +23,7 @@ interface SpreadsheetViewerProps {
 }
 
 export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
+  isAdmin,
   documentStatus,
   sheets,
   activeSheet,
@@ -163,7 +165,7 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({
           </div>
         )}
 
-        {documentStatus !== DocumentStatus.PROCESSING && (
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
           <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
             <Download className="h-4 w-4 mr-2" />
             {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}

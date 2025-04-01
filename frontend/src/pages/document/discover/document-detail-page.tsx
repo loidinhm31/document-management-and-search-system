@@ -19,7 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { formatDate, getMasterDataTranslation } from "@/lib/utils";
+import { formatDate, getDescriptionType, getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
@@ -180,7 +180,7 @@ export default function DocumentDetailPage() {
             <CardHeader>
               <CardTitle>{documentData?.filename}</CardTitle>
               <CardDescription>
-                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(3)} KB
+                {getDescriptionType(documentData?.documentType)} - {(documentData?.fileSize / 1024).toFixed(3)} KB
               </CardDescription>
             </CardHeader>
             <CardContent className="h-full max-h-[770px]">
@@ -253,7 +253,7 @@ export default function DocumentDetailPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Languages className="h-4 w-4" />
-                    {documentData.language}
+                    {documentData.language ? documentData.language : t("common.noLang")}
                   </div>
                 </div>
 
@@ -333,7 +333,9 @@ export default function DocumentDetailPage() {
         </div>
 
         {/* Related Documents Section */}
-        <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
+        {!currentUser?.roles.includes("ROLE_ADMIN") && (
+          <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
+        )}
 
         {/* Mentor Notes Section */}
         <DocumentNoteList documentId={documentId} />

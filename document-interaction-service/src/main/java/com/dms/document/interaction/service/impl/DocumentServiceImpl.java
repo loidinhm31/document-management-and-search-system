@@ -232,8 +232,14 @@ public class DocumentServiceImpl implements DocumentService {
         }
         UserResponse userResponse = response.getBody();
 
-        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
-                .orElseThrow(() -> new InvalidDataAccessResourceUsageException("Document not found"));
+        DocumentInformation documentInformation;
+        if (userResponse.role().roleName().equals(AppRole.ROLE_ADMIN)) {
+            documentInformation = documentRepository.findAccessibleDocumentById(documentId)
+                    .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+        } else {
+            documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
+                    .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+        }
 
         byte[] fileContent = s3Service.downloadFile(documentInformation.getFilePath());
         if (Objects.nonNull(fileContent) && StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
@@ -266,8 +272,14 @@ public class DocumentServiceImpl implements DocumentService {
         }
         UserResponse userResponse = response.getBody();
 
-        DocumentInformation documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
-                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+        DocumentInformation documentInformation;
+        if (userResponse.role().roleName().equals(AppRole.ROLE_ADMIN)) {
+            documentInformation = documentRepository.findAccessibleDocumentById(documentId)
+                    .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+        } else {
+            documentInformation = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
+                    .orElseThrow(() -> new InvalidDocumentException("Document not found"));
+        }
         documentInformation.setContent(null);
 
         if (BooleanUtils.isTrue(history)) {

@@ -179,13 +179,11 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
         document.setExtractedMetadata(documentExtractContent.metadata());
 
         // Detect language if not already set
-        if (StringUtils.isEmpty(documentVersion.getLanguage())) {
-            languageDetectionService.detectLanguage(documentExtractContent.content())
-                    .ifPresent(lang -> {
-                        documentVersion.setLanguage(lang);
-                        document.setLanguage(lang);
-                    });
-        }
+        languageDetectionService.detectLanguage(documentExtractContent.content())
+                .ifPresent(lang -> {
+                    documentVersion.setLanguage(lang);
+                    document.setLanguage(lang);
+                });
 
         // Update version status
         documentVersion.setStatus(DocumentStatus.COMPLETED);

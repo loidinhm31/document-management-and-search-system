@@ -15,6 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Comment, CommentEditData, User } from "@/types/comment";
+import { formatDateMoment } from "@/lib/utils";
 
 interface CommentItemProps {
   comment: Comment;
@@ -45,13 +46,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   useEffect(() => {
     if (!isReportedByUser) {
-      setIsReportedByUser(comment.reportedByUser && comment.flag !== 1);
+      setIsReportedByUser(comment.reportedByUser && comment.flag !== -1);
     }
   }, [comment.reportedByUser, isReportedByUser]);
-
-  const formatDate = (date: string): string => {
-    return moment(date).format("DD/MM/YYYY, h:mm a");
-  };
 
   const handleEditSubmit = async (): Promise<void> => {
     if (!editedContent.trim()) return;
@@ -98,7 +95,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <span className="font-medium">{comment.username}</span>
-            <span className="text-sm text-muted-foreground">{formatDate(comment.createdAt)}</span>
+            <span className="text-sm text-muted-foreground">{formatDateMoment(comment.updatedAt ?  comment.updatedAt.toString() : comment.createdAt.toString())}</span>
             {comment.edited && <span className="text-xs text-muted-foreground">({t("document.comments.edited")})</span>}
             {isCommentResolved && (
               <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">
@@ -143,7 +140,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 {t("document.comments.reply")}
               </Button>
 
-              {!isAuthor && (
+              {(!isAuthor && !currentUser.roles.includes("ROLE_ADMIN")) && (
                 <ReportCommentDialog
                   documentId={documentId}
                   commentId={comment.id}

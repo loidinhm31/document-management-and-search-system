@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Upload } from "lucide-react";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef,useState } from "react";
 import { FileRejection, useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -33,6 +33,7 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
   const [sizeError, setSizeError] = useState<string | null>(null);
   const [hasFormChanges, setHasFormChanges] = useState(false);
   const [polling, setPolling] = useState<boolean>(false);
+  const formInitializedRef = useRef(false);
 
   const dispatch = useAppDispatch();
   const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
@@ -100,6 +101,16 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
     return sortedArr1.every((value, index) => value === sortedArr2[index]);
   };
 
+  // Load master data if needed
+  useEffect(() => {
+    if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
+      dispatch(fetchMasterData());
+    } else {
+      // Master data is loaded, now ensure initial values are properly set
+      ensureInitialValues();
+    }
+  }, [dispatch, majors?.length, courseCodes?.length, levels?.length, categories?.length]);
+
   // Get all available course codes for the selected majors
   const filteredCourseCodes = useMemo(() => {
     if (!selectedMajors || selectedMajors.length === 0) {
@@ -113,29 +124,43 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
     return courseCodes.filter((course) => majorParentIds.includes(course.parentId));
   }, [selectedMajors, courseCodes, majors]);
 
+  // Ensure that initial values are properly set after master data is loaded
+  const ensureInitialValues = useCallback(() => {
+    if (initialValues && initialValues.courseCodes && initialValues.courseCodes.length > 0 && !formInitializedRef.current) {
+      // Only do this process once
+      formInitializedRef.current = true;
+
+      // Set the form value directly to preserve the initial course codes
+      form.setValue('courseCodes', initialValues.courseCodes);
+    }
+  }, [initialValues, form]);
+
   // When majors change, update course codes if necessary
   useEffect(() => {
+    // Skip this effect during initial render to prevent losing initial courseCodes
+    if (!formInitializedRef.current) {
+      return;
+    }
+
     const currentCourseCodes = form.getValues("courseCodes") || [];
 
-    if (selectedMajors && currentCourseCodes.length > 0) {
-      // Get the valid course code options for current selected majors
-      const validCourseCodeOptions = filteredCourseCodes.map((course) => course.code);
+    // Skip if there are no course codes to filter
+    if (currentCourseCodes.length === 0) {
+      return;
+    }
 
-      // Filter out any course codes that are no longer valid based on selected majors
-      const validCourseCodes = currentCourseCodes.filter((code) => validCourseCodeOptions.includes(code));
+    // Get the valid course code options for current selected majors
+    const validCourseCodeOptions = filteredCourseCodes.map((course) => course.code);
 
-      // If the valid list is different from current list, update form value
-      if (validCourseCodes.length !== currentCourseCodes.length) {
-        form.setValue("courseCodes", validCourseCodes);
-      }
+    // Filter out any course codes that are no longer valid based on selected majors
+    const validCourseCodes = currentCourseCodes.filter((code) => validCourseCodeOptions.includes(code));
+
+    // If the valid list is different from current list, update form value
+    // This ensures course codes are removed when their parent majors are removed
+    if (validCourseCodes.length !== currentCourseCodes.length) {
+      form.setValue("courseCodes", validCourseCodes);
     }
   }, [selectedMajors, filteredCourseCodes, form]);
-
-  useEffect(() => {
-    if (majors?.length === 0 || courseCodes?.length === 0 || levels?.length === 0 || categories?.length === 0) {
-      dispatch(fetchMasterData());
-    }
-  }, [dispatch, majors?.length, courseCodes?.length, levels?.length, categories?.length]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     // Clear previous errors
@@ -274,7 +299,13 @@ export function DocumentForm({ initialValues, onSubmit, submitLabel, loading, di
                   <FormControl>
                     <TagInput
                       value={field.value || []}
-                      onChange={field.onChange}
+                      onChange={(value) => {
+                        // Mark the form as initialized after user interaction with majors
+                        formInitializedRef.current = true;
+
+                        // Apply the change
+                        field.onChange(value);
+                      }}
                       recommendedTags={majors?.map((major) => major.code) || []}
                       getTagDisplay={getTagDisplay}
                       disabled={disabled || majors?.length === 0}

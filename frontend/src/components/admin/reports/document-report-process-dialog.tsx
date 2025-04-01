@@ -76,7 +76,7 @@ const DocumentReportProcessDialog: React.FC<DocumentReportProcessDialogProps> = 
                 )}
               >
                 <Label htmlFor="resolved" className="font-medium">
-                  {t("admin.reports.documents.status.resolved")}
+                  {t("admin.reports.documents.actions.resolve")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   {t("admin.reports.documents.dialogs.process.resolvedDescription")}
@@ -98,7 +98,7 @@ const DocumentReportProcessDialog: React.FC<DocumentReportProcessDialogProps> = 
                 )}
               >
                 <Label htmlFor="remediated" className="font-medium">
-                  {t("admin.reports.documents.status.remediated")}
+                  {t("admin.reports.documents.actions.remediate")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   {t("admin.reports.documents.dialogs.process.remediatedDescription")}
@@ -120,7 +120,7 @@ const DocumentReportProcessDialog: React.FC<DocumentReportProcessDialogProps> = 
                 )}
               >
                 <Label htmlFor="rejected" className="font-medium">
-                  {t("admin.reports.documents.status.rejected")}
+                  {t("admin.reports.documents.actions.reject")}
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   {t("admin.reports.documents.dialogs.process.rejectedDescription") ||

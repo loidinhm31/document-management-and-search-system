@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DocumentStatus } from "@/types/document";
 
 interface MarkdownViewerProps {
+  isAdmin: boolean;
   documentStatus: DocumentStatus;
   content: string;
   onDownload: () => void;
@@ -20,6 +21,7 @@ interface MarkdownViewerProps {
 }
 
 export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
+  isAdmin,
   documentStatus,
   content,
   onDownload,
@@ -107,7 +109,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
-        {documentStatus !== DocumentStatus.PROCESSING && (
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
           <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
             <Download className="h-4 w-4 mr-2" />
             {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}

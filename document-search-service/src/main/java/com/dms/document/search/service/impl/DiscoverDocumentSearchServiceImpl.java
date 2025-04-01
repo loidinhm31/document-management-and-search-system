@@ -2,6 +2,7 @@ package com.dms.document.search.service.impl;
 
 import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.*;
+import com.dms.document.search.enums.AppRole;
 import com.dms.document.search.enums.QueryType;
 import com.dms.document.search.model.DocumentPreferences;
 import com.dms.document.search.repository.DocumentPreferencesRepository;
@@ -86,7 +87,7 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
                 return Page.empty(Pageable.unpaged());
             }
 
-            SearchRequest searchRequest = buildSearchRequest(request, searchContext, userResponse.userId());
+            SearchRequest searchRequest = buildSearchRequest(request, searchContext, userResponse.userId(), userResponse.role().roleName());
             SearchResponse searchResponse = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
 
             return processSearchResults(
@@ -100,18 +101,21 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         }
     }
 
-    private SearchRequest buildSearchRequest(DocumentSearchRequest request, SearchContext context, UUID userId) {
+    private SearchRequest buildSearchRequest(DocumentSearchRequest request, SearchContext context, UUID userId, AppRole userRole) {
         SearchRequest searchRequest = new SearchRequest(INDEX_NAME);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Add sharing access filter
-        addSharingAccessFilter(queryBuilder, userId.toString());
+        addSharingAccessFilter(queryBuilder, userId.toString(), userRole);
 
         // Add favorite filter if requested
         if (Boolean.TRUE.equals(request.getFavoriteOnly())) {
             documentFavoriteService.addFavoriteFilter(queryBuilder, userId);
         }
+
+        // Boost documents based on recommendation count
+        addRecommendationBoost(queryBuilder);
 
         // Add filter conditions
         addFilterConditions(queryBuilder, request.getMajors(), request.getCourseCodes(), request.getLevel(), request.getCategories(), request.getTags());
@@ -309,7 +313,7 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
             SearchContext searchContext = analyzeQuery(request.getQuery());
 
             // Add suggestion search conditions
-            SearchRequest searchRequest = buildSuggestionRequest(request, searchContext, userResponse.userId().toString());
+            SearchRequest searchRequest = buildSuggestionRequest(request, searchContext, userResponse.userId().toString(), userResponse.role().roleName());
 
             SearchResponse searchResponse = openSearchClient.search(searchRequest, RequestOptions.DEFAULT);
             return processSuggestionResults(searchResponse.getHits().getHits());
@@ -319,13 +323,13 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         }
     }
 
-    private SearchRequest buildSuggestionRequest(SuggestionRequest request, SearchContext context, String userId) {
+    private SearchRequest buildSuggestionRequest(SuggestionRequest request, SearchContext context, String userId, AppRole userRole) {
         SearchRequest searchRequest = new SearchRequest(INDEX_NAME);
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
         // Reuse access filter logic
-        addSharingAccessFilter(queryBuilder, userId);
+        addSharingAccessFilter(queryBuilder, userId, userRole);
 
         // Reuse filter conditions but simplified
         addFilterConditions(queryBuilder, request.getMajors(), request.getCourseCodes(), request.getLevel(), request.getCategories(), request.getTags());
@@ -338,10 +342,10 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         // since personalization is more expected and helpful in typeahead
         if (preferences != null) {
             // Apply stronger preference boosts for suggestions (higher values than in search)
-            addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 2.5f);
-            addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 2.5f);
+            addPreferredFieldBoost(queryBuilder, "majors", preferences.getPreferredMajors(), 2.5f);
+            addPreferredFieldBoost(queryBuilder, "courseCodes", preferences.getPreferredCourseCodes(), 2.5f);
             addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 2.0f);
-            addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 2.0f);
+            addPreferredFieldBoost(queryBuilder, "categories", preferences.getPreferredCategories(), 2.0f);
             addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 2.0f);
 
             // Language preferences with stronger boost

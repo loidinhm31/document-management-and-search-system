@@ -28,7 +28,7 @@ export function NavUser() {
   const handleLogout = () => {
     clearAuthData();
     toast({
-      title: "Success",
+      title: t("common.success"),
       description: t("auth.logout.success"),
       variant: "success",
     });

@@ -507,6 +507,7 @@ export const DocumentList = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <DocumentListActions
+                              isAdmin={currentUser?.roles.includes("ROLE_ADMIN")}
                               documentStatus={doc.status}
                               onDownload={() => handleDownload(doc.id, doc.filename)}
                               onShowPreview={() => handlePreview(doc)}

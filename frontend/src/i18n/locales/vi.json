@@ -23,7 +23,8 @@
     "size": "Kích thước tệp",
     "language": "Ngôn ngữ chính",
     "sharedBy": "Chia sẻ bởi",
-    "noMatchingOptions": "Không tìm thấy tùy chọn phù hợp"
+    "noMatchingOptions": "Không tìm thấy tùy chọn phù hợp",
+    "noLang": "Không thể xác định ngôn ngữ"
   },
   "navigation": {
     "main": {
@@ -500,8 +501,9 @@
         "actions": {
           "viewReasons": "Xem lý do",
           "process": "Xử lý",
-          "resolve": "Giải quyết",
-          "remediate": "Khắc phục"
+          "resolve": "Gỡ bỏ",
+          "remediate": "Khắc phục",
+          "reject": "Từ chối"
         },
         "pagination": {
           "previous": "Trước",
@@ -550,7 +552,7 @@
           "comment": "Bình luận",
           "commenter": "Người bình luận",
           "document": "Tài liệu",
-          "commentDate": "Ngày bình luận",
+          "commentDate": "Ngày báo cáo bình luận gần nhất",
           "reportCount": "Số báo cáo",
           "status": "Trạng thái",
           "actions": "Hành động",
@@ -935,6 +937,17 @@
           "label": "Thống kê tương tác",
           "comments": "Tổng số bình luận",
           "uniqueDocuments": "Số tài liệu đã truy cập"
+        },
+        "contentTypes": {
+          "word": "Tài liệu Word",
+          "pdf": "Tài liệu PDF",
+          "excel": "Tài liệu Excel",
+          "ppt": "PowerPoint",
+          "text": "Tài liệu Văn bản",
+          "csv": "Tài liệu CSV",
+          "xml": "Tài liệu XML",
+          "json": "Tài liệu JSON",
+          "markdown": "Tài liệu Markdown"
         }
       },
       "contentType": {
@@ -986,7 +999,7 @@
         "favorite": "Yêu thích tài liệu",
         "comment": "Bình luận",
         "recommend": "Đề xuất tài liệu",
-        "addNote": "Thêm ghi chú"
+        "note": "Ghi chú"
       },
       "pagination": {
         "showing": "Hiển thị {{start}} đến {{end}} trong tổng số {{total}} hoạt động",
@@ -1023,6 +1036,8 @@
       "editSuccess": "Cập nhật bình luận thành công",
       "editError": "Không thể cập nhật bình luận",
       "reportSuccess": "Báo cáo bình luận thành công",
+      "loading": "Đang tải",
+      "loadMore": "Tải thêm bình luận...",
       "save": "Lưu",
       "cancel": "Hủy",
       "actions": {
@@ -1099,8 +1114,8 @@
       "error": "Không thể cập nhật trạng thái đề xuất"
     },
     "notes": {
-      "title": "Ghi chú của người hướng dẫn",
-      "description": "Ghi chú hướng dẫn từ người hướng dẫn giúp bạn hiểu rõ hơn về tài liệu này",
+      "title": "Ghi chú của các mentor",
+      "description": "Ghi chú hướng dẫn từ các mentor giúp bạn hiểu rõ hơn về tài liệu này",
       "add": "Thêm ghi chú",
       "addNew": "Ghi chú mới",
       "edit": "Sửa ghi chú",
@@ -1109,7 +1124,7 @@
       "placeholder": "Thêm ghi chú hướng dẫn của bạn (tối đa 200 ký tự)...",
       "characters": "ký tự",
       "tooLong": "Quá nhiều ký tự",
-      "empty": "Chưa có ghi chú nào từ người hướng dẫn cho tài liệu này",
+      "empty": "Chưa có ghi chú nào từ các mentor cho tài liệu này",
       "addSuccess": "Thêm ghi chú thành công",
       "editSuccess": "Cập nhật ghi chú thành công",
       "addError": "Không thể thêm ghi chú",

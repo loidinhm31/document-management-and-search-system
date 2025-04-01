@@ -1,11 +1,9 @@
 package com.dms.document.search.service.impl;
 
 import com.dms.document.search.dto.DocumentResponseDto;
+import com.dms.document.search.dto.RoleResponse;
 import com.dms.document.search.dto.SearchContext;
-import com.dms.document.search.enums.DocumentReportStatus;
-import com.dms.document.search.enums.DocumentType;
-import com.dms.document.search.enums.QueryType;
-import com.dms.document.search.enums.SharingType;
+import com.dms.document.search.enums.*;
 import com.dms.document.search.model.DocumentPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,24 +34,26 @@ public abstract class OpenSearchBaseService {
     protected static final String INDEX_NAME = "documents";
     public static final int MAX_SUGGESTIONS = 10;
 
-    protected void addSharingAccessFilter(BoolQueryBuilder queryBuilder, String userId) {
+    protected void addSharingAccessFilter(BoolQueryBuilder queryBuilder, String userId, AppRole userRole) {
         // Exclude deleted documents
         queryBuilder.filter(QueryBuilders.termQuery("deleted", false));
 
         // Add sharing access filters
         BoolQueryBuilder sharingFilter = QueryBuilders.boolQuery();
 
-        // Owner access
-        sharingFilter.should(QueryBuilders.termQuery("userId", userId));
+        if (!userRole.equals(AppRole.ROLE_ADMIN)) {
+            // Owner access
+            sharingFilter.should(QueryBuilders.termQuery("userId", userId));
 
-        // Public access
-        sharingFilter.should(QueryBuilders.termQuery("sharingType", SharingType.PUBLIC.name()));
+            // Public access
+            sharingFilter.should(QueryBuilders.termQuery("sharingType", SharingType.PUBLIC.name()));
 
-        // Specific users access
-        BoolQueryBuilder specificAccess = QueryBuilders.boolQuery()
-                .must(QueryBuilders.termQuery("sharingType", SharingType.SPECIFIC.name()))
-                .must(QueryBuilders.termsQuery("sharedWith", Collections.singletonList(userId)));
-        sharingFilter.should(specificAccess);
+            // Specific users access
+            BoolQueryBuilder specificAccess = QueryBuilders.boolQuery()
+                    .must(QueryBuilders.termQuery("sharingType", SharingType.SPECIFIC.name()))
+                    .must(QueryBuilders.termsQuery("sharedWith", Collections.singletonList(userId)));
+            sharingFilter.should(specificAccess);
+        }
 
         // Violation access: Exclude reported documents
         sharingFilter.mustNot(QueryBuilders.termQuery("reportStatus", DocumentReportStatus.RESOLVED.name()));
@@ -195,6 +195,22 @@ public abstract class OpenSearchBaseService {
                         }
                     }
 
+                    Date updatedAt = null;
+                    Object updatedAtObj = source.get("updatedAt");
+                    if (updatedAtObj != null) {
+                        if (updatedAtObj instanceof String) {
+                            // Parse ISO date string
+                            try {
+                                updatedAt = Date.from(Instant.parse((String) updatedAtObj));
+                            } catch (DateTimeParseException e) {
+                                log.warn("Failed to parse updatedAt date string: {}", updatedAtObj);
+                            }
+                        } else if (updatedAtObj instanceof Number) {
+                            // Handle timestamp in milliseconds
+                            updatedAt = new Date(((Number) createdAtObj).longValue());
+                        }
+                    }
+
                     return DocumentResponseDto.builder()
                             .id(hit.getId())
                             .status(Optional.ofNullable(source.get("status"))
@@ -255,6 +271,10 @@ public abstract class OpenSearchBaseService {
                                     .map(Object::toString)
                                     .orElse(""))
                             .createdAt(createdAt)
+                            .updatedAt(updatedAt)
+                            .currentVersion(Optional.ofNullable(source.get("currentVersion"))
+                                    .map(size -> ((Number) size).intValue())
+                                    .orElse(0))
                             .highlights(highlights)
                             .build();
                 })
@@ -346,10 +366,10 @@ public abstract class OpenSearchBaseService {
         // Add preferred fields with moderate boost values
         // Note: These are intentionally lower than search term boosts (which go up to 15.0f)
         // to ensure search relevance remains the primary factor
-        addPreferredFieldBoost(queryBuilder, "major", preferences.getPreferredMajors(), 1.5f);
-        addPreferredFieldBoost(queryBuilder, "courseCode", preferences.getPreferredCourseCodes(), 1.5f);
+        addPreferredFieldBoost(queryBuilder, "majors", preferences.getPreferredMajors(), 1.5f);
+        addPreferredFieldBoost(queryBuilder, "courseCodes", preferences.getPreferredCourseCodes(), 1.5f);
         addPreferredFieldBoost(queryBuilder, "courseLevel", preferences.getPreferredLevels(), 1.0f);
-        addPreferredFieldBoost(queryBuilder, "category", preferences.getPreferredCategories(), 1.0f);
+        addPreferredFieldBoost(queryBuilder, "categories", preferences.getPreferredCategories(), 1.0f);
         addPreferredFieldBoost(queryBuilder, "tags", preferences.getPreferredTags(), 1.0f);
 
         // Language preferences

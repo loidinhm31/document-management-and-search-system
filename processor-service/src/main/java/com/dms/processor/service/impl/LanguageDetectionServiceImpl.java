@@ -3,6 +3,7 @@ package com.dms.processor.service.impl;
 import com.dms.processor.service.LanguageDetectionService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tika.langdetect.optimaize.OptimaizeLangDetector;
 import org.apache.tika.language.detect.LanguageDetector;
 import org.apache.tika.language.detect.LanguageResult;
@@ -10,11 +11,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Service
 public class LanguageDetectionServiceImpl implements LanguageDetectionService {
     private LanguageDetector languageDetector;
+
+    private final Set<String> SUPPORT_LANGUAGES = Set.of("en", "vi");
 
     @PostConstruct
     public void init() {
@@ -45,6 +49,10 @@ public class LanguageDetectionServiceImpl implements LanguageDetectionService {
             }
 
             log.debug("Detected language: {} with confidence: {}", result.getLanguage(), result.getRawScore());
+            // Check for support languages in system
+            if (StringUtils.isEmpty(result.getLanguage()) || !SUPPORT_LANGUAGES.contains(result.getLanguage())) {
+                return Optional.empty();
+            }
             return Optional.of(result.getLanguage());
         } catch (Exception e) {
             log.error("Error detecting language", e);

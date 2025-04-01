@@ -14,6 +14,7 @@ import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentPreferences, InteractionStats, PreferenceCategory } from "@/types/document-preference";
+import { getDescriptionType } from "@/lib/utils";
 
 const SUPPORTED_LANGUAGES = [
   { code: "en", display: "English" },
@@ -272,9 +273,7 @@ export default function DocumentPreferencesManager() {
                       <div key={type} className="flex items-center justify-between space-x-2">
                         <div className="flex-1">
                           <p className="font-medium">{type}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {t(`preferences.contentType.${type.toLowerCase()}`)}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{getDescriptionType(type)}</p>
                         </div>
                         <div className="w-24 text-right">
                           <span className="text-sm font-medium">{(weight * 100).toFixed(1)}%</span>

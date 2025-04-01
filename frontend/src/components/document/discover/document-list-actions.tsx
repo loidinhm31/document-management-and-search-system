@@ -12,12 +12,14 @@ import {
 import { DocumentStatus } from "@/types/document";
 
 interface DocumentListActionsProps {
+  isAdmin: boolean;
   documentStatus: DocumentStatus;
   onDownload: () => void;
   onShowPreview: () => void;
 }
 
 export const DocumentListActions: React.FC<DocumentListActionsProps> = ({
+  isAdmin,
   documentStatus,
   onDownload,
   onShowPreview,
@@ -44,7 +46,7 @@ export const DocumentListActions: React.FC<DocumentListActionsProps> = ({
             <Eye className="mr-2 h-4 w-4" />
             {t("document.actions.view")}
           </DropdownMenuItem>
-          {documentStatus !== DocumentStatus.PROCESSING && (
+          {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
             <DropdownMenuItem
               onClick={() => {
                 setDropdownOpen(false);
