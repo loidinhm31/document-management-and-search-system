@@ -177,7 +177,7 @@ export default function DocumentPreferencesManager() {
                   }
                   recommendedTags={majors?.map((major) => major.code) || []}
                   getTagDisplay={getTagDisplay}
-                  placeholder={t("document.commonSearch.majorPlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.majors.placeholder")}
                 />
               </div>
 
@@ -194,7 +194,7 @@ export default function DocumentPreferencesManager() {
                   }
                   recommendedTags={courseCodes?.map((course) => course.code) || []}
                   getTagDisplay={getTagDisplay}
-                  placeholder={t("document.commonSearch.courseCodePlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.courseCode.placeholder")}
                 />
               </div>
 
@@ -211,7 +211,7 @@ export default function DocumentPreferencesManager() {
                   }
                   recommendedTags={levels?.map((level) => level.code) || []}
                   getTagDisplay={getTagDisplay}
-                  placeholder={t("document.commonSearch.levelPlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.levels.placeholder")}
                 />
               </div>
 
@@ -228,7 +228,7 @@ export default function DocumentPreferencesManager() {
                   }
                   recommendedTags={categories?.map((category) => category.code) || []}
                   getTagDisplay={getTagDisplay}
-                  placeholder={t("document.commonSearch.categoryPlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.categories.placeholder")}
                 />
               </div>
 
@@ -244,7 +244,7 @@ export default function DocumentPreferencesManager() {
                     }))
                   }
                   recommendedTags={recommendedTags}
-                  placeholder={t("document.commonSearch.tagsPlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.tags.placeholder")}
                 />
               </div>
 
@@ -291,15 +291,21 @@ export default function DocumentPreferencesManager() {
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-lg border p-3">
                       <div className="text-sm font-medium text-muted-foreground">
-                        {t("document.preferences.analytics.stats.comments")}
-                      </div>
-                      <div className="text-2xl font-bold">{stats.interactionCounts?.COMMENT || 0}</div>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="text-sm font-medium text-muted-foreground">
                         {t("document.preferences.analytics.stats.uniqueDocuments")}
                       </div>
                       <div className="text-2xl font-bold">{stats.uniqueDocumentsAccessed || 0}</div>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <div className="text-sm font-medium text-muted-foreground">
+                        {t("document.preferences.analytics.stats.downloads")}
+                      </div>
+                      <div className="text-2xl font-bold">{stats.interactionCounts?.DOWNLOAD || 0}</div>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <div className="text-sm font-medium text-muted-foreground">
+                        {t("document.preferences.analytics.stats.comments")}
+                      </div>
+                      <div className="text-2xl font-bold">{stats.interactionCounts?.COMMENT || 0}</div>
                     </div>
                   </div>
                 </div>

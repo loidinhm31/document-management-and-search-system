@@ -903,7 +903,7 @@
         "title": "Content Preferences",
         "description": "Customize your document preferences to personalize your experience",
         "language": {
-          "label": "Language Preferences",
+          "label": "Preferred Languages",
           "placeholder": "Select preferred languages"
         },
         "majors": {
@@ -923,8 +923,8 @@
           "placeholder": "Select preferred categories"
         },
         "tags": {
-          "label": "Tags of Interest",
-          "placeholder": "Add tags you're interested in"
+          "label": "Preferred Tags",
+          "placeholder": "Add tags you're preferred in"
         }
       },
       "analytics": {
@@ -936,6 +936,7 @@
         "stats": {
           "label": "Interaction Statistics",
           "comments": "Total Comments",
+          "downloads": "Total Downloads",
           "uniqueDocuments": "Unique Documents Accessed"
         },
         "contentTypes": {

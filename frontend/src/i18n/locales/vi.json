@@ -903,7 +903,7 @@
         "title": "Tùy chọn nội dung",
         "description": "Tùy chỉnh tùy chọn tài liệu để cá nhân hóa trải nghiệm của bạn",
         "language": {
-          "label": "Tùy chọn ngôn ngữ",
+          "label": "Ngôn ngữ ưa thích",
           "placeholder": "Chọn ngôn ngữ ưa thích"
         },
         "majors": {
@@ -923,8 +923,8 @@
           "placeholder": "Chọn danh mục ưa thích"
         },
         "tags": {
-          "label": "Thẻ quan tâm",
-          "placeholder": "Thêm thẻ bạn quan tâm"
+          "label": "Thẻ ưa thích",
+          "placeholder": "Thêm thẻ ưa thích"
         }
       },
       "analytics": {
@@ -936,6 +936,7 @@
         "stats": {
           "label": "Thống kê tương tác",
           "comments": "Tổng số bình luận",
+          "downloads": "Tổng số lượt tải xuống",
           "uniqueDocuments": "Số tài liệu đã truy cập"
         },
         "contentTypes": {
