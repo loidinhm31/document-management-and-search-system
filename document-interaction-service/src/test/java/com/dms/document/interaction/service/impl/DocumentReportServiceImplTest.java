@@ -26,12 +26,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import java.util.Collection;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,6 +66,12 @@ public class DocumentReportServiceImplTest {
 
     @Captor
     private ArgumentCaptor<SyncEventRequest> syncEventCaptor;
+
+    @Captor
+    private ArgumentCaptor<DocumentInformation> documentCaptor;
+
+    @Captor
+    private ArgumentCaptor<List<DocumentReport>> reportsCaptor;
 
     private final String documentId = "doc123";
     private final String username = "testuser";
@@ -336,6 +340,104 @@ public class DocumentReportServiceImplTest {
     }
 
     @Test
+    void updateReportStatus_RejectStatus_MarksReportAsProcessed() {
+        // Arrange
+        RoleResponse adminRoleResponse = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN);
+        UUID adminId = UUID.randomUUID();
+        UserResponse adminResponse = new UserResponse(adminId, "admin", "admin@example.com", adminRoleResponse);
+
+        try (MockedStatic<CompletableFuture> mockedStatic = Mockito.mockStatic(CompletableFuture.class)) {
+            CompletableFuture<Void> mockFuture = CompletableFuture.completedFuture(null);
+            mockedStatic.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        return mockFuture;
+                    });
+
+            when(userClient.getUserByUsername("admin")).thenReturn(ResponseEntity.ok(adminResponse));
+
+            DocumentReport pendingReport = new DocumentReport();
+            pendingReport.setDocumentId(documentId);
+            pendingReport.setStatus(DocumentReportStatus.PENDING);
+            pendingReport.setProcessed(false);
+            pendingReport.setTimes(2);
+            pendingReport.setCreatedAt(Instant.now());
+
+            List<DocumentReport> pendingReports = Collections.singletonList(pendingReport);
+
+            when(documentReportRepository.findByDocumentIdAndProcessed(documentId, false))
+                    .thenReturn(pendingReports);
+            when(documentRepository.findById(documentId)).thenReturn(Optional.of(documentInformation));
+
+            // Act
+            documentReportService.updateReportStatus(documentId, DocumentReportStatus.REJECTED, "admin");
+
+            // Assert
+            verify(documentReportRepository).saveAll(anyList());
+            verify(documentRepository).save(documentCaptor.capture());
+
+            // Verify document report status was updated correctly
+            assertEquals(DocumentReportStatus.REJECTED, pendingReport.getStatus());
+            assertEquals(adminId, pendingReport.getUpdatedBy());
+            assertTrue(pendingReport.getProcessed()); // Should be marked as processed for REJECTED status
+
+            // Verify document status was updated
+            DocumentInformation updatedDoc = documentCaptor.getValue();
+            assertEquals(DocumentReportStatus.REJECTED, updatedDoc.getReportStatus());
+        }
+    }
+
+    @Test
+    void updateReportStatus_RemediatedStatus_MarksReportAsProcessed() {
+        // Arrange
+        RoleResponse adminRoleResponse = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN);
+        UUID adminId = UUID.randomUUID();
+        UserResponse adminResponse = new UserResponse(adminId, "admin", "admin@example.com", adminRoleResponse);
+
+        try (MockedStatic<CompletableFuture> mockedStatic = Mockito.mockStatic(CompletableFuture.class)) {
+            CompletableFuture<Void> mockFuture = CompletableFuture.completedFuture(null);
+            mockedStatic.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        return mockFuture;
+                    });
+
+            when(userClient.getUserByUsername("admin")).thenReturn(ResponseEntity.ok(adminResponse));
+
+            DocumentReport pendingReport = new DocumentReport();
+            pendingReport.setDocumentId(documentId);
+            pendingReport.setStatus(DocumentReportStatus.PENDING);
+            pendingReport.setProcessed(false);
+            pendingReport.setTimes(2);
+            pendingReport.setCreatedAt(Instant.now());
+
+            List<DocumentReport> pendingReports = Collections.singletonList(pendingReport);
+
+            when(documentReportRepository.findByDocumentIdAndProcessed(documentId, false))
+                    .thenReturn(pendingReports);
+            when(documentRepository.findById(documentId)).thenReturn(Optional.of(documentInformation));
+
+            // Act
+            documentReportService.updateReportStatus(documentId, DocumentReportStatus.REMEDIATED, "admin");
+
+            // Assert
+            verify(documentReportRepository).saveAll(anyList());
+            verify(documentRepository).save(documentCaptor.capture());
+
+            // Verify document report status was updated correctly
+            assertEquals(DocumentReportStatus.REMEDIATED, pendingReport.getStatus());
+            assertEquals(adminId, pendingReport.getUpdatedBy());
+            assertTrue(pendingReport.getProcessed()); // Should be marked as processed for REMEDIATED status
+
+            // Verify document status was updated
+            DocumentInformation updatedDoc = documentCaptor.getValue();
+            assertEquals(DocumentReportStatus.REMEDIATED, updatedDoc.getReportStatus());
+        }
+    }
+
+    @Test
     void updateReportStatus_NotAdmin_ThrowsException() {
         // Arrange
         when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
@@ -467,11 +569,32 @@ public class DocumentReportServiceImplTest {
     @Test
     void getAdminDocumentReports_WithFilters_ReturnsFilteredReports() {
         // Arrange
+        String documentTitle = "Test Document";
+        String uploaderUsername = "testUploader";
         DocumentReportStatus status = DocumentReportStatus.PENDING;
         Instant fromDate = Instant.now().minus(java.time.Duration.ofDays(7));
         Instant toDate = Instant.now();
         String reportTypeCode = "COPYRIGHT";
         Pageable pageable = mock(Pageable.class);
+
+        // Create expected document information
+        DocumentInformation documentInfo = DocumentInformation.builder()
+                .id(documentId)
+                .filename("Test Document")
+                .userId(UUID.randomUUID().toString())
+                .build();
+
+        // Mock searching for users by username
+        UUID uploaderUserId = UUID.randomUUID();
+        UserResponse uploaderUser = new UserResponse(uploaderUserId, uploaderUsername, "uploader@example.com", null);
+        List<UserResponse> searchResults = Collections.singletonList(uploaderUser);
+
+        when(userClient.searchUsers(uploaderUsername))
+                .thenReturn(ResponseEntity.ok(searchResults));
+
+        // Mock finding documents by uploader ID and title
+        when(documentRepository.findByFilenameLikeIgnoreCaseAndUserId(documentTitle, uploaderUserId.toString()))
+                .thenReturn(Collections.singletonList(documentInfo));
 
         // Mock projection
         DocumentReportProjection projection = mock(DocumentReportProjection.class);
@@ -483,29 +606,121 @@ public class DocumentReportServiceImplTest {
         when(projection.getUpdatedAt()).thenReturn(null);
 
         List<DocumentReportProjection> projections = Collections.singletonList(projection);
-        Page<DocumentReportProjection> projectionPage = new PageImpl<>(projections);
+        Page<DocumentReportProjection> projectionPage = new PageImpl<>(projections, pageable, 1);
 
-        when(documentReportRepository.findDocumentReportsGroupedByProcessed(
-                eq(status.name()), eq(fromDate), eq(toDate), eq(reportTypeCode), eq(pageable)))
+        // Set up a capture for the document IDs collection
+        ArgumentCaptor<Collection<String>> docIdsCaptor = ArgumentCaptor.forClass(Collection.class);
+
+        // Mock repository call with filtered document IDs
+        when(documentReportRepository.findDocumentReportsGroupedByProcessedAndDocumentIds(
+                eq(status.name()),
+                eq(fromDate),
+                eq(toDate),
+                eq(reportTypeCode),
+                docIdsCaptor.capture(),
+                eq(pageable)))
                 .thenReturn(projectionPage);
 
-        // Mock finding document by ID and count
+        // Mock finding document by ID
         when(documentRepository.findAllById(anyList()))
-                .thenReturn(Collections.singletonList(documentInformation));
+                .thenReturn(Collections.singletonList(documentInfo));
 
-        // Fix for getUsernameById - ensure userClient.getUsersByIds returns a non-null response
-        // even if response body is empty
+        // Mock username retrieval
         when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(Collections.emptyList()));
 
         // Act
         Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
-                null, fromDate, toDate, status, reportTypeCode, pageable);
+                documentTitle, uploaderUsername, fromDate, toDate, status, reportTypeCode, pageable);
 
         // Assert
         assertNotNull(result);
         assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size()); // Make sure we have one item
         assertEquals(documentId, result.getContent().get(0).documentId());
         assertEquals(DocumentReportStatus.PENDING, result.getContent().get(0).status());
+
+        // Verify the document IDs passed to the repository method
+        Collection<String> capturedDocIds = docIdsCaptor.getValue();
+        assertTrue(capturedDocIds.contains(documentId));
+
+        // Verify correct search flow was used
+        verify(userClient).searchUsers(uploaderUsername);
+        verify(documentRepository).findByFilenameLikeIgnoreCaseAndUserId(documentTitle, uploaderUserId.toString());
+        verify(documentReportRepository).findDocumentReportsGroupedByProcessedAndDocumentIds(
+                eq(status.name()), eq(fromDate), eq(toDate), eq(reportTypeCode), anyCollection(), eq(pageable));
+    }
+
+    @Test
+    void getAdminDocumentReports_WithDocumentTitleOnly_ReturnsFilteredReports() {
+        // Arrange
+        String documentTitle = "Test Document";
+        DocumentReportStatus status = DocumentReportStatus.PENDING;
+        Instant fromDate = Instant.now().minus(java.time.Duration.ofDays(7));
+        Instant toDate = Instant.now();
+        String reportTypeCode = "COPYRIGHT";
+        Pageable pageable = mock(Pageable.class);
+
+        // Create expected document information
+        DocumentInformation documentInfo = DocumentInformation.builder()
+                .id(documentId)
+                .filename("Test Document")
+                .userId(UUID.randomUUID().toString())
+                .build();
+
+        // Mock finding documents by title
+        when(documentRepository.findByFilenameLikeIgnoreCase(documentTitle))
+                .thenReturn(Collections.singletonList(documentInfo));
+
+        // Mock projection
+        DocumentReportProjection projection = mock(DocumentReportProjection.class);
+        when(projection.getDocumentId()).thenReturn(documentId);
+        when(projection.getStatus()).thenReturn(DocumentReportStatus.PENDING);
+        when(projection.getProcessed()).thenReturn(false);
+        when(projection.getReportCount()).thenReturn(1);
+        when(projection.getUpdatedBy()).thenReturn(null);
+        when(projection.getUpdatedAt()).thenReturn(null);
+
+        List<DocumentReportProjection> projections = Collections.singletonList(projection);
+        Page<DocumentReportProjection> projectionPage = new PageImpl<>(projections, pageable, 1);
+
+        // Set up a capture for the document IDs collection
+        ArgumentCaptor<Collection<String>> docIdsCaptor = ArgumentCaptor.forClass(Collection.class);
+
+        // Mock repository call with filtered document IDs
+        when(documentReportRepository.findDocumentReportsGroupedByProcessedAndDocumentIds(
+                eq(status.name()),
+                eq(fromDate),
+                eq(toDate),
+                eq(reportTypeCode),
+                docIdsCaptor.capture(),
+                eq(pageable)))
+                .thenReturn(projectionPage);
+
+        // Mock finding document by ID
+        when(documentRepository.findAllById(anyList()))
+                .thenReturn(Collections.singletonList(documentInfo));
+
+        // Mock username retrieval
+        when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(Collections.emptyList()));
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                documentTitle, null, fromDate, toDate, status, reportTypeCode, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size()); // Make sure we have one item
+        assertEquals(documentId, result.getContent().get(0).documentId());
+
+        // Verify the document IDs passed to the repository method
+        Collection<String> capturedDocIds = docIdsCaptor.getValue();
+        assertTrue(capturedDocIds.contains(documentId));
+
+        // Verify correct search flow was used
+        verify(documentRepository).findByFilenameLikeIgnoreCase(documentTitle);
+        verify(documentReportRepository).findDocumentReportsGroupedByProcessedAndDocumentIds(
+                eq(status.name()), eq(fromDate), eq(toDate), eq(reportTypeCode), anyCollection(), eq(pageable));
     }
 
     @Test
