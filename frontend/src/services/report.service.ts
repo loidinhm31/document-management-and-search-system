@@ -18,7 +18,7 @@ interface CommentReportFilter {
   reportTypeCode?: string;
   fromDate?: Date;
   toDate?: Date;
-  resolved?: boolean;
+  status?: string;
   page?: number;
   size?: number;
 }
@@ -67,8 +67,8 @@ class ReportService extends BaseService {
     if (filters.toDate) params.append("toDate", filters.toDate.toISOString());
     if (filters.reportTypeCode && filters.reportTypeCode !== "all")
       params.append("reportTypeCode", filters.reportTypeCode);
-    if (filters.resolved !== null && filters.resolved !== undefined) {
-      params.append("resolved", filters.resolved.toString());
+    if (filters.status && filters.status !== "all") {
+      params.append("status", filters.status);
     }
 
     params.append("page", String(filters.page || 0));

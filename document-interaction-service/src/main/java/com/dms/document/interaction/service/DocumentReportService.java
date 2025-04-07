@@ -50,6 +50,7 @@ public interface DocumentReportService {
      * Retrieves a paginated list of document reports for admin view
      *
      * @param documentTitle Filter by document title (optional)
+     * @param uploaderUsername Filter by uploader username (optional)
      * @param fromDate Filter by start date (optional)
      * @param toDate Filter by end date (optional)
      * @param status Filter by report status (optional)
@@ -59,6 +60,7 @@ public interface DocumentReportService {
      */
     Page<AdminDocumentReportResponse> getAdminDocumentReports(
             String documentTitle,
+            String uploaderUsername,
             Instant fromDate,
             Instant toDate,
             DocumentReportStatus status,

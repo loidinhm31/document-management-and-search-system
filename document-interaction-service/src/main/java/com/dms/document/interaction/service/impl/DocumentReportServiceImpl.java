@@ -16,7 +16,6 @@ import com.dms.document.interaction.repository.DocumentRepository;
 import com.dms.document.interaction.repository.MasterDataRepository;
 import com.dms.document.interaction.service.DocumentReportService;
 import com.dms.document.interaction.service.PublishEventService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
@@ -179,16 +178,81 @@ public class DocumentReportServiceImpl implements DocumentReportService {
     @Override
     public Page<AdminDocumentReportResponse> getAdminDocumentReports(
             String documentTitle,
+            String uploaderUsername,
             Instant fromDate,
             Instant toDate,
             DocumentReportStatus status,
             String reportTypeCode,
             Pageable pageable) {
 
+        // Pre-filter document IDs by title and/or uploader username
+        Set<String> filteredDocumentIds = null;
+
+        // Get all users matching the username search if provided
+        if (StringUtils.isNotEmpty(uploaderUsername)) {
+            try {
+                ResponseEntity<List<UserResponse>> response = userClient.searchUsers(uploaderUsername);
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && !response.getBody().isEmpty()) {
+                    // Extract user IDs from the search results
+                    List<String> userIds = response.getBody().stream()
+                            .map(user -> user.userId().toString())
+                            .toList();
+
+                    // Find all documents by these users
+                    List<DocumentInformation> userDocuments;
+                    if (StringUtils.isNotEmpty(documentTitle)) {
+                        // If we also have a title filter, get documents matching both criteria
+                        userDocuments = new ArrayList<>();
+                        for (String userId : userIds) {
+                            userDocuments.addAll(documentRepository.findByFilenameLikeIgnoreCaseAndUserId(documentTitle, userId));
+                        }
+                    } else {
+                        // Otherwise just get all documents from these users
+                        userDocuments = new ArrayList<>();
+                        for (String userId : userIds) {
+                            userDocuments.addAll(documentRepository.findByUserIdAndNotDeleted(userId));
+                        }
+                    }
+
+                    if (userDocuments.isEmpty()) {
+                        return new PageImpl<>(Collections.emptyList(), pageable, 0);
+                    }
+
+                    filteredDocumentIds = userDocuments.stream()
+                            .map(DocumentInformation::getId)
+                            .collect(Collectors.toSet());
+                } else {
+                    // No users found matching the search criteria
+                    return new PageImpl<>(Collections.emptyList(), pageable, 0);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to search for users with username: {}", uploaderUsername, e);
+                return new PageImpl<>(Collections.emptyList(), pageable, 0);
+            }
+        } else if (StringUtils.isNotEmpty(documentTitle)) {
+            // If we only have a title filter (no username filter)
+            List<DocumentInformation> matchingDocuments = documentRepository.findByFilenameLikeIgnoreCase(documentTitle);
+            if (matchingDocuments.isEmpty()) {
+                return new PageImpl<>(Collections.emptyList(), pageable, 0);
+            }
+            filteredDocumentIds = matchingDocuments.stream()
+                    .map(DocumentInformation::getId)
+                    .collect(Collectors.toSet());
+        }
+
         // Get document reports grouped by document_id and processed flag
         String statusStr = status != null ? status.name() : null;
-        Page<DocumentReportProjection> reportProjections = documentReportRepository.findDocumentReportsGroupedByProcessed(
-                statusStr, fromDate, toDate, reportTypeCode, pageable);
+        Page<DocumentReportProjection> reportProjections;
+
+        if (filteredDocumentIds != null && !filteredDocumentIds.isEmpty()) {
+            // Filter by document IDs and other criteria
+            reportProjections = documentReportRepository.findDocumentReportsGroupedByProcessedAndDocumentIds(
+                    statusStr, fromDate, toDate, reportTypeCode, filteredDocumentIds, pageable);
+        } else {
+            // Use original query without document filtering
+            reportProjections = documentReportRepository.findDocumentReportsGroupedByProcessed(
+                    statusStr, fromDate, toDate, reportTypeCode, pageable);
+        }
 
         List<DocumentReportProjection> projections = reportProjections.getContent();
         if (projections.isEmpty()) {
@@ -205,42 +269,38 @@ public class DocumentReportServiceImpl implements DocumentReportService {
         Map<String, DocumentInformation> documentMap = documentRepository.findAllById(documentIds).stream()
                 .collect(Collectors.toMap(DocumentInformation::getId, Function.identity()));
 
-        // Filter by document title if specified
-        if (StringUtils.isNotEmpty(documentTitle)) {
-            Set<String> filteredDocIds = documentMap.values().stream()
-                    .filter(doc -> StringUtils.containsIgnoreCase(doc.getFilename(), documentTitle))
-                    .map(DocumentInformation::getId)
-                    .collect(Collectors.toSet());
-
-            // Filter projections to keep only those with matching document titles
-            projections = projections.stream()
-                    .filter(p -> filteredDocIds.contains(p.getDocumentId()))
-                    .toList();
-
-            if (projections.isEmpty()) {
-                return new PageImpl<>(Collections.emptyList(), pageable, 0);
-            }
-        }
+        // Cache for usernames to avoid repeated API calls
+        Map<UUID, String> usernameCache = new HashMap<>();
 
         // Map projection to response
         List<AdminDocumentReportResponse> responses = projections.stream()
                 .map(projection -> {
                     DocumentInformation doc = documentMap.get(projection.getDocumentId());
 
-                    // Skip if document not found or doesn't match title filter
+                    // Skip if document not found
                     if (doc == null) return null;
+
+                    UUID docOwnerId = UUID.fromString(doc.getUserId());
+
+                    // Get document owner username (using cache to avoid duplicate API calls)
+                    String ownerUsername = usernameCache.computeIfAbsent(docOwnerId, this::getUsernameById);
+
+                    // Get resolver username if present (also using cache)
+                    String resolverUsername = null;
+                    if (projection.getUpdatedBy() != null) {
+                        resolverUsername = usernameCache.computeIfAbsent(projection.getUpdatedBy(), this::getUsernameById);
+                    }
 
                     return new AdminDocumentReportResponse(
                             projection.getDocumentId(),
                             doc.getFilename(),
-                            UUID.fromString(doc.getUserId()),
-                            getUsernameById(UUID.fromString(doc.getUserId())),
+                            docOwnerId,
+                            ownerUsername,
                             projection.getStatus(),
                             projection.getProcessed() != null ? projection.getProcessed() : false,
                             projection.getReportCount(),
                             projection.getUpdatedBy(),
-                            projection.getUpdatedBy() != null ?
-                                    getUsernameById(projection.getUpdatedBy()) : null,
+                            resolverUsername,
                             projection.getUpdatedAt()
                     );
                 })

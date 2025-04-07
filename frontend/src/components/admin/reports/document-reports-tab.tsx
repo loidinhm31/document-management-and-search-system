@@ -1,7 +1,7 @@
 import { Search, UserRound } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import DocumentReportProcessDialog from "@/components/admin/reports/document-report-process-dialog";
 import DocumentReportReasonsDialog from "@/components/admin/reports/document-report-reasons-dialog";
@@ -76,12 +76,8 @@ const DocumentReportsTab = () => {
   // Initial fetch
   useEffect(() => {
     loadReportTypes();
+    fetchReports(); // Initial load of reports
   }, []);
-
-  // Fetch reports on initial load and when filters change
-  useEffect(() => {
-    fetchReports();
-  }, [currentPage]);
 
   const loadReportTypes = async () => {
     try {
@@ -92,17 +88,41 @@ const DocumentReportsTab = () => {
     }
   };
 
-  const fetchReports = async () => {
+  const fetchReports = async (overrideFilters = {}) => {
+    if (dateRangeError && !Object.prototype.hasOwnProperty.call(overrideFilters, "fromDate")) {
+      return;
+    }
+
     setLoading(true);
     try {
       const filters = {
-        documentTitle: documentTitle || undefined,
-        uploaderUsername: uploaderUsername || undefined,
-        reportTypeCode: reportTypeCode === "all" ? undefined : reportTypeCode,
-        status: status === "all" ? undefined : status,
-        fromDate: fromDate,
-        toDate: toDate,
-        page: currentPage,
+        documentTitle:
+          overrideFilters.documentTitle !== undefined ? overrideFilters.documentTitle : documentTitle || undefined,
+        uploaderUsername:
+          overrideFilters.uploaderUsername !== undefined
+            ? overrideFilters.uploaderUsername
+            : uploaderUsername || undefined,
+        reportTypeCode:
+          overrideFilters.reportTypeCode !== undefined
+            ? overrideFilters.reportTypeCode === "all"
+              ? undefined
+              : overrideFilters.reportTypeCode
+            : reportTypeCode === "all"
+              ? undefined
+              : reportTypeCode,
+        status:
+          overrideFilters.status !== undefined
+            ? overrideFilters.status === "all"
+              ? undefined
+              : overrideFilters.status
+            : status === "all"
+              ? undefined
+              : status,
+        fromDate: Object.prototype.hasOwnProperty.call(overrideFilters, "fromDate")
+          ? overrideFilters.fromDate
+          : fromDate,
+        toDate: Object.prototype.hasOwnProperty.call(overrideFilters, "toDate") ? overrideFilters.toDate : toDate,
+        page: overrideFilters.page !== undefined ? overrideFilters.page : currentPage,
         size: 10,
       };
 
@@ -135,16 +155,27 @@ const DocumentReportsTab = () => {
     setDocumentTitle("");
     setUploaderUsername("");
     setStatus("all");
-    setReportTypeCode("all")
+    setReportTypeCode("all");
     setFromDate(undefined);
     setToDate(undefined);
     setCurrentPage(0);
     setDateRangeError(null);
-    fetchReports();
+
+    // Fetch reports with reset filters directly instead of relying on state
+    fetchReports({
+      documentTitle: "",
+      uploaderUsername: "",
+      status: "all",
+      reportTypeCode: "all",
+      fromDate: undefined,
+      toDate: undefined,
+      page: 0,
+    });
   };
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+    fetchReports({ page: newPage });
   };
 
   const handleViewReasons = (report: DocumentReport) => {

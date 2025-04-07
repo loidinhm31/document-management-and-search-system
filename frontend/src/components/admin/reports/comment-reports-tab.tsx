@@ -1,5 +1,4 @@
 import { FileText, Search, User } from "lucide-react";
-import moment from "moment-timezone";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -15,9 +14,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateMoment } from "@/lib/utils";
 import { reportService } from "@/services/report.service";
 import { CommentReport, ReportStatus, ReportType } from "@/types/document-report";
-import { formatDate, formatDateMoment } from "@/lib/utils";
 
 interface CommentReportsResponse {
   content: CommentReport[];
@@ -75,14 +74,11 @@ const CommentReportsTab = () => {
     validateDateRange();
   }, [fromDate, toDate, validateDateRange]);
 
+  // Initial load
   useEffect(() => {
     loadReportTypes();
+    fetchReports(); // Initial load of reports
   }, []);
-
-  // Fetch reports on initial load and when filters change
-  useEffect(() => {
-    fetchReports();
-  }, [currentPage]);
 
   const loadReportTypes = async () => {
     try {
@@ -93,16 +89,37 @@ const CommentReportsTab = () => {
     }
   };
 
-  const fetchReports = async () => {
+  const fetchReports = async (overrideFilters = {}) => {
+    if (dateRangeError && !Object.prototype.hasOwnProperty.call(overrideFilters, "fromDate")) {
+      return;
+    }
+
     setLoading(true);
     try {
       const filters = {
-        commentContent: commentContent || undefined,
-        reportTypeCode: reportType === "all" ? undefined : reportType,
-        resolved: status === "all" ? undefined : status === "resolved",
-        fromDate: fromDate,
-        toDate: toDate,
-        page: currentPage,
+        commentContent:
+          overrideFilters.commentContent !== undefined ? overrideFilters.commentContent : commentContent || undefined,
+        reportTypeCode:
+          overrideFilters.reportType !== undefined
+            ? overrideFilters.reportType === "all"
+              ? undefined
+              : overrideFilters.reportType
+            : reportType === "all"
+              ? undefined
+              : reportType,
+        status:
+          overrideFilters.status !== undefined
+            ? overrideFilters.status === "all"
+              ? undefined
+              : overrideFilters.status
+            : status === "all"
+              ? undefined
+              : status,
+        fromDate: Object.prototype.hasOwnProperty.call(overrideFilters, "fromDate")
+          ? overrideFilters.fromDate
+          : fromDate,
+        toDate: Object.prototype.hasOwnProperty.call(overrideFilters, "toDate") ? overrideFilters.toDate : toDate,
+        page: overrideFilters.page !== undefined ? overrideFilters.page : currentPage,
         size: 10,
       };
 
@@ -139,11 +156,21 @@ const CommentReportsTab = () => {
     setToDate(undefined);
     setDateRangeError(null);
     setCurrentPage(0);
-    fetchReports();
+
+    // Fetch reports with reset filters directly instead of relying on state
+    fetchReports({
+      commentContent: "",
+      reportType: "all",
+      status: "all",
+      fromDate: undefined,
+      toDate: undefined,
+      page: 0,
+    });
   };
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+    fetchReports({ page: newPage });
   };
 
   const handleViewReasons = (report: CommentReport) => {
@@ -244,9 +271,9 @@ const CommentReportsTab = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("admin.reports.comments.filters.allStatuses")}</SelectItem>
-                <SelectItem value="pending">{t("admin.reports.comments.status.pending")}</SelectItem>
-                <SelectItem value="resolved">{t("admin.reports.comments.status.resolved")}</SelectItem>
-                <SelectItem value="rejected">{t("admin.reports.comments.status.rejected")}</SelectItem>
+                <SelectItem value="PENDING">{t("admin.reports.comments.status.pending")}</SelectItem>
+                <SelectItem value="RESOLVED">{t("admin.reports.comments.status.resolved")}</SelectItem>
+                <SelectItem value="REJECTED">{t("admin.reports.comments.status.rejected")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -343,7 +370,7 @@ const CommentReportsTab = () => {
                         report.status,
                       )}`}
                     >
-                      {t(`admin.reports.documents.status.${report.status.toLowerCase()}`)}
+                      {t(`admin.reports.comments.status.${report.status.toLowerCase()}`)}
                     </span>
                   </TableCell>
                   <TableCell>

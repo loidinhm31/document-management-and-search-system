@@ -54,4 +54,13 @@ public interface DocumentRepository extends MongoRepository<DocumentInformation,
 
     @Query(value = "{'categories': ?0, 'deleted': {$ne: true}}", exists = true)
     boolean existsByCategoryCode(String code);
+
+    @Query(value = "{'filename': {'$regex': ?0, '$options': 'i'}, 'deleted': {'$ne': true}}")
+    List<DocumentInformation> findByFilenameLikeIgnoreCase(String filename);
+
+    @Query(value = "{'user_id': ?0, 'deleted': {'$ne': true}}")
+    List<DocumentInformation> findByUserIdAndNotDeleted(String userId);
+
+    @Query(value = "{'filename': {'$regex': ?0, '$options': 'i'}, 'user_id': ?1, 'deleted': {'$ne': true}}")
+    List<DocumentInformation> findByFilenameLikeIgnoreCaseAndUserId(String filename, String userId);
 }

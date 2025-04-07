@@ -31,10 +31,8 @@ class MasterDataService extends BaseService {
     return this.handleApiResponse<MasterData>(axiosInstance.post("/document-interaction/api/v1/master-data", data));
   }
 
-  update(id: string, data: MasterData) {
-    return this.handleApiResponse<MasterData>(
-      axiosInstance.put(`/document-interaction/api/v1/master-data/${id}`, data),
-    );
+  async update(id: string, data: MasterData) {
+    return axiosInstance.put(`/document-interaction/api/v1/master-data/${id}`, data);
   }
 
   save(data: MasterData) {

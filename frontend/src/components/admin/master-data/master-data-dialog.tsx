@@ -187,7 +187,7 @@ export default function MasterDataDialog({
       } else {
         toast({
           title: t("common.error"),
-          description: t(isEditing ? "masterData.updateError" : "masterData.createError"),
+          description: t(isEditing ? "admin.masterData.updateError" : "admin.masterData.createError"),
           variant: "destructive",
         });
       }

@@ -506,10 +506,10 @@
         },
         "status": {
           "allStatuses": "Tất cả trạng thái",
-          "pending": "Đang chờ",
+          "pending": "Chờ xử lý",
           "resolved": "Đã xử lý",
-          "rejected": "Đã từ chối",
-          "remediated": "Đã gỡ vi phạm"
+          "rejected": "Từ chối",
+          "remediated": "Khắc phục"
         },
         "actions": {
           "viewReasons": "Xem lý do",
@@ -573,8 +573,8 @@
         },
         "status": {
           "resolved": "Đã xử lý",
-          "pending": "Đang chờ",
-          "rejected": "Đã từ chối"
+          "pending": "Chờ xử lý",
+          "rejected": "Từ chối"
         },
         "actions": {
           "viewReasons": "Xem lý do",

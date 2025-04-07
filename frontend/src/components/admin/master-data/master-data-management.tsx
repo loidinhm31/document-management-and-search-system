@@ -59,7 +59,7 @@ export default function MasterDataManagement() {
       console.info("Error loading parent options:", error);
       toast({
         title: t("common.error"),
-        description: t("masterData.fetchError"),
+        description: t("admin.masterData.fetchError"),
         variant: "destructive",
       });
     } finally {
@@ -82,7 +82,7 @@ export default function MasterDataManagement() {
     } catch (_error) {
       toast({
         title: t("common.error"),
-        description: t("masterData.fetchError"),
+        description: t("admin.masterData.fetchError"),
         variant: "destructive",
       });
     } finally {

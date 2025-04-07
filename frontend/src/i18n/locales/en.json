@@ -509,7 +509,7 @@
           "pending": "Pending",
           "resolved": "Resolved",
           "rejected": "Rejected",
-          "remediated": "Violation Removed"
+          "remediated": "Remediated"
         },
         "actions": {
           "viewReasons": "View Reasons",
