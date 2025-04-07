@@ -171,6 +171,17 @@ export default function UserDetail() {
     }
   };
 
+  const mappingRole = (role) => {
+    switch (role) {
+      case "ROLE_ADMIN":
+        return "Admin";
+      case "ROLE_MENTOR":
+        return "Mentor";
+      case "ROLE_USER":
+        return "User";
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -266,7 +277,7 @@ export default function UserDetail() {
                     <SelectItem key={role.roleId} value={role.roleName}>
                       <div className="flex items-center">
                         <Shield className="mr-2 h-4 w-4 text-primary" />
-                        {role.roleName}
+                        {mappingRole(role.roleName)}
                       </div>
                     </SelectItem>
                   ))}
@@ -356,7 +367,9 @@ export default function UserDetail() {
                   userData.twoFactorEnabled ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
                 }`}
               >
-                {userData.twoFactorEnabled ? t("admin.users.details.accountStatus.twoFactorEnabled") : t("admin.users.details.accountStatus.twoFactorNotEnabled")}
+                {userData.twoFactorEnabled
+                  ? t("admin.users.details.accountStatus.twoFactorEnabled")
+                  : t("admin.users.details.accountStatus.twoFactorNotEnabled")}
               </div>
             </div>
 

@@ -468,6 +468,8 @@
       "deleteError": "Failed to delete master data",
       "fetchError": "Failed to fetch master data",
       "searchError": "Failed to search master data",
+      "createdError": "Master Data already created",
+      "invalidParentError": "Invalid Parent of Master Data",
       "inUseError": "Master Data already in use"
     },
     "reports": {

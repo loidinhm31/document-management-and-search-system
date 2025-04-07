@@ -169,12 +169,28 @@ export default function MasterDataDialog({
       form.reset();
       onOpenChange(false);
       onSuccess();
-    } catch (_error) {
-      toast({
-        title: t("common.error"),
-        description: t(isEditing ? "masterData.updateError" : "masterData.createError"),
-        variant: "destructive",
-      });
+    } catch (error) {
+      if (error.response && error.response.status === 409) {
+        if (error.response.data.message === "MASTER_DATA_ALREADY_CREATED") {
+          toast({
+            title: t("common.error"),
+            description: t("admin.masterData.createdError"),
+            variant: "destructive",
+          });
+        } else if (error.response.data.message === "INVALID_PARENT_MASTER_DATA") {
+          toast({
+            title: t("common.error"),
+            description: t("admin.masterData.invalidParentError"),
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: t("common.error"),
+          description: t(isEditing ? "masterData.updateError" : "masterData.createError"),
+          variant: "destructive",
+        });
+      }
     }
   };
 

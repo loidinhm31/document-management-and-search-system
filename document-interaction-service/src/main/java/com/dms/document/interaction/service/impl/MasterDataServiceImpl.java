@@ -1,8 +1,11 @@
 package com.dms.document.interaction.service.impl;
 
+import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.MasterDataRequest;
 import com.dms.document.interaction.dto.MasterDataResponse;
 import com.dms.document.interaction.dto.TranslationDTO;
+import com.dms.document.interaction.dto.UserResponse;
+import com.dms.document.interaction.enums.AppRole;
 import com.dms.document.interaction.enums.MasterDataType;
 import com.dms.document.interaction.exception.InvalidMasterDataException;
 import com.dms.document.interaction.model.MasterData;
@@ -14,6 +17,8 @@ import com.dms.document.interaction.service.MasterDataService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -25,6 +30,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class MasterDataServiceImpl implements MasterDataService {
+    private final UserClient userClient;
     private final MasterDataRepository masterDataRepository;
     private final DocumentRepository documentRepository;
     private final DocumentPreferencesRepository documentPreferencesRepository;
@@ -46,15 +52,22 @@ public class MasterDataServiceImpl implements MasterDataService {
                 .map(this::toResponse);
     }
 
-    public List<MasterDataResponse> searchByText(String searchText) {
+    public List<MasterDataResponse> searchByText(String searchText, String username) {
+        checkAdminRole(username);
         return masterDataRepository.searchByText(searchText).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public MasterDataResponse save(MasterDataRequest request) {
+    public MasterDataResponse save(MasterDataRequest request, String username) {
+        checkAdminRole(username);
+
         validateMasterDataRequest(request);
+
+        masterDataRepository.findByTypeAndCode(request.getType(), request.getCode()).ifPresent(masterData -> {
+            throw new InvalidMasterDataException("MASTER_DATA_ALREADY_CREATED");
+        });
 
         MasterData masterData = new MasterData();
         updateMasterDataFromRequest(masterData, request);
@@ -65,7 +78,9 @@ public class MasterDataServiceImpl implements MasterDataService {
     }
 
     @Override
-    public MasterDataResponse update(String id, MasterDataRequest request) {
+    public MasterDataResponse update(String id, MasterDataRequest request, String username) {
+        checkAdminRole(username);
+
         validateMasterDataRequest(request);
 
         MasterData masterData = masterDataRepository.findById(id)
@@ -88,7 +103,7 @@ public class MasterDataServiceImpl implements MasterDataService {
     }
 
     @Override
-    public void deleteById(String id) {
+    public void deleteById(String id, String username) {
         // Check if the item is in use
         if (isItemInUse(id)) {
             throw new InvalidMasterDataException("MASTER_DATA_ALREADY_IN_USE");
@@ -147,7 +162,7 @@ public class MasterDataServiceImpl implements MasterDataService {
         return translation;
     }
 
-    private void validateMasterDataRequest(MasterDataRequest request) {
+    private void validateMasterDataRequest(MasterDataRequest request) throws InvalidMasterDataException {
         if (request == null) {
             throw new IllegalArgumentException("Master data request cannot be null");
         }
@@ -168,14 +183,17 @@ public class MasterDataServiceImpl implements MasterDataService {
         }
 
         // Validate parentId reference if specified for COURSE_CODE
-        if (request.getType() == MasterDataType.COURSE_CODE &&
-            StringUtils.isNotEmpty(request.getParentId())) {
-            // Check if parent exists and is a MAJOR
-            MasterData parent = masterDataRepository.findById(request.getParentId())
-                    .orElseThrow(() -> new IllegalArgumentException("Parent master data not found"));
+        if (request.getType() == MasterDataType.COURSE_CODE) {
+            if (StringUtils.isNotEmpty(request.getParentId())) {
+                // Check if parent exists and is a MAJOR
+                MasterData parent = masterDataRepository.findById(request.getParentId())
+                        .orElseThrow(() -> new InvalidMasterDataException("INVALID_PARENT_MASTER_DATA"));
 
-            if (parent.getType() != MasterDataType.MAJOR) {
-                throw new IllegalArgumentException("Course code parent must be a MAJOR");
+                if (parent.getType() != MasterDataType.MAJOR) {
+                    throw new InvalidMasterDataException("INVALID_PARENT_MASTER_DATA");
+                }
+            } else {
+                throw new InvalidMasterDataException("INVALID_PARENT_MASTER_DATA");
             }
         }
     }
@@ -215,5 +233,16 @@ public class MasterDataServiceImpl implements MasterDataService {
         // Check depend on parent link
         boolean isLinked = CollectionUtils.isNotEmpty(masterDataRepository.findByParentId(masterDataId));
         return isLinked || isMasterDataUsed;
+    }
+
+        private void checkAdminRole(String username) {
+        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
+        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
+            throw new InvalidDataAccessResourceUsageException("User not found");
+        }
+        UserResponse user = response.getBody();
+        if (!user.role().roleName().equals(AppRole.ROLE_ADMIN)) {
+            throw new IllegalStateException("Only administrators can update report status");
+        }
     }
 }

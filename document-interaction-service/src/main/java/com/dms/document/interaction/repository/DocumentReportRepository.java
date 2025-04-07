@@ -43,6 +43,14 @@ public interface DocumentReportRepository extends JpaRepository<DocumentReport, 
             GROUP BY r.document_id, r.processed, r.status
             ORDER BY r.document_id, r.processed DESC
             """,
+            countQuery = """
+                    SELECT COUNT(DISTINCT CONCAT(r.document_id, '_', COALESCE(r.processed, false), '_', r.status))
+                                FROM document_reports r
+                                WHERE (:status IS NULL OR r.status = :status)
+                                AND (CAST(:fromDate AS date) IS NULL OR DATE(r.created_at) >= DATE(:fromDate))
+                                AND (CAST(:toDate AS date) IS NULL OR DATE(r.created_at) <= DATE(:toDate))
+                                AND (:reportTypeCode IS NULL OR r.report_type_code = :reportTypeCode)
+                    """,
             nativeQuery = true)
     Page<DocumentReportProjection> findDocumentReportsGroupedByProcessed(
             @Param("status") String status,
@@ -50,19 +58,4 @@ public interface DocumentReportRepository extends JpaRepository<DocumentReport, 
             @Param("toDate") Instant toDate,
             @Param("reportTypeCode") String reportTypeCode,
             Pageable pageable);
-
-    @Query(value = """
-            SELECT COUNT(DISTINCT CONCAT(r.document_id, '_', COALESCE(r.processed, false), '_', r.status))
-            FROM document_reports r
-            WHERE (:status IS NULL OR r.status = :status)
-            AND (CAST(:fromDate AS date) IS NULL OR DATE(r.created_at) >= DATE(:fromDate))
-            AND (CAST(:toDate AS date) IS NULL OR DATE(r.created_at) <= DATE(:toDate))
-            AND (:reportTypeCode IS NULL OR r.report_type_code = :reportTypeCode)
-            """,
-            nativeQuery = true)
-    long countDocumentReportsGroupedByProcessed(
-            @Param("status") String status,
-            @Param("fromDate") Instant fromDate,
-            @Param("toDate") Instant toDate,
-            @Param("reportTypeCode") String reportTypeCode);
 }

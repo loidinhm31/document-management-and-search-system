@@ -247,12 +247,7 @@ public class DocumentReportServiceImpl implements DocumentReportService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        // Count the total records for pagination
-        long totalElements = documentTitle == null ?
-                documentReportRepository.countDocumentReportsGroupedByProcessed(statusStr, fromDate, toDate, reportTypeCode) :
-                responses.size();
-
-        return new PageImpl<>(responses, pageable, totalElements);
+        return new PageImpl<>(responses, pageable, reportProjections.getTotalElements());
     }
 
     @Transactional(readOnly = true)

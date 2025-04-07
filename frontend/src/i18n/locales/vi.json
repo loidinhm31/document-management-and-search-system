@@ -37,7 +37,7 @@
     "admin": {
       "title": "Quản trị",
       "userManagement": "Quản lý người dùng",
-      "masterData": "Quản lý Dữ liệu hệ thống",
+      "masterData": "Quản lý dữ liệu hệ thống",
       "reports": "Quản lý báo cáo"
     }
   },
@@ -468,6 +468,8 @@
       "deleteError": "Không thể xóa dữ liệu hệ thống",
       "fetchError": "Không thể lấy dữ liệu hệ thống",
       "searchError": "Không thể tìm kiếm dữ liệu hệ thống",
+      "createdError": "Dữ liệu hệ thống đã được tạo",
+      "invalidParentError": "Loại cha của dữ liệu không hợp lệ",
       "inUseError": "Dữ liệu hệ thống đang được sử dụng"
     },
     "reports": {

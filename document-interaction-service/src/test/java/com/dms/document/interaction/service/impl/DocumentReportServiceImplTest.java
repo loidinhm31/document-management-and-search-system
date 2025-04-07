@@ -492,9 +492,6 @@ public class DocumentReportServiceImplTest {
         // Mock finding document by ID and count
         when(documentRepository.findAllById(anyList()))
                 .thenReturn(Collections.singletonList(documentInformation));
-        when(documentReportRepository.countDocumentReportsGroupedByProcessed(
-                eq(status.name()), eq(fromDate), eq(toDate), eq(reportTypeCode)))
-                .thenReturn(1L);
 
         // Fix for getUsernameById - ensure userClient.getUsersByIds returns a non-null response
         // even if response body is empty

@@ -13,7 +13,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { masterDataService } from "@/services/master-data.service";
 import { MasterData, MasterDataType } from "@/types/master-data";
-import { getMasterDataTranslation } from "@/lib/utils";
 
 export default function MasterDataManagement() {
   const { t, i18n } = useTranslation();
