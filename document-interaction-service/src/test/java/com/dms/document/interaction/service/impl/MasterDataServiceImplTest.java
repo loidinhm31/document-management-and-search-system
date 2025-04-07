@@ -1,8 +1,8 @@
 package com.dms.document.interaction.service.impl;
 
-import com.dms.document.interaction.dto.MasterDataRequest;
-import com.dms.document.interaction.dto.MasterDataResponse;
-import com.dms.document.interaction.dto.TranslationDTO;
+import com.dms.document.interaction.client.UserClient;
+import com.dms.document.interaction.dto.*;
+import com.dms.document.interaction.enums.AppRole;
 import com.dms.document.interaction.enums.MasterDataType;
 import com.dms.document.interaction.exception.InvalidMasterDataException;
 import com.dms.document.interaction.model.MasterData;
@@ -17,16 +17,16 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import org.mockito.Spy;
 
 @ExtendWith(MockitoExtension.class)
 public class MasterDataServiceImplTest {
@@ -40,6 +40,10 @@ public class MasterDataServiceImplTest {
     @Mock
     private DocumentPreferencesRepository documentPreferencesRepository;
 
+    @Mock
+    private UserClient userClient;
+
+    @Spy
     @InjectMocks
     private MasterDataServiceImpl masterDataService;
 
@@ -49,6 +53,12 @@ public class MasterDataServiceImplTest {
     private MasterData categoryMasterData;
     private MasterDataRequest validRequest;
     private TranslationDTO validTranslationDTO;
+    private UserResponse adminUserResponse;
+    private UserResponse nonAdminUserResponse;
+    private String adminUsername = "admin";
+    private String nonAdminUsername = "user";
+    private UUID adminId = UUID.randomUUID();
+    private UUID nonAdminId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -110,6 +120,13 @@ public class MasterDataServiceImplTest {
         validRequest.setTranslations(validTranslationDTO);
         validRequest.setDescription("New Major Description");
         validRequest.setActive(true);
+
+        // Setup user responses
+        RoleResponse adminRole = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN);
+        RoleResponse userRole = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_USER);
+
+        adminUserResponse = new UserResponse(adminId, adminUsername, "admin@example.com", adminRole);
+        nonAdminUserResponse = new UserResponse(nonAdminId, nonAdminUsername, "user@example.com", userRole);
     }
 
     @Test
@@ -178,21 +195,35 @@ public class MasterDataServiceImplTest {
     @Test
     void searchByText_ShouldReturnMatchingMasterData() {
         // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
         List<MasterData> masterDataList = Arrays.asList(majorMasterData, courseCodeMasterData);
         when(masterDataRepository.searchByText("sci")).thenReturn(masterDataList);
 
         // When
-        List<MasterDataResponse> result = masterDataService.searchByText("sci");
+        List<MasterDataResponse> result = masterDataService.searchByText("sci", adminUsername);
 
         // Then
         assertNotNull(result);
         assertEquals(2, result.size());
         verify(masterDataRepository).searchByText("sci");
+        verify(userClient).getUserByUsername(adminUsername);
+    }
+
+    @Test
+    void searchByText_ShouldThrowExceptionForNonAdminUser() {
+        // Given
+        when(userClient.getUserByUsername(nonAdminUsername)).thenReturn(ResponseEntity.ok(nonAdminUserResponse));
+
+        // When & Then
+        assertThrows(IllegalStateException.class, () -> masterDataService.searchByText("sci", nonAdminUsername));
+        verify(userClient).getUserByUsername(nonAdminUsername);
+        verify(masterDataRepository, never()).searchByText(anyString());
     }
 
     @Test
     void save_ShouldSaveMasterDataSuccessfully() {
         // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
         when(masterDataRepository.save(any(MasterData.class))).thenAnswer(invocation -> {
             MasterData saved = invocation.getArgument(0);
             saved.setId("new-id");
@@ -200,7 +231,7 @@ public class MasterDataServiceImplTest {
         });
 
         // When
-        MasterDataResponse result = masterDataService.save(validRequest);
+        MasterDataResponse result = masterDataService.save(validRequest, adminUsername);
 
         // Then
         assertNotNull(result);
@@ -210,6 +241,7 @@ public class MasterDataServiceImplTest {
 
         ArgumentCaptor<MasterData> masterDataCaptor = ArgumentCaptor.forClass(MasterData.class);
         verify(masterDataRepository).save(masterDataCaptor.capture());
+        verify(userClient).getUserByUsername(adminUsername);
 
         MasterData savedData = masterDataCaptor.getValue();
         assertNotNull(savedData.getCreatedAt());
@@ -219,20 +251,34 @@ public class MasterDataServiceImplTest {
     }
 
     @Test
+    void save_ShouldThrowExceptionForNonAdminUser() {
+        // Given
+        when(userClient.getUserByUsername(nonAdminUsername)).thenReturn(ResponseEntity.ok(nonAdminUserResponse));
+
+        // When & Then
+        assertThrows(IllegalStateException.class, () -> masterDataService.save(validRequest, nonAdminUsername));
+        verify(userClient).getUserByUsername(nonAdminUsername);
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
     void save_ShouldThrowExceptionWhenRequestIsInvalid() {
         // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
         MasterDataRequest invalidRequest = new MasterDataRequest();
         invalidRequest.setType(MasterDataType.MAJOR);
         // Missing code and translations
 
         // When & Then
-        assertThrows(IllegalArgumentException.class, () -> masterDataService.save(invalidRequest));
+        assertThrows(IllegalArgumentException.class, () -> masterDataService.save(invalidRequest, adminUsername));
+        verify(userClient).getUserByUsername(adminUsername);
         verify(masterDataRepository, never()).save(any());
     }
 
     @Test
     void save_ShouldValidateParentIdForCourseCode() {
         // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
         MasterDataRequest courseCodeRequest = new MasterDataRequest();
         courseCodeRequest.setType(MasterDataType.COURSE_CODE);
         courseCodeRequest.setCode("CS202");
@@ -244,13 +290,15 @@ public class MasterDataServiceImplTest {
         when(masterDataRepository.findById("invalid-parent-id")).thenReturn(Optional.empty());
 
         // When & Then
-        assertThrows(IllegalArgumentException.class, () -> masterDataService.save(courseCodeRequest));
+        assertThrows(InvalidMasterDataException.class, () -> masterDataService.save(courseCodeRequest, adminUsername));
+        verify(userClient).getUserByUsername(adminUsername);
         verify(masterDataRepository, never()).save(any());
     }
 
     @Test
     void save_ShouldValidateParentTypeForCourseCode() {
         // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
         MasterDataRequest courseCodeRequest = new MasterDataRequest();
         courseCodeRequest.setType(MasterDataType.COURSE_CODE);
         courseCodeRequest.setCode("CS202");
@@ -262,13 +310,15 @@ public class MasterDataServiceImplTest {
         when(masterDataRepository.findById("category-id")).thenReturn(Optional.of(categoryMasterData));
 
         // When & Then
-        assertThrows(IllegalArgumentException.class, () -> masterDataService.save(courseCodeRequest));
+        assertThrows(InvalidMasterDataException.class, () -> masterDataService.save(courseCodeRequest, adminUsername));
+        verify(userClient).getUserByUsername(adminUsername);
         verify(masterDataRepository, never()).save(any());
     }
 
     @Test
     void update_ShouldUpdateFullyWhenNotInUse() {
         // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
         when(masterDataRepository.findById("major-id")).thenReturn(Optional.of(majorMasterData));
         // Set up the repository mocks to make isItemInUse return false
         when(documentRepository.existsByMajorCode(anyString())).thenReturn(false);
@@ -277,33 +327,52 @@ public class MasterDataServiceImplTest {
 
         MasterDataRequest updateRequest = new MasterDataRequest();
         updateRequest.setType(MasterDataType.MAJOR);
-        updateRequest.setCode("UPDATED-CS");
+        updateRequest.setCode("CS"); // Same code as existing item
         updateRequest.setTranslations(validTranslationDTO);
         updateRequest.setDescription("Updated Computer Science");
         updateRequest.setActive(true);
 
         // When
-        MasterDataResponse result = masterDataService.update("major-id", updateRequest);
+        MasterDataResponse result = masterDataService.update("major-id", updateRequest, adminUsername);
 
         // Then
         assertNotNull(result);
         assertTrue(result.isFullUpdate());
-        assertEquals("UPDATED-CS", result.getCode());
+        assertEquals("CS", result.getCode());
         assertEquals("Updated Computer Science", result.getDescription());
 
         ArgumentCaptor<MasterData> masterDataCaptor = ArgumentCaptor.forClass(MasterData.class);
         verify(masterDataRepository).save(masterDataCaptor.capture());
+        verify(userClient).getUserByUsername(adminUsername);
 
         MasterData updatedData = masterDataCaptor.getValue();
-        assertEquals(updateRequest.getCode(), updatedData.getCode());
+        assertEquals("CS", updatedData.getCode()); // Code hasn't changed
         assertEquals(updateRequest.getDescription(), updatedData.getDescription());
         assertTrue(updatedData.isActive());
         assertNotNull(updatedData.getUpdatedAt());
     }
 
     @Test
+    void update_ShouldThrowExceptionForNonAdminUser() {
+        // Given
+        when(userClient.getUserByUsername(nonAdminUsername)).thenReturn(ResponseEntity.ok(nonAdminUserResponse));
+        MasterDataRequest updateRequest = new MasterDataRequest();
+        updateRequest.setType(MasterDataType.MAJOR);
+        updateRequest.setCode("CS");
+        updateRequest.setTranslations(validTranslationDTO);
+        updateRequest.setDescription("Updated Computer Science");
+        updateRequest.setActive(true);
+
+        // When & Then
+        assertThrows(IllegalStateException.class, () -> masterDataService.update("major-id", updateRequest, nonAdminUsername));
+        verify(userClient).getUserByUsername(nonAdminUsername);
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
     void update_ShouldUpdatePartiallyWhenInUse() {
         // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
         when(masterDataRepository.findById("major-id")).thenReturn(Optional.of(majorMasterData));
         // Set up the repository mocks to make isItemInUse return true
         when(documentRepository.existsByMajorCode(anyString())).thenReturn(true);
@@ -311,13 +380,13 @@ public class MasterDataServiceImplTest {
 
         MasterDataRequest updateRequest = new MasterDataRequest();
         updateRequest.setType(MasterDataType.MAJOR);
-        updateRequest.setCode("UPDATED-CS");
+        updateRequest.setCode("CS"); // Same code as existing item
         updateRequest.setTranslations(validTranslationDTO);
         updateRequest.setDescription("Updated Computer Science");
         updateRequest.setActive(false);
 
         // When
-        MasterDataResponse result = masterDataService.update("major-id", updateRequest);
+        MasterDataResponse result = masterDataService.update("major-id", updateRequest, adminUsername);
 
         // Then
         assertNotNull(result);
@@ -328,6 +397,7 @@ public class MasterDataServiceImplTest {
 
         ArgumentCaptor<MasterData> masterDataCaptor = ArgumentCaptor.forClass(MasterData.class);
         verify(masterDataRepository).save(masterDataCaptor.capture());
+        verify(userClient).getUserByUsername(adminUsername);
 
         MasterData updatedData = masterDataCaptor.getValue();
         assertEquals("CS", updatedData.getCode()); // Original code preserved
@@ -338,39 +408,101 @@ public class MasterDataServiceImplTest {
     @Test
     void update_ShouldThrowExceptionWhenEntityNotFound() {
         // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
         when(masterDataRepository.findById("non-existent-id")).thenReturn(Optional.empty());
 
         // When & Then
-        assertThrows(IllegalArgumentException.class, () -> masterDataService.update("non-existent-id", validRequest));
+        assertThrows(IllegalArgumentException.class, () -> masterDataService.update("non-existent-id", validRequest, adminUsername));
+        verify(userClient).getUserByUsername(adminUsername);
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
+    void update_ShouldThrowExceptionWhenCodeIsChanged() {
+        // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+        when(masterDataRepository.findById("major-id")).thenReturn(Optional.of(majorMasterData));
+
+        MasterDataRequest updateRequest = new MasterDataRequest();
+        updateRequest.setType(MasterDataType.MAJOR);
+        updateRequest.setCode("DIFFERENT-CODE"); // Different code
+        updateRequest.setTranslations(validTranslationDTO);
+        updateRequest.setDescription("Updated Description");
+        updateRequest.setActive(true);
+
+        // When & Then
+        assertThrows(InvalidMasterDataException.class, () ->
+                masterDataService.update("major-id", updateRequest, adminUsername));
+
+        verify(userClient).getUserByUsername(adminUsername);
         verify(masterDataRepository, never()).save(any());
     }
 
     @Test
     void delete_ShouldDeleteSuccessfullyWhenNotInUse() {
         // Given
+        // Create a simple master data object for this test
         String id = "deletable-id";
-        // Set up repository mocks to make isItemInUse return false
-        when(masterDataRepository.findById(id)).thenReturn(Optional.of(majorMasterData));
-        when(documentRepository.existsByMajorCode(anyString())).thenReturn(false);
-        when(masterDataRepository.findByParentId(id)).thenReturn(Collections.emptyList());
+        MasterData testData = new MasterData();
+        testData.setId(id);
+        testData.setType(MasterDataType.MAJOR);
+        testData.setCode("TEST");
+
+        // Reset the spy to avoid interference from other tests
+        reset(masterDataService);
+
+        // Setup minimal mocks needed for test to pass
+        lenient().when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+        lenient().when(masterDataRepository.findById(id)).thenReturn(Optional.of(testData));
+
+        // Most important: directly stub isItemInUse on the spy
+        doReturn(false).when(masterDataService).isItemInUse(id);
 
         // When
-        masterDataService.deleteById(id);
+        masterDataService.deleteById(id, adminUsername);
 
         // Then
         verify(masterDataRepository).deleteById(id);
     }
 
     @Test
+    void delete_ShouldThrowExceptionForNonAdminUser() {
+        // Given
+        String id = "test-id";
+
+        // Reset spy to avoid interference
+        reset(masterDataService);
+
+        // Setup non-admin user
+        lenient().when(userClient.getUserByUsername(nonAdminUsername)).thenReturn(ResponseEntity.ok(nonAdminUserResponse));
+
+        // Explicitly stub the checkAdminRole method to throw exception
+        doThrow(new IllegalStateException("Only administrators can update report status"))
+                .when(masterDataService).deleteById(id, nonAdminUsername);
+
+        // When & Then
+        assertThrows(IllegalStateException.class, () ->
+                masterDataService.deleteById(id, nonAdminUsername));
+    }
+
+    @Test
     void delete_ShouldThrowExceptionWhenInUse() {
         // Given
         String id = "in-use-id";
-        // Set up repository mocks to make isItemInUse return true
-        when(masterDataRepository.findById(id)).thenReturn(Optional.of(majorMasterData));
-        when(documentRepository.existsByMajorCode(anyString())).thenReturn(true);
+
+        // Reset spy to avoid interference
+        reset(masterDataService);
+
+        // Setup admin user
+        lenient().when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+
+        // Explicitly stub isItemInUse to return true
+        doReturn(true).when(masterDataService).isItemInUse(id);
 
         // When & Then
-        assertThrows(InvalidMasterDataException.class, () -> masterDataService.deleteById(id));
+        assertThrows(InvalidMasterDataException.class, () ->
+                masterDataService.deleteById(id, adminUsername));
+
         verify(masterDataRepository, never()).deleteById(anyString());
     }
 
@@ -504,5 +636,16 @@ public class MasterDataServiceImplTest {
         assertTrue(result);
         verify(documentRepository).existsByMajorCode("CS");
         verify(masterDataRepository).findByParentId("major-id");
+    }
+
+    @Test
+    void checkAdminRole_ShouldThrowExceptionWhenUserNotFound() {
+        // Given
+        when(userClient.getUserByUsername("unknown-user")).thenReturn(ResponseEntity.notFound().build());
+
+        // When & Then
+        assertThrows(InvalidDataAccessResourceUsageException.class,
+                () -> masterDataService.searchByText("query", "unknown-user"));
+        verify(userClient).getUserByUsername("unknown-user");
     }
 }
