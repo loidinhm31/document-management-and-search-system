@@ -1,6 +1,8 @@
 package com.dms.auth.service.impl;
 
+import com.dms.auth.dto.RoleDto;
 import com.dms.auth.dto.UserDto;
+import com.dms.auth.dto.request.UserSearchRequest;
 import com.dms.auth.entity.Role;
 import com.dms.auth.entity.User;
 import com.dms.auth.enums.AppRole;
@@ -16,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -64,17 +67,27 @@ public class AdminServiceImplTest {
         user1.setUserId(UUID.randomUUID());
         user1.setRole(role1);
         user1.setEnabled(true);
+        user1.setCreatedAt(Instant.now());
+        user1.setUpdatedAt(Instant.now());
 
         user2 = new User("testuser2", "user2@example.com", "password");
         user2.setUserId(UUID.randomUUID());
         user2.setRole(role2);
         user2.setEnabled(false);
+        user2.setCreatedAt(Instant.now());
+        user2.setUpdatedAt(Instant.now());
+
+        RoleDto roleDto1 = new RoleDto(role1.getRoleId(), role1.getRoleName());
+        RoleDto roleDto2 = new RoleDto(role2.getRoleId(), role2.getRoleName());
 
         userDto1 = UserDto.builder()
                 .userId(user1.getUserId())
                 .username(user1.getUsername())
                 .email(user1.getEmail())
                 .enabled(user1.isEnabled())
+                .role(roleDto1)
+                .createdDate(user1.getCreatedAt())
+                .updatedDate(user1.getUpdatedAt())
                 .build();
 
         userDto2 = UserDto.builder()
@@ -82,6 +95,9 @@ public class AdminServiceImplTest {
                 .username(user2.getUsername())
                 .email(user2.getEmail())
                 .enabled(user2.isEnabled())
+                .role(roleDto2)
+                .createdDate(user2.getCreatedAt())
+                .updatedDate(user2.getUpdatedAt())
                 .build();
 
         userList = Arrays.asList(user1, user2);
@@ -92,18 +108,22 @@ public class AdminServiceImplTest {
     @Test
     void getAllUsers_WithNoFilters_ShouldReturnAllUsers() {
         // Arrange
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("lastName")); // Using non-empty sort
+        UserSearchRequest request = new UserSearchRequest(
+                null, null, null,
+                null, null, 0, 10
+        );
+
         doReturn(userPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
         when(userMapper.convertToDto(user1)).thenReturn(userDto1);
         when(userMapper.convertToDto(user2)).thenReturn(userDto2);
 
         // Act
-        Page<UserDto> result = adminService.getAllUsers(null, null, null, pageable);
+        Page<UserDto> result = adminService.getAllUsers(request);
 
         // Assert
         assertNotNull(result);
         assertEquals(2, result.getTotalElements());
-        verify(userRepository).findAll(any(Specification.class), eq(pageable)); // Same pageable should be used
+        verify(userRepository).findAll(any(Specification.class), any(Pageable.class));
         verify(userMapper).convertToDto(user1);
         verify(userMapper).convertToDto(user2);
     }
@@ -111,13 +131,17 @@ public class AdminServiceImplTest {
     @Test
     void getAllUsers_WithEmptySearchParam_ShouldIgnoreSearch() {
         // Arrange
-        Pageable pageable = PageRequest.of(0, 10);
+        UserSearchRequest request = new UserSearchRequest(
+                "   ", null, null,
+                null, null, 0, 10
+        );
+
         doReturn(userPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
         when(userMapper.convertToDto(user1)).thenReturn(userDto1);
         when(userMapper.convertToDto(user2)).thenReturn(userDto2);
 
-        // Act - Testing with empty search string (should be treated as null)
-        Page<UserDto> result = adminService.getAllUsers("   ", null, null, pageable);
+        // Act - Testing with empty search string
+        Page<UserDto> result = adminService.getAllUsers(request);
 
         // Assert
         assertNotNull(result);
@@ -128,15 +152,17 @@ public class AdminServiceImplTest {
     @Test
     void getAllUsers_WithValidSearchParam_ShouldApplyFilter() {
         // Arrange
-        String searchTerm = "user1";
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<User> filteredUserPage = new PageImpl<>(List.of(user1));
+        UserSearchRequest request = new UserSearchRequest(
+                "user1", null, null,
+                null, null, 0, 10
+        );
 
+        Page<User> filteredUserPage = new PageImpl<>(List.of(user1));
         doReturn(filteredUserPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
         when(userMapper.convertToDto(user1)).thenReturn(userDto1);
 
         // Act
-        Page<UserDto> result = adminService.getAllUsers(searchTerm, null, null, pageable);
+        Page<UserDto> result = adminService.getAllUsers(request);
 
         // Assert
         assertNotNull(result);
@@ -147,16 +173,36 @@ public class AdminServiceImplTest {
     }
 
     @Test
+    void getAllUsers_WithInvalidSearchChars_ShouldReturnEmpty() {
+        // Arrange
+        UserSearchRequest request = new UserSearchRequest(
+                "user1;DROP TABLE users;", null, null,
+                null, null, 0, 10
+        );
+
+        // Act
+        Page<UserDto> result = adminService.getAllUsers(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(0, result.getTotalElements());
+        verify(userRepository, never()).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
     void getAllUsers_WithEnabledTrue_ShouldFilterEnabledUsers() {
         // Arrange
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<User> filteredUserPage = new PageImpl<>(List.of(user1));
+        UserSearchRequest request = new UserSearchRequest(
+                null, true, null,
+                null, null, 0, 10
+        );
 
+        Page<User> filteredUserPage = new PageImpl<>(List.of(user1));
         doReturn(filteredUserPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
         when(userMapper.convertToDto(user1)).thenReturn(userDto1);
 
         // Act
-        Page<UserDto> result = adminService.getAllUsers(null, true, null, pageable);
+        Page<UserDto> result = adminService.getAllUsers(request);
 
         // Assert
         assertNotNull(result);
@@ -169,14 +215,17 @@ public class AdminServiceImplTest {
     @Test
     void getAllUsers_WithEnabledFalse_ShouldFilterDisabledUsers() {
         // Arrange
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<User> filteredUserPage = new PageImpl<>(List.of(user2));
+        UserSearchRequest request = new UserSearchRequest(
+                null, false, null,
+                null, null, 0, 10
+        );
 
+        Page<User> filteredUserPage = new PageImpl<>(List.of(user2));
         doReturn(filteredUserPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
         when(userMapper.convertToDto(user2)).thenReturn(userDto2);
 
         // Act
-        Page<UserDto> result = adminService.getAllUsers(null, false, null, pageable);
+        Page<UserDto> result = adminService.getAllUsers(request);
 
         // Assert
         assertNotNull(result);
@@ -189,13 +238,17 @@ public class AdminServiceImplTest {
     @Test
     void getAllUsers_WithEmptyRoleParam_ShouldIgnoreRole() {
         // Arrange
-        Pageable pageable = PageRequest.of(0, 10);
+        UserSearchRequest request = new UserSearchRequest(
+                null, null, "   ",
+                null, null, 0, 10
+        );
+
         doReturn(userPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
         when(userMapper.convertToDto(user1)).thenReturn(userDto1);
         when(userMapper.convertToDto(user2)).thenReturn(userDto2);
 
-        // Act - Testing with empty role string (should be treated as null)
-        Page<UserDto> result = adminService.getAllUsers(null, null, "   ", pageable);
+        // Act
+        Page<UserDto> result = adminService.getAllUsers(request);
 
         // Assert
         assertNotNull(result);
@@ -206,15 +259,17 @@ public class AdminServiceImplTest {
     @Test
     void getAllUsers_WithValidRoleParam_ShouldFilterByRole() {
         // Arrange
-        String role = "ROLE_ADMIN";
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<User> filteredUserPage = new PageImpl<>(List.of(user2));
+        UserSearchRequest request = new UserSearchRequest(
+                null, null, "ROLE_ADMIN",
+                null, null, 0, 10
+        );
 
+        Page<User> filteredUserPage = new PageImpl<>(List.of(user2));
         doReturn(filteredUserPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
         when(userMapper.convertToDto(user2)).thenReturn(userDto2);
 
         // Act
-        Page<UserDto> result = adminService.getAllUsers(null, null, role, pageable);
+        Page<UserDto> result = adminService.getAllUsers(request);
 
         // Assert
         assertNotNull(result);
@@ -225,19 +280,40 @@ public class AdminServiceImplTest {
     }
 
     @Test
+    void getAllUsers_WithCustomSorting_ShouldApplySorting() {
+        // Arrange
+        UserSearchRequest request = new UserSearchRequest(
+                null, null, null,
+                "email", "DESC", 0, 10
+        );
+
+        doReturn(userPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
+        when(userMapper.convertToDto(user1)).thenReturn(userDto1);
+        when(userMapper.convertToDto(user2)).thenReturn(userDto2);
+
+        // Act
+        Page<UserDto> result = adminService.getAllUsers(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        verify(userRepository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
     void getAllUsers_WithAllFilters_ShouldApplyAllFilters() {
         // Arrange
-        String searchTerm = "user2";
-        boolean enabled = false;
-        String role = "ROLE_ADMIN";
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<User> filteredUserPage = new PageImpl<>(List.of(user2));
+        UserSearchRequest request = new UserSearchRequest(
+                "user2", false, "ROLE_ADMIN",
+                "username", "ASC", 0, 10
+        );
 
+        Page<User> filteredUserPage = new PageImpl<>(List.of(user2));
         doReturn(filteredUserPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
         when(userMapper.convertToDto(user2)).thenReturn(userDto2);
 
         // Act
-        Page<UserDto> result = adminService.getAllUsers(searchTerm, enabled, role, pageable);
+        Page<UserDto> result = adminService.getAllUsers(request);
 
         // Assert
         assertNotNull(result);
@@ -250,13 +326,16 @@ public class AdminServiceImplTest {
     @Test
     void getAllUsers_WithEmptyResult_ShouldReturnEmptyPage() {
         // Arrange
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<User> emptyPage = new PageImpl<>(Collections.emptyList());
+        UserSearchRequest request = new UserSearchRequest(
+                "nonexistent", null, null,
+                null, null, 0, 10
+        );
 
+        Page<User> emptyPage = new PageImpl<>(Collections.emptyList());
         doReturn(emptyPage).when(userRepository).findAll(any(Specification.class), any(Pageable.class));
 
         // Act
-        Page<UserDto> result = adminService.getAllUsers("nonexistent", null, null, pageable);
+        Page<UserDto> result = adminService.getAllUsers(request);
 
         // Assert
         assertNotNull(result);
