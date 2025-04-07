@@ -1,4 +1,4 @@
-export interface GetUsersParams {
+export interface GetUsersRequest {
   search?: string;
   enabled?: boolean;
   role?: string;

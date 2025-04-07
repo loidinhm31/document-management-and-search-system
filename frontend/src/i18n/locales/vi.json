@@ -37,7 +37,7 @@
     "admin": {
       "title": "Quản trị",
       "userManagement": "Quản lý người dùng",
-      "masterData": "Dữ liệu hệ thống",
+      "masterData": "Quản lý Dữ liệu hệ thống",
       "reports": "Quản lý báo cáo"
     }
   },
@@ -51,7 +51,7 @@
       "title": "Quản trị",
       "users": "Quản lý người dùng",
       "userDetail": "Chi tiết người dùng",
-      "masterData": "Dữ liệu hệ thống",
+      "masterData": "Quản lý dữ liệu hệ thống",
       "roles": "Quản lý vai trò",
       "reports": "Quản lý báo cáo"
     }
@@ -321,7 +321,8 @@
         "username": "Tên đăng nhập",
         "email": "Email",
         "createdDate": "Ngày tạo",
-        "status": "Trạng thái"
+        "status": "Trạng thái",
+        "actions": "Chi tiết"
       },
       "status": {
         "active": "Đang hoạt động",
@@ -340,7 +341,8 @@
         },
         "updateRole": {
           "success": "Cập nhật vai trò người dùng thành công",
-          "error": "Không thể cập nhật vai trò người dùng"
+          "error": "Không thể cập nhật vai trò người dùng",
+          "cannotChangeOwnRole": "Bạn không thể thay đổi vai trò của chính mình"
         },
         "updatePassword": {
           "success": "Cập nhật mật khẩu người dùng thành công",
@@ -349,6 +351,15 @@
         "updateAccount": {
           "success": "Cập nhật trạng thái tài khoản thành công",
           "error": "Không thể cập nhật trạng thái tài khoản"
+        },
+        "revokeTokens": {
+          "title": "Thu hồi Refresh Tokens",
+          "description": "Hành động này sẽ vô hiệu hóa tất cả các refresh token cho người dùng này. Người dùng sẽ cần phải đăng nhập lại trên tất cả các thiết bị. Không thể hoàn tác thao tác này.",
+          "button": "Thu hồi Refresh Token",
+          "confirm": "Thu hồi Refresh Token",
+          "processing": "Đang thu hồi...",
+          "success": "Đã thu hồi refresh token thành công",
+          "error": "Không thu hồi được refresh token"
         }
       },
       "messages": {
@@ -446,11 +457,11 @@
       },
       "delete": {
         "title": "Xóa dữ liệu hệ thống",
-        "description": "Bạn có chắc chắn muốn xóa {name}? Hành động này không thể hoàn tác."
+        "description": "Bạn có chắc chắn muốn xóa {{name}}? Hành động này không thể hoàn tác."
       },
       "createSuccess": "Tạo dữ liệu hệ thống thành công",
       "updateFullSuccess": "Cập nhật dữ liệu hệ thống thành công",
-      "updateNonFullSuccess": "Chỉ cập nhật các trường an toàn (mô tả, dịch, trạng thái hoạt động)",
+      "updateNonFullSuccess": "Chỉ cập nhật các trường an toàn (mô tả, dịch qua ngôn ngữ khác, trạng thái hoạt động)",
       "createError": "Không thể tạo dữ liệu hệ thống",
       "updateError": "Không thể cập nhật dữ liệu hệ thống",
       "deleteSuccess": "Xóa dữ liệu hệ thống thành công",

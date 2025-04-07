@@ -107,7 +107,7 @@ export default function UserDetail() {
     if (isOwnProfile) {
       toast({
         title: t("common.error"),
-        description: t("admin.users.actions.updateRole.cannotChangeOwnRole", "You cannot change your own role"),
+        description: t("admin.users.actions.updateRole.cannotChangeOwnRole"),
         variant: "destructive",
       });
 

@@ -37,7 +37,7 @@
     "admin": {
       "title": "Administration",
       "userManagement": "User Management",
-      "masterData": "Master Data",
+      "masterData": "Master Data Management",
       "reports": "Reports Management"
     }
   },
@@ -321,7 +321,8 @@
         "username": "Username",
         "email": "Email",
         "createdDate": "Created Date",
-        "status": "Status"
+        "status": "Status",
+        "actions": "Detail"
       },
       "status": {
         "active": "Active",
@@ -340,7 +341,8 @@
         },
         "updateRole": {
           "success": "User role updated successfully",
-          "error": "Failed to update user role"
+          "error": "Failed to update user role",
+          "cannotChangeOwnRole": "You cannot change your own role"
         },
         "updatePassword": {
           "success": "User password updated successfully",
@@ -349,6 +351,15 @@
         "updateAccount": {
           "success": "Account status updated successfully",
           "error": "Failed to update account status"
+        },
+        "revokeTokens": {
+          "title": "Revoke Refresh Tokens",
+          "description": "This action will invalidate all refresh tokens for this user. The user will need to log in again on all devices. This cannot be undone.",
+          "button": "Revoke Refresh Tokens",
+          "confirm": "Revoke Refresh Tokens",
+          "processing": "Revoking...",
+          "success": "Refresh Tokens successfully revoked",
+          "error": "Failed to revoke refresh tokens"
         }
       },
       "messages": {
@@ -446,7 +457,7 @@
       },
       "delete": {
         "title": "Delete Master Data",
-        "description": "Are you sure you want to delete {name}? This action cannot be undone."
+        "description": "Are you sure you want to delete {{name}}? This action cannot be undone."
       },
       "createSuccess": "Master data created successfully",
       "updateFullSuccess": "Master data updated successfully",

@@ -34,7 +34,7 @@ export default function RevokeTokensButton({ userId, onSuccess }: RevokeTokensBu
 
       toast({
         title: t("common.success"),
-        description: t("admin.users.actions.revokeTokens.success", "Tokens successfully revoked"),
+        description: t("admin.users.actions.revokeTokens.success"),
         variant: "success",
       });
 
@@ -43,7 +43,7 @@ export default function RevokeTokensButton({ userId, onSuccess }: RevokeTokensBu
     } catch (_error) {
       toast({
         title: t("common.error"),
-        description: t("admin.users.actions.revokeTokens.error", "Failed to revoke tokens"),
+        description: t("admin.users.actions.revokeTokens.error"),
         variant: "destructive",
       });
     } finally {
@@ -68,12 +68,11 @@ export default function RevokeTokensButton({ userId, onSuccess }: RevokeTokensBu
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-destructive" />
-              {t("admin.users.actions.revokeTokens.title", "Revoke Refresh Tokens")}
+              {t("admin.users.actions.revokeTokens.title")}
             </DialogTitle>
             <DialogDescription>
               {t(
                 "admin.users.actions.revokeTokens.description",
-                "This action will invalidate all refresh tokens for this user. The user will need to log in again on all devices. This cannot be undone.",
               )}
             </DialogDescription>
           </DialogHeader>
@@ -86,10 +85,10 @@ export default function RevokeTokensButton({ userId, onSuccess }: RevokeTokensBu
               {loading ? (
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {t("admin.users.actions.revokeTokens.processing", "Revoking...")}
+                  {t("admin.users.actions.revokeTokens.processing")}
                 </span>
               ) : (
-                t("admin.users.actions.revokeTokens.confirm", "Revoke Tokens")
+                t("admin.users.actions.revokeTokens.confirm")
               )}
             </Button>
           </DialogFooter>

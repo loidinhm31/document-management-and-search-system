@@ -44,7 +44,7 @@ export default function UserList() {
         enabled: appliedStatus === "active" ? true : appliedStatus === "inactive" ? false : undefined,
         role: appliedRole !== "all" ? appliedRole : undefined,
         page: currentPage,
-        size: pageSize, // Use the pageSize state
+        size: pageSize,
       });
 
       setUsers(response.data.content);
@@ -166,7 +166,7 @@ export default function UserList() {
                   <TableHead>{t("admin.users.headers.email")}</TableHead>
                   <TableHead>{t("admin.users.headers.createdDate")}</TableHead>
                   <TableHead>{t("admin.users.headers.status")}</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
+                  <TableHead className="text-center">{t("admin.users.headers.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
