@@ -1,7 +1,7 @@
 import { Search, UserRound } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import DocumentReportProcessDialog from "@/components/admin/reports/document-report-process-dialog";
 import DocumentReportReasonsDialog from "@/components/admin/reports/document-report-reasons-dialog";
@@ -135,6 +135,7 @@ const DocumentReportsTab = () => {
     setDocumentTitle("");
     setUploaderUsername("");
     setStatus("all");
+    setReportTypeCode("all")
     setFromDate(undefined);
     setToDate(undefined);
     setCurrentPage(0);
@@ -329,7 +330,7 @@ const DocumentReportsTab = () => {
                       <div className="flex items-center">
                         <Button
                           variant="link"
-                          className="text-wrap"
+                          className="font-medium truncate p-0 h-auto text-left text-wrap"
                           onClick={() => navigate(`/discover/${report.documentId}`)}
                         >
                           {report.documentTitle}
