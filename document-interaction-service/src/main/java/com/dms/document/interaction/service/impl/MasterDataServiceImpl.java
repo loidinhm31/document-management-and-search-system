@@ -86,6 +86,10 @@ public class MasterDataServiceImpl implements MasterDataService {
         MasterData masterData = masterDataRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Master data not found"));
 
+        if (!StringUtils.equals(request.getCode(), masterData.getCode())) {
+            throw new InvalidMasterDataException("MASTER_DATA_ALREADY_CREATED");
+        }
+
         boolean isFullUpdate = false;
         if (isItemInUse(id)) {
             // Only update safety fields
