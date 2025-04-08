@@ -170,7 +170,7 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
         }
     }
 
-    private String basicExtractTextContent(Path filePath) {
+    protected String basicExtractTextContent(Path filePath) {
         // Use larger buffer size for better performance with large files
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(new FileInputStream(filePath.toFile()), StandardCharsets.UTF_8),
@@ -215,7 +215,7 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
         return result.text();
     }
 
-    private String tikaExtractTextContent(Path filePath, Map<String, String> metadata) {
+     String tikaExtractTextContent(Path filePath, Map<String, String> metadata) {
         try (InputStream input = new BufferedInputStream(Files.newInputStream(filePath))) {
             StringWriter writer = new StringWriter();
             ContentHandler handler = new ToTextContentHandler(writer); // Extract text without format

@@ -128,7 +128,7 @@ public class OcrServiceImpl implements OcrService {
      * @throws IOException If an error occurs during PDF processing
      * @throws TesseractException If an error occurs during OCR
      */
-    private String processWithParallelOcr(Path pdfPath, int pageCount)
+    protected String processWithParallelOcr(Path pdfPath, int pageCount)
             throws IOException, TesseractException {
         log.debug("Performing parallel OCR on PDF with {} pages", pageCount);
 
@@ -229,7 +229,7 @@ public class OcrServiceImpl implements OcrService {
         return combinedText.toString();
     }
 
-    private String processOcrSequentially(PDFRenderer pdfRenderer, int pageCount)
+    protected String processOcrSequentially(PDFRenderer pdfRenderer, int pageCount)
             throws IOException, TesseractException {
 
         StringBuilder extractedText = new StringBuilder();

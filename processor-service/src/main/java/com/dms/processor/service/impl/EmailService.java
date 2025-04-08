@@ -84,7 +84,7 @@ public class EmailService {
     /**
      * Divides emails into batches of the configured size
      */
-    private List<List<String>> partitionEmails(Collection<String> emails) {
+    protected List<List<String>> partitionEmails(Collection<String> emails) {
         return emails.stream()
                 .collect(Collectors.groupingBy(email ->
                         emails.stream().toList().indexOf(email) / batchSize))

@@ -60,7 +60,7 @@ public class LargeFileProcessor {
         });
     }
 
-    private String processFileInChunks(Path filePath) throws IOException {
+    protected String processFileInChunks(Path filePath) throws IOException {
         try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(filePath))) {
             long fileSize = Files.size(filePath);
             int chunkSize = chunkSizeMB * 1024 * 1024; // Convert MB to bytes
@@ -92,7 +92,7 @@ public class LargeFileProcessor {
         }
     }
 
-    private String processChunk(byte[] buffer, int bytesRead, Parser parser, ParseContext context)
+    protected String processChunk(byte[] buffer, int bytesRead, Parser parser, ParseContext context)
             throws IOException {
         try {
             ToTextContentHandler handler = new ToTextContentHandler();

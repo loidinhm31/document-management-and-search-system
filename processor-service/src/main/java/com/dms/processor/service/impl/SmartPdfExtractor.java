@@ -68,7 +68,7 @@ public class SmartPdfExtractor {
         }
     }
 
-    private PdfTextMetrics calculateTextMetrics(String text, int pageCount) {
+    protected PdfTextMetrics calculateTextMetrics(String text, int pageCount) {
         double textDensity = calculateTextDensity(text, pageCount);
         double textQuality = assessTextQuality(text);
         boolean hasMeaningfulText = detectMeaningfulText(text);
@@ -76,7 +76,7 @@ public class SmartPdfExtractor {
         return new PdfTextMetrics(textDensity, textQuality, hasMeaningfulText);
     }
 
-    private double calculateTextDensity(String text, int pageCount) {
+    protected double calculateTextDensity(String text, int pageCount) {
         if (pageCount == 0) return 0;
 
         // Calculate characters per page
@@ -86,7 +86,7 @@ public class SmartPdfExtractor {
         return Math.min(charsPerPage / expectedMinCharsPerPage, 1.0);
     }
 
-    private double assessTextQuality(String text) {
+    protected double assessTextQuality(String text) {
         if (text == null || text.isEmpty()) return 0;
 
         // Count recognizable characters vs total
@@ -96,12 +96,12 @@ public class SmartPdfExtractor {
         return (double) recognizableChars / totalChars;
     }
 
-    private boolean detectMeaningfulText(String text) {
+    protected boolean detectMeaningfulText(String text) {
         // Check if text contains meaningful sequences of words
         return MEANINGFUL_TEXT_PATTERN.matcher(text).find();
     }
 
-    private boolean shouldUseOcr(PdfTextMetrics metrics, String text) {
+    protected boolean shouldUseOcr(PdfTextMetrics metrics, String text) {
         // First check if content have enough text at all
         if (text == null || text.trim().length() < minimumTextLength) {
             return true;

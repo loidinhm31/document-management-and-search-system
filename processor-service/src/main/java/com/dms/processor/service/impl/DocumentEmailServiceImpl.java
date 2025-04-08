@@ -44,7 +44,7 @@ public class DocumentEmailServiceImpl extends EmailService implements DocumentEm
     private DocumentCommentRepository documentCommentRepository;
 
 
-    private class NotificationContext {
+    protected class NotificationContext {
         final Map<String, Object> variables = new HashMap<>();
 
         NotificationContext() {
@@ -425,7 +425,7 @@ public class DocumentEmailServiceImpl extends EmailService implements DocumentEm
         }
     }
 
-    private NotificationContext buildNotificationContext(NotificationEventRequest event,
+    protected NotificationContext buildNotificationContext(NotificationEventRequest event,
                                                          DocumentInformation document,
                                                          User triggerUser,
                                                          Map<String, User> emailToUserMap) {

@@ -51,20 +51,20 @@ public class ThumbnailServiceImpl implements ThumbnailService {
         };
     }
 
-    private BufferedImage generatePdfThumbnail(Path filePath) throws IOException {
+    protected BufferedImage generatePdfThumbnail(Path filePath) throws IOException {
         try (PDDocument document = PDDocument.load(filePath.toFile())) {
             PDFRenderer pdfRenderer = new PDFRenderer(document);
             return pdfRenderer.renderImageWithDPI(0, 72); // Render first page at 72 DPI
         }
     }
 
-    private byte[] convertToBytes(BufferedImage image) throws IOException {
+    protected byte[] convertToBytes(BufferedImage image) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(image, "PNG", baos);
         return baos.toByteArray();
     }
 
-    private BufferedImage resizeImage(BufferedImage original, int width, int height) {
+    protected BufferedImage resizeImage(BufferedImage original, int width, int height) {
         BufferedImage resized = new BufferedImage(width, height, original.getType());
         Graphics2D g = resized.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);

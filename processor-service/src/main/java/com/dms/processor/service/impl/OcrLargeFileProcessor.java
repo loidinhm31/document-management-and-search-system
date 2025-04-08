@@ -126,7 +126,7 @@ public class OcrLargeFileProcessor {
         }
     }
 
-    private List<File> extractPagesToImages(Path pdfPath, File tempDirectory) throws IOException {
+    protected List<File> extractPagesToImages(Path pdfPath, File tempDirectory) throws IOException {
         List<File> pageImages = new ArrayList<>();
 
         try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
@@ -153,7 +153,7 @@ public class OcrLargeFileProcessor {
         return pageImages;
     }
 
-    private String processPageImagesInChunks(List<File> pageImages, int totalPages)
+    protected String processPageImagesInChunks(List<File> pageImages, int totalPages)
             throws TesseractException {
 
         List<CompletableFuture<String>> chunkFutures = new ArrayList<>();
@@ -247,7 +247,7 @@ public class OcrLargeFileProcessor {
         }, executorService);
     }
 
-    private File createTempDirectory() throws IOException {
+    protected File createTempDirectory() throws IOException {
         File tempDirectory = new File(tempDir, UUID.randomUUID().toString());
         if (!tempDirectory.exists() && !tempDirectory.mkdirs()) {
             throw new IOException("Failed to create temp directory: " + tempDirectory);
@@ -255,7 +255,7 @@ public class OcrLargeFileProcessor {
         return tempDirectory;
     }
 
-    private void cleanupTempDirectory(File directory) {
+    protected void cleanupTempDirectory(File directory) {
         if (directory != null && directory.exists()) {
             File[] files = directory.listFiles();
             if (files != null) {
@@ -271,7 +271,7 @@ public class OcrLargeFileProcessor {
         }
     }
 
-    private boolean isTextSufficient(String text) {
+    protected boolean isTextSufficient(String text) {
         if (text == null || text.isEmpty()) return false;
 
         int minChars = 100;
