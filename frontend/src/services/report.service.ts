@@ -2,7 +2,7 @@ import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { ReportStatus, ReportType } from "@/types/document-report";
 
-interface DocumentReportFilter {
+export interface DocumentReportFilter {
   documentTitle?: string;
   uploaderUsername?: string;
   fromDate?: Date;
@@ -13,7 +13,7 @@ interface DocumentReportFilter {
   size?: number;
 }
 
-interface CommentReportFilter {
+export interface CommentReportFilter {
   commentContent?: string;
   reportTypeCode?: string;
   fromDate?: Date;

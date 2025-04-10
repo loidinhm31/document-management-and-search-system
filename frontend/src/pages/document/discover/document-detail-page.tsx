@@ -50,7 +50,6 @@ export default function DocumentDetailPage() {
   // Function to check if the document has been viewed in this session
   const checkIfDocumentViewed = (docId: string): boolean => {
     const viewedDocuments = JSON.parse(sessionStorage.getItem(VIEWED_DOCUMENTS_KEY) || "[]");
-    console.log("view", viewedDocuments);
     return viewedDocuments.includes(docId);
   };
 

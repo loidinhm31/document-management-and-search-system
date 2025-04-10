@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { reportService } from "@/services/report.service";
+import { DocumentReportFilter, reportService } from "@/services/report.service";
 import { DocumentReport, ReportStatus, ReportType } from "@/types/document-report";
 
 interface DocumentReportsResponse {
@@ -88,7 +88,7 @@ const DocumentReportsTab = () => {
     }
   };
 
-  const fetchReports = async (overrideFilters = {}) => {
+  const fetchReports = async (overrideFilters: DocumentReportFilter = {}) => {
     if (dateRangeError && !Object.prototype.hasOwnProperty.call(overrideFilters, "fromDate")) {
       return;
     }

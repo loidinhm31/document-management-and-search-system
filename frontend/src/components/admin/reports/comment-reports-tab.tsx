@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateMoment } from "@/lib/utils";
-import { reportService } from "@/services/report.service";
+import { CommentReportFilter, reportService } from "@/services/report.service";
 import { CommentReport, ReportStatus, ReportType } from "@/types/document-report";
 
 interface CommentReportsResponse {
@@ -89,7 +89,7 @@ const CommentReportsTab = () => {
     }
   };
 
-  const fetchReports = async (overrideFilters = {}) => {
+  const fetchReports = async (overrideFilters: CommentReportFilter = {}) => {
     if (dateRangeError && !Object.prototype.hasOwnProperty.call(overrideFilters, "fromDate")) {
       return;
     }
@@ -100,10 +100,10 @@ const CommentReportsTab = () => {
         commentContent:
           overrideFilters.commentContent !== undefined ? overrideFilters.commentContent : commentContent || undefined,
         reportTypeCode:
-          overrideFilters.reportType !== undefined
-            ? overrideFilters.reportType === "all"
+          overrideFilters.reportTypeCode !== undefined
+            ? overrideFilters.reportTypeCode === "all"
               ? undefined
-              : overrideFilters.reportType
+              : overrideFilters.reportTypeCode
             : reportType === "all"
               ? undefined
               : reportType,
@@ -160,7 +160,7 @@ const CommentReportsTab = () => {
     // Fetch reports with reset filters directly instead of relying on state
     fetchReports({
       commentContent: "",
-      reportType: "all",
+      reportTypeCode: "all",
       status: "all",
       fromDate: undefined,
       toDate: undefined,

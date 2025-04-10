@@ -3,12 +3,12 @@ export interface User {
 }
 
 export interface Comment {
-  id: number;
-  content: string;
-  username: string;
-  createdAt: Date;
-  updatedAt: Date;
-  edited: boolean;
+  id?: number;
+  content?: string;
+  username?: string;
+  createdAt?: Date;
+  updatedAt?: Date | string;
+  edited?: boolean;
   replies?: Comment[];
   parentId?: string | null;
   flag?: number;
