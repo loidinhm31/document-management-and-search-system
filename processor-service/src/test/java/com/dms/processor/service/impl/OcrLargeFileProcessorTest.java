@@ -1,15 +1,14 @@
 package com.dms.processor.service.impl;
 
 import com.dms.processor.service.OcrService;
-import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -18,13 +17,13 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -227,7 +226,7 @@ public class OcrLargeFileProcessorTest {
             assertFalse(result2);
 
             // Test with null
-            boolean result3 = (boolean) method.invoke(ocrLargeFileProcessor, (String)null);
+            boolean result3 = (boolean) method.invoke(ocrLargeFileProcessor, (String) null);
             assertFalse(result3);
 
             // Test with empty string
@@ -238,8 +237,208 @@ public class OcrLargeFileProcessorTest {
         }
     }
 
-    // Helper methods
+    @Test
+    void testProcessLargePdf_WithNullPath() {
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () ->
+                ocrLargeFileProcessor.processLargePdf(null));
+    }
 
+    @Test
+    void testProcessLargePdf_WithNonExistentFile() {
+        // Arrange
+        Path nonExistentPath = tempDir.resolve("non-existent.pdf");
+
+        // Act & Assert
+        assertThrows(IOException.class, () ->
+                ocrLargeFileProcessor.processLargePdf(nonExistentPath));
+    }
+
+    @Test
+    void testInitialize_ValidatesThreadPoolConfiguration() {
+        // Arrange
+        OcrLargeFileProcessor processor = new OcrLargeFileProcessor(ocrService);
+        ReflectionTestUtils.setField(processor, "maxThreads", 4);
+
+        // Act
+        processor.initialize();
+
+        // Assert
+        ExecutorService executorService = (ExecutorService) ReflectionTestUtils.getField(processor, "executorService");
+        ThreadPoolExecutor threadPool = (ThreadPoolExecutor) executorService;
+
+        assertEquals(2, threadPool.getCorePoolSize());
+        assertEquals(4, threadPool.getMaximumPoolSize());
+        assertTrue(threadPool.getRejectedExecutionHandler() instanceof ThreadPoolExecutor.CallerRunsPolicy);
+    }
+
+    @Test
+    void testInitialize_MinimumThreadCount() {
+        // Arrange
+        OcrLargeFileProcessor processor = new OcrLargeFileProcessor(ocrService);
+        ReflectionTestUtils.setField(processor, "maxThreads", 1);
+
+        // Act
+        processor.initialize();
+
+        // Assert
+        ExecutorService executorService = (ExecutorService) ReflectionTestUtils.getField(processor, "executorService");
+        ThreadPoolExecutor threadPool = (ThreadPoolExecutor) executorService;
+
+        assertEquals(1, threadPool.getCorePoolSize());
+        assertEquals(1, threadPool.getMaximumPoolSize());
+    }
+
+    @Test
+    void testProcessPageImagesInChunks_EmptyImageList() throws Exception {
+        // Arrange
+        List<File> emptyImageList = new ArrayList<>();
+
+        // Act & Assert
+        String result = ocrLargeFileProcessor.processPageImagesInChunks(emptyImageList, 0);
+        assertTrue(result.trim().isEmpty());
+    }
+
+    @Test
+    void testProcessPageImagesInChunks_TimeoutException() throws Exception {
+        // Arrange
+        List<File> mockImageFiles = Collections.singletonList(
+                new File(tempDir.toFile(), "test.png")
+        );
+
+        // Set timeout to minimum
+        ReflectionTestUtils.setField(ocrLargeFileProcessor, "timeoutMinutes", 0);
+        ReflectionTestUtils.setField(ocrLargeFileProcessor, "chunkSize", 1);
+
+        // Create a never-completing future
+        CompletableFuture<String> future = new CompletableFuture<>();
+        doReturn(future).when(ocrLargeFileProcessor).processImageChunk(any(), anyInt(), anyInt());
+
+        // Act & Assert
+        assertThrows(TesseractException.class, () ->
+                ocrLargeFileProcessor.processPageImagesInChunks(mockImageFiles, 1));
+    }
+
+    @Test
+    void testProcessPageImagesInChunks_InterruptedException() throws Exception {
+        // Arrange
+        List<File> mockImageFiles = Collections.singletonList(
+                new File(tempDir.toFile(), "test.png")
+        );
+
+        ReflectionTestUtils.setField(ocrLargeFileProcessor, "chunkSize", 1);
+
+        CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+            Thread.currentThread().interrupt();
+            throw new CompletionException(new InterruptedException());
+        });
+        doReturn(future).when(ocrLargeFileProcessor).processImageChunk(any(), anyInt(), anyInt());
+
+        // Act & Assert
+        assertThrows(TesseractException.class, () ->
+                ocrLargeFileProcessor.processPageImagesInChunks(mockImageFiles, 1));
+    }
+
+    @Test
+    void testProcessPageImagesInChunks_ExecutionException() throws Exception {
+        // Arrange
+        List<File> mockImageFiles = Collections.singletonList(
+                new File(tempDir.toFile(), "test.png")
+        );
+
+        ReflectionTestUtils.setField(ocrLargeFileProcessor, "chunkSize", 1);
+
+        CompletableFuture<String> future = CompletableFuture.failedFuture(
+                new RuntimeException("Test error"));
+        doReturn(future).when(ocrLargeFileProcessor).processImageChunk(any(), anyInt(), anyInt());
+
+        // Act & Assert
+        assertThrows(TesseractException.class, () ->
+                ocrLargeFileProcessor.processPageImagesInChunks(mockImageFiles, 1));
+    }
+
+    @Test
+    void testExtractPagesToImages_EmptyPdf() throws IOException {
+        // Arrange
+        Path emptyPdfPath = tempDir.resolve("empty.pdf");
+
+        // Create minimal valid PDF with no pages
+        try (FileOutputStream fos = new FileOutputStream(emptyPdfPath.toFile())) {
+            String minimalPdf =
+                    "%PDF-1.4\n" +
+                    "1 0 obj\n" +
+                    "<</Type/Catalog/Pages 2 0 R>>\n" +
+                    "endobj\n" +
+                    "2 0 obj\n" +
+                    "<</Type/Pages/Kids[]/Count 0>>\n" +
+                    "endobj\n" +
+                    "xref\n" +
+                    "0 3\n" +
+                    "0000000000 65535 f\n" +
+                    "0000000010 00000 n\n" +
+                    "0000000053 00000 n\n" +
+                    "trailer\n" +
+                    "<</Size 3/Root 1 0 R>>\n" +
+                    "startxref\n" +
+                    "101\n" +
+                    "%%EOF";
+
+            fos.write(minimalPdf.getBytes());
+        }
+
+        File tempDirectory = tempDir.toFile();
+
+        // Act
+        List<File> result = ocrLargeFileProcessor.extractPagesToImages(emptyPdfPath, tempDirectory);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty(), "Expected empty list for PDF with no pages");
+    }
+
+    @Test
+    void testProcessLargePdf_CleanupOnSuccess() throws IOException, TesseractException {
+        // Arrange
+        Path pdfPath = createDummyPdfFile();
+        File mockTempDir = spy(new File(tempDir.toFile(), "cleanup-test"));
+        mockTempDir.mkdir();
+
+        doReturn(mockTempDir).when(ocrLargeFileProcessor).createTempDirectory();
+        doReturn("test content").when(ocrService).extractTextFromPdf(any(Path.class));
+        doReturn(true).when(ocrLargeFileProcessor).isTextSufficient(anyString());
+
+        // Act
+        ocrLargeFileProcessor.processLargePdf(pdfPath);
+
+        // Assert
+        verify(ocrLargeFileProcessor).cleanupTempDirectory(mockTempDir);
+        assertFalse(mockTempDir.exists());
+    }
+
+    @Test
+    void testThreadNaming() throws Exception {
+        // Arrange
+        OcrLargeFileProcessor processor = new OcrLargeFileProcessor(ocrService);
+        ReflectionTestUtils.setField(processor, "maxThreads", 1);
+        processor.initialize();
+
+        ExecutorService executorService = (ExecutorService) ReflectionTestUtils.getField(processor, "executorService");
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<String> threadName = new AtomicReference<>();
+
+        // Act
+        executorService.submit(() -> {
+            threadName.set(Thread.currentThread().getName());
+            latch.countDown();
+        });
+
+        // Assert
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(threadName.get().startsWith("ocr-large-processor-"));
+    }
+
+
+    // Helper methods
     private Path createDummyPdfFile() throws IOException {
         Path pdfPath = tempDir.resolve("test.pdf");
 

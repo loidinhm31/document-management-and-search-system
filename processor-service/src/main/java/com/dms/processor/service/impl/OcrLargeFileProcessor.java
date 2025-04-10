@@ -15,10 +15,10 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,7 +54,7 @@ public class OcrLargeFileProcessor {
     }
 
     @PostConstruct
-    private void initialize() {
+    protected void initialize() {
         // Create a bounded thread pool with a work queue
         ThreadFactory threadFactory = new ThreadFactory() {
             private final AtomicInteger threadNumber = new AtomicInteger(1);
@@ -99,6 +99,10 @@ public class OcrLargeFileProcessor {
     }
 
     public String processLargePdf(Path pdfPath) throws IOException, TesseractException {
+        if (Objects.isNull(pdfPath)) {
+            throw new IllegalArgumentException("PDF path cannot be null");
+        }
+
         File tempDirectory = createTempDirectory();
         processedPages.set(0);
 
@@ -196,7 +200,7 @@ public class OcrLargeFileProcessor {
         return combinedText.toString();
     }
 
-    private CompletableFuture<String> processImageChunk(
+    protected CompletableFuture<String> processImageChunk(
             List<File> chunkImages,
             int startIndex,
             int totalPages) {
@@ -284,7 +288,7 @@ public class OcrLargeFileProcessor {
      * Creates a new Tesseract instance with the same configuration as the main instance.
      * This is needed for thread safety when processing in parallel.
      */
-    private Tesseract createTesseractInstance() {
+    protected Tesseract createTesseractInstance() {
         Tesseract newInstance = new Tesseract();
         newInstance.setDatapath(tessdataPath);
         newInstance.setLanguage("eng+vie");
