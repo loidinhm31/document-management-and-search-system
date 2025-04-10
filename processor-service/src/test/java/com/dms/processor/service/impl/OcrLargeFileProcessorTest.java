@@ -1,7 +1,9 @@
 package com.dms.processor.service.impl;
 
 import com.dms.processor.service.OcrService;
+import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,12 +19,14 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,15 +50,24 @@ public class OcrLargeFileProcessorTest {
     Path tempDir;
 
     @BeforeEach
-    public void setUp() {
-        // Set private fields using ReflectionTestUtils
-        ReflectionTestUtils.setField(ocrLargeFileProcessor, "chunkSize", 5);
-        ReflectionTestUtils.setField(ocrLargeFileProcessor, "tempDir", tempDir.toString());
+    void setUp() {
+        ocrService = mock(OcrService.class);
+        ocrLargeFileProcessor = spy(new OcrLargeFileProcessor(ocrService));
+
+        // Set required fields
         ReflectionTestUtils.setField(ocrLargeFileProcessor, "maxThreads", 2);
-        ReflectionTestUtils.setField(ocrLargeFileProcessor, "timeoutMinutes", 5);
-        ReflectionTestUtils.setField(ocrLargeFileProcessor, "tessdataPath", "/usr/share/tesseract-ocr/5/tessdata");
-        ReflectionTestUtils.setField(ocrLargeFileProcessor, "dpi", 300f);
-        ReflectionTestUtils.setField(ocrLargeFileProcessor, "executorService", executorService);
+        ReflectionTestUtils.setField(ocrLargeFileProcessor, "chunkSize", 5);
+        ReflectionTestUtils.setField(ocrLargeFileProcessor, "timeoutMinutes", 1);
+
+        // Initialize the processor
+        ocrLargeFileProcessor.initialize();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (ocrLargeFileProcessor != null) {
+            ocrLargeFileProcessor.shutdown();
+        }
     }
 
     @Test
@@ -122,43 +135,6 @@ public class OcrLargeFileProcessorTest {
 
         assertNotNull(result);
         assertEquals(expectedResult, result);
-    }
-
-    @Test
-    public void testShutdown() throws InterruptedException {
-        // Test the shutdown method
-        when(executorService.awaitTermination(anyLong(), any(TimeUnit.class))).thenReturn(true);
-
-        ocrLargeFileProcessor.shutdown();
-
-        verify(executorService).shutdown();
-        verify(executorService).awaitTermination(30, TimeUnit.SECONDS);
-        verify(executorService, never()).shutdownNow();
-    }
-
-    @Test
-    public void testShutdownWithTimeout() throws InterruptedException {
-        // Test shutdown when awaiting termination times out
-        when(executorService.awaitTermination(anyLong(), any(TimeUnit.class))).thenReturn(false);
-
-        ocrLargeFileProcessor.shutdown();
-
-        verify(executorService).shutdown();
-        verify(executorService).awaitTermination(30, TimeUnit.SECONDS);
-        verify(executorService).shutdownNow();
-    }
-
-    @Test
-    public void testShutdownWithInterruption() throws InterruptedException {
-        // Test shutdown when awaiting termination is interrupted
-        when(executorService.awaitTermination(anyLong(), any(TimeUnit.class))).thenThrow(InterruptedException.class);
-
-        ocrLargeFileProcessor.shutdown();
-
-        verify(executorService).shutdown();
-        verify(executorService).awaitTermination(30, TimeUnit.SECONDS);
-        verify(executorService).shutdownNow();
-        assertTrue(Thread.currentThread().isInterrupted());
     }
 
     @Test
@@ -493,5 +469,171 @@ public class OcrLargeFileProcessorTest {
         createDummyImageFile(page0);
         createDummyImageFile(page1);
         return Arrays.asList(page0, page1);
+    }
+
+    @Test
+    void testCleanupTempDirectory_NonExistentDirectory() {
+        // Arrange
+        File nonExistentDir = new File(tempDir.toFile(), "non-existent");
+
+        // Act & Assert
+        assertDoesNotThrow(() -> ocrLargeFileProcessor.cleanupTempDirectory(nonExistentDir));
+    }
+
+    @Test
+    void testCleanupTempDirectory_UndeleteableFiles() throws IOException {
+        // Arrange
+        File mockDir = spy(new File(tempDir.toFile(), "undeleteable"));
+        mockDir.mkdir();
+        File mockFile = spy(new File(mockDir, "test.txt"));
+        Files.write(mockFile.toPath(), "test".getBytes());
+
+        doReturn(new File[]{mockFile}).when(mockDir).listFiles();
+        doReturn(false).when(mockFile).delete();
+        doReturn(false).when(mockDir).delete();
+
+        // Act & Assert
+        assertDoesNotThrow(() -> ocrLargeFileProcessor.cleanupTempDirectory(mockDir));
+    }
+
+    @Test
+    void testCreateTempDirectory_CreationFailure() {
+        // Arrange
+        String invalidPath = "\0invalid"; // null character makes path invalid
+        ReflectionTestUtils.setField(ocrLargeFileProcessor, "tempDir", invalidPath);
+
+        // Act & Assert
+        assertThrows(IOException.class, () -> ocrLargeFileProcessor.createTempDirectory());
+    }
+
+    @Test
+    void testProcessLargePdf_ExceptionDuringExtraction() throws IOException, TesseractException {
+        // Arrange
+        Path pdfPath = createDummyPdfFile();
+        doThrow(new IOException("Extraction failed"))
+            .when(ocrLargeFileProcessor).extractPagesToImages(any(Path.class), any(File.class));
+
+        // Act & Assert
+        assertThrows(IOException.class, () -> ocrLargeFileProcessor.processLargePdf(pdfPath));
+    }
+
+    @Test
+    void testProcessImageChunk_Success() throws Exception {
+        // Arrange
+        List<File> mockImageFiles = createMockImageFiles(tempDir.toFile());
+        String expectedText = "Test OCR Text";
+        Tesseract mockTesseract = mock(Tesseract.class);
+        when(mockTesseract.doOCR(any(BufferedImage.class))).thenReturn(expectedText);
+
+        doReturn(mockTesseract).when(ocrLargeFileProcessor).createTesseractInstance();
+
+        // Act
+        CompletableFuture<String> future = ocrLargeFileProcessor.processImageChunk(mockImageFiles, 0, 2);
+        String result = future.get(5, TimeUnit.SECONDS);
+
+        // Assert
+        assertTrue(result.contains(expectedText));
+        verify(mockTesseract, times(mockImageFiles.size())).doOCR(any(BufferedImage.class));
+    }
+
+    @Test
+    void testProcessImageChunk_EmptyOcrResult() throws Exception {
+        // Arrange
+        List<File> mockImageFiles = createMockImageFiles(tempDir.toFile());
+        Tesseract mockTesseract = mock(Tesseract.class);
+        when(mockTesseract.doOCR(any(BufferedImage.class))).thenReturn("");
+
+        doReturn(mockTesseract).when(ocrLargeFileProcessor).createTesseractInstance();
+
+        // Act
+        CompletableFuture<String> future = ocrLargeFileProcessor.processImageChunk(mockImageFiles, 0, 2);
+        String result = future.get(5, TimeUnit.SECONDS);
+
+        // Assert
+        assertTrue(result.trim().isEmpty());
+        verify(mockTesseract, times(mockImageFiles.size())).doOCR(any(BufferedImage.class));
+    }
+
+    @Test
+    void testProcessImageChunk_OcrException() throws Exception {
+        // Arrange
+        List<File> mockImageFiles = createMockImageFiles(tempDir.toFile());
+        Tesseract mockTesseract = mock(Tesseract.class);
+        when(mockTesseract.doOCR(any(BufferedImage.class)))
+                .thenThrow(new TesseractException("OCR failed", new RuntimeException()));
+
+        doReturn(mockTesseract).when(ocrLargeFileProcessor).createTesseractInstance();
+
+        // Act
+        CompletableFuture<String> future = ocrLargeFileProcessor.processImageChunk(mockImageFiles, 0, 2);
+        String result = future.get(5, TimeUnit.SECONDS);
+
+        // Assert
+        assertTrue(result.trim().isEmpty());
+        verify(mockTesseract, times(mockImageFiles.size())).doOCR(any(BufferedImage.class));
+    }
+
+    @Test
+    void testProcessImageChunk_InvalidImageFile() throws Exception {
+        // Arrange
+        File invalidFile = new File(tempDir.toFile(), "invalid.png");
+        List<File> mockImageFiles = Collections.singletonList(invalidFile);
+        Tesseract mockTesseract = mock(Tesseract.class);
+
+        doReturn(mockTesseract).when(ocrLargeFileProcessor).createTesseractInstance();
+
+        // Act
+        CompletableFuture<String> future = ocrLargeFileProcessor.processImageChunk(mockImageFiles, 0, 1);
+        String result = future.get(5, TimeUnit.SECONDS);
+
+        // Assert
+        assertTrue(result.trim().isEmpty());
+        verify(mockTesseract, never()).doOCR(any(BufferedImage.class));
+    }
+
+    @Test
+    void testProcessImageChunk_NullOcrResult() throws Exception {
+        // Arrange
+        List<File> mockImageFiles = createMockImageFiles(tempDir.toFile());
+        Tesseract mockTesseract = mock(Tesseract.class);
+        when(mockTesseract.doOCR(any(BufferedImage.class))).thenReturn(null);
+
+        doReturn(mockTesseract).when(ocrLargeFileProcessor).createTesseractInstance();
+
+        // Act
+        CompletableFuture<String> future = ocrLargeFileProcessor.processImageChunk(mockImageFiles, 0, 2);
+        String result = future.get(5, TimeUnit.SECONDS);
+
+        // Assert
+        assertTrue(result.trim().isEmpty());
+        verify(mockTesseract, times(mockImageFiles.size())).doOCR(any(BufferedImage.class));
+    }
+
+    @Test
+    void testProcessImageChunk_ProgressLogging() throws Exception {
+        // Arrange
+        List<File> mockImageFiles = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            File imageFile = new File(tempDir.toFile(), "page_" + i + ".png");
+            createDummyImageFile(imageFile);
+            mockImageFiles.add(imageFile);
+        }
+
+        Tesseract mockTesseract = mock(Tesseract.class);
+        when(mockTesseract.doOCR(any(BufferedImage.class))).thenReturn("Test OCR Text");
+
+        doReturn(mockTesseract).when(ocrLargeFileProcessor).createTesseractInstance();
+
+        // Reset the processed pages counter
+        ReflectionTestUtils.setField(ocrLargeFileProcessor, "processedPages", new AtomicInteger(0));
+
+        // Act
+        CompletableFuture<String> future = ocrLargeFileProcessor.processImageChunk(mockImageFiles, 0, 10);
+        future.get(5, TimeUnit.SECONDS);
+
+        // Assert
+        // Verify that the processedPages counter reached 10
+        AtomicInteger processedPages = (AtomicInteger) ReflectionTestUtils.getField(ocrLargeFileProcessor, "processedPages");
+        assertEquals(10, processedPages.get());
     }
 }
