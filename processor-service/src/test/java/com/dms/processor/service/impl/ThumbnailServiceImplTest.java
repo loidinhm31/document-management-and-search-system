@@ -224,4 +224,101 @@ class ThumbnailServiceImplTest {
                     thumbnailService.convertToBytes(image));
         }
     }
+
+    @Test
+    void generateThumbnail_WordDocx_Success() throws IOException {
+        String content = "Word DOCX content";
+        byte[] result = thumbnailService.generateThumbnail(testFilePath, DocumentType.WORD_DOCX, content);
+        assertNotNull(result);
+        assertTrue(result.length > 0);
+        BufferedImage resultImage = ImageIO.read(new ByteArrayInputStream(result));
+        assertEquals(300, resultImage.getWidth());
+        assertEquals(200, resultImage.getHeight());
+    }
+
+    @Test
+    void generateThumbnail_ExcelXlsx_Success() throws IOException {
+        String content = "Excel XLSX content";
+        byte[] result = thumbnailService.generateThumbnail(testFilePath, DocumentType.EXCEL_XLSX, content);
+        assertNotNull(result);
+        assertTrue(result.length > 0);
+        BufferedImage resultImage = ImageIO.read(new ByteArrayInputStream(result));
+        assertEquals(300, resultImage.getWidth());
+        assertEquals(200, resultImage.getHeight());
+    }
+
+    @Test
+    void generateThumbnail_PowerPointPptx_Success() throws IOException {
+        String content = "PowerPoint PPTX content";
+        byte[] result = thumbnailService.generateThumbnail(testFilePath, DocumentType.POWERPOINT_PPTX, content);
+        assertNotNull(result);
+        assertTrue(result.length > 0);
+        BufferedImage resultImage = ImageIO.read(new ByteArrayInputStream(result));
+        assertEquals(300, resultImage.getWidth());
+        assertEquals(200, resultImage.getHeight());
+    }
+
+    @Test
+    void generatePdfThumbnail_WithNullPath_ThrowsException() {
+        assertThrows(NullPointerException.class, () ->
+                thumbnailService.generateThumbnail(null, DocumentType.PDF, null));
+    }
+
+    @Test
+    void generatePdfThumbnail_WithInvalidPath_ThrowsIOException() {
+        Path invalidPath = Paths.get("nonexistent.pdf");
+        assertThrows(IOException.class, () ->
+                thumbnailService.generateThumbnail(invalidPath, DocumentType.PDF, null));
+    }
+
+    @Test
+    void resizeImage_WithZeroDimensions_ThrowsException() {
+        BufferedImage original = new BufferedImage(500, 500, BufferedImage.TYPE_INT_RGB);
+        assertThrows(IllegalArgumentException.class, () ->
+                thumbnailService.resizeImage(original, 0, 200));
+        assertThrows(IllegalArgumentException.class, () ->
+                thumbnailService.resizeImage(original, 300, 0));
+    }
+
+    @Test
+    void resizeImage_WithDifferentImageTypes() {
+        // Test different image types (TYPE_INT_RGB, TYPE_INT_ARGB, TYPE_BYTE_GRAY)
+        BufferedImage[] originals = {
+                new BufferedImage(500, 500, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(500, 500, BufferedImage.TYPE_INT_ARGB),
+                new BufferedImage(500, 500, BufferedImage.TYPE_BYTE_GRAY)
+        };
+
+        for (BufferedImage original : originals) {
+            BufferedImage resized = thumbnailService.resizeImage(original, 300, 200);
+            assertEquals(300, resized.getWidth());
+            assertEquals(200, resized.getHeight());
+            assertEquals(original.getType(), resized.getType());
+        }
+    }
+
+    @Test
+    void generateThumbnail_WithCustomDimensions() throws NoSuchFieldException, IllegalAccessException, IOException {
+        // Test with different thumbnail dimensions
+        setField(thumbnailService, "thumbnailWidth", 400);
+        setField(thumbnailService, "thumbnailHeight", 300);
+
+        String content = "Test content";
+        byte[] result = thumbnailService.generateThumbnail(testFilePath, DocumentType.TEXT_PLAIN, content);
+
+        BufferedImage resultImage = ImageIO.read(new ByteArrayInputStream(result));
+        assertEquals(400, resultImage.getWidth());
+        assertEquals(300, resultImage.getHeight());
+    }
+
+    @Test
+    void generateThumbnail_WithEmptyContent() throws IOException {
+        String emptyContent = "";
+        byte[] result = thumbnailService.generateThumbnail(testFilePath, DocumentType.TEXT_PLAIN, emptyContent);
+        assertNotNull(result);
+        assertTrue(result.length > 0);
+        BufferedImage resultImage = ImageIO.read(new ByteArrayInputStream(result));
+        assertEquals(300, resultImage.getWidth());
+        assertEquals(200, resultImage.getHeight());
+    }
 }

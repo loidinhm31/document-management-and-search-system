@@ -18,7 +18,7 @@ import org.opensearch.common.xcontent.XContentType;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
@@ -26,10 +26,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
 
-@Service
+@Component
 @Slf4j
 @RequiredArgsConstructor
-public class OpenSearchIndexService {
+public class OpenSearchIndex {
     private final RestHighLevelClient openSearchClient;
     private final ObjectMapper objectMapper;
     private static final String INDEX_NAME = "documents";

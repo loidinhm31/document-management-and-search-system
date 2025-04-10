@@ -611,4 +611,347 @@ class ContentExtractorServiceImplTest {
             assertEquals(mimeType, result.metadata().get("Detected-MIME-Type"));
         }
     }
+
+    @Test
+    void extractContent_whenMimeTypeDetectionFails_usesMultipleMethods() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("test.pdf"));
+        Files.write(filePath, "content".getBytes());
+
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            // Mock all necessary Files methods
+            filesMock.when(() -> Files.probeContentType(any(Path.class)))
+                    .thenThrow(new IOException("Probe failed"))
+                    .thenReturn(null);
+            filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.isReadable(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.size(any(Path.class))).thenReturn(100L);
+            filesMock.when(() -> Files.newInputStream(any(Path.class)))
+                    .thenReturn(new ByteArrayInputStream("content".getBytes()));
+
+            // Mock MimeTypeUtil
+            try (MockedStatic<MimeTypeUtil> mimeUtilMock = mockStatic(MimeTypeUtil.class)) {
+                mimeUtilMock.when(() -> MimeTypeUtil.getMimeTypeFromExtension(any(Path.class)))
+                        .thenReturn("application/pdf");
+                mimeUtilMock.when(() -> MimeTypeUtil.sanitizeFilePathForMimeDetection(any(Path.class)))
+                        .thenReturn(filePath);
+
+                when(smartPdfExtractor.extractText(any(Path.class)))
+                        .thenReturn(new ExtractedText("content", false));
+
+                // Act
+                DocumentExtractContent result = contentExtractorService.extractContent(filePath);
+
+                // Assert
+                assertNotNull(result);
+                assertEquals("application/pdf", result.metadata().get("Detected-MIME-Type"));
+                verify(smartPdfExtractor).extractText(any(Path.class));
+            }
+        }
+    }
+
+    @Test
+    void extractMetadataFromTika_handlesAllMetadataTypes() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("test.pdf"));
+        Files.write(filePath, "content".getBytes());
+
+        // Create a map with various metadata types
+        Map<String, String> metadata = new HashMap<>();
+
+        // Act - call tikaExtractTextContent which internally calls extractMetadataFromTika
+        contentExtractorService.tikaExtractTextContent(filePath, metadata);
+
+        // Assert
+        verify(contentExtractorService).tikaExtractTextContent(eq(filePath), anyMap());
+    }
+
+    @Test
+    void isImportantMetadata_checksAllRelevantPatterns() {
+        // Test direct matches
+        assertTrue(contentExtractorService.isImportantMetadata("Content-Type"));
+        assertTrue(contentExtractorService.isImportantMetadata("Author"));
+        assertTrue(contentExtractorService.isImportantMetadata("Creation-Date"));
+
+        // Test partial matches
+        assertTrue(contentExtractorService.isImportantMetadata("custom-creator-field"));
+        assertTrue(contentExtractorService.isImportantMetadata("document-version"));
+        assertTrue(contentExtractorService.isImportantMetadata("page-count-total"));
+
+        // Test non-matches
+        assertFalse(contentExtractorService.isImportantMetadata("irrelevant-field"));
+        assertFalse(contentExtractorService.isImportantMetadata("random-data"));
+    }
+
+    @Test
+    void extractContent_whenMetadataExtractionFails_continuesProcessing() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("test.txt"));
+        Files.write(filePath, "content".getBytes());
+
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.isReadable(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.size(any(Path.class))).thenReturn(100L);
+            filesMock.when(() -> Files.probeContentType(any(Path.class))).thenReturn("text/plain");
+            filesMock.when(() -> Files.newInputStream(any(Path.class)))
+                    .thenReturn(new ByteArrayInputStream("content".getBytes()));
+
+            // Mock MimeTypeUtil
+            try (MockedStatic<MimeTypeUtil> mimeUtilMock = mockStatic(MimeTypeUtil.class)) {
+                mimeUtilMock.when(() -> MimeTypeUtil.sanitizeFilePathForMimeDetection(any(Path.class)))
+                        .thenReturn(filePath);
+
+                // Make tikaExtractTextContent return empty string to trigger fallback
+                doReturn("").when(contentExtractorService).tikaExtractTextContent(any(Path.class), anyMap());
+
+                // Allow basicExtractTextContent to run normally
+                doCallRealMethod().when(contentExtractorService).basicExtractTextContent(any(Path.class));
+
+                // Act
+                DocumentExtractContent result = contentExtractorService.extractContent(filePath);
+
+                // Assert
+                assertNotNull(result);
+                assertFalse(result.content().isEmpty());
+                assertEquals("TEXT_PLAIN", result.metadata().get("Document-Type"));
+
+                // Verify that both extraction methods were attempted
+                verify(contentExtractorService).tikaExtractTextContent(eq(filePath), anyMap());
+                verify(contentExtractorService).basicExtractTextContent(eq(filePath));
+            }
+        }
+    }
+
+    @Test
+    void handlePdfExtraction_withZeroByteFile_handlesGracefully() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("empty.pdf"));
+
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.exists(eq(filePath))).thenReturn(true);
+            filesMock.when(() -> Files.isReadable(eq(filePath))).thenReturn(true);
+            filesMock.when(() -> Files.size(eq(filePath))).thenReturn(0L);
+            filesMock.when(() -> Files.probeContentType(any(Path.class))).thenReturn("application/pdf");
+            filesMock.when(() -> Files.newInputStream(any(Path.class)))
+                    .thenReturn(new ByteArrayInputStream(new byte[0]));
+
+            when(smartPdfExtractor.extractText(any(Path.class)))
+                    .thenReturn(new ExtractedText("", false));
+
+            // Act
+            DocumentExtractContent result = contentExtractorService.extractContent(filePath);
+
+            // Assert
+            assertNotNull(result);
+            assertTrue(result.content().isEmpty());
+            assertEquals("0", result.metadata().get("File-Size-MB"));
+        }
+    }
+
+    @Test
+    void extractContent_withInvalidUtf8Content_handlesGracefully() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("invalid-utf8.txt"));
+        byte[] invalidUtf8 = {(byte) 0xFF, (byte) 0xFF, (byte) 0xFF}; // Invalid UTF-8
+        Files.write(filePath, invalidUtf8);
+
+        // Act
+        DocumentExtractContent result = contentExtractorService.extractContent(filePath);
+
+        // Assert
+        assertNotNull(result);
+        // Should not throw exception and should return some content
+        assertNotNull(result.content());
+    }
+
+    @Test
+    void extractContent_whenDocumentTypeEnumThrowsException_handlesGracefully() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("unknown.xyz"));
+        Files.write(filePath, "content".getBytes());
+
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.probeContentType(any(Path.class)))
+                    .thenReturn("application/unknown");
+            filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.isReadable(any(Path.class))).thenReturn(true);
+
+            // Act
+            DocumentExtractContent result = contentExtractorService.extractContent(filePath);
+
+            // Assert
+            assertEquals("UNKNOWN", result.metadata().get("Document-Type"));
+        }
+    }
+
+    @Test
+    void extractContent_whenOtherMethodsFail_usesTikaForMimeDetection() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("test.file"));
+        Files.write(filePath, "some content".getBytes());
+
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            // Make Files.probeContentType return null to trigger Tika fallback
+            filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.isReadable(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.probeContentType(any(Path.class))).thenReturn(null);
+            filesMock.when(() -> Files.size(any(Path.class))).thenReturn(100L);
+            filesMock.when(() -> Files.newInputStream(any(Path.class)))
+                    .thenReturn(new ByteArrayInputStream("some content".getBytes()));
+
+            // Make MimeTypeUtil return null to force Tika usage
+            try (MockedStatic<MimeTypeUtil> mimeUtilMock = mockStatic(MimeTypeUtil.class)) {
+                mimeUtilMock.when(() -> MimeTypeUtil.sanitizeFilePathForMimeDetection(any(Path.class)))
+                        .thenReturn(filePath);
+                mimeUtilMock.when(() -> MimeTypeUtil.getMimeTypeFromExtension(any(Path.class)))
+                        .thenReturn(null);
+
+                // Mock Tika to return a specific MIME type
+                try (MockedConstruction<org.apache.tika.Tika> tikaMock = mockConstruction(org.apache.tika.Tika.class,
+                        (mock, context) -> when(mock.detect(any(File.class))).thenReturn("text/plain"))) {
+
+                    // Act
+                    DocumentExtractContent result = contentExtractorService.extractContent(filePath);
+
+                    // Assert
+                    assertNotNull(result);
+                    assertEquals("text/plain", result.metadata().get("Detected-MIME-Type"));
+                    verify(tikaMock.constructed().get(0)).detect(any(File.class));
+                }
+            }
+        }
+    }
+
+    @Test
+    void extractContent_whenTikaDetectionFails_logsWarning() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("test.file"));
+        Files.write(filePath, "some content".getBytes());
+
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.isReadable(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.probeContentType(any(Path.class))).thenReturn(null);
+            filesMock.when(() -> Files.size(any(Path.class))).thenReturn(100L);
+            filesMock.when(() -> Files.newInputStream(any(Path.class)))
+                    .thenReturn(new ByteArrayInputStream("some content".getBytes()));
+
+            try (MockedStatic<MimeTypeUtil> mimeUtilMock = mockStatic(MimeTypeUtil.class)) {
+                mimeUtilMock.when(() -> MimeTypeUtil.sanitizeFilePathForMimeDetection(any(Path.class)))
+                        .thenReturn(filePath);
+                mimeUtilMock.when(() -> MimeTypeUtil.getMimeTypeFromExtension(any(Path.class)))
+                        .thenReturn(null);
+
+                // Mock Tika to throw an exception
+                try (MockedConstruction<org.apache.tika.Tika> tikaMock = mockConstruction(org.apache.tika.Tika.class,
+                        (mock, context) -> when(mock.detect(any(File.class)))
+                                .thenThrow(new IOException("Tika detection failed")))) {
+
+                    // Act
+                    DocumentExtractContent result = contentExtractorService.extractContent(filePath);
+
+                    // Assert
+                    assertNotNull(result);
+                    assertEquals("application/octet-stream", result.metadata().get("Detected-MIME-Type"));
+                    verify(tikaMock.constructed().get(0)).detect(any(File.class));
+                }
+            }
+        }
+    }
+
+    @Test
+    void extractContent_whenAllMimeDetectionsFail_handlesDocxFallback() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("test.docx"));
+        Path sanitizedPath = tempDir.resolve("sanitized_test.docx"); // Different path for sanitized version
+        Files.write(filePath, "dummy content".getBytes());
+
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            // Setup basic file operations
+            filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.isReadable(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.size(any(Path.class))).thenReturn(100L);
+            filesMock.when(() -> Files.newInputStream(any(Path.class)))
+                    .thenReturn(new ByteArrayInputStream("dummy content".getBytes()));
+            filesMock.when(() -> Files.isHidden(any(Path.class))).thenReturn(false);
+
+            try (MockedStatic<MimeTypeUtil> mimeUtilMock = mockStatic(MimeTypeUtil.class)) {
+                // Return different path for sanitized version to trigger second probeContentType call
+                mimeUtilMock.when(() -> MimeTypeUtil.sanitizeFilePathForMimeDetection(any(Path.class)))
+                        .thenReturn(sanitizedPath);
+                mimeUtilMock.when(() -> MimeTypeUtil.getMimeTypeFromExtension(any(Path.class)))
+                        .thenReturn(null);
+
+                // Mock Tika to throw an exception
+                try (MockedConstruction<org.apache.tika.Tika> tikaMock = mockConstruction(org.apache.tika.Tika.class,
+                        (mock, context) -> when(mock.detect(any(File.class)))
+                                .thenThrow(new IOException("Tika detection failed")))) {
+
+                    // Act
+                    DocumentExtractContent result = contentExtractorService.extractContent(filePath);
+
+                    // Assert
+                    assertNotNull(result);
+                    assertEquals(
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            result.metadata().get("Detected-MIME-Type")
+                    );
+                    assertEquals("WORD_DOCX", result.metadata().get("Document-Type"));
+
+                    // Verify probeContentType was called for both original and sanitized paths
+                    filesMock.verify(() -> Files.probeContentType(eq(filePath)));
+                    filesMock.verify(() -> Files.probeContentType(eq(sanitizedPath)));
+                    verify(tikaMock.constructed().get(0)).detect(any(File.class));
+                    mimeUtilMock.verify(() -> MimeTypeUtil.getMimeTypeFromExtension(any(Path.class)));
+                }
+            }
+        }
+    }
+
+    @Test
+    void extractContent_whenAllMimeDetectionsFail_handlesNonDocxFallback() throws Exception {
+        // Arrange
+        Path filePath = Files.createFile(tempDir.resolve("test.unknown"));
+        Path sanitizedPath = tempDir.resolve("sanitized_test.unknown"); // Different path for sanitized version
+        Files.write(filePath, "dummy content".getBytes());
+
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            // Setup basic file operations
+            filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.isReadable(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.size(any(Path.class))).thenReturn(100L);
+            filesMock.when(() -> Files.newInputStream(any(Path.class)))
+                    .thenReturn(new ByteArrayInputStream("dummy content".getBytes()));
+            filesMock.when(() -> Files.isHidden(any(Path.class))).thenReturn(false);
+
+            try (MockedStatic<MimeTypeUtil> mimeUtilMock = mockStatic(MimeTypeUtil.class)) {
+                // Return different path for sanitized version to trigger second probeContentType call
+                mimeUtilMock.when(() -> MimeTypeUtil.sanitizeFilePathForMimeDetection(any(Path.class)))
+                        .thenReturn(sanitizedPath);
+                mimeUtilMock.when(() -> MimeTypeUtil.getMimeTypeFromExtension(any(Path.class)))
+                        .thenReturn(null);
+
+                // Mock Tika to throw an exception
+                try (MockedConstruction<org.apache.tika.Tika> tikaMock = mockConstruction(org.apache.tika.Tika.class,
+                        (mock, context) -> when(mock.detect(any(File.class)))
+                                .thenThrow(new IOException("Tika detection failed")))) {
+
+                    // Act
+                    DocumentExtractContent result = contentExtractorService.extractContent(filePath);
+
+                    // Assert
+                    assertNotNull(result);
+                    assertEquals("application/octet-stream", result.metadata().get("Detected-MIME-Type"));
+                    assertEquals("UNKNOWN", result.metadata().get("Document-Type"));
+
+                    // Verify probeContentType was called for both original and sanitized paths
+                    filesMock.verify(() -> Files.probeContentType(eq(filePath)));
+                    filesMock.verify(() -> Files.probeContentType(eq(sanitizedPath)));
+                    verify(tikaMock.constructed().get(0)).detect(any(File.class));
+                    mimeUtilMock.verify(() -> MimeTypeUtil.getMimeTypeFromExtension(any(Path.class)));
+                }
+            }
+        }
+    }
 }

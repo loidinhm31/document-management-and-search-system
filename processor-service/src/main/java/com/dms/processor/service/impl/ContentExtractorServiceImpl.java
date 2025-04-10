@@ -274,7 +274,7 @@ public class ContentExtractorServiceImpl implements ContentExtractorService {
         }
     }
 
-    private boolean isImportantMetadata(String name) {
+    protected boolean isImportantMetadata(String name) {
         // Define important metadata keys
         Set<String> importantKeys = Set.of(
                 // Common metadata
