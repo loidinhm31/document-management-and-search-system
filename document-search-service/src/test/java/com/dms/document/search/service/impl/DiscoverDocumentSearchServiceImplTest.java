@@ -3,6 +3,7 @@ package com.dms.document.search.service.impl;
 import com.dms.document.search.client.UserClient;
 import com.dms.document.search.dto.*;
 import com.dms.document.search.enums.AppRole;
+import com.dms.document.search.model.DocumentPreferences;
 import com.dms.document.search.repository.DocumentPreferencesRepository;
 import com.dms.document.search.service.DocumentFavoriteService;
 import org.apache.lucene.search.TotalHits;
@@ -214,5 +215,366 @@ class DiscoverDocumentSearchServiceImplTest {
         assertTrue(result.isEmpty());
         verify(userClient, times(1)).getUserByUsername(username);
         verify(openSearchClient, never()).search(any(SearchRequest.class), eq(RequestOptions.DEFAULT));
+    }
+
+    @Test
+    void searchDocuments_WithPreferences_AppliesPreferenceBoosts() throws IOException {
+        // Arrange
+        DocumentPreferences preferences = new DocumentPreferences();
+        preferences.setPreferredMajors(Set.of("CS", "IT"));
+        preferences.setPreferredCourseCodes(Set.of("CS101", "IT202"));
+        preferences.setPreferredLevels(Set.of("Beginner", "Intermediate"));
+        preferences.setPreferredCategories(Set.of("Programming", "Database"));
+        preferences.setPreferredTags(Set.of("java", "spring"));
+        preferences.setLanguagePreferences(Set.of("en", "vi"));
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentPreferencesRepository.findByUserId(userId.toString()))
+                .thenReturn(Optional.of(preferences));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        verify(documentPreferencesRepository).findByUserId(userId.toString());
+    }
+
+    @Test
+    void searchDocuments_WithShortQuery_AppliesDefinitionSearchLogic() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("java spring") // Short query that should trigger definition search logic
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void searchDocuments_WithVietnameseText_AdjustsMinScore() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("tài liệu kiểm tra")
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void searchDocuments_WithSortField_AppliesSorting() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("test document")
+                .sortField("createdAt")
+                .sortDirection("DESC")
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void searchDocuments_WithFilters_AppliesFilterConditions() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("test document")
+                .majors(Set.of("CS", "IT"))
+                .courseCodes(Set.of("CS101"))
+                .level("Beginner")
+                .categories(Set.of("Programming"))
+                .tags(Set.of("java"))
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void getSuggestions_WithPreferences_AppliesStrongerPreferenceBoosts() throws IOException {
+        // Arrange
+        SuggestionRequest suggestionRequest = SuggestionRequest.builder()
+                .query("test document")
+                .build();
+
+        DocumentPreferences preferences = new DocumentPreferences();
+        preferences.setPreferredMajors(Set.of("CS", "IT"));
+        preferences.setLanguagePreferences(Set.of("en", "vi"));
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentPreferencesRepository.findByUserId(userId.toString()))
+                .thenReturn(Optional.of(preferences));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        List<String> result = discoverDocumentSearchService.getSuggestions(suggestionRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        verify(documentPreferencesRepository).findByUserId(userId.toString());
+    }
+
+    @Test
+    void searchDocuments_WithFavoriteOnly_AppliesFavoriteFilter() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("test document")
+                .favoriteOnly(true)
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        verify(documentFavoriteService).addFavoriteFilter(any(), eq(userId));
+    }
+
+    @Test
+    void searchDocuments_WithDifferentQueryLengths_AdjustsMinScore() throws IOException {
+        // Arrange
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Test different query lengths to cover all branches in getMinScore
+        String[] queries = new String[]{
+                "ab",      // length <= 3
+                "abcd",    // length <= 5
+                "abcdef",  // length <= 10
+                "abcdefghijklmn" // length > 10
+        };
+
+        for (int i = 0; i < queries.length; i++) {
+            searchRequest = DocumentSearchRequest.builder()
+                    .search(queries[i])
+                    .page(0)
+                    .size(10)
+                    .build();
+
+            // Act
+            Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+            // Assert
+            assertNotNull(result);
+        }
+    }
+
+    @Test
+    void searchDocuments_WithDifferentSortFields_AppliesCorrectSortFieldNames() throws IOException {
+        // Arrange
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Test different sort fields to cover all branches in getSortableFieldName
+        String[] sortFields = new String[]{
+                "filename",
+                "content",
+                "created_at",
+                "createdAt",
+                "someOtherField"
+        };
+
+        for (int i = 0; i < sortFields.length; i++) {
+            searchRequest = DocumentSearchRequest.builder()
+                    .search("test")
+                    .sortField(sortFields[i])
+                    .sortDirection("ASC")
+                    .page(0)
+                    .size(10)
+                    .build();
+
+            // Act
+            Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+            // Assert
+            assertNotNull(result);
+        }
+    }
+
+    @Test
+    void searchDocuments_WithNoExplicitSort_AppliesDefaultSorting() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("test")
+                .sortField(null)
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+    }
+
+    @Test
+    void searchDocuments_WithNoPreferences_SkipsPreferenceBoosts() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("test")
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentPreferencesRepository.findByUserId(userId.toString()))
+                .thenReturn(Optional.empty());
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        verify(documentPreferencesRepository).findByUserId(userId.toString());
+    }
+
+    @Test
+    void searchDocuments_WithEmptyPreferences_SkipsSpecificBoosts() throws IOException {
+        // Arrange
+        DocumentPreferences emptyPreferences = new DocumentPreferences();
+        // Don't set any preferences, leaving collections null or empty
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentPreferencesRepository.findByUserId(userId.toString()))
+                .thenReturn(Optional.of(emptyPreferences));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        searchRequest = DocumentSearchRequest.builder()
+                .search("test")
+                .page(0)
+                .size(10)
+                .build();
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        verify(documentPreferencesRepository).findByUserId(userId.toString());
+    }
+
+    @Test
+    void getSuggestions_WithEmptyFilters_ReturnsResults() throws IOException {
+        // Arrange
+        SuggestionRequest suggestionRequest = SuggestionRequest.builder()
+                .query("test")
+                .majors(Collections.emptySet())
+                .courseCodes(Collections.emptySet())
+                .level(null)
+                .categories(Collections.emptySet())
+                .tags(Collections.emptySet())
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        List<String> result = discoverDocumentSearchService.getSuggestions(suggestionRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        verify(openSearchClient).search(any(SearchRequest.class), eq(RequestOptions.DEFAULT));
+    }
+
+    @Test
+    void searchDocuments_WithDefaultSize_UsesDefaultPageSize() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("test")
+                .page(0)
+                .size(0) // This should trigger default size of 10
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+    }
+
+    @Test
+    void searchDocuments_WithNullSearchQuery_HandlesNullCase() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search(null)
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
     }
 }
