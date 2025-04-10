@@ -52,7 +52,7 @@ public class OcrServiceImpl implements OcrService {
     }
 
     @PostConstruct
-    private void initialize() {
+    protected void initialize() {
         // If maxThreads is 0 or negative, use available processors
         int threads = maxThreads <= 0 ?
                 Runtime.getRuntime().availableProcessors() :
@@ -250,7 +250,7 @@ public class OcrServiceImpl implements OcrService {
         return extractedText.toString();
     }
 
-    private BufferedImage renderPage(PDFRenderer pdfRenderer, int page) throws IOException {
+    protected BufferedImage renderPage(PDFRenderer pdfRenderer, int page) throws IOException {
         return pdfRenderer.renderImageWithDPI(
                 page,
                 dpi,
@@ -276,7 +276,7 @@ public class OcrServiceImpl implements OcrService {
      * Creates a new Tesseract instance with the same configuration as the main instance.
      * This is needed for thread safety when processing in parallel.
      */
-    private Tesseract createTesseractInstance() {
+    protected Tesseract createTesseractInstance() {
         Tesseract newInstance = new Tesseract();
         newInstance.setDatapath(tessdataPath);
         newInstance.setLanguage("eng+vie");

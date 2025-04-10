@@ -1,4 +1,4 @@
-package com.dms.processor.service.impl;
+package com.dms.processor.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
