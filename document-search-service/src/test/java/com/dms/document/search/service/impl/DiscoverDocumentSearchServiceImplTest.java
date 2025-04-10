@@ -10,6 +10,7 @@ import org.apache.lucene.search.TotalHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -577,4 +578,249 @@ class DiscoverDocumentSearchServiceImplTest {
         // Assert
         assertNotNull(result);
     }
+
+    @Test
+    void searchDocuments_WithMentorRole_AppliesCorrectAccessFilters() throws IOException {
+        // Arrange
+        UserResponse mentorResponse = new UserResponse(userId, username, "mentor@example.com",
+                new RoleResponse(UUID.randomUUID(), AppRole.ROLE_MENTOR));
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(mentorResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+
+        // Verify search request contains sharing filters appropriate for non-admin roles
+        verify(openSearchClient).search(argThat(request -> {
+            String sourceString = request.source().toString().toLowerCase();
+            return sourceString.contains("sharingtype") &&
+                   sourceString.contains("userid") &&
+                   !sourceString.contains("role_admin");
+        }), any(RequestOptions.class));
+    }
+
+    @Test
+    void getSuggestions_WithDifferentHighlightFields_PrioritizesCorrectly() throws IOException {
+        // Arrange
+        SuggestionRequest suggestionRequest = SuggestionRequest.builder()
+                .query("test document")
+                .build();
+
+        // Set up mock with multiple highlight fields to test prioritization
+        SearchHit hit = mock(SearchHit.class);
+        Map<String, Object> sourceMap = new HashMap<>();
+        sourceMap.put("filename", "Test Document");
+        lenient().when(hit.getSourceAsMap()).thenReturn(sourceMap);
+
+        Map<String, HighlightField> highlightFields = new HashMap<>();
+
+        // Content highlight (higher priority)
+        HighlightField contentField = mock(HighlightField.class);
+        lenient().when(contentField.fragments()).thenReturn(new Text[]{
+                new Text("content highlight 1"),
+                new Text("content highlight 2")
+        });
+        highlightFields.put("content", contentField);
+
+        // Filename highlights (lower priority)
+        HighlightField filenameAnalyzedField = mock(HighlightField.class);
+        lenient().when(filenameAnalyzedField.fragments()).thenReturn(new Text[]{
+                new Text("filename analyzed highlight")
+        });
+        highlightFields.put("filename.analyzed", filenameAnalyzedField);
+
+        HighlightField filenameSearchField = mock(HighlightField.class);
+        lenient().when(filenameSearchField.fragments()).thenReturn(new Text[]{
+                new Text("filename search highlight")
+        });
+        highlightFields.put("filename.search", filenameSearchField);
+
+        lenient().when(hit.getHighlightFields()).thenReturn(highlightFields);
+
+        SearchHits hits = mock(SearchHits.class);
+        lenient().when(hits.getHits()).thenReturn(new SearchHit[]{hit});
+
+        SearchResponse mockResponse = mock(SearchResponse.class);
+        lenient().when(mockResponse.getHits()).thenReturn(hits);
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(mockResponse);
+
+        // Act
+        List<String> result = discoverDocumentSearchService.getSuggestions(suggestionRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(4, result.size()); // Should contain all unique fragments
+        // The content highlights should come first
+        assertEquals("content highlight 1", result.get(0));
+        assertEquals("content highlight 2", result.get(1));
+    }
+
+    @Test
+    void getSuggestions_WithMoreThanMaxSuggestions_LimitsResults() throws IOException {
+        // Arrange
+        SuggestionRequest suggestionRequest = SuggestionRequest.builder()
+                .query("test document")
+                .build();
+
+        // Set up a mock with more than MAX_SUGGESTIONS highlights
+        SearchHit hit = mock(SearchHit.class);
+        Map<String, Object> sourceMap = new HashMap<>();
+        sourceMap.put("filename", "Test Document");
+        lenient().when(hit.getSourceAsMap()).thenReturn(sourceMap);
+
+        Map<String, HighlightField> highlightFields = new HashMap<>();
+        HighlightField contentField = mock(HighlightField.class);
+
+        // Create 15 fragments (more than MAX_SUGGESTIONS which is 10)
+        Text[] fragments = new Text[15];
+        for (int i = 0; i < 15; i++) {
+            fragments[i] = new Text("content highlight " + i);
+        }
+
+        lenient().when(contentField.fragments()).thenReturn(fragments);
+        highlightFields.put("content", contentField);
+        lenient().when(hit.getHighlightFields()).thenReturn(highlightFields);
+
+        SearchHits hits = mock(SearchHits.class);
+        lenient().when(hits.getHits()).thenReturn(new SearchHit[]{hit});
+
+        SearchResponse mockResponse = mock(SearchResponse.class);
+        lenient().when(mockResponse.getHits()).thenReturn(hits);
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(mockResponse);
+
+        // Act
+        List<String> result = discoverDocumentSearchService.getSuggestions(suggestionRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(10, result.size()); // Should be limited to MAX_SUGGESTIONS (10)
+    }
+
+    @Test
+    void searchDocuments_WithEmptyFilters_DoesNotApplyFilterConditions() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("test document")
+                .majors(Collections.emptySet())
+                .courseCodes(Collections.emptySet())
+                .level("")
+                .categories(Collections.emptySet())
+                .tags(Collections.emptySet())
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(openSearchClient.search(any(SearchRequest.class), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+        verify(openSearchClient).search(argThat(request -> {
+            // Verify the query doesn't contain terms queries for empty filters
+            String sourceString = request.source().toString().toLowerCase();
+            // The query should not contain terms clauses for the empty filters
+            return !sourceString.contains("\"terms\":{\"majors\"") &&
+                   !sourceString.contains("\"terms\":{\"coursecodes\"") &&
+                   !sourceString.contains("\"term\":{\"courselevel\"") &&
+                   !sourceString.contains("\"terms\":{\"categories\"") &&
+                   !sourceString.contains("\"terms\":{\"tags\"");
+        }), any(RequestOptions.class));
+    }
+
+    @Test
+    void searchDocuments_WithDefinitionQueryType_ConfiguresHighlightingCorrectly() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("spring") // Short query that should trigger definition search
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        // Use a simple any() matcher for the search request
+        when(openSearchClient.search(any(), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+
+        // Capture the actual SearchRequest that was passed
+        ArgumentCaptor<SearchRequest> requestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+        verify(openSearchClient).search(requestCaptor.capture(), eq(RequestOptions.DEFAULT));
+
+        // Extract and examine the captured request
+        SearchRequest capturedRequest = requestCaptor.getValue();
+        String requestSource = capturedRequest.source().toString();
+
+        // Now just verify the specific part we care about
+        assertTrue(requestSource.contains("highlight"));
+        assertTrue(requestSource.contains("content"));
+        // For definition queries, fragment size is 200 and number of fragments is 1
+        assertTrue(requestSource.contains("\"fragment_size\":200") ||
+                   requestSource.contains("\"fragmentSize\":200"));
+        assertTrue(requestSource.contains("\"number_of_fragments\":1") ||
+                   requestSource.contains("\"numberOfFragments\":1") ||
+                   requestSource.contains("\"num_of_fragments\":1"));
+    }
+
+    @Test
+    void searchDocuments_WithGeneralQueryType_ConfiguresHighlightingDifferently() throws IOException {
+        // Arrange
+        searchRequest = DocumentSearchRequest.builder()
+                .search("multiple words that make this a general query") // Longer query
+                .page(0)
+                .size(10)
+                .build();
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        // Use a simple any() matcher for the search request
+        when(openSearchClient.search(any(), eq(RequestOptions.DEFAULT)))
+                .thenReturn(searchResponse);
+
+        // Act
+        Page<DocumentResponseDto> result = discoverDocumentSearchService.searchDocuments(searchRequest, username);
+
+        // Assert
+        assertNotNull(result);
+
+        // Capture the actual SearchRequest that was passed
+        ArgumentCaptor<SearchRequest> requestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+        verify(openSearchClient).search(requestCaptor.capture(), eq(RequestOptions.DEFAULT));
+
+        // Extract and examine the captured request
+        SearchRequest capturedRequest = requestCaptor.getValue();
+        String requestSource = capturedRequest.source().toString();
+
+        // Now just verify the specific part we care about
+        assertTrue(requestSource.contains("highlight"));
+        assertTrue(requestSource.contains("content"));
+        // For general queries, fragment size is 150 and number of fragments is 2
+        assertTrue(requestSource.contains("\"fragment_size\":150") ||
+                   requestSource.contains("\"fragmentSize\":150"));
+        assertTrue(requestSource.contains("\"number_of_fragments\":2") ||
+                   requestSource.contains("\"numberOfFragments\":2") ||
+                   requestSource.contains("\"num_of_fragments\":2"));
+    }
+
+
+
 }
