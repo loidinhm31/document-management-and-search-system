@@ -443,4 +443,110 @@ public class DocumentShareServiceImplTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void getDocumentShareSettings_ShouldThrowException_WhenUserHasInvalidRole() {
+        // Arrange
+        RoleResponse invalidRole = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN);
+        UserResponse invalidUser = new UserResponse(userId, username, "test@example.com", invalidRole);
+        ResponseEntity<UserResponse> userResponseEntity = new ResponseEntity<>(invalidUser, HttpStatus.OK);
+        when(userClient.getUserByUsername(username)).thenReturn(userResponseEntity);
+
+        // Act & Assert
+        assertThrows(InvalidDataAccessResourceUsageException.class, () ->
+                documentShareService.getDocumentShareSettings(documentId, username));
+        verify(userClient).getUserByUsername(username);
+        verify(documentRepository, never()).findByIdAndUserId(anyString(), anyString());
+    }
+
+    @Test
+    void updateDocumentShareSettings_ShouldHandleNullSharedWith() {
+        // Arrange
+        UpdateShareSettingsRequest request = new UpdateShareSettingsRequest(false, null);
+        ResponseEntity<UserResponse> userResponseEntity = new ResponseEntity<>(userResponse, HttpStatus.OK);
+
+        when(userClient.getUserByUsername(username)).thenReturn(userResponseEntity);
+        when(documentRepository.findByIdAndUserId(documentId, userId.toString()))
+                .thenReturn(Optional.of(documentInformation));
+        when(documentRepository.save(any(DocumentInformation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Mock CompletableFuture to execute synchronously
+        try (MockedStatic<CompletableFuture> mockedCompletableFuture = Mockito.mockStatic(CompletableFuture.class)) {
+            mockedCompletableFuture.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        return CompletableFuture.completedFuture(null);
+                    });
+
+            when(documentUserHistoryRepository.save(any(DocumentUserHistory.class)))
+                    .thenReturn(DocumentUserHistory.builder().build());
+
+            // Act
+            DocumentInformation result = documentShareService.updateDocumentShareSettings(documentId, request, username);
+
+            // Assert
+            verify(documentRepository).save(documentCaptor.capture());
+            DocumentInformation capturedDoc = documentCaptor.getValue();
+            assertEquals(SharingType.PRIVATE, capturedDoc.getSharingType());
+            assertTrue(capturedDoc.getSharedWith().isEmpty());
+            assertEquals(username, capturedDoc.getUpdatedBy());
+
+            verify(documentUserHistoryRepository).save(historyCaptor.capture());
+            DocumentUserHistory history = historyCaptor.getValue();
+            assertEquals("PRIVATE", history.getDetail());
+            verify(publishEventService).sendSyncEvent(any(SyncEventRequest.class));
+            verify(documentPreferencesService, never()).recordInteraction(any(), any(), any());
+        }
+    }
+
+    @Test
+    void updateDocumentShareSettings_ShouldHandleEmptyUsersResponseBody() {
+        // Arrange
+        Set<UUID> sharedWith = Collections.singleton(UUID.randomUUID());
+        UpdateShareSettingsRequest request = new UpdateShareSettingsRequest(false, sharedWith);
+        ResponseEntity<UserResponse> userResponseEntity = new ResponseEntity<>(userResponse, HttpStatus.OK);
+
+        when(userClient.getUserByUsername(username)).thenReturn(userResponseEntity);
+        when(documentRepository.findByIdAndUserId(documentId, userId.toString()))
+                .thenReturn(Optional.of(documentInformation));
+        when(userClient.getUsersByIds(anyList())).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        // Act & Assert
+        InvalidDocumentException exception = assertThrows(InvalidDocumentException.class, () ->
+                documentShareService.updateDocumentShareSettings(documentId, request, username));
+        assertTrue(exception.getMessage().contains("One or more shared users do not exist"));
+        verify(documentRepository, never()).save(any());
+    }
+
+    @Test
+    void searchShareableUsers_ShouldReturnEmptyList_WhenResponseHasNoBody() {
+        // Arrange
+        String query = "test";
+        when(userClient.searchUsers(query)).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        // Act
+        List<UserResponse> result = documentShareService.searchShareableUsers(query, username);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(userClient).searchUsers(query);
+    }
+
+    @Test
+    void getShareableUserDetails_ShouldReturnEmptyList_WhenResponseHasNullBody() {
+        // Arrange
+        List<UUID> userIds = Collections.singletonList(UUID.randomUUID());
+        when(userClient.getUsersByIds(userIds)).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        // Act
+        List<UserResponse> result = documentShareService.getShareableUserDetails(userIds);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(userClient).getUsersByIds(userIds);
+    }
 }

@@ -351,7 +351,7 @@ public class DocumentPreferencesServiceImpl implements DocumentPreferencesServic
     private Map<String, Double> normalizeWeights(Map<String, Map<String, Double>> typeWeights) {
         Map<String, Double> normalizedWeights = new HashMap<>();
 
-        // First, calculate total weight for each document type
+        // Calculate total weight for each document type
         typeWeights.forEach((docType, interactionWeights) -> {
             double totalTypeWeight = interactionWeights.values()
                     .stream()

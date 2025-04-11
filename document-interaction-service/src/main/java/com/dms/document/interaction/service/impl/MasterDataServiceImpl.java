@@ -213,33 +213,31 @@ public class MasterDataServiceImpl implements MasterDataService {
         String code = masterData.getCode();
         MasterDataType type = masterData.getType();
 
-        // Check with master data type
+        if (Objects.isNull(type)) {
+            return false;
+        }
+
         boolean isMasterDataUsed = switch (type) {
             case MAJOR:
                 yield documentRepository.existsByMajorCode(code);
-
             case COURSE_CODE:
                 yield documentRepository.existsByCourseCode(code) ||
-                       documentPreferencesRepository.existsByPreferredCourseCode(code);
-
+                      documentPreferencesRepository.existsByPreferredCourseCode(code);
             case COURSE_LEVEL:
                 yield documentRepository.existsByCourseLevelCode(code) ||
-                       documentPreferencesRepository.existsByPreferredLevel(code);
-
+                      documentPreferencesRepository.existsByPreferredLevel(code);
             case DOCUMENT_CATEGORY:
                 yield documentRepository.existsByCategoryCode(code) ||
-                       documentPreferencesRepository.existsByPreferredCategory(code);
-
+                      documentPreferencesRepository.existsByPreferredCategory(code);
             default:
                 yield false;
         };
 
-        // Check depend on parent link
         boolean isLinked = CollectionUtils.isNotEmpty(masterDataRepository.findByParentId(masterDataId));
         return isLinked || isMasterDataUsed;
     }
 
-        private void checkAdminRole(String username) {
+    private void checkAdminRole(String username) {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");

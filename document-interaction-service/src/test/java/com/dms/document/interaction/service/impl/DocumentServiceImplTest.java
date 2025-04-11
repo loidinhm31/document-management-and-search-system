@@ -1074,4 +1074,283 @@ public class DocumentServiceImplTest {
         String result = (String) createStoragePath.invoke(documentService, "testfile.pdf");
         assertThat(result, containsString("testfile.pdf"));
     }
+
+    @Test
+    void uploadDocument_AdminRoleFailure_ThrowsException() throws IOException {
+        // Arrange
+        UserResponse adminResponse = new UserResponse(
+                TEST_USER_ID, TEST_USERNAME, "test@example.com",
+                new com.dms.document.interaction.dto.RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN)
+        );
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(adminResponse));
+
+        // Act & Assert
+        InvalidDataAccessResourceUsageException exception = assertThrows(
+                InvalidDataAccessResourceUsageException.class,
+                () -> documentService.uploadDocument(multipartFile, "Test doc", null, null, "UG", null, null, TEST_USERNAME)
+        );
+        assertEquals("Invalid role", exception.getMessage());
+    }
+
+
+    @Test
+    void getDocumentDetails_AdminRole_Success() {
+        // Arrange
+        UserResponse adminResponse = new UserResponse(
+                TEST_USER_ID, TEST_USERNAME, "test@example.com",
+                new com.dms.document.interaction.dto.RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN)
+        );
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(adminResponse));
+        when(documentRepository.findAccessibleDocumentById(TEST_DOCUMENT_ID))
+                .thenReturn(Optional.of(testDocumentInfo));
+
+        // Act
+        DocumentInformation result = documentService.getDocumentDetails(TEST_DOCUMENT_ID, TEST_USERNAME, false);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(TEST_DOCUMENT_ID, result.getId());
+        assertNull(result.getContent());
+        verify(documentRepository).findAccessibleDocumentById(TEST_DOCUMENT_ID);
+    }
+
+    @Test
+    void validateDocument_MismatchedExtensions_ThrowsException() throws IOException {
+        // Arrange
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(testUserResponse));
+        when(multipartFile.isEmpty()).thenReturn(false);
+        when(multipartFile.getSize()).thenReturn(1024L);
+
+        // Test cases for each DocumentType
+        Map<String, String> mimeTypeToInvalidExt = new HashMap<>();
+        mimeTypeToInvalidExt.put("application/pdf", "test.docx"); // PDF
+        mimeTypeToInvalidExt.put("application/msword", "test.pdf"); // WORD
+        mimeTypeToInvalidExt.put("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "test.pdf"); // WORD_DOCX
+        mimeTypeToInvalidExt.put("application/vnd.ms-excel", "test.pdf"); // EXCEL
+        mimeTypeToInvalidExt.put("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "test.pdf"); // EXCEL_XLSX
+        mimeTypeToInvalidExt.put("application/vnd.ms-powerpoint", "test.pdf"); // POWERPOINT
+        mimeTypeToInvalidExt.put("application/vnd.openxmlformats-officedocument.presentationml.presentation", "test.pdf"); // POWERPOINT_PPTX
+        mimeTypeToInvalidExt.put("text/plain", "test.pdf"); // TEXT_PLAIN
+        mimeTypeToInvalidExt.put("text/csv", "test.pdf"); // CSV
+        mimeTypeToInvalidExt.put("application/xml", "test.pdf"); // XML
+        mimeTypeToInvalidExt.put("application/json", "test.pdf"); // JSON
+        mimeTypeToInvalidExt.put("text/markdown", "test.pdf"); // MARKDOWN
+
+        for (Map.Entry<String, String> entry : mimeTypeToInvalidExt.entrySet()) {
+            when(multipartFile.getContentType()).thenReturn(entry.getKey());
+            when(multipartFile.getOriginalFilename()).thenReturn(entry.getValue());
+
+            // Act & Assert
+            InvalidDocumentException exception = assertThrows(
+                    InvalidDocumentException.class,
+                    () -> documentService.uploadDocument(multipartFile, "Test doc", null, null, "UG", null, null, TEST_USERNAME)
+            );
+            assertTrue(exception.getMessage().contains("File extension"));
+        }
+    }
+
+    @Test
+    void revertToVersion_NullMetadata_Success() {
+        // Arrange
+        DocumentVersion versionWithNulls = DocumentVersion.builder()
+                .versionNumber(0)
+                .filePath(TEST_S3_KEY)
+                .filename("testfile.pdf")
+                .fileSize(1024L)
+                .mimeType("application/pdf")
+                .documentType(DocumentType.PDF)
+                .status(DocumentStatus.COMPLETED)
+                .language(null) // Null language
+                .extractedMetadata(null) // Null metadata
+                .createdBy(TEST_USERNAME)
+                .createdAt(Instant.now())
+                .build();
+
+        DocumentInformation docWithNulls = testDocumentInfo.withContent(null);
+        docWithNulls.setVersions(List.of(versionWithNulls));
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(testUserResponse));
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(TEST_DOCUMENT_ID, TEST_USER_ID.toString()))
+                .thenReturn(Optional.of(docWithNulls));
+        when(documentRepository.save(any(DocumentInformation.class))).thenReturn(docWithNulls);
+
+        // Act
+        DocumentInformation result = documentService.revertToVersion(TEST_DOCUMENT_ID, 0, TEST_USERNAME);
+
+        // Assert
+        assertNotNull(result);
+        ArgumentCaptor<DocumentInformation> captor = ArgumentCaptor.forClass(DocumentInformation.class);
+        verify(documentRepository).save(captor.capture());
+        DocumentInformation savedDoc = captor.getValue();
+        assertNull(savedDoc.getLanguage());
+        assertNull(savedDoc.getExtractedMetadata());
+        assertEquals(1, savedDoc.getCurrentVersion());
+    }
+
+    @Test
+    void updateDocumentWithFile_EmptyVersionsList_Success() throws IOException {
+        // Arrange
+        DocumentInformation docWithNoVersions = testDocumentInfo.withContent(null);
+        docWithNoVersions.setVersions(Collections.emptyList());
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(testUserResponse));
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(TEST_DOCUMENT_ID, TEST_USER_ID.toString()))
+                .thenReturn(Optional.of(docWithNoVersions));
+        when(multipartFile.isEmpty()).thenReturn(false);
+        when(multipartFile.getSize()).thenReturn(2048L);
+        when(multipartFile.getContentType()).thenReturn("application/pdf");
+        when(multipartFile.getOriginalFilename()).thenReturn("updated-file.pdf");
+        when(s3Service.uploadFile(any(MultipartFile.class), eq("documents"))).thenReturn("documents/new-path/updated-file.pdf");
+        when(documentRepository.save(any(DocumentInformation.class))).thenReturn(docWithNoVersions);
+
+        DocumentUpdateRequest updateRequest = new DocumentUpdateRequest("Updated summary", null, null, "UG", null, null);
+
+        // Act
+        DocumentInformation result = documentService.updateDocumentWithFile(TEST_DOCUMENT_ID, multipartFile, updateRequest, TEST_USERNAME);
+
+        // Assert
+        assertNotNull(result);
+        ArgumentCaptor<DocumentInformation> captor = ArgumentCaptor.forClass(DocumentInformation.class);
+        verify(documentRepository).save(captor.capture());
+        DocumentInformation savedDoc = captor.getValue();
+        assertEquals(1, savedDoc.getCurrentVersion());
+        assertEquals(1, savedDoc.getVersions().size());
+        assertEquals("updated-file.pdf", savedDoc.getFilename());
+    }
+
+    @Test
+    void deleteDocument_AlreadyDeleted_Success() {
+        // Arrange
+        DocumentInformation deletedDoc = testDocumentInfo.withContent(null);
+        deletedDoc.setDeleted(true);
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(testUserResponse));
+        when(documentRepository.findByIdAndUserId(TEST_DOCUMENT_ID, TEST_USER_ID.toString()))
+                .thenReturn(Optional.of(deletedDoc));
+        when(documentRepository.save(any(DocumentInformation.class))).thenReturn(deletedDoc);
+
+        // Act
+        documentService.deleteDocument(TEST_DOCUMENT_ID, TEST_USERNAME);
+
+        // Assert
+        ArgumentCaptor<DocumentInformation> captor = ArgumentCaptor.forClass(DocumentInformation.class);
+        verify(documentRepository).save(captor.capture());
+        DocumentInformation savedDoc = captor.getValue();
+        assertTrue(savedDoc.isDeleted());
+        verify(documentUserHistoryRepository, timeout(1000)).save(any()); // Async history save
+    }
+
+    @Test
+    void getPopularTags_EmptyResults_ReturnsEmptySet() {
+        // Arrange
+        when(documentRepository.findDistinctTagsByPattern("xyz")).thenReturn(Collections.emptyList());
+        when(documentRepository.findAllTags()).thenReturn(Collections.emptyList());
+
+        // Act
+        Set<String> resultWithPrefix = documentService.getPopularTags("xyz");
+        Set<String> resultNoPrefix = documentService.getPopularTags(null);
+
+        // Assert
+        assertNotNull(resultWithPrefix);
+        assertTrue(resultWithPrefix.isEmpty());
+        assertNotNull(resultNoPrefix);
+        assertTrue(resultNoPrefix.isEmpty());
+    }
+
+    @Test
+    void validateDocument_NullMimeType_ThrowsException() throws IOException {
+        // Arrange
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(testUserResponse));
+        when(multipartFile.isEmpty()).thenReturn(false);
+        when(multipartFile.getSize()).thenReturn(1024L);
+        when(multipartFile.getContentType()).thenReturn(null);
+        lenient().when(multipartFile.getOriginalFilename()).thenReturn("test.pdf");
+
+        // Act & Assert
+        UnsupportedDocumentTypeException exception = assertThrows(
+                UnsupportedDocumentTypeException.class,
+                () -> documentService.uploadDocument(multipartFile, "Test doc", null, null, "UG", null, null, TEST_USERNAME)
+        );
+        assertTrue(exception.getMessage().contains("Unsupported document type"));
+    }
+
+    @Test
+    void getFileNameAndExtension_MultipleDots() throws Exception {
+        // Use reflection to access private methods
+        Method getFileExtension = DocumentServiceImpl.class.getDeclaredMethod("getFileExtension", String.class);
+        Method getFileName = DocumentServiceImpl.class.getDeclaredMethod("getFileName", String.class);
+        getFileExtension.setAccessible(true);
+        getFileName.setAccessible(true);
+
+        // Test with multiple dots
+        String filename = "test.file.name.pdf";
+        assertEquals(".pdf", getFileExtension.invoke(documentService, filename));
+        assertEquals("test.file.name", getFileName.invoke(documentService, filename));
+    }
+
+    @Test
+    void getDocumentVersionContent_S3DownloadFails_ThrowsIOException() throws IOException {
+        // Arrange
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(testUserResponse));
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(TEST_DOCUMENT_ID, TEST_USER_ID.toString()))
+                .thenReturn(Optional.of(testDocumentInfo));
+        when(s3Service.downloadFile(testDocumentVersion.getFilePath())).thenThrow(new IOException("S3 failure"));
+
+        // Act & Assert
+        assertThrows(
+                IOException.class,
+                () -> documentService.getDocumentVersionContent(TEST_DOCUMENT_ID, 0, TEST_USERNAME, "view", false)
+        );
+    }
+
+    @Test
+    void updateDocument_NullFields_Success() {
+        // Arrange
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(testUserResponse));
+        when(documentRepository.findByIdAndUserId(TEST_DOCUMENT_ID, TEST_USER_ID.toString()))
+                .thenReturn(Optional.of(testDocumentInfo));
+        when(documentRepository.save(any(DocumentInformation.class))).thenReturn(testDocumentInfo);
+
+        DocumentUpdateRequest updateRequest = new DocumentUpdateRequest(null, null, null, null, null, null);
+
+        // Act
+        DocumentInformation result = documentService.updateDocument(TEST_DOCUMENT_ID, updateRequest, TEST_USERNAME);
+
+        // Assert
+        assertNotNull(result);
+        ArgumentCaptor<DocumentInformation> captor = ArgumentCaptor.forClass(DocumentInformation.class);
+        verify(documentRepository).save(captor.capture());
+        DocumentInformation savedDoc = captor.getValue();
+        assertEquals(testDocumentInfo.getSummary(), savedDoc.getSummary()); // Unchanged
+    }
+
+    @Test
+    void getDocumentVersionContent_DownloadWithHistory_RecordsHistoryAndInteraction() throws IOException {
+        // Arrange
+        when(userClient.getUserByUsername(TEST_USERNAME)).thenReturn(ResponseEntity.ok(testUserResponse));
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(TEST_DOCUMENT_ID, TEST_USER_ID.toString()))
+                .thenReturn(Optional.of(testDocumentInfo));
+        byte[] fileContent = "version content".getBytes();
+        when(s3Service.downloadFile(testDocumentVersion.getFilePath())).thenReturn(fileContent);
+
+        // Act
+        byte[] result = documentService.getDocumentVersionContent(
+                TEST_DOCUMENT_ID, 0, TEST_USERNAME, "download", true
+        );
+
+        // Assert
+        assertNotNull(result);
+        assertArrayEquals(fileContent, result);
+
+        // Verify history was saved
+        ArgumentCaptor<DocumentUserHistory> historyCaptor = ArgumentCaptor.forClass(DocumentUserHistory.class);
+        verify(documentUserHistoryRepository, timeout(1000)).save(historyCaptor.capture());
+        DocumentUserHistory savedHistory = historyCaptor.getValue();
+        assertEquals(TEST_USER_ID.toString(), savedHistory.getUserId());
+        assertEquals(TEST_DOCUMENT_ID, savedHistory.getDocumentId());
+        assertEquals(UserDocumentActionType.DOWNLOAD_VERSION, savedHistory.getUserDocumentActionType());
+        assertEquals(0, savedHistory.getVersion());
+        assertTrue(savedHistory.getDetail().contains(testDocumentVersion.getFilename()));
+
+        // Verify interaction was recorded
+        verify(documentPreferencesService, timeout(1000))
+                .recordInteraction(eq(TEST_USER_ID), eq(TEST_DOCUMENT_ID), eq(InteractionType.DOWNLOAD));
+    }
 }

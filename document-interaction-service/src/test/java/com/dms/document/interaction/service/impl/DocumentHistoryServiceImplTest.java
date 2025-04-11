@@ -26,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
@@ -500,6 +501,237 @@ class DocumentHistoryServiceImplTest {
         assertNotNull(capturedQuery);
     }
 
+    @Test
+    void getUserHistory_withOnlyFromDate_shouldFilterByFromDate() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        Instant fromDate = Instant.now().minus(7, ChronoUnit.DAYS);
+
+        when(userClient.getUserByUsername(username)).thenReturn(userResponseEntity);
+
+        List<DocumentUserHistory> histories = Collections.singletonList(
+                createSampleHistory(userId.toString(), "doc1", UserDocumentActionType.VIEW_DOCUMENT)
+        );
+
+        when(mongoTemplate.find(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(histories);
+
+        lenient().when(mongoTemplate.count(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(1L);
+
+        DocumentInformation doc1 = new DocumentInformation();
+        doc1.setId("doc1");
+        doc1.setFilename("Document 1");
+
+        when(documentRepository.findByIdIn(anyList()))
+                .thenReturn(Collections.singletonList(doc1));
+
+        // Act
+        Page<UserHistoryResponse> result = documentHistoryService.getUserHistory(
+                username, null, fromDate, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
+
+        // Verify query includes only fromDate filter
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(DocumentUserHistory.class));
+        Query capturedQuery = queryCaptor.getValue();
+        String queryString = capturedQuery.toString();
+        assertTrue(queryString.contains("createdAt"));
+        assertTrue(queryString.contains("$gte"));
+        assertFalse(queryString.contains("$lte"));
+    }
+
+    @Test
+    void getUserHistory_withOnlyToDate_shouldFilterByToDate() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        Instant toDate = Instant.now();
+
+        when(userClient.getUserByUsername(username)).thenReturn(userResponseEntity);
+
+        List<DocumentUserHistory> histories = Collections.singletonList(
+                createSampleHistory(userId.toString(), "doc1", UserDocumentActionType.VIEW_DOCUMENT)
+        );
+
+        when(mongoTemplate.find(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(histories);
+
+        lenient().when(mongoTemplate.count(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(1L);
+
+        DocumentInformation doc1 = new DocumentInformation();
+        doc1.setId("doc1");
+        doc1.setFilename("Document 1");
+
+        when(documentRepository.findByIdIn(anyList()))
+                .thenReturn(Collections.singletonList(doc1));
+
+        // Act
+        Page<UserHistoryResponse> result = documentHistoryService.getUserHistory(
+                username, null, null, toDate, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
+
+        // Verify query includes only toDate filter
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(DocumentUserHistory.class));
+        Query capturedQuery = queryCaptor.getValue();
+        String queryString = capturedQuery.toString();
+        assertTrue(queryString.contains("createdAt"));
+        assertTrue(queryString.contains("$lte"));
+        assertFalse(queryString.contains("$gte"));
+    }
+
+    @Test
+    void getUserHistory_withSearchTermNoMatchingDocs_shouldFilterByDetailOnly() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        String searchTerm = "nonexistent";
+
+        when(userClient.getUserByUsername(username)).thenReturn(userResponseEntity);
+
+        // No matching documents
+        when(mongoTemplate.find(any(Query.class), eq(org.bson.Document.class), eq("documents")))
+                .thenReturn(Collections.emptyList());
+
+        List<DocumentUserHistory> histories = Collections.singletonList(
+                createSampleHistoryWithDetail(userId.toString(), "doc1", UserDocumentActionType.COMMENT, searchTerm)
+        );
+
+        when(mongoTemplate.find(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(histories);
+
+        lenient().when(mongoTemplate.count(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(1L);
+
+        DocumentInformation doc1 = new DocumentInformation();
+        doc1.setId("doc1");
+        doc1.setFilename("Document 1");
+
+        when(documentRepository.findByIdIn(anyList()))
+                .thenReturn(Collections.singletonList(doc1));
+
+        // Act
+        Page<UserHistoryResponse> result = documentHistoryService.getUserHistory(
+                username, null, null, null, searchTerm, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
+        assertEquals(searchTerm, result.getContent().get(0).detail());
+
+        // Verify query includes detail filter but not documentId
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(DocumentUserHistory.class));
+        Query capturedQuery = queryCaptor.getValue();
+        String queryString = capturedQuery.toString();
+        assertTrue(queryString.contains("detail"));
+        assertTrue(queryString.contains(searchTerm));
+    }
+
+    @Test
+    void getUserHistory_withServerErrorFromUserClient_shouldThrowException() {
+        // Arrange
+        String username = "testuser";
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // Mock user client to return server error
+        when(userClient.getUserByUsername(username))
+                .thenReturn(new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        // Act & Assert
+        assertThrows(InvalidDataAccessResourceUsageException.class, () ->
+                documentHistoryService.getUserHistory(username, null, null, null, null, pageable)
+        );
+
+        // Verify
+        verify(userClient).getUserByUsername(username);
+        verifyNoInteractions(mongoTemplate, documentRepository);
+    }
+
+    @Test
+    void getUserHistory_shouldSortByCreatedAtDescending() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        when(userClient.getUserByUsername(username)).thenReturn(userResponseEntity);
+
+        // Create histories with explicit timestamps
+        Instant now = Instant.now();
+        Instant yesterday = now.minus(1, ChronoUnit.DAYS);
+
+        List<DocumentUserHistory> histories = Arrays.asList(
+                createSampleHistoryWithTimestamp(userId.toString(), "doc2", UserDocumentActionType.DOWNLOAD_FILE, now),
+                createSampleHistoryWithTimestamp(userId.toString(), "doc1", UserDocumentActionType.VIEW_DOCUMENT, yesterday)
+        );
+
+        when(mongoTemplate.find(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(histories);
+
+        lenient().when(mongoTemplate.count(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(2L);
+
+        DocumentInformation doc1 = new DocumentInformation();
+        doc1.setId("doc1");
+        doc1.setFilename("Document 1");
+
+        DocumentInformation doc2 = new DocumentInformation();
+        doc2.setId("doc2");
+        doc2.setFilename("Document 2");
+
+        when(documentRepository.findByIdIn(anyList()))
+                .thenReturn(Arrays.asList(doc1, doc2));
+
+        // Act
+        Page<UserHistoryResponse> result = documentHistoryService.getUserHistory(
+                username, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals("doc2", result.getContent().get(0).documentId()); // Newer (now)
+        assertEquals("doc1", result.getContent().get(1).documentId()); // Older (yesterday)
+
+        // Verify sort
+        verify(mongoTemplate).find(queryCaptor.capture(), eq(DocumentUserHistory.class));
+        Query capturedQuery = queryCaptor.getValue();
+        assertTrue(capturedQuery.getSortObject().toJson().contains("createdAt\": -1"));
+    }
+
+    @Test
+    void getUserHistory_withNullDocumentIds_shouldHandleGracefully() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        when(userClient.getUserByUsername(username)).thenReturn(userResponseEntity);
+
+        // History with null documentId
+        List<DocumentUserHistory> histories = Collections.singletonList(
+                createSampleHistoryWithNullDocumentId(userId.toString(), UserDocumentActionType.VIEW_DOCUMENT)
+        );
+
+        when(mongoTemplate.find(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(histories);
+
+        lenient().when(mongoTemplate.count(any(Query.class), eq(DocumentUserHistory.class)))
+                .thenReturn(1L);
+
+        // Act
+        Page<UserHistoryResponse> result = documentHistoryService.getUserHistory(
+                username, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals("Unknown Document", result.getContent().get(0).documentTitle());
+
+        // Verify no interaction with documentRepository since documentId is null
+        verifyNoInteractions(documentRepository);
+    }
+
     // Helper methods
     private DocumentUserHistory createSampleHistory(String userId, String documentId, UserDocumentActionType actionType) {
         return DocumentUserHistory.builder()
@@ -516,5 +748,36 @@ class DocumentHistoryServiceImplTest {
         result.setActionType(type.name());
         result.setCount(count);
         return result;
+    }
+
+    private DocumentUserHistory createSampleHistoryWithDetail(String userId, String documentId, UserDocumentActionType actionType, String detail) {
+        return DocumentUserHistory.builder()
+                .id(UUID.randomUUID().toString())
+                .userId(userId)
+                .documentId(documentId)
+                .userDocumentActionType(actionType)
+                .detail(detail)
+                .createdAt(Instant.now())
+                .build();
+    }
+
+    private DocumentUserHistory createSampleHistoryWithTimestamp(String userId, String documentId, UserDocumentActionType actionType, Instant timestamp) {
+        return DocumentUserHistory.builder()
+                .id(UUID.randomUUID().toString())
+                .userId(userId)
+                .documentId(documentId)
+                .userDocumentActionType(actionType)
+                .createdAt(timestamp)
+                .build();
+    }
+
+    private DocumentUserHistory createSampleHistoryWithNullDocumentId(String userId, UserDocumentActionType actionType) {
+        return DocumentUserHistory.builder()
+                .id(UUID.randomUUID().toString())
+                .userId(userId)
+                .documentId(null)
+                .userDocumentActionType(actionType)
+                .createdAt(Instant.now())
+                .build();
     }
 }

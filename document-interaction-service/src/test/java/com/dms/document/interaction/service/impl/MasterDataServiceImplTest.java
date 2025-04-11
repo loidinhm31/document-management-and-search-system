@@ -648,4 +648,301 @@ public class MasterDataServiceImplTest {
                 () -> masterDataService.searchByText("query", "unknown-user"));
         verify(userClient).getUserByUsername("unknown-user");
     }
+
+    @Test
+    void save_ShouldThrowExceptionWhenMasterDataAlreadyExists() {
+        // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+        when(masterDataRepository.findByTypeAndCode(MasterDataType.MAJOR, "NEW-MAJOR"))
+                .thenReturn(Optional.of(majorMasterData));
+
+        // When & Then
+        InvalidMasterDataException exception = assertThrows(InvalidMasterDataException.class, () ->
+                masterDataService.save(validRequest, adminUsername));
+        assertEquals("MASTER_DATA_ALREADY_CREATED", exception.getMessage());
+        verify(userClient).getUserByUsername(adminUsername);
+        verify(masterDataRepository).findByTypeAndCode(MasterDataType.MAJOR, "NEW-MAJOR");
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
+    void save_ShouldThrowExceptionForCourseCodeWithEmptyParentId() {
+        // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+        MasterDataRequest courseCodeRequest = new MasterDataRequest();
+        courseCodeRequest.setType(MasterDataType.COURSE_CODE);
+        courseCodeRequest.setCode("CS202");
+        courseCodeRequest.setTranslations(validTranslationDTO);
+        courseCodeRequest.setDescription("Advanced Programming");
+        courseCodeRequest.setActive(true);
+        courseCodeRequest.setParentId(""); // Empty parentId
+
+        // When & Then
+        InvalidMasterDataException exception = assertThrows(InvalidMasterDataException.class, () ->
+                masterDataService.save(courseCodeRequest, adminUsername));
+        assertEquals("INVALID_PARENT_MASTER_DATA", exception.getMessage());
+        verify(userClient).getUserByUsername(adminUsername);
+        verify(masterDataRepository, never()).findById(anyString());
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
+    void isItemInUse_ShouldReturnFalseForUnknownMasterDataType() {
+        // Given
+        MasterData unknownTypeMasterData = new MasterData();
+        unknownTypeMasterData.setId("unknown-id");
+        unknownTypeMasterData.setType(null); // Simulate unhandled type
+        unknownTypeMasterData.setCode("UNKNOWN");
+        when(masterDataRepository.findById("unknown-id")).thenReturn(Optional.of(unknownTypeMasterData));
+
+        // When
+        boolean result = masterDataService.isItemInUse("unknown-id");
+
+        // Then
+        assertFalse(result);
+        verify(masterDataRepository).findById("unknown-id");
+        verify(documentRepository, never()).existsByMajorCode(anyString());
+        verify(documentRepository, never()).existsByCourseCode(anyString());
+        verify(documentRepository, never()).existsByCourseLevelCode(anyString());
+        verify(documentRepository, never()).existsByCategoryCode(anyString());
+    }
+
+    @Test
+    void checkAdminRole_ShouldThrowExceptionWhenResponseBodyIsNull() {
+        // Given
+        when(userClient.getUserByUsername("admin")).thenReturn(ResponseEntity.ok(null));
+
+        // When & Then
+        InvalidDataAccessResourceUsageException exception = assertThrows(InvalidDataAccessResourceUsageException.class, () ->
+                masterDataService.searchByText("query", "admin"));
+        assertEquals("User not found", exception.getMessage());
+        verify(userClient).getUserByUsername("admin");
+        verify(masterDataRepository, never()).searchByText(anyString());
+    }
+
+    @Test
+    void save_ShouldThrowExceptionForNullRequest() {
+        // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                masterDataService.save(null, adminUsername));
+        assertEquals("Master data request cannot be null", exception.getMessage());
+        verify(userClient).getUserByUsername(adminUsername);
+        verify(masterDataRepository, never()).findByTypeAndCode(any(), anyString());
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
+    void save_ShouldThrowExceptionForNullType() {
+        // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+        MasterDataRequest request = new MasterDataRequest();
+        request.setType(null);
+        request.setCode("CODE");
+        request.setTranslations(validTranslationDTO);
+        request.setDescription("Description");
+        request.setActive(true);
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                masterDataService.save(request, adminUsername));
+        assertEquals("Master data type is required", exception.getMessage());
+        verify(userClient).getUserByUsername(adminUsername);
+        verify(masterDataRepository, never()).findByTypeAndCode(any(), anyString());
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
+    void save_ShouldThrowExceptionForNullTranslations() {
+        // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+        MasterDataRequest request = new MasterDataRequest();
+        request.setType(MasterDataType.MAJOR);
+        request.setCode("CODE");
+        request.setTranslations(null);
+        request.setDescription("Description");
+        request.setActive(true);
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                masterDataService.save(request, adminUsername));
+        assertEquals("Both English and Vietnamese translations are required", exception.getMessage());
+        verify(userClient).getUserByUsername(adminUsername);
+        verify(masterDataRepository, never()).findByTypeAndCode(any(), anyString());
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
+    void save_ShouldThrowExceptionForEmptyEnglishTranslation() {
+        // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+        TranslationDTO invalidTranslation = new TranslationDTO();
+        invalidTranslation.setEn("");
+        invalidTranslation.setVi("Vietnamese");
+        MasterDataRequest request = new MasterDataRequest();
+        request.setType(MasterDataType.MAJOR);
+        request.setCode("CODE");
+        request.setTranslations(invalidTranslation);
+        request.setDescription("Description");
+        request.setActive(true);
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                masterDataService.save(request, adminUsername));
+        assertEquals("Both English and Vietnamese translations are required", exception.getMessage());
+        verify(userClient).getUserByUsername(adminUsername);
+        verify(masterDataRepository, never()).findByTypeAndCode(any(), anyString());
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
+    void save_ShouldThrowExceptionForEmptyVietnameseTranslation() {
+        // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+        TranslationDTO invalidTranslation = new TranslationDTO();
+        invalidTranslation.setEn("English");
+        invalidTranslation.setVi("");
+        MasterDataRequest request = new MasterDataRequest();
+        request.setType(MasterDataType.MAJOR);
+        request.setCode("CODE");
+        request.setTranslations(invalidTranslation);
+        request.setDescription("Description");
+        request.setActive(true);
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                masterDataService.save(request, adminUsername));
+        assertEquals("Both English and Vietnamese translations are required", exception.getMessage());
+        verify(userClient).getUserByUsername(adminUsername);
+        verify(masterDataRepository, never()).findByTypeAndCode(any(), anyString());
+        verify(masterDataRepository, never()).save(any());
+    }
+
+    @Test
+    void save_ShouldSucceedForCourseCodeWithValidMajorParent() {
+        // Given
+        when(userClient.getUserByUsername(adminUsername)).thenReturn(ResponseEntity.ok(adminUserResponse));
+        MasterDataRequest request = new MasterDataRequest();
+        request.setType(MasterDataType.COURSE_CODE);
+        request.setCode("CS202");
+        request.setTranslations(validTranslationDTO);
+        request.setDescription("Advanced Programming");
+        request.setActive(true);
+        request.setParentId("major-id");
+
+        when(masterDataRepository.findById("major-id")).thenReturn(Optional.of(majorMasterData));
+        when(masterDataRepository.findByTypeAndCode(MasterDataType.COURSE_CODE, "CS202")).thenReturn(Optional.empty());
+        when(masterDataRepository.save(any(MasterData.class))).thenAnswer(invocation -> {
+            MasterData saved = invocation.getArgument(0);
+            saved.setId("new-id");
+            return saved;
+        });
+
+        // When
+        MasterDataResponse result = masterDataService.save(request, adminUsername);
+
+        // Then
+        assertNotNull(result);
+        assertEquals("new-id", result.getId());
+        assertEquals("CS202", result.getCode());
+        verify(userClient).getUserByUsername(adminUsername);
+        verify(masterDataRepository).findById("major-id");
+        verify(masterDataRepository).findByTypeAndCode(MasterDataType.COURSE_CODE, "CS202");
+        verify(masterDataRepository).save(any(MasterData.class));
+    }
+
+    @Test
+    void isItemInUse_ShouldReturnTrueForCourseCodeUsedInDocuments() {
+        // Given
+        when(masterDataRepository.findById("course-code-id")).thenReturn(Optional.of(courseCodeMasterData));
+        when(documentRepository.existsByCourseCode("CS101")).thenReturn(true);
+        lenient().when(documentPreferencesRepository.existsByPreferredCourseCode("CS101")).thenReturn(false);
+        when(masterDataRepository.findByParentId("course-code-id")).thenReturn(Collections.emptyList());
+
+        // When
+        boolean result = masterDataService.isItemInUse("course-code-id");
+
+        // Then
+        assertTrue(result);
+        verify(documentRepository).existsByCourseCode("CS101");
+        verify(masterDataRepository).findByParentId("course-code-id");
+    }
+
+    @Test
+    void isItemInUse_ShouldReturnFalseForUnusedCourseCode() {
+        // Given
+        when(masterDataRepository.findById("course-code-id")).thenReturn(Optional.of(courseCodeMasterData));
+        when(documentRepository.existsByCourseCode("CS101")).thenReturn(false);
+        when(documentPreferencesRepository.existsByPreferredCourseCode("CS101")).thenReturn(false);
+        when(masterDataRepository.findByParentId("course-code-id")).thenReturn(Collections.emptyList());
+
+        // When
+        boolean result = masterDataService.isItemInUse("course-code-id");
+
+        // Then
+        assertFalse(result);
+        verify(documentRepository).existsByCourseCode("CS101");
+        verify(documentPreferencesRepository).existsByPreferredCourseCode("CS101");
+        verify(masterDataRepository).findByParentId("course-code-id");
+    }
+
+    @Test
+    void isItemInUse_ShouldReturnTrueForCourseLevelUsedInDocuments() {
+        // Given
+        when(masterDataRepository.findById("course-level-id")).thenReturn(Optional.of(courseLevelMasterData));
+        when(documentRepository.existsByCourseLevelCode("BEGINNER")).thenReturn(true);
+        lenient().when(documentPreferencesRepository.existsByPreferredLevel("BEGINNER")).thenReturn(false);
+        when(masterDataRepository.findByParentId("course-level-id")).thenReturn(Collections.emptyList());
+
+        // When
+        boolean result = masterDataService.isItemInUse("course-level-id");
+
+        // Then
+        assertTrue(result);
+        verify(documentRepository).existsByCourseLevelCode("BEGINNER");
+        verify(masterDataRepository).findByParentId("course-level-id");
+    }
+
+    @Test
+    void isItemInUse_ShouldReturnTrueForCategoryUsedInDocuments() {
+        // Given
+        when(masterDataRepository.findById("category-id")).thenReturn(Optional.of(categoryMasterData));
+        when(documentRepository.existsByCategoryCode("LECTURE")).thenReturn(true);
+        lenient().when(documentPreferencesRepository.existsByPreferredCategory("LECTURE")).thenReturn(false);
+        when(masterDataRepository.findByParentId("category-id")).thenReturn(Collections.emptyList());
+
+        // When
+        boolean result = masterDataService.isItemInUse("category-id");
+
+        // Then
+        assertTrue(result);
+        verify(documentRepository).existsByCategoryCode("LECTURE");
+        verify(masterDataRepository).findByParentId("category-id");
+    }
+
+    @Test
+    void isItemInUse_ShouldReturnFalseForNullTypeWithNoChildren() {
+        // Given
+        MasterData invalidMasterData = new MasterData();
+        invalidMasterData.setId("invalid-id");
+        invalidMasterData.setType(null);
+        invalidMasterData.setCode("INVALID");
+        when(masterDataRepository.findById("invalid-id")).thenReturn(Optional.of(invalidMasterData));
+
+        // When
+        boolean result = masterDataService.isItemInUse("invalid-id");
+
+        // Then
+        assertFalse(result);
+        verify(masterDataRepository).findById("invalid-id");
+        verify(documentRepository, never()).existsByMajorCode(anyString());
+        verify(documentRepository, never()).existsByCourseCode(anyString());
+        verify(documentRepository, never()).existsByCourseLevelCode(anyString());
+        verify(documentRepository, never()).existsByCategoryCode(anyString());
+    }
+
+
+
 }

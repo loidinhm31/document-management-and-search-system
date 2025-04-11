@@ -100,7 +100,10 @@ public class DocumentReportServiceImpl implements DocumentReportService {
             throw new IllegalStateException("Only administrators can update report status");
         }
 
-        // Find current status of report
+        // Check document existence first
+        DocumentInformation document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new IllegalArgumentException("Document not found"));
+
         DocumentReport currentReport = documentReportRepository.findByDocumentIdAndProcessed(documentId, false)
                 .stream()
                 .max(Comparator.comparing(DocumentReport::getCreatedAt))
@@ -119,7 +122,7 @@ public class DocumentReportServiceImpl implements DocumentReportService {
         Instant updatedAt = Instant.now();
         List<DocumentReport> documentReports = documentReportRepository.findByDocumentIdAndProcessed(documentId, false);
         documentReports.forEach((dr) -> {
-            times.set(dr.getTimes());
+            times.set(Objects.nonNull(dr.getTimes()) ? dr.getTimes() : 1);
             dr.setStatus(newStatus);
             dr.setUpdatedBy(resolver.userId());
             dr.setUpdatedAt(updatedAt);
@@ -131,8 +134,6 @@ public class DocumentReportServiceImpl implements DocumentReportService {
         documentReportRepository.saveAll(documentReports);
 
         // Update main document status
-        DocumentInformation document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new IllegalArgumentException("Document not found"));
         document.setReportStatus(newStatus);
         documentRepository.save(document);
 

@@ -21,6 +21,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
@@ -445,5 +447,183 @@ public class DocumentPreferencesServiceImplTest {
 
         verify(userClient).getUserByUsername("testuser");
         verify(documentInteractionRepository).getAggregatedStats(eq(userId.toString()), any(Date.class));
+    }
+
+    @Test
+    void getDocumentPreferences_UserNotFound_ThrowsException() {
+        // Arrange
+        when(userClient.getUserByUsername(anyString())).thenReturn(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+
+        // Act & Assert
+        assertThrows(InvalidDataAccessResourceUsageException.class,
+                () -> documentPreferencesService.getDocumentPreferences("testuser"));
+
+        verify(userClient).getUserByUsername("testuser");
+        verify(documentPreferencesRepository, never()).findByUserId(anyString());
+    }
+
+    @Test
+    void getDocumentPreferences_NullUserResponse_ThrowsException() {
+        // Arrange
+        when(userClient.getUserByUsername(anyString())).thenReturn(ResponseEntity.ok(null));
+
+        // Act & Assert
+        assertThrows(InvalidDataAccessResourceUsageException.class,
+                () -> documentPreferencesService.getDocumentPreferences("testuser"));
+
+        verify(userClient).getUserByUsername("testuser");
+        verify(documentPreferencesRepository, never()).findByUserId(anyString());
+    }
+
+    @Test
+    void recordInteraction_DocumentNotAccessible_ThrowsException() {
+        // Arrange
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(anyString(), anyString()))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class,
+                () -> documentPreferencesService.recordInteraction(userId, "doc-1", InteractionType.VIEW));
+
+        verify(documentRepository).findAccessibleDocumentByIdAndUserId("doc-1", userId.toString());
+        verify(documentInteractionRepository, never()).findByUserIdAndDocumentId(anyString(), anyString());
+    }
+
+    @Test
+    void updateRecentDocuments_MaxDocumentsReached_RemovesOldest() {
+        // Arrange
+        when(documentPreferencesRepository.findByUserId(userId.toString()))
+                .thenReturn(Optional.of(documentPreferences));
+        when(documentPreferencesRepository.save(any(DocumentPreferences.class)))
+                .thenAnswer(i -> i.getArguments()[0]);
+
+        // Setup preferences with MAX_RECENT_DOCUMENTS documents
+        LinkedHashSet<String> recentDocs = new LinkedHashSet<>();
+        for (int i = 0; i < 50; i++) {
+            recentDocs.add("doc-" + i);
+        }
+        documentPreferences.setRecentViewedDocuments(recentDocs);
+
+        // Use a new document ID
+        String newDocId = "doc-new";
+
+        // Act
+        documentPreferencesService.updateImplicitPreferences(userId, DocumentInformation.builder()
+                .id(newDocId)
+                .filename("new-document.pdf")
+                .documentType(DocumentType.PDF)
+                .courseLevel("BEGINNER")
+                .build(), InteractionType.VIEW);
+
+        // Assert
+        verify(documentPreferencesRepository).save(preferencesCaptor.capture());
+        DocumentPreferences captured = preferencesCaptor.getValue();
+        Set<String> updatedRecentDocs = captured.getRecentViewedDocuments();
+
+        assertEquals(50, updatedRecentDocs.size(), "Size should remain at MAX_RECENT_DOCUMENTS");
+        assertFalse(updatedRecentDocs.contains("doc-0"), "Oldest document should be removed");
+        assertTrue(updatedRecentDocs.contains(newDocId), "New document should be added");
+    }
+
+    @Test
+    void updateImplicitPreferences_DownloadInteraction_UpdatesRecentDocuments() {
+        // Arrange
+        when(documentPreferencesRepository.findByUserId(userId.toString()))
+                .thenReturn(Optional.of(documentPreferences));
+        when(documentPreferencesRepository.save(any(DocumentPreferences.class)))
+                .thenAnswer(i -> i.getArguments()[0]);
+
+        // Act
+        documentPreferencesService.updateImplicitPreferences(userId, documentInformation, InteractionType.DOWNLOAD);
+
+        // Assert
+        verify(documentPreferencesRepository).save(preferencesCaptor.capture());
+        DocumentPreferences captured = preferencesCaptor.getValue();
+        assertTrue(captured.getRecentViewedDocuments().contains(documentInformation.getId()));
+    }
+
+    @Test
+    void updateInteractionCounts_EmptyCollections_DoesNotThrow() {
+        // Arrange
+        DocumentInformation emptyDocument = DocumentInformation.builder()
+                .id("doc-2")
+                .filename("empty-document.pdf")
+                .documentType(DocumentType.PDF)
+                .majors(Collections.emptySet())
+                .courseCodes(Collections.emptySet())
+                .courseLevel("BEGINNER")
+                .categories(Collections.emptySet())
+                .tags(Collections.emptySet())
+                .build();
+
+        when(documentPreferencesRepository.findByUserId(userId.toString()))
+                .thenReturn(Optional.of(documentPreferences));
+        when(documentPreferencesRepository.save(any(DocumentPreferences.class)))
+                .thenAnswer(i -> i.getArguments()[0]);
+
+        // Act
+        documentPreferencesService.updateImplicitPreferences(userId, emptyDocument, InteractionType.VIEW);
+
+        // Assert
+        verify(documentPreferencesRepository).save(preferencesCaptor.capture());
+        DocumentPreferences captured = preferencesCaptor.getValue();
+
+        assertNotNull(captured.getMajorInteractionCounts());
+        assertNotNull(captured.getCourseCodeInteractionCounts());
+        assertNotNull(captured.getCategoryInteractionCounts());
+        assertNotNull(captured.getTagInteractionCounts());
+        assertEquals(1, captured.getLevelInteractionCounts().get("BEGINNER"));
+    }
+
+    @Test
+    void calculateContentTypeWeights_DocumentNotFound_SkipsDocument() {
+        // Arrange
+        when(userClient.getUserByUsername(anyString())).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentInteractionRepository.findRecentInteractions(eq(userId.toString()), any(Date.class)))
+                .thenReturn(Collections.singletonList(documentInteraction));
+        when(documentRepository.findById("doc-1")).thenReturn(Optional.empty());
+
+        // Act
+        Map<String, Double> weights = documentPreferencesService.getCalculateContentTypeWeights("testuser");
+
+        // Assert
+        assertNotNull(weights);
+        assertTrue(weights.isEmpty()); // No weights since document not found
+    }
+
+    @Test
+    void calculateContentTypeWeights_NoInteractions_ReturnsEmptyMap() {
+        // Arrange
+        when(userClient.getUserByUsername(anyString())).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentInteractionRepository.findRecentInteractions(eq(userId.toString()), any(Date.class)))
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        Map<String, Double> weights = documentPreferencesService.getCalculateContentTypeWeights("testuser");
+
+        // Assert
+        assertNotNull(weights);
+        assertTrue(weights.isEmpty(), "Expected empty weights map when there are no interactions");
+
+        verify(userClient).getUserByUsername("testuser");
+        verify(documentInteractionRepository).findRecentInteractions(eq(userId.toString()), any(Date.class));
+    }
+
+    @Test
+    void getRecommendedTags_NullTagCounts_ReturnsEmptySet() {
+        // Arrange
+        DocumentPreferences emptyPreferences = new DocumentPreferences();
+        emptyPreferences.setUserId(userId.toString());
+        emptyPreferences.setTagInteractionCounts(null);
+
+        DocumentPreferencesServiceImpl serviceSpy = spy(documentPreferencesService);
+        doReturn(emptyPreferences).when(serviceSpy).getDocumentPreferences(userId.toString());
+
+        // Act
+        Set<String> tags = serviceSpy.getRecommendedTags(userId.toString());
+
+        // Assert
+        assertNotNull(tags);
+        assertTrue(tags.isEmpty());
     }
 }

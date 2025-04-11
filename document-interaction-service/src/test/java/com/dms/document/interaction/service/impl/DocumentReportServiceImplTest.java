@@ -26,6 +26,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+
+import java.time.Duration;
 import java.util.Collection;
 
 import java.time.Instant;
@@ -141,9 +143,6 @@ public class DocumentReportServiceImplTest {
                 translationDTO,
                 "Reports for copyright violation"
         );
-
-        // Removed default mocks from setup to avoid UnnecessaryStubbingException
-        // These will be configured in individual test methods as needed
     }
 
     @Test
@@ -463,6 +462,7 @@ public class DocumentReportServiceImplTest {
 
         when(documentReportRepository.findByDocumentIdAndProcessed(documentId, false))
                 .thenReturn(Collections.emptyList());
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(documentInformation)); // Valid document
 
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
@@ -479,11 +479,15 @@ public class DocumentReportServiceImplTest {
         when(userClient.getUserByUsername("admin")).thenReturn(ResponseEntity.ok(adminResponse));
 
         DocumentReport processedReport = new DocumentReport();
+        processedReport.setDocumentId(documentId);
         processedReport.setStatus(DocumentReportStatus.REJECTED);
         processedReport.setProcessed(true);
+        processedReport.setTimes(1); // Ensure no NPE
+        processedReport.setCreatedAt(Instant.now()); // For max comparator
 
         when(documentReportRepository.findByDocumentIdAndProcessed(documentId, false))
                 .thenReturn(Collections.singletonList(processedReport));
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(documentInformation)); // Valid document
 
         // Act & Assert
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
@@ -500,11 +504,15 @@ public class DocumentReportServiceImplTest {
         when(userClient.getUserByUsername("admin")).thenReturn(ResponseEntity.ok(adminResponse));
 
         DocumentReport pendingReport = new DocumentReport();
+        pendingReport.setDocumentId(documentId);
         pendingReport.setStatus(DocumentReportStatus.PENDING);
         pendingReport.setProcessed(false);
+        pendingReport.setTimes(1); // Ensure no NPE
+        pendingReport.setCreatedAt(Instant.now()); // For max comparator
 
         when(documentReportRepository.findByDocumentIdAndProcessed(documentId, false))
                 .thenReturn(Collections.singletonList(pendingReport));
+        when(documentRepository.findById(documentId)).thenReturn(Optional.of(documentInformation)); // Valid document
 
         // Act & Assert
         IllegalStateException exception = assertThrows(IllegalStateException.class, () ->
@@ -867,5 +875,539 @@ public class DocumentReportServiceImplTest {
         assertThrows(InvalidDataAccessResourceUsageException.class, () ->
                 documentReportService.createReport(documentId, new ReportRequest("COPYRIGHT", "Test"), username)
         );
+    }
+
+    @Test
+    void createReport_NullTimesInProcessedReport_SetsTimesToOne() {
+        // Arrange
+        ReportRequest request = new ReportRequest("COPYRIGHT", "This document violates copyright");
+
+        DocumentReport processedReport = new DocumentReport();
+        processedReport.setProcessed(true);
+        processedReport.setTimes(null); // Explicitly null times
+
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.ok(userResponse));
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userId.toString()))
+                .thenReturn(Optional.of(documentInformation));
+        when(masterDataRepository.findByTypeAndCode(MasterDataType.REPORT_DOCUMENT_TYPE, "COPYRIGHT"))
+                .thenReturn(Optional.of(reportType));
+        when(documentReportRepository.existsByDocumentIdAndUserIdAndProcessed(documentId, userId, false))
+                .thenReturn(false);
+        when(documentReportRepository.findByDocumentIdAndProcessed(documentId, true))
+                .thenReturn(Collections.singletonList(processedReport));
+        when(documentReportRepository.save(any(DocumentReport.class))).thenReturn(documentReport);
+        when(reportTypeMapper.mapToResponse(any(DocumentReport.class), any(MasterData.class)))
+                .thenReturn(reportResponse);
+
+        // Act
+        documentReportService.createReport(documentId, request, username);
+
+        // Assert
+        verify(documentReportRepository).save(reportCaptor.capture());
+        DocumentReport savedReport = reportCaptor.getValue();
+        assertEquals(1, savedReport.getTimes()); // Should default to 1 when times is null
+    }
+
+    @Test
+    void createReport_UserClientException_ThrowsException() {
+        // Arrange
+        ReportRequest request = new ReportRequest("COPYRIGHT", "Test");
+
+        when(userClient.getUserByUsername(username)).thenThrow(new RuntimeException("API error"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                documentReportService.createReport(documentId, request, username)
+        );
+        assertEquals("API error", exception.getMessage());
+        verify(documentReportRepository, never()).save(any(DocumentReport.class));
+    }
+
+    @Test
+    void updateReportStatus_DocumentNotFound_ThrowsException() {
+        // Arrange
+        RoleResponse adminRoleResponse = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN);
+        UserResponse adminResponse = new UserResponse(UUID.randomUUID(), "admin", "admin@example.com", adminRoleResponse);
+        when(userClient.getUserByUsername("admin")).thenReturn(ResponseEntity.ok(adminResponse));
+
+        DocumentReport pendingReport = new DocumentReport();
+        pendingReport.setDocumentId(documentId);
+        pendingReport.setStatus(DocumentReportStatus.PENDING);
+        pendingReport.setProcessed(false);
+        pendingReport.setTimes(1);
+        pendingReport.setCreatedAt(Instant.now());
+
+        // Debug: Verify times is set
+        assertNotNull(pendingReport.getTimes(), "Times should not be null");
+        assertEquals(1, pendingReport.getTimes(), "Times should be 1");
+
+        lenient().when(documentReportRepository.findByDocumentIdAndProcessed(documentId, false))
+                .thenReturn(Collections.singletonList(pendingReport));
+        when(documentRepository.findById(documentId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                documentReportService.updateReportStatus(documentId, DocumentReportStatus.RESOLVED, "admin")
+        );
+        assertEquals("Document not found", exception.getMessage());
+
+        // Verify no reports were saved
+        verify(documentReportRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void updateReportStatus_MultipleReports_UpdatesAll() {
+        // Arrange
+        RoleResponse adminRoleResponse = new RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN);
+        UUID adminId = UUID.randomUUID();
+        UserResponse adminResponse = new UserResponse(adminId, "admin", "admin@example.com", adminRoleResponse);
+
+        try (MockedStatic<CompletableFuture> mockedStatic = Mockito.mockStatic(CompletableFuture.class)) {
+            CompletableFuture<Void> mockFuture = CompletableFuture.completedFuture(null);
+            mockedStatic.when(() -> CompletableFuture.runAsync(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable runnable = invocation.getArgument(0);
+                        runnable.run();
+                        return mockFuture;
+                    });
+
+            when(userClient.getUserByUsername("admin")).thenReturn(ResponseEntity.ok(adminResponse));
+
+            DocumentReport report1 = new DocumentReport();
+            report1.setDocumentId(documentId);
+            report1.setStatus(DocumentReportStatus.PENDING);
+            report1.setProcessed(false);
+            report1.setTimes(2);
+            report1.setCreatedAt(Instant.now().minusSeconds(100));
+
+            DocumentReport report2 = new DocumentReport();
+            report2.setDocumentId(documentId);
+            report2.setStatus(DocumentReportStatus.PENDING);
+            report2.setProcessed(false);
+            report2.setTimes(2);
+            report2.setCreatedAt(Instant.now());
+
+            List<DocumentReport> pendingReports = Arrays.asList(report1, report2);
+
+            when(documentReportRepository.findByDocumentIdAndProcessed(documentId, false))
+                    .thenReturn(pendingReports);
+            when(documentRepository.findById(documentId)).thenReturn(Optional.of(documentInformation));
+
+            // Act
+            documentReportService.updateReportStatus(documentId, DocumentReportStatus.RESOLVED, "admin");
+
+            // Assert
+            verify(documentReportRepository).saveAll(reportsCaptor.capture());
+            List<DocumentReport> savedReports = reportsCaptor.getValue();
+            assertEquals(2, savedReports.size());
+            assertTrue(savedReports.stream().allMatch(r -> r.getStatus() == DocumentReportStatus.RESOLVED));
+            assertTrue(savedReports.stream().allMatch(r -> r.getUpdatedBy().equals(adminId)));
+        }
+    }
+
+    @Test
+    void getAdminDocumentReports_UserClientNon200Status_ReturnsEmptyPage() {
+        // Arrange
+        String documentTitle = "Test Document";
+        String uploaderUsername = "testUploader";
+        Pageable pageable = mock(Pageable.class);
+
+        when(userClient.searchUsers(uploaderUsername)).thenReturn(ResponseEntity.status(500).build());
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                documentTitle, uploaderUsername, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getTotalElements());
+    }
+
+    @Test
+    void getAdminDocumentReports_EmptyFilteredDocumentIds_ReturnsEmptyPage() {
+        // Arrange
+        String uploaderUsername = "testUploader";
+        Pageable pageable = mock(Pageable.class);
+
+        when(userClient.searchUsers(uploaderUsername))
+                .thenReturn(ResponseEntity.ok(Collections.emptyList()));
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                null, uploaderUsername, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getTotalElements());
+    }
+
+    @Test
+    void getAdminDocumentReports_MissingDocumentsInMap_SkipsMissing() {
+        // Arrange
+        String documentTitle = "Test Document";
+        Pageable pageable = mock(Pageable.class);
+
+        DocumentReportProjection projection = mock(DocumentReportProjection.class);
+        when(projection.getDocumentId()).thenReturn("missingDoc");
+        lenient().when(projection.getStatus()).thenReturn(DocumentReportStatus.PENDING);
+        lenient().when(projection.getProcessed()).thenReturn(false);
+        lenient().when(projection.getReportCount()).thenReturn(1);
+
+        Page<DocumentReportProjection> projectionPage = new PageImpl<>(Collections.singletonList(projection), pageable, 1);
+
+        when(documentRepository.findByFilenameLikeIgnoreCase(documentTitle))
+                .thenReturn(Collections.singletonList(documentInformation));
+        when(documentReportRepository.findDocumentReportsGroupedByProcessedAndDocumentIds(
+                any(), any(), any(), any(), anyCollection(), eq(pageable)))
+                .thenReturn(projectionPage);
+        when(documentRepository.findAllById(anyList()))
+                .thenReturn(Collections.emptyList()); // No documents found
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                documentTitle, null, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(1, result.getTotalElements()); // Total elements from projection
+    }
+
+    @Test
+    void getDocumentReportDetails_SortsByCreatedAtDescending() {
+        // Arrange
+        DocumentReport olderReport = new DocumentReport();
+        olderReport.setId(1L);
+        olderReport.setDocumentId(documentId);
+        olderReport.setUserId(userId);
+        olderReport.setReportTypeCode("COPYRIGHT");
+        olderReport.setStatus(DocumentReportStatus.PENDING);
+        olderReport.setCreatedAt(Instant.now().minusSeconds(100));
+
+        DocumentReport newerReport = new DocumentReport();
+        newerReport.setId(2L);
+        newerReport.setDocumentId(documentId);
+        newerReport.setUserId(userId);
+        newerReport.setReportTypeCode("COPYRIGHT");
+        newerReport.setStatus(DocumentReportStatus.PENDING);
+        newerReport.setCreatedAt(Instant.now());
+
+        when(documentReportRepository.findByDocumentIdAndStatus(documentId, DocumentReportStatus.PENDING))
+                .thenReturn(Arrays.asList(olderReport, newerReport));
+        when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(Collections.singletonList(userResponse)));
+
+        // Act
+        List<DocumentReportDetail> result = documentReportService.getDocumentReportDetails(documentId, DocumentReportStatus.PENDING);
+
+        // Assert
+        assertEquals(2, result.size());
+        assertEquals(2L, result.get(0).reportId()); // Newer report first
+        assertEquals(1L, result.get(1).reportId()); // Older report second
+    }
+
+    @Test
+    void getUsernameById_Non200Status_ReturnsUnknown() {
+        // Arrange
+        UUID testUserId = UUID.randomUUID();
+        when(userClient.getUsersByIds(Collections.singletonList(testUserId)))
+                .thenReturn(ResponseEntity.status(500).build());
+
+        DocumentReport report = new DocumentReport();
+        report.setUserId(testUserId);
+        report.setDocumentId(documentId);
+        report.setReportTypeCode("COPYRIGHT");
+
+        when(documentReportRepository.findByDocumentIdAndStatus(documentId, DocumentReportStatus.PENDING))
+                .thenReturn(Collections.singletonList(report));
+
+        // Act
+        List<DocumentReportDetail> result = documentReportService.getDocumentReportDetails(documentId, DocumentReportStatus.PENDING);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Unknown", result.get(0).reporterUsername());
+    }
+
+    @Test
+    void getUserFromUsername_Non200Status_ThrowsException() {
+        // Arrange
+        when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.status(500).build());
+
+        // Act & Assert
+        InvalidDataAccessResourceUsageException exception = assertThrows(InvalidDataAccessResourceUsageException.class, () ->
+                documentReportService.createReport(documentId, new ReportRequest("COPYRIGHT", "Test"), username)
+        );
+        assertEquals("User not found", exception.getMessage());
+    }
+
+    @Test
+    void getAdminDocumentReports_Non2xxUserClientResponse_ReturnsEmptyPage() {
+        // Arrange
+        String uploaderUsername = "testUploader";
+        Pageable pageable = mock(Pageable.class);
+
+        when(userClient.searchUsers(uploaderUsername))
+                .thenReturn(ResponseEntity.status(404).build());
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                null, uploaderUsername, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getTotalElements());
+        verify(documentReportRepository, never()).findDocumentReportsGroupedByProcessed(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getAdminDocumentReports_NullUserSearchResponse_ReturnsEmptyPage() {
+        // Arrange
+        String uploaderUsername = "testUploader";
+        Pageable pageable = mock(Pageable.class);
+
+        when(userClient.searchUsers(uploaderUsername))
+                .thenReturn(ResponseEntity.ok(null));
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                null, uploaderUsername, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getTotalElements());
+        verify(documentReportRepository, never()).findDocumentReportsGroupedByProcessed(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void getAdminDocumentReports_NoFilters_UsesUnfilteredQuery() {
+        // Arrange
+        DocumentReportStatus status = DocumentReportStatus.PENDING;
+        Instant fromDate = Instant.now().minus(Duration.ofDays(7));
+        Instant toDate = Instant.now();
+        String reportTypeCode = "COPYRIGHT";
+        Pageable pageable = mock(Pageable.class);
+
+        DocumentReportProjection projection = mock(DocumentReportProjection.class);
+        when(projection.getDocumentId()).thenReturn(documentId);
+        when(projection.getStatus()).thenReturn(DocumentReportStatus.PENDING);
+        when(projection.getProcessed()).thenReturn(false);
+        when(projection.getReportCount()).thenReturn(1);
+        when(projection.getUpdatedBy()).thenReturn(null);
+        when(projection.getUpdatedAt()).thenReturn(null);
+
+        Page<DocumentReportProjection> projectionPage = new PageImpl<>(Collections.singletonList(projection), pageable, 1);
+
+        when(documentReportRepository.findDocumentReportsGroupedByProcessed(
+                eq(status.name()), eq(fromDate), eq(toDate), eq(reportTypeCode), eq(pageable)))
+                .thenReturn(projectionPage);
+        when(documentRepository.findAllById(Collections.singletonList(documentId)))
+                .thenReturn(Collections.singletonList(documentInformation));
+        when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(Collections.emptyList()));
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                null, null, fromDate, toDate, status, reportTypeCode, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(documentId, result.getContent().get(0).documentId());
+        verify(documentReportRepository).findDocumentReportsGroupedByProcessed(
+                eq(status.name()), eq(fromDate), eq(toDate), eq(reportTypeCode), eq(pageable));
+        verify(documentReportRepository, never()).findDocumentReportsGroupedByProcessedAndDocumentIds(
+                any(), any(), any(), any(), anyCollection(), any());
+    }
+
+    @Test
+    void getAdminDocumentReports_PartialDocumentMapping_SkipsMissingDocuments() {
+        // Arrange
+        String documentTitle = "Test Document";
+        Pageable pageable = mock(Pageable.class);
+
+        DocumentReportProjection projection1 = mock(DocumentReportProjection.class);
+        when(projection1.getDocumentId()).thenReturn(documentId);
+        when(projection1.getStatus()).thenReturn(DocumentReportStatus.PENDING);
+        when(projection1.getProcessed()).thenReturn(false);
+        when(projection1.getReportCount()).thenReturn(1);
+        when(projection1.getUpdatedBy()).thenReturn(null);
+
+        DocumentReportProjection projection2 = mock(DocumentReportProjection.class);
+        when(projection2.getDocumentId()).thenReturn("missingDoc");
+        lenient().when(projection2.getStatus()).thenReturn(DocumentReportStatus.PENDING);
+        lenient().when(projection2.getProcessed()).thenReturn(false);
+        lenient().when(projection2.getReportCount()).thenReturn(1);
+        lenient().when(projection2.getUpdatedBy()).thenReturn(null);
+
+        Page<DocumentReportProjection> projectionPage = new PageImpl<>(
+                Arrays.asList(projection1, projection2), pageable, 2);
+
+        when(documentRepository.findByFilenameLikeIgnoreCase(documentTitle))
+                .thenReturn(Collections.singletonList(documentInformation));
+        when(documentReportRepository.findDocumentReportsGroupedByProcessedAndDocumentIds(
+                any(), any(), any(), any(), anyCollection(), eq(pageable)))
+                .thenReturn(projectionPage);
+        when(documentRepository.findAllById(Arrays.asList(documentId, "missingDoc")))
+                .thenReturn(Collections.singletonList(documentInformation));
+        when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(Collections.emptyList()));
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                documentTitle, null, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size()); // Only one document mapped
+        assertEquals(documentId, result.getContent().get(0).documentId());
+        assertEquals(2, result.getTotalElements()); // Total from projections
+    }
+
+    @Test
+    void getAdminDocumentReports_WithResolverUsername_ReturnsResolverUsername() {
+        // Arrange
+        String documentTitle = "Test Document";
+        Pageable pageable = mock(Pageable.class);
+        UUID resolverId = UUID.randomUUID();
+        String resolverUsername = "resolverUser";
+
+        DocumentReportProjection projection = mock(DocumentReportProjection.class);
+        when(projection.getDocumentId()).thenReturn(documentId);
+        when(projection.getStatus()).thenReturn(DocumentReportStatus.RESOLVED);
+        when(projection.getProcessed()).thenReturn(true);
+        when(projection.getReportCount()).thenReturn(1);
+        when(projection.getUpdatedBy()).thenReturn(resolverId);
+        when(projection.getUpdatedAt()).thenReturn(Instant.now());
+
+        Page<DocumentReportProjection> projectionPage = new PageImpl<>(
+                Collections.singletonList(projection), pageable, 1);
+
+        UserResponse resolverResponse = new UserResponse(resolverId, resolverUsername, "resolver@example.com", null);
+        when(userClient.getUsersByIds(Collections.singletonList(resolverId)))
+                .thenReturn(ResponseEntity.ok(Collections.singletonList(resolverResponse)));
+        when(userClient.getUsersByIds(Collections.singletonList(UUID.fromString(documentInformation.getUserId()))))
+                .thenReturn(ResponseEntity.ok(Collections.singletonList(userResponse)));
+
+        when(documentRepository.findByFilenameLikeIgnoreCase(documentTitle))
+                .thenReturn(Collections.singletonList(documentInformation));
+        when(documentReportRepository.findDocumentReportsGroupedByProcessedAndDocumentIds(
+                any(), any(), any(), any(), anyCollection(), eq(pageable)))
+                .thenReturn(projectionPage);
+        when(documentRepository.findAllById(Collections.singletonList(documentId)))
+                .thenReturn(Collections.singletonList(documentInformation));
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                documentTitle, null, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals(resolverUsername, result.getContent().get(0).resolvedByUsername());
+    }
+
+    @Test
+    void getAdminDocumentReports_ResolverUsernameNotFound_ReturnsUnknownResolverUsername() {
+        // Arrange
+        String documentTitle = "Test Document";
+        Pageable pageable = mock(Pageable.class);
+        UUID resolverId = UUID.randomUUID();
+
+        DocumentReportProjection projection = mock(DocumentReportProjection.class);
+        when(projection.getDocumentId()).thenReturn(documentId);
+        when(projection.getStatus()).thenReturn(DocumentReportStatus.RESOLVED);
+        when(projection.getProcessed()).thenReturn(true);
+        when(projection.getReportCount()).thenReturn(1);
+        when(projection.getUpdatedBy()).thenReturn(resolverId);
+        when(projection.getUpdatedAt()).thenReturn(Instant.now());
+
+        Page<DocumentReportProjection> projectionPage = new PageImpl<>(
+                Collections.singletonList(projection), pageable, 1);
+
+        when(userClient.getUsersByIds(Collections.singletonList(resolverId)))
+                .thenReturn(ResponseEntity.ok(Collections.emptyList()));
+        when(userClient.getUsersByIds(Collections.singletonList(UUID.fromString(documentInformation.getUserId()))))
+                .thenReturn(ResponseEntity.ok(Collections.singletonList(userResponse)));
+
+        when(documentRepository.findByFilenameLikeIgnoreCase(documentTitle))
+                .thenReturn(Collections.singletonList(documentInformation));
+        when(documentReportRepository.findDocumentReportsGroupedByProcessedAndDocumentIds(
+                any(), any(), any(), any(), anyCollection(), eq(pageable)))
+                .thenReturn(projectionPage);
+        when(documentRepository.findAllById(Collections.singletonList(documentId)))
+                .thenReturn(Collections.singletonList(documentInformation));
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                documentTitle, null, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals("Unknown", result.getContent().get(0).resolvedByUsername());
+    }
+
+    @Test
+    void getAdminDocumentReports_EmptyProjectionPage_ReturnsEmptyPage() {
+        // Arrange
+        String documentTitle = "Test Document";
+        Pageable pageable = mock(Pageable.class);
+
+        Page<DocumentReportProjection> emptyProjectionPage = new PageImpl<>(
+                Collections.emptyList(), pageable, 0);
+
+        when(documentRepository.findByFilenameLikeIgnoreCase(documentTitle))
+                .thenReturn(Collections.singletonList(documentInformation));
+        when(documentReportRepository.findDocumentReportsGroupedByProcessedAndDocumentIds(
+                any(), any(), any(), any(), anyCollection(), eq(pageable)))
+                .thenReturn(emptyProjectionPage);
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                documentTitle, null, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.getContent().isEmpty());
+        assertEquals(0, result.getTotalElements());
+    }
+
+    @Test
+    void getAdminDocumentReports_NullProjectionFields_HandlesGracefully() {
+        // Arrange
+        String documentTitle = "Test Document";
+        Pageable pageable = mock(Pageable.class);
+
+        DocumentReportProjection projection = mock(DocumentReportProjection.class);
+        when(projection.getDocumentId()).thenReturn(documentId);
+        when(projection.getStatus()).thenReturn(null); // Null status
+        when(projection.getProcessed()).thenReturn(null); // Null processed
+        when(projection.getReportCount()).thenReturn(1);
+        when(projection.getUpdatedBy()).thenReturn(null);
+        when(projection.getUpdatedAt()).thenReturn(null);
+
+        Page<DocumentReportProjection> projectionPage = new PageImpl<>(
+                Collections.singletonList(projection), pageable, 1);
+
+        when(documentRepository.findByFilenameLikeIgnoreCase(documentTitle))
+                .thenReturn(Collections.singletonList(documentInformation));
+        when(documentReportRepository.findDocumentReportsGroupedByProcessedAndDocumentIds(
+                any(), any(), any(), any(), anyCollection(), eq(pageable)))
+                .thenReturn(projectionPage);
+        when(documentRepository.findAllById(Collections.singletonList(documentId)))
+                .thenReturn(Collections.singletonList(documentInformation));
+        when(userClient.getUsersByIds(anyList())).thenReturn(ResponseEntity.ok(Collections.emptyList()));
+
+        // Act
+        Page<AdminDocumentReportResponse> result = documentReportService.getAdminDocumentReports(
+                documentTitle, null, null, null, null, null, pageable);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertNull(result.getContent().get(0).status()); // Status should be null
+        assertFalse(result.getContent().get(0).processed()); // Null processed defaults to false
     }
 }
