@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/user.service";
+import { formatDateMoment } from "@/lib/utils";
 
 export default function UserProfile() {
   const { t } = useTranslation();
@@ -214,13 +215,13 @@ export default function UserProfile() {
             <div className="rounded-lg border p-4">
               <h3 className="font-semibold">{t("profile.createdDate.title")}</h3>
               <p className="text-sm text-muted-foreground">
-                <p>{moment(currentUser.createdDate).format("DD/MM/YYYY, h:mm:ss a")}</p>
+                <p>{formatDateMoment(currentUser.createdDate)}</p>
               </p>
             </div>
             {loginSession && (
               <div className="rounded-lg border p-4">
                 <h3 className="font-semibold">{t("profile.lastLogin.title")}</h3>
-                <p className="text-sm text-muted-foreground">{loginSession}</p>
+                <p className="text-sm text-muted-foreground">{formatDateMoment(loginSession)}</p>
               </div>
             )}
           </CardContent>
