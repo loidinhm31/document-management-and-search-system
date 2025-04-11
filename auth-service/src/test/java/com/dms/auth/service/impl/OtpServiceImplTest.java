@@ -1,7 +1,7 @@
 package com.dms.auth.service.impl;
 
+import com.dms.auth.entity.AuthToken;
 import com.dms.auth.entity.OtpVerification;
-import com.dms.auth.entity.RefreshToken;
 import com.dms.auth.entity.Role;
 import com.dms.auth.entity.User;
 import com.dms.auth.enums.AppRole;
@@ -12,7 +12,7 @@ import com.dms.auth.security.jwt.JwtUtils;
 import com.dms.auth.security.response.TokenResponse;
 import com.dms.auth.security.service.CustomUserDetails;
 import com.dms.auth.service.PublishEventService;
-import com.dms.auth.service.RefreshTokenService;
+import com.dms.auth.service.TokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ public class OtpServiceImplTest {
     private PublishEventService publishEventService;
 
     @Mock
-    private RefreshTokenService refreshTokenService;
+    private TokenService tokenService;
 
     @Mock
     private JwtUtils jwtUtils;
@@ -355,10 +355,10 @@ public class OtpServiceImplTest {
                 .thenReturn(user);
 
         // Setup refresh token
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setToken("refresh-token");
-        when(refreshTokenService.createRefreshToken(any(User.class), any(HttpServletRequest.class)))
-                .thenReturn(refreshToken);
+        AuthToken authToken = new AuthToken();
+        authToken.setToken("refresh-token");
+        when(tokenService.createRefreshToken(any(User.class), any(HttpServletRequest.class)))
+                .thenReturn(authToken);
 
         // Setup JWT token
         when(jwtUtils.generateTokenFromUsername(any(CustomUserDetails.class)))
@@ -371,7 +371,7 @@ public class OtpServiceImplTest {
         verify(otpVerificationRepository).findValidOtpByUsername(USERNAME);
         verify(userRepository).findByUsername(USERNAME);
         verify(userRepository).save(user);
-        verify(refreshTokenService).createRefreshToken(eq(user), eq(httpServletRequest));
+        verify(tokenService).createRefreshToken(eq(user), eq(httpServletRequest));
         verify(jwtUtils).generateTokenFromUsername(any(CustomUserDetails.class));
         verify(otpVerificationRepository).save(otpVerification);
 

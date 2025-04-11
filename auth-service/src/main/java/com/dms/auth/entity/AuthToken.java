@@ -1,5 +1,6 @@
 package com.dms.auth.entity;
 
+import com.dms.auth.enums.TokenType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,8 +18,8 @@ import java.util.UUID;
 @Setter
 @Getter
 @Entity
-@Table(name = "refresh_tokens")
-public class RefreshToken extends BaseEntity<String> {
+@Table(name = "auth_tokens")
+public class AuthToken extends BaseEntity<String> {
     @Id
     @GeneratedValue
     @UuidGenerator
@@ -27,6 +28,10 @@ public class RefreshToken extends BaseEntity<String> {
 
     @Column(nullable = false, unique = true)
     private String token;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "token_type", nullable = false)
+    private TokenType tokenType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

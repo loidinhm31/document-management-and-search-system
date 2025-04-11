@@ -5,10 +5,11 @@ import com.dms.auth.dto.UserDto;
 import com.dms.auth.dto.UserSearchResponse;
 import com.dms.auth.dto.request.*;
 import com.dms.auth.entity.PasswordResetToken;
-import com.dms.auth.entity.RefreshToken;
+import com.dms.auth.entity.AuthToken;
 import com.dms.auth.entity.Role;
 import com.dms.auth.entity.User;
 import com.dms.auth.enums.AppRole;
+import com.dms.auth.enums.TokenType;
 import com.dms.auth.exception.InvalidRequestException;
 import com.dms.auth.exception.ResourceNotFoundException;
 import com.dms.auth.mapper.UserMapper;
@@ -60,7 +61,7 @@ public class UserServiceImpl extends BaseService implements UserService {
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Autowired
-    private RefreshTokenService refreshTokenService;
+    private TokenService tokenService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -107,9 +108,9 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Override
     public TokenResponse refreshToken(String refreshToken) {
-        return refreshTokenService.findByToken(refreshToken)
-                .map(refreshTokenService::verifyExpiration)
-                .map(RefreshToken::getUser)
+        return tokenService.findByTokenAndType(refreshToken, TokenType.REFRESH)
+                .map(tokenService::verifyToken)
+                .map(AuthToken::getUser)
                 .map(user -> {
                     CustomUserDetails userDetails = CustomUserDetails.build(user);
                     String jwt = jwtUtils.generateTokenFromUsername(userDetails);
@@ -131,8 +132,17 @@ public class UserServiceImpl extends BaseService implements UserService {
 
     @Override
     public void logout(String refreshToken) {
-        // Revoke refresh token
-        refreshTokenService.revokeToken(refreshToken);
+        // Get the user from the refresh token
+        AuthToken token = tokenService.findByTokenAndType(refreshToken, TokenType.REFRESH)
+                .orElse(null);
+
+        // Revoke the specific refresh token
+        tokenService.revokeToken(refreshToken, TokenType.REFRESH);
+
+        // If we found the token, revoke all access tokens for the user too
+        if (token != null && token.getUser() != null) {
+            tokenService.revokeAllUserTokensByType(token.getUser(), TokenType.ACCESS);
+        }
 
         // Clear security context
         SecurityContextHolder.clearContext();
@@ -407,7 +417,7 @@ public class UserServiceImpl extends BaseService implements UserService {
 
         if (!isAdmin) {
             // Regular users can only update specific fields
-            if (Objects.nonNull(request.getAccountLocked()) || Objects.nonNull(request.getTokenExpired())) {
+            if (Objects.nonNull(request.getAccountLocked()) || Objects.nonNull(request.getCredentialsExpired())) {
                 throw new AccessDeniedException("Operation not allowed for regular users");
             }
         }
@@ -417,9 +427,9 @@ public class UserServiceImpl extends BaseService implements UserService {
             if (Objects.nonNull(request.getAccountLocked())) {
                 user.setAccountNonLocked(!request.getAccountLocked());
             }
-            if (Objects.nonNull(request.getTokenExpired())) {
+            if (Objects.nonNull(request.getCredentialsExpired())) {
                 userRepository.findById(userId).ifPresent((targetUser) -> {
-                    refreshTokenService.revokeAllUserTokens(targetUser);
+                    tokenService.revokeAllUserTokens(targetUser);
                 });
             }
         }

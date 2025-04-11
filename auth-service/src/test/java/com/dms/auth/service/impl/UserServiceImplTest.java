@@ -4,11 +4,12 @@ import com.dms.auth.dto.RoleDto;
 import com.dms.auth.dto.UserDto;
 import com.dms.auth.dto.UserSearchResponse;
 import com.dms.auth.dto.request.*;
+import com.dms.auth.entity.AuthToken;
 import com.dms.auth.entity.PasswordResetToken;
-import com.dms.auth.entity.RefreshToken;
 import com.dms.auth.entity.Role;
 import com.dms.auth.entity.User;
 import com.dms.auth.enums.AppRole;
+import com.dms.auth.enums.TokenType;
 import com.dms.auth.exception.InvalidRequestException;
 import com.dms.auth.exception.ResourceNotFoundException;
 import com.dms.auth.mapper.UserMapper;
@@ -22,7 +23,7 @@ import com.dms.auth.security.response.UserInfoResponse;
 import com.dms.auth.security.service.CustomUserDetails;
 import com.dms.auth.service.OtpService;
 import com.dms.auth.service.PublishEventService;
-import com.dms.auth.service.RefreshTokenService;
+import com.dms.auth.service.TokenService;
 import com.dms.auth.service.TotpService;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,7 +66,7 @@ public class UserServiceImplTest {
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Mock
-    private RefreshTokenService refreshTokenService;
+    private TokenService authTokenService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -167,8 +168,8 @@ public class UserServiceImplTest {
 
         // Mock for BaseService.createToken method
         when(jwtUtils.generateTokenFromUsername(any(CustomUserDetails.class))).thenReturn("jwt-token");
-        when(refreshTokenService.createRefreshToken(any(User.class), any(HttpServletRequest.class)))
-                .thenReturn(RefreshToken.builder().token("refresh-token").build());
+        when(authTokenService.createRefreshToken(any(User.class), any(HttpServletRequest.class)))
+                .thenReturn(AuthToken.builder().token("refresh-token").build());
 
         // Act
         TokenResponse response = userService.authenticateUser(loginRequest, httpServletRequest);
@@ -178,7 +179,7 @@ public class UserServiceImplTest {
         verify(userRepository).findByUsernameOrEmail("testuser", "testuser");
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
         verify(jwtUtils).generateTokenFromUsername(any(CustomUserDetails.class));
-        verify(refreshTokenService).createRefreshToken(any(User.class), any(HttpServletRequest.class));
+        verify(authTokenService).createRefreshToken(any(User.class), any(HttpServletRequest.class));
     }
 
     @Test
@@ -535,13 +536,19 @@ public class UserServiceImplTest {
     void testRefreshToken_Success() {
         // Arrange
         String refreshTokenString = "valid-refresh-token";
-        RefreshToken refreshToken = new RefreshToken();
-        refreshToken.setToken(refreshTokenString);
-        refreshToken.setUser(testUser);
+        AuthToken authToken = new AuthToken();
+        authToken.setToken(refreshTokenString);
+        authToken.setUser(testUser);
+        authToken.setTokenType(TokenType.REFRESH);
+        authToken.setRevoked(false);
+        authToken.setExpiryDate(Instant.now().plusSeconds(3600));
 
-        when(refreshTokenService.findByToken(refreshTokenString)).thenReturn(Optional.of(refreshToken));
-        when(refreshTokenService.verifyExpiration(refreshToken)).thenReturn(refreshToken);
-        when(jwtUtils.generateTokenFromUsername(any(CustomUserDetails.class))).thenReturn("new-jwt-token");
+        when(authTokenService.findByTokenAndType(refreshTokenString, TokenType.REFRESH))
+                .thenReturn(Optional.of(authToken));
+        when(authTokenService.verifyToken(authToken)) // Add this mock
+                .thenReturn(authToken);
+        when(jwtUtils.generateTokenFromUsername(any(CustomUserDetails.class)))
+                .thenReturn("new-jwt-token");
 
         // Act
         TokenResponse response = userService.refreshToken(refreshTokenString);
@@ -551,8 +558,8 @@ public class UserServiceImplTest {
         assertEquals("new-jwt-token", response.getAccessToken());
         assertEquals(refreshTokenString, response.getRefreshToken());
         assertEquals("testuser", response.getUsername());
-        verify(refreshTokenService).findByToken(refreshTokenString);
-        verify(refreshTokenService).verifyExpiration(refreshToken);
+        verify(authTokenService).findByTokenAndType(refreshTokenString, TokenType.REFRESH);
+        verify(authTokenService).verifyToken(authToken); // Verify the new mock
         verify(jwtUtils).generateTokenFromUsername(any(CustomUserDetails.class));
     }
 
@@ -560,14 +567,14 @@ public class UserServiceImplTest {
     void testRefreshToken_InvalidToken() {
         // Arrange
         String refreshTokenString = "invalid-refresh-token";
-        when(refreshTokenService.findByToken(refreshTokenString)).thenReturn(Optional.empty());
+        when(authTokenService.findByTokenAndType(refreshTokenString, TokenType.REFRESH))
+                .thenReturn(Optional.empty());
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> userService.refreshToken(refreshTokenString));
         assertEquals("Refresh token not found in database", exception.getMessage());
-        verify(refreshTokenService).findByToken(refreshTokenString);
-        verify(refreshTokenService, never()).verifyExpiration(any());
+        verify(authTokenService).findByTokenAndType(refreshTokenString, TokenType.REFRESH);
     }
 
     @Test
@@ -575,11 +582,16 @@ public class UserServiceImplTest {
         // Arrange
         String refreshTokenString = "refresh-token";
 
+        // Optional: Mock findByTokenAndType to simulate token not found or found
+        when(authTokenService.findByTokenAndType(refreshTokenString, TokenType.REFRESH))
+                .thenReturn(Optional.empty());
+
         // Act
         userService.logout(refreshTokenString);
 
         // Assert
-        verify(refreshTokenService).revokeToken(refreshTokenString);
+        verify(authTokenService).findByTokenAndType(refreshTokenString, TokenType.REFRESH);
+        verify(authTokenService).revokeToken(refreshTokenString, TokenType.REFRESH);
     }
 
     @Test
@@ -917,7 +929,7 @@ public class UserServiceImplTest {
         UUID userId = testUser.getUserId();
         UpdateStatusRequest request = new UpdateStatusRequest();
         request.setAccountLocked(true);
-        request.setTokenExpired(true);
+        request.setCredentialsExpired(true);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
 
@@ -929,7 +941,7 @@ public class UserServiceImplTest {
 
         // We use times(2) because the method is called twice in the implementation
         verify(userRepository, times(2)).findById(userId);
-        verify(refreshTokenService).revokeAllUserTokens(testUser);
+        verify(authTokenService).revokeAllUserTokens(testUser);
         verify(userRepository).save(testUser);
     }
 
@@ -1062,6 +1074,226 @@ public class UserServiceImplTest {
         // Assert
         assertTrue(testUser.isTwoFactorEnabled());
         verify(userRepository).findByUsername(username);
+        verify(userRepository).save(testUser);
+    }
+
+    @Test
+    void testAuthenticateUser_TwoFactorEnabled() {
+        // Arrange
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setIdentifier("testuser");
+        loginRequest.setPassword("password");
+
+        testUser.setTwoFactorEnabled(true);
+        when(userRepository.findByUsernameOrEmail(anyString(), anyString())).thenReturn(Optional.of(testUser));
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(jwtUtils.generateTokenFromUsername(any(CustomUserDetails.class))).thenReturn("jwt-token");
+        when(authTokenService.createRefreshToken(any(User.class), any(HttpServletRequest.class)))
+                .thenReturn(AuthToken.builder().token("refresh-token").build());
+
+        // Act
+        TokenResponse response = userService.authenticateUser(loginRequest, httpServletRequest);
+
+        // Assert
+        assertNotNull(response);
+        assertTrue(response.isEnabled());
+        assertEquals("jwt-token", response.getAccessToken());
+        assertEquals("refresh-token", response.getRefreshToken());
+        verify(userRepository).findByUsernameOrEmail("testuser", "testuser");
+    }
+
+    @Test
+    void testAuthenticateUser_DisabledUser() {
+        // Arrange
+        LoginRequest loginRequest = new LoginRequest();
+        loginRequest.setIdentifier("testuser");
+        loginRequest.setPassword("password");
+
+        testUser.setEnabled(false);
+        when(userRepository.findByUsernameOrEmail(anyString(), anyString())).thenReturn(Optional.of(testUser));
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        // Act
+        TokenResponse response = userService.authenticateUser(loginRequest, httpServletRequest);
+
+        // Assert
+        assertNotNull(response);
+        assertFalse(response.isEnabled());
+        assertNull(response.getAccessToken());
+        assertNull(response.getRefreshToken());
+        verify(userRepository).findByUsernameOrEmail("testuser", "testuser");
+        verify(jwtUtils, never()).generateTokenFromUsername(any());
+    }
+
+    @Test
+    void testRefreshToken_VerificationFailure() {
+        // Arrange
+        String refreshTokenString = "expired-refresh-token";
+        AuthToken authToken = new AuthToken();
+        authToken.setToken(refreshTokenString);
+        authToken.setUser(testUser);
+        authToken.setTokenType(TokenType.REFRESH);
+        authToken.setRevoked(true);
+
+        when(authTokenService.findByTokenAndType(refreshTokenString, TokenType.REFRESH))
+                .thenReturn(Optional.of(authToken));
+        when(authTokenService.verifyToken(authToken))
+                .thenThrow(new RuntimeException("Token is revoked"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> userService.refreshToken(refreshTokenString));
+        assertEquals("Token is revoked", exception.getMessage());
+        verify(authTokenService).findByTokenAndType(refreshTokenString, TokenType.REFRESH);
+        verify(authTokenService).verifyToken(authToken);
+        verify(jwtUtils, never()).generateTokenFromUsername(any());
+    }
+
+    @Test
+    void testLogout_TokenExists_RevokesAccessTokens() {
+        // Arrange
+        String refreshTokenString = "refresh-token";
+        AuthToken authToken = new AuthToken();
+        authToken.setToken(refreshTokenString);
+        authToken.setUser(testUser);
+        authToken.setTokenType(TokenType.REFRESH);
+
+        when(authTokenService.findByTokenAndType(refreshTokenString, TokenType.REFRESH))
+                .thenReturn(Optional.of(authToken));
+
+        // Act
+        userService.logout(refreshTokenString);
+
+        // Assert
+        verify(authTokenService).findByTokenAndType(refreshTokenString, TokenType.REFRESH);
+        verify(authTokenService).revokeToken(refreshTokenString, TokenType.REFRESH);
+        verify(authTokenService).revokeAllUserTokensByType(testUser, TokenType.ACCESS);
+    }
+
+    @Test
+    void testGeneratePasswordResetToken_MultipleOldTokens() {
+        // Arrange
+        String email = "test@example.com";
+        PasswordResetToken oldToken1 = new PasswordResetToken();
+        oldToken1.setUser(testUser);
+        oldToken1.setUsed(false);
+        PasswordResetToken oldToken2 = new PasswordResetToken();
+        oldToken2.setUser(testUser);
+        oldToken2.setUsed(false);
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
+        when(passwordResetTokenRepository.findLatestByUserEmail(email)).thenReturn(Optional.empty());
+        when(passwordResetTokenRepository.findAllByUserId(testUser.getUserId()))
+                .thenReturn(Arrays.asList(oldToken1, oldToken2));
+
+        // Act
+        userService.generatePasswordResetToken(email);
+
+        // Assert
+        assertTrue(oldToken1.isUsed());
+        assertTrue(oldToken2.isUsed());
+        verify(passwordResetTokenRepository).saveAllAndFlush(Arrays.asList(oldToken1, oldToken2));
+        verify(passwordResetTokenRepository).save(any(PasswordResetToken.class));
+        verify(publishEventService).sendPasswordResetEmail(eq(testUser), anyString(), eq(5 * 60));
+    }
+
+    @Test
+    void testResetPassword_TokenAlreadyUsed() {
+        // Arrange
+        String token = "used-token";
+        String newPassword = "NewPassword1@";
+
+        passwordResetToken.setUsed(true);
+        when(passwordResetTokenRepository.findByToken(token)).thenReturn(Optional.of(passwordResetToken));
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> userService.resetPassword(token, newPassword));
+        assertEquals("PASSWORD_RESET_TOKEN_USED", exception.getMessage());
+
+        verify(passwordResetTokenRepository).findByToken(token);
+        verify(passwordEncoder, never()).encode(anyString());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void testVerify2FACode_AlreadyEnabled() {
+        // Arrange
+        UUID userId = testUser.getUserId();
+        testUser.setTwoFactorSecret("TESTSECRET");
+        testUser.setTwoFactorEnabled(true);
+
+        Verify2FARequest request = new Verify2FARequest();
+        request.setCode("123456");
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+        when(totpService.verifyCode(eq("TESTSECRET"), eq(123456))).thenReturn(true);
+
+        // Act
+        userService.verify2FACode(userId, request);
+
+        // Assert
+        assertTrue(testUser.isTwoFactorEnabled());
+        verify(userRepository).findById(userId);
+        verify(totpService).verifyCode("TESTSECRET", 123456);
+        verify(userRepository).save(testUser); // Still saves due to updatedBy
+    }
+
+    @Test
+    void testValidate2FACode_NullUsername() {
+        // Arrange
+        Verify2FARequest request = new Verify2FARequest();
+        request.setCode("123456");
+        request.setUsername(null);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> userService.validate2FACode(request));
+        assertEquals("Invalid username", exception.getMessage());
+
+        verify(userRepository, never()).findByUsername(anyString());
+        verify(totpService, never()).verifyCode(anyString(), anyInt());
+    }
+
+    @Test
+    void testUpdateStatus_AdminCredentialsExpired() {
+        // Arrange
+        UUID userId = testUser.getUserId();
+        UpdateStatusRequest request = new UpdateStatusRequest();
+        request.setCredentialsExpired(true);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        // Act
+        userService.updateStatus(userId, request, true);
+
+        // Assert
+        verify(userRepository, times(2)).findById(userId);
+        verify(authTokenService).revokeAllUserTokens(testUser);
+        verify(userRepository).save(testUser);
+    }
+
+    @Test
+    void testUpdateProfile_NoChanges() {
+        // Arrange
+        UUID userId = testUser.getUserId();
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setUsername(testUser.getUsername());
+        request.setEmail(testUser.getEmail());
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
+
+        // Act
+        userService.updateProfile(userId, request);
+
+        // Assert
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).existsByUsername(anyString());
+        verify(userRepository, never()).existsByEmail(anyString());
         verify(userRepository).save(testUser);
     }
 }
