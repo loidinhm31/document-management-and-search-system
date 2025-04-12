@@ -20,36 +20,37 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
   isVersion = false,
 }) => {
   useEffect(() => {
-    if (open) {
-      // Prevent right-click context menu
-      const handleContextMenu = (e: MouseEvent) => {
+    // Only add event listeners when dialog is open
+    if (!open) return () => {}; // Return empty cleanup function when not open
+
+    // Prevent right-click context menu
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    // Prevent copy/cut
+    const handleCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+    };
+
+    // Prevent keyboard shortcuts
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C" || e.key === "x" || e.key === "X")) {
         e.preventDefault();
-      };
+      }
+    };
 
-      // Prevent copy/cut
-      const handleCopy = (e: ClipboardEvent) => {
-        e.preventDefault();
-      };
+    document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("copy", handleCopy);
+    document.addEventListener("cut", handleCopy);
+    document.addEventListener("keydown", handleKeyDown);
 
-      // Prevent keyboard shortcuts
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C" || e.key === "x" || e.key === "X")) {
-          e.preventDefault();
-        }
-      };
-
-      document.addEventListener("contextmenu", handleContextMenu);
-      document.addEventListener("copy", handleCopy);
-      document.addEventListener("cut", handleCopy);
-      document.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        document.removeEventListener("contextmenu", handleContextMenu);
-        document.removeEventListener("copy", handleCopy);
-        document.removeEventListener("cut", handleCopy);
-        document.removeEventListener("keydown", handleKeyDown);
-      };
-    }
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("copy", handleCopy);
+      document.removeEventListener("cut", handleCopy);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, [open]);
 
   if (!documentData) return null;
@@ -80,6 +81,7 @@ const DocumentViewerDialog: React.FC<DocumentViewerDialogProps> = ({
             <DocumentViewer
               documentId={documentId}
               documentType={documentData.documentType}
+              documentStatus={documentData.status}
               mimeType={documentData.mimeType}
               fileName={isVersion ? documentData.filename : documentData.filename}
               versionNumber={isVersion ? (documentData as DocumentVersion).versionNumber : undefined}

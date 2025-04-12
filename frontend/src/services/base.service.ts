@@ -48,6 +48,9 @@ export class BaseService {
       case 404:
         description = i18next.t("api.error.notFound");
         break;
+      case 415:
+        description = i18next.t("api.error.typeNotSupport");
+        break;
       case 500:
         description = i18next.t("api.error.serverError");
         break;

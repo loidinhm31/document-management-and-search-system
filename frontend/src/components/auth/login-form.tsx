@@ -1,48 +1,47 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { FcGoogle } from "react-icons/fc";
 import { Link, useNavigate } from "react-router-dom";
-import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { OAUTH_GOOGLE_REDIRECT_URL } from "@/env";
 import { useToast } from "@/hooks/use-toast";
+import { createLoginSchema, LoginFormValues } from "@/schemas/login-schema";
 import { authService } from "@/services/auth.service";
 import { LoginRequest, TokenResponse } from "@/types/auth";
-
-const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters")
-    .regex(
-      /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
-      "Password must contain at least one digit, lowercase, uppercase, and special character",
-    ),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
 
 interface LoginFormProps {
   onSuccess: (responseData: TokenResponse) => void;
 }
 
 export const LoginForm = ({ onSuccess }: LoginFormProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  useEffect(() => {
+    // Get fields that have been touched by the user
+    const touchedFields = Object.keys(form.formState.touchedFields);
+
+    // Only trigger validation for fields the user has interacted with
+    if (touchedFields.length > 0) {
+      form.trigger(touchedFields as any);
+    }
+  }, [i18n.language]);
+
+  // Create the form with translated schema
+  const form = useForm({
+    resolver: zodResolver(createLoginSchema(t)),
+    mode: "onBlur",
     defaultValues: {
-      username: "",
+      identifier: "",
       password: "",
     },
   });
@@ -54,19 +53,29 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       if (!response.data.enabled) {
         // Redirect to OTP verification if account is not enabled
         navigate("/verify-otp", {
-          state: { username: data.username },
+          state: { username: data.identifier },
         });
         return;
       }
 
       onSuccess(response.data);
-    } catch (error) {
-      console.log("toast", error);
-      toast({
-        title: t("common.error"),
-        description: t("auth.login.error"),
-        variant: "destructive",
-      });
+    } catch (error: any) {
+      console.log("error", error);
+      if (error.response) {
+        if ((error.response.status === 404 && error.response.data === "USER_NOT_FOUND") || error.response.status === 401) {
+          toast({
+            title: t("common.error"),
+            description: t("auth.login.incorrect"),
+            variant: "destructive",
+          });
+        } else if (error.response.status === 403 && error.response.data === "USER_LOCKED") {
+          toast({
+            title: t("common.error"),
+            description: t("auth.login.locked"),
+            variant: "destructive",
+          });
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -76,15 +85,15 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid gap-6">
-          <Link
-            to={`${OAUTH_GOOGLE_REDIRECT_URL}/oauth2/authorization/google`}
+          <a
+            href={`${OAUTH_GOOGLE_REDIRECT_URL}/oauth2/authorization/google`}
             className="flex items-center justify-center gap-1 rounded-md border p-2 shadow-sm shadow-slate-200 transition-all duration-300 hover:bg-slate-300"
           >
             <span>
               <FcGoogle className="text-2xl" />
             </span>
             <span className="text-xs font-semibold sm:text-customText">{t("auth.login.buttons.google")}</span>
-          </Link>
+          </a>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
@@ -98,16 +107,16 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
           <div className="grid gap-4">
             <FormField
               control={form.control}
-              name="username"
+              name="identifier"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("auth.login.form.username.label")}</FormLabel>
+                  <FormLabel>{t("auth.login.form.identifier.label")}</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       type="text"
                       disabled={isLoading}
-                      placeholder={t("auth.login.form.username.placeholder")}
+                      placeholder={t("auth.login.form.identifier.placeholder")}
                     />
                   </FormControl>
                   <FormMessage />

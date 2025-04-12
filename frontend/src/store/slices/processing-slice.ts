@@ -1,23 +1,16 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { RootState } from "@/store";
-import { DocumentStatus } from "@/types/document";
+import { DocumentStatus, ProcessingItem } from "@/types/document";
 
-interface ProcessingItem {
-  id: string;
-  documentId: string;
-  filename: string;
-  status: DocumentStatus;
-  error?: string;
-  addedAt: number;
-}
-
-export interface ProcessingState {
+interface ProcessingState {
   items: ProcessingItem[];
+  visible: boolean;
 }
 
-const initialState = {
-  items: [] as ProcessingItem[],
+const initialState: ProcessingState = {
+  items: [],
+  visible: true
 };
 
 const processingSlice = createSlice({
@@ -25,7 +18,20 @@ const processingSlice = createSlice({
   initialState,
   reducers: {
     addProcessingItem: (state, action: PayloadAction<ProcessingItem>) => {
-      state.items.push(action.payload);
+      // Check if item already exists
+      const existingItem = state.items.find((item) => item.documentId === action.payload.documentId);
+      if (existingItem) {
+        // Update existing item instead of adding a duplicate
+        existingItem.status = action.payload.status;
+        existingItem.addedAt = action.payload.addedAt;
+        if (action.payload.error) {
+          existingItem.error = action.payload.error;
+        }
+      } else {
+        state.items.push(action.payload);
+      }
+      // Ensure visibility is true when adding items
+      state.visible = true;
     },
     removeProcessingItem: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter((item) => item.id !== action.payload);
@@ -46,13 +52,20 @@ const processingSlice = createSlice({
         }
       }
     },
+    // Toggle visibility
+    setProcessingVisibility: (state, action: PayloadAction<boolean>) => {
+      state.visible = action.payload;
+    },
   },
 });
 
-export const { addProcessingItem, removeProcessingItem, updateProcessingItem } = processingSlice.actions;
+export const { addProcessingItem, removeProcessingItem, updateProcessingItem, setProcessingVisibility } =
+  processingSlice.actions;
 
 export const selectProcessingItems = (state: RootState) => state.processing.items;
+export const selectProcessingVisibility = (state: RootState) => state.processing.visible;
 export const selectProcessingItemByDocumentId = (documentId: string) => (state: RootState) =>
   state.processing.items.find((item) => item.documentId === documentId);
+
 
 export default processingSlice.reducer;

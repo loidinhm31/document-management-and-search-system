@@ -1,5 +1,6 @@
 {
   "common": {
+    "logout": "Log out",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
@@ -11,10 +12,19 @@
     "create": "Create",
     "confirm": "Confirm",
     "close": "Close",
+    "update": "Update",
+    "all": "All",
     "confirmDelete": {
       "title": "Confirm Delete",
       "description": "Are you sure you want to delete this item? This action cannot be undone."
-    }
+    },
+    "created": "Created At",
+    "updated": "Updated At",
+    "fileSize": "File size",
+    "language": "Main Language",
+    "sharedBy": "Shared By",
+    "noMatchingOptions": "No matching options found",
+    "noLang": "Cannot detect language"
   },
   "navigation": {
     "main": {
@@ -27,7 +37,7 @@
     "admin": {
       "title": "Administration",
       "userManagement": "User Management",
-      "masterData": "Master Data",
+      "masterData": "Master Data Management",
       "reports": "Reports Management"
     }
   },
@@ -56,12 +66,15 @@
         "error": "Invalid 2FA code. Please try again",
         "maxAttemptsReached": "Maximum verification attempts reached. Please try logging in again.",
         "remainingAttempts": "Invalid code. {{count}} attempts remaining",
-        "attemptsRemaining": "Remaining attempts: {{count}}"
+        "attemptsRemaining": "Remaining attempts: {{count}}",
+        "validation": {
+          "codeLength": "Code must be 6 digits"
+        }
       },
       "form": {
-        "username": {
-          "label": "Username",
-          "placeholder": "Enter your username"
+        "identifier": {
+          "label": "Username/ Email",
+          "placeholder": "Enter your username or email"
         },
         "password": {
           "label": "Password",
@@ -74,6 +87,11 @@
         },
         "or": "Or continue with email"
       },
+      "validation": {
+        "identifierRequired": "Username or Email is required",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character"
+      },
       "buttons": {
         "signIn": "Sign In",
         "verify": "Verify Code",
@@ -84,11 +102,13 @@
         "link": "Sign up"
       },
       "success": "Login successful",
+      "incorrect": "Incorrect login credentials",
       "error": "Invalid credentials",
+      "locked": "Your account has been locked",
       "required": "Please login to continue"
     },
     "logout": {
-      "success": "Logout successful"
+      "success": "You have been logged out successfully"
     },
     "register": {
       "title": "Create an Account",
@@ -116,7 +136,11 @@
       },
       "validation": {
         "usernameExists": "Username is already taken",
-        "emailExists": "Email is already in use"
+        "emailExists": "Email is already in use",
+        "usernameMinLength": "Username must be at least 3 characters",
+        "invalidEmail": "Invalid email address",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character"
       },
       "error": "Registration failed. Please try again.",
       "otpSent": "Registration successful. Please check your email for verification code"
@@ -133,7 +157,9 @@
       "verifyError": "Invalid code. {{remaining}} attempts remaining",
       "resendSuccess": "New verification code sent",
       "resendError": "Failed to send verification code",
-      "maxAttemptsReached": "Maximum attempts reached. Please try again later"
+      "resending": "Resending...",
+      "maxAttemptsReached": "Maximum attempts reached. Please try again later",
+      "otpExpired": "OTP expired"
     },
     "forgotPassword": {
       "title": "Forgot Password",
@@ -143,6 +169,9 @@
           "label": "Email",
           "placeholder": "Enter your email address"
         }
+      },
+      "validation": {
+        "invalidEmail": "Invalid email address"
       },
       "buttons": {
         "submit": "Send Reset Link"
@@ -163,9 +192,12 @@
       "error": "Failed to reset password",
       "backToLogin": "Back to Login",
       "validation": {
-        "invalidPasswordResetToken": "Invalid password reset token",
-        "passwordResetTokenUsed": "Password reset token has already been used",
-        "passwordResetTokenExpired": "Password reset token has expired"
+        "invalidPasswordResetToken": "Invalid password reset link",
+        "passwordResetTokenUsed": "Password reset link has already been used",
+        "passwordResetTokenExpired": "Password reset link has expired",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character",
+        "passwordMismatch": "Passwords do not match"
       },
       "form": {
         "password": {
@@ -221,7 +253,13 @@
         "invalidPassword": "Password must be at least 6 characters and contain uppercase, lowercase, number, and special character"
       },
       "updateSuccess": "Password updated successfully",
-      "updateError": "Failed to update password"
+      "updateError": "Failed to update password",
+      "validation": {
+        "currentRequired": "Current password is required",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "passwordPattern": "Password must contain at least one digit, lowercase, uppercase, and special character",
+        "passwordMismatch": "Passwords don't match"
+      }
     },
     "twoFactor": {
       "title": "Two-Factor Authentication",
@@ -271,6 +309,7 @@
       "serverError": "Internal server error occurred",
       "networkError": "Network error. Please check your connection",
       "badRequest": "Bad request. Please check your input",
+      "typeNotSupport": "Unsupported Media Type, please check extension and mimetype",
       "unknown": "An unknown error occurred"
     }
   },
@@ -282,12 +321,14 @@
         "username": "Username",
         "email": "Email",
         "createdDate": "Created Date",
-        "status": "Status"
+        "status": "Status",
+        "actions": "Detail"
       },
       "status": {
         "active": "Active",
         "inactive": "Inactive"
       },
+      "noUser": "No users found",
       "actions": {
         "viewDetails": "View Details",
         "enableAccount": "Enable Account",
@@ -300,7 +341,8 @@
         },
         "updateRole": {
           "success": "User role updated successfully",
-          "error": "Failed to update user role"
+          "error": "Failed to update user role",
+          "cannotChangeOwnRole": "You cannot change your own role"
         },
         "updatePassword": {
           "success": "User password updated successfully",
@@ -309,6 +351,15 @@
         "updateAccount": {
           "success": "Account status updated successfully",
           "error": "Failed to update account status"
+        },
+        "revokeTokens": {
+          "title": "Revoke Tokens",
+          "description": "This action will invalidate all tokens for this user. The user will need to log in again on all devices. This cannot be undone.",
+          "button": "Revoke Tokens",
+          "confirm": "Revoke Tokens",
+          "processing": "Revoking...",
+          "success": "Tokens successfully revoked",
+          "error": "Failed to revoke tokens"
         }
       },
       "messages": {
@@ -336,14 +387,17 @@
           "selectRole": "Select role"
         },
         "accountStatus": {
-          "enabled": "Account Enabled",
-          "enabledDescription": "Allow or disable user access",
-          "locked": "Account Locked",
+          "title": "Account Status",
+          "locked": "Account Lock",
           "lockedDescription": "Temporarily lock account access",
-          "expired": "Account Expired",
-          "expiredDescription": "Mark account as expired",
-          "credentialsExpired": "Credentials Expired",
-          "credentialsExpiredDescription": "Force password reset"
+          "tokenExpired": "Access and refresh token",
+          "tokenExpiredDescription": "Force revoke all refresh tokens",
+          "twoFactor": "Two-Factor Authentication",
+          "twoFactorEnabledDescription": "User has enabled two-factor authentication",
+          "twoFactorEnabled": "Enabled",
+          "twoFactorNotEnabledDescription": "User has not enabled two-factor authentication",
+          "twoFactorNotEnabled": "Disabled",
+          "signUpMethod": "Sign Up Method"
         }
       }
     },
@@ -396,9 +450,14 @@
         },
         "noParent": "None parent type"
       },
+      "validation": {
+        "codeRequired": "Code is required",
+        "englishNameRequired": "English name is required",
+        "vietnameseNameRequired": "Vietnamese name is required"
+      },
       "delete": {
         "title": "Delete Master Data",
-        "description": "Are you sure you want to delete {name}? This action cannot be undone."
+        "description": "Are you sure you want to delete {{name}}? This action cannot be undone."
       },
       "createSuccess": "Master data created successfully",
       "updateFullSuccess": "Master data updated successfully",
@@ -409,6 +468,8 @@
       "deleteError": "Failed to delete master data",
       "fetchError": "Failed to fetch master data",
       "searchError": "Failed to search master data",
+      "createdError": "Master Data already created",
+      "invalidParentError": "Invalid Parent of Master Data",
       "inUseError": "Master Data already in use"
     },
     "reports": {
@@ -448,13 +509,14 @@
           "pending": "Pending",
           "resolved": "Resolved",
           "rejected": "Rejected",
-          "remediated": "Violation Removed"
+          "remediated": "Remediated"
         },
         "actions": {
           "viewReasons": "View Reasons",
           "process": "Process",
-          "resolve": "Resolve",
-          "remediate": "Remediate"
+          "resolve": "Remove",
+          "remediate": "Remediate",
+          "reject": "Reject"
         },
         "pagination": {
           "previous": "Previous",
@@ -503,7 +565,7 @@
           "comment": "Comment",
           "commenter": "Commenter",
           "document": "Document",
-          "commentDate": "Comment Date",
+          "commentDate": "Most Recent Comment Report Date",
           "reportCount": "Reports",
           "status": "Status",
           "actions": "Actions",
@@ -568,7 +630,7 @@
         "categories": "Categories",
         "tags": "Tags",
         "matches": "Matches",
-        "created": "Created",
+        "created": "Created At",
         "actions": "Actions"
       },
       "status": {
@@ -578,7 +640,7 @@
         "views": "Views",
         "downloads": "Downloads"
       },
-      "empty": "Not document found",
+      "empty": "No document found",
       "emptyFavorites": "No favorite documents found",
       "pagination": {
         "previous": "Previous",
@@ -599,6 +661,7 @@
         "sizeLimitError": "File size exceeds the maximum limit {{maxFileSize}} MB. Selected file is {{fileSizeError}} MB"
       },
       "form": {
+        "selectedFile": "Selected",
         "majors": {
           "label": "Majors *",
           "placeholder": "Select majors"
@@ -624,6 +687,13 @@
           "placeholder": "Enter document summary...",
           "count": "characters"
         }
+      },
+      "validation": {
+        "summaryMinLength": "Summary must be at least 50 characters",
+        "summaryMaxLength": "Summary must not exceed 500 characters",
+        "majorRequired": "At least one major is required",
+        "levelRequired": "Course level is required",
+        "categoryRequired": "At least one document category is required"
       },
       "buttons": {
         "upload": "Upload Document"
@@ -662,7 +732,9 @@
         "title": "Error",
         "loading": "Failed to load document preview",
         "download": "Failed to download file",
-        "unsupported": "Preview not available for {{type}}"
+        "unsupported": "Preview not available for {{type}}",
+        "processFailStatus": "This document cannot be previewed due to a processing error",
+        "processingStatus": "Document is being processed, please try again later"
       },
       "buttons": {
         "download": "Download",
@@ -672,7 +744,8 @@
         "next": "Next",
         "pageInfo": "Page {{current}} of {{total}}",
         "slideInfo": "Slide {{current}} of {{total}}"
-      }
+      },
+      "sheetInfo": "Sheets"
     },
     "search": {
       "placeholder": "Type file name or content to search...",
@@ -695,7 +768,7 @@
         },
         "courseCodes": {
           "label": "Course Codes",
-          "placeholder": "Enter course codes"
+          "placeholder": "Select course codes"
         },
         "majors": {
           "label": "Majosr",
@@ -711,7 +784,7 @@
         },
         "tags": {
           "label": "Tags",
-          "placeholder": "Enter tags"
+          "placeholder": "Enter or select tags"
         }
       },
       "fields": {
@@ -770,6 +843,14 @@
         "advancedSearch": {
           "searchPlaceholder": "Search documents..."
         },
+        "sortOptions": {
+          "createdDateNewest": "Created Date (Newest)",
+          "createdDateOldest": "Created Date (Oldest)",
+          "nameAz": "Name (A-Z)",
+          "nameZa": "Name (Z-A)",
+          "sizeLargest": "Size (Largest)",
+          "sizeSmallest": "Size (Smallest)"
+        },
         "error": "Failed to search documents"
       }
     },
@@ -818,7 +899,8 @@
         "completed": "Processed",
         "pending": "Pending process",
         "failed": "Failed"
-      }
+      },
+      "revertSuccess": "Revert successfully"
     },
     "related": {
       "title": "Related Documents",
@@ -834,7 +916,7 @@
         "title": "Content Preferences",
         "description": "Customize your document preferences to personalize your experience",
         "language": {
-          "label": "Language Preferences",
+          "label": "Preferred Languages",
           "placeholder": "Select preferred languages"
         },
         "majors": {
@@ -854,8 +936,8 @@
           "placeholder": "Select preferred categories"
         },
         "tags": {
-          "label": "Tags of Interest",
-          "placeholder": "Add tags you're interested in"
+          "label": "Preferred Tags",
+          "placeholder": "Add tags you're preferred in"
         }
       },
       "analytics": {
@@ -867,7 +949,19 @@
         "stats": {
           "label": "Interaction Statistics",
           "comments": "Total Comments",
+          "downloads": "Total Downloads",
           "uniqueDocuments": "Unique Documents Accessed"
+        },
+        "contentTypes": {
+          "word": "Word Document",
+          "pdf": "PDF Document",
+          "excel": "Excel Document",
+          "ppt": "PowerPoint",
+          "text": "Text Document",
+          "csv": "CSV Document",
+          "xml": "XML Document",
+          "json": "JSON Document",
+          "markdown": "Markdown Document"
         }
       },
       "contentType": {
@@ -903,7 +997,7 @@
         "actionType": "Action",
         "documentTitle": "Document",
         "details": "Details",
-        "version": "Version",
+        "version": "Current Version",
         "timestamp": "Timestamp"
       },
       "actionTypes": {
@@ -919,13 +1013,16 @@
         "favorite": "Favorite Document",
         "comment": "Comment",
         "recommend": "Recommend Document",
-        "addNote": "Add Note"
+        "note": "Note"
       },
       "pagination": {
         "showing": "Showing {{start}} to {{end}} of {{total}} activities",
         "page": "Page {{current}} of {{total}}",
         "previous": "Previous",
         "next": "Next"
+      },
+      "validation": {
+        "dateRange": "From date cannot be greater than To date"
       }
     },
     "comments": {
@@ -952,6 +1049,9 @@
       "fetchError": "Failed to load comments",
       "editSuccess": "Comment updated successfully",
       "editError": "Failed to update comment",
+      "reportSuccess": "Report comment successfully",
+      "loading": "Loading",
+      "loadMore": "Load More Comments...",
       "save": "Save",
       "cancel": "Cancel",
       "actions": {
@@ -978,7 +1078,8 @@
           "type": {
             "label": "Violation Type",
             "placeholder": "Select violation type",
-            "description": "Select the type of violation you want to report"
+            "description": "Select the type of violation you want to report",
+            "required": "Please select a report type"
           },
           "description": {
             "label": "Additional Details",
@@ -1009,7 +1110,8 @@
         "type": {
           "label": "Violation Type",
           "placeholder": "Select violation type",
-          "description": "Select the type of violation you want to report"
+          "description": "Select the type of violation you want to report",
+          "required": "Please select a report type"
         },
         "description": {
           "label": "Additional Details",

@@ -1,0 +1,35 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DSS as DocumentSearchService
+    participant AuthS as AuthService
+    participant Database
+    participant OS as OpenSearch
+
+    User->>Frontend: View document <br> detail page <br>(Document A)
+    Frontend->>DSS: GET /api/v1/documents/<br>recommendation?documentId=A
+    Note over Frontend: Request similar documents to Document A
+
+    DSS->>AuthS: getUserByUsername(token)
+    AuthS-->>DSS: UserResponse
+
+    DSS->>Database: findByUserId(userId)
+    Database-->>DSS: DocumentPreferences
+
+    DSS->>OS: getDocumentById(documentId)
+    OS-->>DSS: Source document data (Document A)
+
+    DSS->>DSS: buildContentBasedRecommendationQuery()
+    Note over DSS: Create content-based query using Document A as reference
+
+    DSS->>OS: executeSearch(searchQuery)
+    OS-->>DSS: SearchResult (similar documents to A)
+
+    DSS->>DSS: processSearchResults()
+
+    DSS-->>Frontend: Page<DocumentResponseDto>
+
+    Frontend->>Frontend: renderRecommendedDocuments()
+    Note over Frontend: Display documents similar to Document A
+
+    Frontend-->>User: Show related <br> document <br> recommendations

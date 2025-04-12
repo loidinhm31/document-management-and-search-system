@@ -1,207 +1,317 @@
 {
   "common": {
+    "logout": "Đăng xuất",
     "error": "Lỗi",
     "success": "Thành công",
     "warning": "Cảnh báo",
     "info": "Thông tin",
-    "and": "và"
+    "and": "và",
+    "delete": "Xóa",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "create": "Tạo mới",
+    "confirm": "Xác nhận",
+    "close": "Đóng",
+    "update": "Cập nhật",
+    "all": "Tất cả",
+    "confirmDelete": {
+      "title": "Xác nhận xóa",
+      "description": "Bạn có chắc chắn muốn xóa mục này? Hành động này không thể hoàn tác."
+    },
+    "created": "Tạo lúc",
+    "updated": "Cập nhật lúc",
+    "size": "Kích thước tệp",
+    "language": "Ngôn ngữ chính",
+    "sharedBy": "Chia sẻ bởi",
+    "noMatchingOptions": "Không tìm thấy tùy chọn phù hợp",
+    "noLang": "Không thể xác định ngôn ngữ"
   },
   "navigation": {
     "main": {
       "title": "Ứng dụng",
-      "home": "Trang chủ",
-      "document": "Tài liệu"
+      "home": "Khám phá",
+      "document": "Tài liệu của tôi",
+      "preferences": "Tùy chọn tài liệu",
+      "history": "Lịch sử hoạt động tài liệu"
     },
     "admin": {
       "title": "Quản trị",
       "userManagement": "Quản lý người dùng",
-      "roles": "Vai trò"
+      "masterData": "Quản lý dữ liệu hệ thống",
+      "reports": "Quản lý báo cáo"
     }
   },
   "pages": {
-    "home": "Home",
-    "profile": "Profile",
-    "document": "Tài liệu",
+    "home": "Khám phá",
+    "profile": "Hồ sơ",
+    "my-document": "Tài liệu của tôi",
+    "document-preferences": "Tùy chọn tài liệu",
+    "document-user-history": "Lịch sử hoạt động tài liệu",
     "admin": {
-      "title": "Admin",
+      "title": "Quản trị",
       "users": "Quản lý người dùng",
-      "userDetail": "User Details",
-      "roles": "Role Management"
+      "userDetail": "Chi tiết người dùng",
+      "masterData": "Quản lý dữ liệu hệ thống",
+      "roles": "Quản lý vai trò",
+      "reports": "Quản lý báo cáo"
     }
   },
   "auth": {
     "login": {
-      "title": "Welcome back",
-      "description": "Login with your email or Google account",
+      "title": "Chào mừng trở lại",
+      "description": "Đăng nhập bằng email hoặc tài khoản Google",
       "2fa": {
-        "title": "Two-Factor Authentication",
-        "description": "Enter the verification code to continue",
-        "error": "Invalid 2FA code. Please try again",
-        "maxAttemptsReached": "Maximum verification attempts reached. Please try logging in again.",
-        "remainingAttempts": "Invalid code. {{count}} attempts remaining",
-        "attemptsRemaining": "Remaining attempts: {{count}}"
+        "title": "Xác thực hai yếu tố",
+        "description": "Nhập mã xác thực để tiếp tục",
+        "error": "Mã 2FA không hợp lệ. Vui lòng thử lại",
+        "maxAttemptsReached": "Đã đạt đến số lần xác thực tối đa. Vui lòng thử đăng nhập lại.",
+        "remainingAttempts": "Mã không hợp lệ. Còn {{count}} lần thử",
+        "attemptsRemaining": "Số lần thử còn lại: {{count}}",
+        "validation": {
+          "codeLength": "Mã phải có 6 chữ số"
+        }
       },
       "form": {
-        "username": {
-          "label": "Username",
-          "placeholder": "Enter your username"
+        "identifier": {
+          "label": "Tên đăng nhập/ Email",
+          "placeholder": "Nhập tên đăng nhập hoặc email"
         },
         "password": {
-          "label": "Password",
-          "placeholder": "Enter your password",
-          "forgot": "Forgot password?"
+          "label": "Mật khẩu",
+          "placeholder": "Nhập mật khẩu",
+          "forgot": "Quên mật khẩu?"
         },
         "verificationCode": {
-          "label": "Verification Code",
-          "placeholder": "Enter 6-digit code"
+          "label": "Mã xác thực",
+          "placeholder": "Nhập mã 6 chữ số"
         },
-        "or": "Or continue with email"
+        "or": "Hoặc tiếp tục với email"
+      },
+      "validation": {
+        "identifierRequired": "Tên đăng nhập hoặc Email là bắt buộc",
+        "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
+        "passwordPattern": "Mật khẩu phải chứa ít nhất một chữ số, chữ thường, chữ hoa và ký tự đặc biệt"
       },
       "buttons": {
-        "signIn": "Sign In",
-        "verify": "Verify Code",
-        "google": "Login with Google"
+        "signIn": "Đăng nhập",
+        "verify": "Xác thực mã",
+        "google": "Đăng nhập với Google"
       },
       "signup": {
-        "prompt": "Don't have an account?",
-        "link": "Sign up"
+        "prompt": "Chưa có tài khoản?",
+        "link": "Đăng ký"
       },
       "success": "Đăng nhập thành công",
+      "incorrect": "Thông tin đăng nhập không chính xác",
       "error": "Thông tin đăng nhập không hợp lệ",
+      "locked": "Tài khoản của bạn đã bị khóa",
       "required": "Vui lòng đăng nhập để tiếp tục"
     },
     "logout": {
-      "success": "Đăng xuất thành công"
+      "success": "Bạn đã đăng xuất thành công"
     },
     "register": {
-      "title": "Create an Account",
-      "description": "Enter your details to create a new account",
+      "title": "Tạo tài khoản",
+      "description": "Nhập thông tin của bạn để tạo tài khoản mới",
       "form": {
         "username": {
-          "label": "Username",
-          "placeholder": "Enter your username"
+          "label": "Tên đăng nhập",
+          "placeholder": "Nhập tên đăng nhập"
         },
         "email": {
           "label": "Email",
-          "placeholder": "Enter your email"
+          "placeholder": "Nhập email"
         },
         "password": {
-          "label": "Password",
-          "placeholder": "Create a password"
+          "label": "Mật khẩu",
+          "placeholder": "Tạo mật khẩu"
         }
       },
       "buttons": {
-        "submit": "Create account"
+        "submit": "Tạo tài khoản"
       },
       "login": {
-        "prompt": "Already have an account?",
-        "link": "Login"
+        "prompt": "Đã có tài khoản?",
+        "link": "Đăng nhập"
       },
-      "success": "Đăng ký thành công",
-      "error": "Đăng ký thất bại"
+      "validation": {
+        "usernameExists": "Tên đăng nhập đã được sử dụng",
+        "emailExists": "Email đã được sử dụng",
+        "usernameMinLength": "Tên đăng nhập phải có ít nhất 3 ký tự",
+        "invalidEmail": "Địa chỉ email không hợp lệ",
+        "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
+        "passwordPattern": "Mật khẩu phải chứa ít nhất một chữ số, chữ thường, chữ hoa và ký tự đặc biệt"
+      },
+      "error": "Đăng ký thất bại. Vui lòng thử lại.",
+      "otpSent": "Đăng ký thành công. Vui lòng kiểm tra email để nhận mã xác thực"
+    },
+    "otp": {
+      "title": "Xác thực tài khoản",
+      "description": "Nhập mã 6 chữ số đã được gửi đến email của bạn",
+      "code": "Mã xác thực",
+      "verify": "Xác thực tài khoản",
+      "resend": "Gửi lại mã",
+      "expiresIn": "Mã hết hạn trong {{time}}",
+      "lockedMessage": "Xác thực OTP đã bị khóa. Vui lòng thử lại sau",
+      "verifySuccess": "Xác thực tài khoản thành công",
+      "verifyError": "Mã không hợp lệ. Còn {{remaining}} lần thử",
+      "resendSuccess": "Đã gửi mã xác thực mới",
+      "resendError": "Không thể gửi mã xác thực",
+      "resending": "Đang gửi lại mã xác thực...",
+      "maxAttemptsReached": "Đã đạt đến số lần thử tối đa. Vui lòng thử lại sau",
+      "otpExpired": "Mã OTP đã hết hạn"
     },
     "forgotPassword": {
-      "title": "Forgot Password",
-      "description": "Enter your email address and we'll send you a password reset link",
+      "title": "Quên mật khẩu",
+      "description": "Nhập địa chỉ email của bạn và chúng tôi sẽ gửi cho bạn liên kết đặt lại mật khẩu",
       "form": {
         "email": {
           "label": "Email",
-          "placeholder": "Enter your email address"
+          "placeholder": "Nhập địa chỉ email"
+        }
+      },
+      "validation": {
+        "invalidEmail": "Địa chỉ email không hợp lệ"
+      },
+      "buttons": {
+        "submit": "Gửi liên kết đặt lại"
+      },
+      "actions": {
+        "backToLogin": "Quay lại đăng nhập"
+      },
+      "success": "Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư đến.",
+      "error": "Không thể gửi email đặt lại mật khẩu. Vui lòng thử lại."
+    },
+    "resetPassword": {
+      "title": "Đặt lại mật khẩu",
+      "description": "Nhập mật khẩu mới của bạn",
+      "invalidTitle": "Liên kết không hợp lệ",
+      "invalidDescription": "Liên kết đặt lại mật khẩu này không hợp lệ hoặc đã hết hạn",
+      "invalidToken": "Mã đặt lại không hợp lệ hoặc đã hết hạn",
+      "success": "Đặt lại mật khẩu thành công",
+      "error": "Không thể đặt lại mật khẩu",
+      "backToLogin": "Quay lại đăng nhập",
+      "validation": {
+        "invalidPasswordResetToken": "Liên kết đặt lại mật khẩu không hợp lệ",
+        "passwordResetTokenUsed": "Liên kết đặt lại mật khẩu đã được sử dụng",
+        "passwordResetTokenExpired": "Liên kết đặt lại mật khẩu đã hết hạn",
+        "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
+        "passwordPattern": "Mật khẩu phải chứa ít nhất một chữ số, chữ thường, chữ hoa và ký tự đặc biệt",
+        "passwordMismatch": "Mật khẩu không khớp"
+      },
+      "form": {
+        "password": {
+          "label": "Mật khẩu mới",
+          "placeholder": "Nhập mật khẩu mới",
+          "show": "Hiện mật khẩu",
+          "hide": "Ẩn mật khẩu"
+        },
+        "confirm": {
+          "label": "Xác nhận mật khẩu",
+          "placeholder": "Xác nhận mật khẩu mới",
+          "show": "Hiện xác nhận mật khẩu",
+          "hide": "Ẩn xác nhận mật khẩu"
         }
       },
       "buttons": {
-        "submit": "Send Reset Link"
-      },
-      "actions": {
-        "backToLogin": "Back to Login"
-      },
-      "success": "Password reset email has been sent. Please check your inbox.",
-      "error": "Failed to send password reset email. Please try again."
+        "submit": "Đặt lại mật khẩu"
+      }
     }
   },
   "legal": {
-    "consent": "By clicking continue, you agree to our",
+    "consent": "Bằng cách nhấp vào tiếp tục, bạn đồng ý với",
     "tos": "Điều khoản dịch vụ",
     "privacy": "Chính sách bảo mật"
   },
   "profile": {
-    "title": "Profile",
+    "title": "Hồ sơ",
+    "createdDate": {
+      "title": "Ngày tạo"
+    },
     "lastLogin": {
-      "title": "Last Login Session",
-      "label": "Last login"
+      "title": "Phiên đăng nhập cuối"
     },
     "password": {
-      "title": "Update Password",
+      "title": "Cập nhật mật khẩu",
       "fields": {
-        "current": "Current Password",
-        "new": "New Password",
-        "confirm": "Confirm New Password"
+        "current": "Mật khẩu hiện tại",
+        "new": "Mật khẩu mới",
+        "confirm": "Xác nhận mật khẩu mới"
       },
       "placeholders": {
-        "current": "Enter your current password",
-        "new": "Enter your new password",
-        "confirm": "Confirm your new password"
+        "current": "Nhập mật khẩu hiện tại",
+        "new": "Nhập mật khẩu mới",
+        "confirm": "Xác nhận mật khẩu mới"
       },
       "actions": {
-        "update": "Update Password"
+        "update": "Cập nhật mật khẩu"
       },
       "errors": {
-        "incorrectCurrent": "Current password is incorrect",
-        "passwordMismatch": "Passwords do not match",
-        "invalidPassword": "Password must be at least 6 characters and contain uppercase, lowercase, number, and special character"
+        "incorrectCurrent": "Mật khẩu hiện tại không đúng",
+        "passwordMismatch": "Mật khẩu không khớp",
+        "passwordNotTheSame": "Mật khẩu mới phải khác mật khẩu hiện tại",
+        "invalidPassword": "Mật khẩu phải có ít nhất 6 ký tự và chứa chữ hoa, chữ thường, số và ký tự đặc biệt"
       },
-      "updateSuccess": "Password updated successfully",
-      "updateError": "Failed to update password"
+      "updateSuccess": "Cập nhật mật khẩu thành công",
+      "updateError": "Không thể cập nhật mật khẩu",
+      "validation": {
+        "currentRequired": "Mật khẩu hiện tại là bắt buộc",
+        "passwordMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
+        "passwordPattern": "Mật khẩu phải chứa ít nhất một chữ số, chữ thường, chữ hoa và ký tự đặc biệt",
+        "passwordMismatch": "Mật khẩu không khớp"
+      }
     },
     "twoFactor": {
-      "title": "Two-Factor Authentication",
-      "description": "Two-factor authentication adds an extra layer of security to your account",
+      "title": "Xác thực hai yếu tố",
+      "description": "Xác thực hai yếu tố thêm một lớp bảo mật cho tài khoản của bạn",
       "status": {
-        "enabled": "Enabled",
-        "disabled": "Disabled"
+        "enabled": "Đã bật",
+        "disabled": "Đã tắt"
       },
       "actions": {
-        "enable": "Enable 2FA",
-        "disable": "Disable 2FA",
-        "verify": "Verify"
+        "enable": "Bật 2FA",
+        "disable": "Tắt 2FA",
+        "verify": "Xác thực"
       },
-      "verificationCodePlaceholder": "Enter 6-digit code",
+      "disable": {
+        "title": "Tắt xác thực hai yếu tố",
+        "description": "Bạn có chắc chắn muốn tắt xác thực hai yếu tố? Điều này sẽ làm giảm tính bảo mật của tài khoản của bạn. Bất kỳ ai có mật khẩu của bạn sẽ có thể truy cập vào tài khoản của bạn."
+      },
+      "verificationCodePlaceholder": "Nhập mã 6 chữ số",
+      "manualCode": "Nếu bạn không thể quét mã QR, hãy nhập mã này theo cách thủ công vào ứng dụng xác thực của bạn",
+      "copy": "Sao chép",
+      "codeCopied": "Đã sao chép mã vào clipboard",
       "messages": {
-        "enableSuccess": "2FA has been enabled",
-        "disableSuccess": "2FA has been disabled",
-        "enableError": "Failed to enable 2FA",
-        "disableError": "Failed to disable 2FA",
-        "verifyError": "Invalid verification code",
-        "verificationRequired": "Please enter verification code",
-        "statusError": "Failed to fetch 2FA status"
+        "enableSuccess": "Đã bật xác thực 2 yếu tố",
+        "disableSuccess": "Đã tắt xác thực 2 yếu tố",
+        "enableError": "Không thể bật xác thực 2 yếu tố",
+        "disableError": "Không thể tắt xác thực 2 yếu tố",
+        "verifyError": "Mã xác thực không hợp lệ",
+        "verificationRequired": "Vui lòng nhập mã xác thực",
+        "statusError": "Không thể lấy trạng thái xác thực 2 yếu tố"
       }
     },
     "updateProfile": {
-      "title": "Your information",
+      "title": "Thông tin của bạn",
       "fields": {
-        "username": "Username",
+        "username": "Tên đăng nhập",
         "email": "Email",
-        "newPassword": "New Password",
-        "passwordPlaceholder": "Enter new password"
+        "newPassword": "Mật khẩu mới",
+        "passwordPlaceholder": "Nhập mật khẩu mới"
       }
     }
   },
   "api": {
     "error": {
-      "unauthorized": "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại",
+      "unauthorized": "Truy cập không được phép. Vui lòng đăng nhập lại",
       "forbidden": "Bạn không có quyền truy cập tài nguyên này",
       "notFound": "Không tìm thấy tài nguyên",
-      "serverError": "Đã xảy ra lỗi máy chủ",
-      "networkError": "Lỗi kết nối. Vui lòng kiểm tra kết nối mạng",
+      "serverError": "Đã xảy ra lỗi máy chủ nội bộ",
+      "networkError": "Lỗi mạng. Vui lòng kiểm tra kết nối của bạn",
+      "badRequest": "Yêu cầu không hợp lệ. Vui lòng kiểm tra đầu vào của bạn",
+      "typeNotSupport": "Loại phương tiện không được hỗ trợ, vui lòng kiểm tra phần mở rộng và kiểu MIME",
       "unknown": "Đã xảy ra lỗi không xác định"
     }
-  },
-  "validation": {
-    "required": "{{field}} là bắt buộc",
-    "email": "Email không hợp lệ",
-    "minLength": "{{field}} phải có ít nhất {{min}} ký tự",
-    "maxLength": "{{field}} không được vượt quá {{max}} ký tự",
-    "passwordMatch": "Mật khẩu không khớp"
   },
   "admin": {
     "users": {
@@ -211,25 +321,28 @@
         "username": "Tên đăng nhập",
         "email": "Email",
         "createdDate": "Ngày tạo",
-        "status": "Trạng thái"
+        "status": "Trạng thái",
+        "actions": "Chi tiết"
       },
       "status": {
-        "active": "Hoạt động",
+        "active": "Đang hoạt động",
         "inactive": "Không hoạt động"
       },
+      "noUser": "Không tìm thấy người dùng nào",
       "actions": {
         "viewDetails": "Xem chi tiết",
         "enableAccount": "Kích hoạt tài khoản",
         "disableAccount": "Vô hiệu hóa tài khoản",
         "updateStatus": {
           "success": "Cập nhật trạng thái người dùng thành công",
-          "enable": "Đã kích hoạt tài khoản người dùng",
-          "disable": "Đã vô hiệu hóa tài khoản người dùng",
+          "enable": "Tài khoản người dùng đã được kích hoạt",
+          "disable": "Tài khoản người dùng đã bị vô hiệu hóa",
           "error": "Không thể cập nhật trạng thái người dùng"
         },
         "updateRole": {
           "success": "Cập nhật vai trò người dùng thành công",
-          "error": "Không thể cập nhật vai trò người dùng"
+          "error": "Không thể cập nhật vai trò người dùng",
+          "cannotChangeOwnRole": "Bạn không thể thay đổi vai trò của chính mình"
         },
         "updatePassword": {
           "success": "Cập nhật mật khẩu người dùng thành công",
@@ -238,20 +351,29 @@
         "updateAccount": {
           "success": "Cập nhật trạng thái tài khoản thành công",
           "error": "Không thể cập nhật trạng thái tài khoản"
+        },
+        "revokeTokens": {
+          "title": "Thu hồi Tokens",
+          "description": "Hành động này sẽ vô hiệu hóa tất cả các token cho người dùng này. Người dùng sẽ cần phải đăng nhập lại trên tất cả các thiết bị. Không thể hoàn tác thao tác này.",
+          "button": "Thu hồi Token",
+          "confirm": "Thu hồi Token",
+          "processing": "Đang thu hồi...",
+          "success": "Đã thu hồi token thành công",
+          "error": "Không thu hồi được token"
         }
       },
       "messages": {
-        "fetchError": "Không thể tải danh sách người dùng",
+        "fetchError": "Không thể lấy danh sách người dùng",
         "updateSuccess": "Cập nhật trạng thái người dùng thành công",
         "updateError": "Không thể cập nhật trạng thái người dùng"
       },
       "navigation": {
         "backToUsers": "Quay lại danh sách người dùng"
       },
-      "search": "Search",
+      "search": "Tìm kiếm",
       "filters": {
-        "status": "Status",
-        "role": "Roles"
+        "status": "Trạng thái",
+        "role": "Vai trò"
       },
       "details": {
         "title": "Thông tin người dùng",
@@ -260,183 +382,770 @@
         "email": "Email",
         "roleAndPermissions": {
           "title": "Vai trò & Quyền hạn",
-          "description": "Quản lý vai trò và trạng thái tài khoản",
+          "description": "Quản lý vai trò người dùng và trạng thái tài khoản",
           "userRole": "Vai trò người dùng",
           "selectRole": "Chọn vai trò"
         },
         "accountStatus": {
-          "enabled": "Kích hoạt tài khoản",
-          "enabledDescription": "Cho phép hoặc vô hiệu hóa quyền truy cập",
+          "title": "Trạng thái tài khoản",
           "locked": "Khóa tài khoản",
           "lockedDescription": "Tạm thời khóa quyền truy cập tài khoản",
-          "expired": "Tài khoản hết hạn",
-          "expiredDescription": "Đánh dấu tài khoản là hết hạn",
-          "credentialsExpired": "Thông tin đăng nhập hết hạn",
-          "credentialsExpiredDescription": "Yêu cầu đổi mật khẩu mới"
+          "tokenExpired": "Token truy cập và làm mới",
+          "tokenExpiredDescription": "Buộc thu hồi tất cả token làm mới",
+          "twoFactor": "Xác thực 2 yếu tố",
+          "twoFactorEnabledDescription": "Người dùng đã bật xác thực hai yếu tố",
+          "twoFactorEnabled": "Đã bật",
+          "twoFactorNotEnabledDescription": "Người dùng chưa bật xác thực hai yếu tố",
+          "twoFactorNotEnabled": "Đã tắt",
+          "signUpMethod": "Phương thức đăng ký"
+        }
+      }
+    },
+    "masterData": {
+      "title": "Quản lý dữ liệu hệ thống",
+      "description": "Quản lý dữ liệu hệ thống hệ thống như chuyên ngành, cấp độ khóa học và danh mục tài liệu",
+      "selectType": "Chọn loại",
+      "searchPlaceholder": "Tìm kiếm dữ liệu hệ thống...",
+      "selectParent": "Chọn loại cha",
+      "allParents": "Tất cả loại cha",
+      "search": "Tìm kiếm",
+      "add": "Thêm mới",
+      "headers": {
+        "code": "Mã",
+        "nameEn": "Tên tiếng Anh",
+        "nameVi": "Tên tiếng Việt",
+        "type": "Loại",
+        "status": "Trạng thái",
+        "actions": "Hành động",
+        "parent": "Loại cha"
+      },
+      "actions": {
+        "edit": "Sửa",
+        "delete": "Xóa"
+      },
+      "types": {
+        "major": "Chuyên ngành",
+        "course_code": "Mã khóa học",
+        "course_level": "Cấp độ khóa học",
+        "document_category": "Danh mục tài liệu"
+      },
+      "dialog": {
+        "createTitle": "Tạo dữ liệu hệ thống",
+        "editTitle": "Sửa dữ liệu hệ thống",
+        "description": "Điền thông tin bên dưới để tạo hoặc cập nhật dữ liệu hệ thống.",
+        "fields": {
+          "code": "Mã",
+          "nameEn": "Tên tiếng Anh",
+          "nameVi": "Tên tiếng Việt",
+          "description": "Mô tả",
+          "active": "Trạng thái hoạt động",
+          "parent": "Loại cha"
+        },
+        "placeholders": {
+          "code": "Nhập mã",
+          "nameEn": "Nhập tên tiếng Anh",
+          "nameVi": "Nhập tên tiếng Việt",
+          "description": "Nhập mô tả",
+          "parent": "Chọn loại cha"
+        },
+        "noParent": "Không có loại cha"
+      },
+      "validation": {
+        "codeRequired": "Mã là bắt buộc",
+        "englishNameRequired": "Tên tiếng Anh là bắt buộc",
+        "vietnameseNameRequired": "Tên tiếng Việt là bắt buộc"
+      },
+      "delete": {
+        "title": "Xóa dữ liệu hệ thống",
+        "description": "Bạn có chắc chắn muốn xóa {{name}}? Hành động này không thể hoàn tác."
+      },
+      "createSuccess": "Tạo dữ liệu hệ thống thành công",
+      "updateFullSuccess": "Cập nhật dữ liệu hệ thống thành công",
+      "updateNonFullSuccess": "Chỉ cập nhật các trường an toàn (mô tả, dịch qua ngôn ngữ khác, trạng thái hoạt động)",
+      "createError": "Không thể tạo dữ liệu hệ thống",
+      "updateError": "Không thể cập nhật dữ liệu hệ thống",
+      "deleteSuccess": "Xóa dữ liệu hệ thống thành công",
+      "deleteError": "Không thể xóa dữ liệu hệ thống",
+      "fetchError": "Không thể lấy dữ liệu hệ thống",
+      "searchError": "Không thể tìm kiếm dữ liệu hệ thống",
+      "createdError": "Dữ liệu hệ thống đã được tạo",
+      "invalidParentError": "Loại cha của dữ liệu không hợp lệ",
+      "inUseError": "Dữ liệu hệ thống đang được sử dụng"
+    },
+    "reports": {
+      "title": "Quản lý báo cáo",
+      "description": "Quản lý báo cáo vi phạm nội dung",
+      "tabs": {
+        "documents": "Báo cáo tài liệu",
+        "comments": "Báo cáo bình luận"
+      },
+      "documents": {
+        "fetchError": "Không thể lấy báo cáo tài liệu",
+        "processError": "Không thể xử lý báo cáo",
+        "processSuccess": "Xử lý báo cáo thành công",
+        "noReports": "Không tìm thấy báo cáo tài liệu nào",
+        "filters": {
+          "documentTitle": "Tìm kiếm theo tiêu đề tài liệu",
+          "uploaderUsername": "Tìm kiếm theo người tải lên",
+          "status": "Trạng thái",
+          "reportType": "Loại báo cáo",
+          "allTypes": "Tất cả loại",
+          "allStatuses": "Tất cả trạng thái",
+          "search": "Tìm kiếm",
+          "reset": "Đặt lại",
+          "fromDate": "Báo cáo từ",
+          "toDate": "Báo cáo đến"
+        },
+        "table": {
+          "documentTitle": "Tiêu đề tài liệu",
+          "uploader": "Người tải lên",
+          "reportCount": "Số báo cáo",
+          "status": "Trạng thái",
+          "resolvedBy": "Cập nhật bởi",
+          "actions": "Hành động"
+        },
+        "status": {
+          "allStatuses": "Tất cả trạng thái",
+          "pending": "Chờ xử lý",
+          "resolved": "Đã xử lý",
+          "rejected": "Từ chối",
+          "remediated": "Khắc phục"
+        },
+        "actions": {
+          "viewReasons": "Xem lý do",
+          "process": "Xử lý",
+          "resolve": "Gỡ bỏ",
+          "remediate": "Khắc phục",
+          "reject": "Từ chối"
+        },
+        "pagination": {
+          "previous": "Trước",
+          "next": "Sau",
+          "pageInfo": "Trang {{current}} / {{total}}"
+        },
+        "dialogs": {
+          "reasons": {
+            "title": "Lý do báo cáo cho \"{{document}}\"",
+            "description": "Danh sách tất cả lý do báo cáo cho tài liệu này",
+            "reportedBy": "Báo cáo bởi: {{user}}",
+            "noReasons": "Không tìm thấy lý do báo cáo nào"
+          },
+          "process": {
+            "title": "Xử lý báo cáo vi phạm",
+            "description": "Cập nhật trạng thái cho \"{{document}}\"",
+            "selectStatus": "Chọn trạng thái mới",
+            "resolvedDescription": "Ẩn tài liệu và ngăn truy cập",
+            "remediatedDescription": "Cho phép tài liệu tiếp tục hiển thị",
+            "rejectedDescription": "Bỏ qua báo cáo vì không hợp lệ hoặc không cần xử lý"
+          },
+          "resolve": {
+            "title": "Giải quyết báo cáo",
+            "description": "Ẩn tài liệu \"{{document}}\" do vi phạm"
+          }
+        }
+      },
+      "comments": {
+        "fetchError": "Không thể lấy báo cáo bình luận",
+        "reasonsError": "Không thể lấy lý do báo cáo",
+        "processError": "Không thể cập nhật trạng thái bình luận",
+        "processSuccess": "Xử lý báo cáo bình luận thành công",
+        "noReports": "Không tìm thấy báo cáo bình luận nào",
+        "filters": {
+          "commentContent": "Tìm kiếm theo nội dung bình luận",
+          "reportType": "Loại báo cáo",
+          "allTypes": "Tất cả loại",
+          "status": "Trạng thái",
+          "allStatuses": "Tất cả trạng thái",
+          "search": "Tìm kiếm",
+          "reset": "Đặt lại",
+          "fromDate": "Báo cáo từ",
+          "toDate": "Báo cáo đến"
+        },
+        "table": {
+          "comment": "Bình luận",
+          "commenter": "Người bình luận",
+          "document": "Tài liệu",
+          "commentDate": "Ngày báo cáo bình luận gần nhất",
+          "reportCount": "Số báo cáo",
+          "status": "Trạng thái",
+          "actions": "Hành động",
+          "resolvedBy": "Cập nhật bởi"
+        },
+        "status": {
+          "resolved": "Đã xử lý",
+          "pending": "Chờ xử lý",
+          "rejected": "Từ chối"
+        },
+        "actions": {
+          "viewReasons": "Xem lý do",
+          "resolve": "Giải quyết",
+          "resolved": "Đã xử lý"
+        },
+        "pagination": {
+          "previous": "Trước",
+          "next": "Sau",
+          "pageInfo": "Trang {{current}} / {{total}}"
+        },
+        "dialogs": {
+          "reasons": {
+            "title": "Lý do báo cáo bình luận",
+            "description": "Danh sách tất cả lý do báo cáo cho bình luận này",
+            "reportedBy": "Báo cáo bởi: {{user}}",
+            "noReasons": "Không tìm thấy lý do báo cáo nào",
+            "comment": "Nội dung bình luận",
+            "status": "Trạng thái báo cáo",
+            "resolvedBy": "Xử lý bởi {{user}}",
+            "resolvedDescription": "Xóa nội dung bình luận",
+            "rejectedDescription": "Bỏ qua báo cáo vì không hợp lệ hoặc không cần xử lý"
+          },
+          "process": {
+            "title": "Giải quyết báo cáo bình luận",
+            "description": "Ẩn bình luận này do vi phạm",
+            "warning": "Điều này sẽ xóa nội dung bình luận và đánh dấu là đã xử lý. Người dùng sẽ không thể thấy nội dung nữa.",
+            "resolve": "Giải quyết",
+            "reject": "Từ chối",
+            "selectStatus": "Chọn trạng thái mới",
+            "resolvedDescription": "Xóa nội dung bình luận",
+            "rejectedDescription": "Bỏ qua báo cáo vì không hợp lệ hoặc không cần xử lý"
+          },
+          "pending": {
+            "warning": "Bạn có chắc chắn muốn tiếp tục?"
+          }
         }
       }
     }
   },
   "document": {
     "discover": {
-      "title": "Documents",
-      "description": "Discover documents",
+      "title": "Khám phá",
+      "description": "Khám phá tài liệu",
+      "buttons": {
+        "search": "Tìm kiếm"
+      },
       "headers": {
-        "name": "Name",
-        "course": "Course",
-        "major": "Major",
-        "level": "Level",
-        "category": "Category",
-        "tags": "Tags",
-        "matches": "Matches",
-        "created": "Created",
-        "actions": "Actions"
+        "name": "Tên",
+        "courses": "Mã khóa học",
+        "majors": "Chuyên ngành",
+        "level": "Cấp độ",
+        "categories": "Danh mục",
+        "tags": "Thẻ",
+        "matches": "Kết quả phù hợp",
+        "created": "Ngày tạo",
+        "actions": "Hành động"
       },
       "status": {
-        "noMatches": "No matches found"
+        "noMatches": "Không tìm thấy kết quả phù hợp"
       },
+      "stats": {
+        "views": "Lượt xem",
+        "downloads": "Lượt tải"
+      },
+      "empty": "Không tìm thấy tài liệu nào",
+      "emptyFavorites": "Không tìm thấy tài liệu yêu thích nào",
       "pagination": {
-        "previous": "Previous",
-        "next": "Next",
-        "pageInfo": "Page {{current}} of {{total}}"
+        "previous": "Trước",
+        "next": "Sau",
+        "pageInfo": "Trang {{current}} / {{total}}",
+        "pageSize": "Số mục mỗi trang:"
       }
     },
     "upload": {
-      "title": "Upload Document",
-      "description": "Drag and drop your document or click to browse",
+      "title": "Tải lên tài liệu",
+      "description": "Kéo và thả tài liệu của bạn hoặc nhấp để duyệt",
       "dropzone": {
-        "prompt": "Drop the file here ...",
-        "info": "Drag & drop a file here, or click to select file",
-        "supportedFormats": "Supported formats:"
+        "prompt": "Thả tệp vào đây ...",
+        "info": "Kéo & thả tệp vào đây, hoặc nhấp để chọn tệp",
+        "supportedFormats": "Định dạng được hỗ trợ:",
+        "selected": "Đã chọn:",
+        "maxFileSize": "Kích thước tệp tối đa: {{fileSize}} MB",
+        "sizeLimitError": "Kích thước tệp vượt quá giới hạn tối đa {{maxFileSize}} MB. Tệp đã chọn là {{fileSizeError}} MB"
       },
       "form": {
-        "courseCode": {
-          "label": "Course Code",
-          "placeholder": "Enter course code"
+        "selectedFile": "Đã chọn",
+        "majors": {
+          "label": "Chuyên ngành *",
+          "placeholder": "Chọn chuyên ngành"
         },
-        "major": {
-          "label": "Major",
-          "placeholder": "Select major"
+        "courseCodes": {
+          "label": "Mã khóa học",
+          "placeholder": "Nhập mã khóa học"
         },
         "level": {
-          "label": "Course Level",
-          "placeholder": "Select course level"
+          "label": "Cấp độ khóa học *",
+          "placeholder": "Chọn cấp độ khóa học"
         },
-        "category": {
-          "label": "Document Category",
-          "placeholder": "Select document category"
+        "categories": {
+          "label": "Danh mục tài liệu *",
+          "placeholder": "Chọn danh mục tài liệu"
         },
         "tags": {
-          "label": "Tags",
-          "placeholder": "Enter tags separated by comma"
+          "label": "Thẻ",
+          "placeholder": "Nhập thẻ, phân cách bằng dấu phẩy"
+        },
+        "summary": {
+          "label": "Tóm tắt (50-500 ký tự)",
+          "placeholder": "Nhập tóm tắt tài liệu...",
+          "count": "ký tự"
         }
       },
+      "validation": {
+        "summaryMinLength": "Tóm tắt phải có ít nhất 50 ký tự",
+        "summaryMaxLength": "Tóm tắt không được vượt quá 500 ký tự",
+        "majorRequired": "Yêu cầu ít nhất một chuyên ngành",
+        "levelRequired": "Yêu cầu cấp độ khóa học",
+        "categoryRequired": "Yêu cầu ít nhất một danh mục tài liệu"
+      },
       "buttons": {
-        "upload": "Upload Document"
+        "upload": "Tải lên tài liệu"
       },
       "messages": {
-        "success": "Document uploaded successfully",
-        "error": "Failed to upload document",
-        "fileRequired": "Please select a file to upload"
+        "success": "Tải lên tài liệu thành công",
+        "error": "Không thể tải lên tài liệu",
+        "fileRequired": "Vui lòng chọn tệp để tải lên"
+      },
+      "processing": {
+        "status": {
+          "pending": "Đang chờ xử lý",
+          "processing": "Đang xử lý tài liệu",
+          "completed": "Đã xử lý tài liệu",
+          "failed": "Xử lý thất bại",
+          "description": "Điều này có thể mất vài phút đối với các tệp lớn.",
+          "unknownError": "Đã xảy ra lỗi không xác định trong quá trình xử lý"
+        }
       }
     },
     "actions": {
-      "view": "View",
-      "download": "Download",
-      "delete": "Delete",
-      "share": "Share"
+      "view": "Xem",
+      "download": "Tải xuống",
+      "delete": "Xóa",
+      "share": "Chia sẻ",
+      "favorite": "Yêu thích",
+      "favorited": "Đã yêu thích",
+      "report": "Báo cáo",
+      "reported": "Đã báo cáo",
+      "recommend": "Đề xuất",
+      "recommended": "Đã đề xuất"
     },
     "viewer": {
-      "loading": "Loading document...",
+      "loading": "Đang tải tài liệu...",
       "error": {
-        "title": "Error",
-        "loading": "Failed to load document preview",
-        "download": "Failed to download file",
-        "unsupported": "Preview not available for {{type}}"
+        "title": "Lỗi",
+        "loading": "Không thể tải xem trước tài liệu",
+        "download": "Không thể tải xuống tệp",
+        "unsupported": "Không có xem trước cho {{type}}",
+        "processFailStatus": "Không thể xem trước tài liệu này do lỗi xử lý",
+        "processingStatus": "Tài liệu đang được xử lý, vui lòng thử lại sau"
       },
       "buttons": {
-        "download": "Download",
-        "downloadInstead": "Download Instead",
-        "previous": "Previous",
-        "next": "Next",
-        "slideInfo": "Slide {{current}} of {{total}}"
+        "download": "Tải xuống",
+        "downloadInstead": "Tải xuống thay thế",
+        "downloading": "Đang chuẩn bị tệp...",
+        "previous": "Trước",
+        "next": "Sau",
+        "pageInfo": "Trang {{current}} / {{total}}",
+        "slideInfo": "Slide {{current}} / {{total}}"
       },
-      "preview": {
-        "unavailable": "PDF preview not available in your browser"
-      }
+      "sheetInfo": "Trang tính"
     },
     "search": {
-      "placeholder": "Search documents...",
+      "placeholder": "Nhập tên tệp hoặc nội dung để tìm kiếm...",
       "suggestions": {
-        "error": "Error fetching suggestions"
+        "error": "Lỗi khi lấy gợi ý"
       },
-      "loading": "Loading results..."
+      "loading": "Đang tải kết quả...",
+      "favorites": {
+        "placeholder": "Tìm kiếm trong yêu thích của bạn..."
+      }
     },
     "detail": {
-      "title": "Edit Document",
-      "description": "Update document metadata",
-      "backToList": "Back to Documents",
+      "title": "Chỉnh sửa tài liệu",
+      "description": "Cập nhật thông tin tài liệu",
+      "backToList": "Quay lại danh sách tài liệu",
       "form": {
-        "courseCode": {
-          "label": "Course Code",
-          "placeholder": "Enter course code"
+        "summary": {
+          "label": "Tóm tắt (50-500 ký tự)",
+          "placeholder": "Nhập tóm tắt"
         },
-        "major": {
-          "label": "Major",
-          "placeholder": "Select major"
+        "courseCodes": {
+          "label": "Mã khóa học",
+          "placeholder": "Chọn mã khóa học"
+        },
+        "majors": {
+          "label": "Chuyên ngành",
+          "placeholder": "Chọn chuyên ngành"
         },
         "level": {
-          "label": "Course Level",
-          "placeholder": "Select course level"
+          "label": "Cấp độ khóa học",
+          "placeholder": "Chọn cấp độ khóa học"
         },
-        "category": {
-          "label": "Document Category",
-          "placeholder": "Select document category"
+        "categories": {
+          "label": "Danh mục tài liệu",
+          "placeholder": "Chọn danh mục tài liệu"
         },
         "tags": {
-          "label": "Tags",
-          "placeholder": "Enter tags"
+          "label": "Thẻ",
+          "placeholder": "Nhập hoặc chọn thẻ"
         }
       },
-      "buttons": {
-        "update": "Update Document"
+      "fields": {
+        "uploadedBy": "Tải lên bởi",
+        "uploadDate": "Ngày tải lên",
+        "summary": "Tóm tắt",
+        "courseCodes": "Mã khóa học",
+        "majors": "Chuyên ngành",
+        "level": "Cấp độ khóa học",
+        "categories": "Danh mục tài liệu",
+        "tags": "Thẻ"
       },
-      "updateSuccess": "Document updated successfully",
-      "updateError": "Failed to update document",
-      "fetchError": "Failed to fetch document details"
+      "buttons": {
+        "update": "Cập nhật tài liệu"
+      },
+      "updateSuccess": "Cập nhật tài liệu thành công",
+      "updateError": "Không thể cập nhật tài liệu",
+      "fetchError": "Không thể lấy chi tiết tài liệu"
+    },
+    "favorite": {
+      "addSuccess": "Đã thêm tài liệu vào yêu thích",
+      "removeSuccess": "Đã xóa tài liệu khỏi yêu thích",
+      "error": "Không thể cập nhật yêu thích"
     },
     "myDocuments": {
-      "title": "My Documents",
+      "title": "Tài liệu của tôi",
       "share": {
-        "title": "Share Document",
-        "description": "Share {{name}} with others",
+        "title": "Chia sẻ tài liệu",
+        "description": "Chia sẻ {{name}} với người khác",
         "toggle": {
-          "title": "Document Sharing",
-          "description": "When enabled, this document can be accessed by other users"
+          "title": "Chia sẻ tài liệu",
+          "description": "Khi bật, tài liệu này có thể được truy cập bởi người dùng khác"
         },
         "status": {
-          "enabled": "This document is currently shared",
-          "disabled": "This document is private"
+          "enabled": "Tài liệu này hiện đang được chia sẻ",
+          "disabled": "Tài liệu này là riêng tư"
         },
-        "success": "Document shared successfully",
-        "error": "Failed to share document",
-        "enableSuccess": "Document sharing enabled",
-        "disableSuccess": "Document sharing disabled"
+        "success": "Chia sẻ tài liệu thành công",
+        "error": "Không thể chia sẻ tài liệu",
+        "specific": {
+          "title": "Chia sẻ với người dùng cụ thể",
+          "searchPlaceholder": "Tìm kiếm người dùng...",
+          "noResults": "Không tìm thấy người dùng nào"
+        },
+        "updateSuccess": "Cập nhật cài đặt chia sẻ thành công",
+        "actions": {
+          "update": "Cập nhật cài đặt chia sẻ"
+        }
       },
       "delete": {
-        "deleteSuccess": "Document deleted successfully",
-        "deleteError": "Failed to delete document"
+        "deleteSuccess": "Xóa tài liệu thành công",
+        "deleteError": "Không thể xóa tài liệu",
+        "confirmMessage": "Bạn có chắc chắn muốn xóa \"{{name}}\"? Hành động này không thể hoàn tác."
       },
       "search": {
         "advancedSearch": {
-          "searchPlaceholder": "Search documents...",
-          "majorPlaceholder": "Select major",
-          "levelPlaceholder": "Select level",
-          "categoryPlaceholder": "Select category",
-          "reset": "Reset Filter",
-          "apply": "Search"
+          "searchPlaceholder": "Tìm kiếm tài liệu..."
         },
-        "error": "Failed to search documents"
+        "sortOptions": {
+          "createdDateNewest": "Ngày tạo (Mới nhất)",
+          "createdDateOldest": "Ngày tạo (Cũ nhất)",
+          "nameAz": "Tên (A-Z)",
+          "nameZa": "Tên (Z-A)",
+          "sizeLargest": "Kích thước (Lớn nhất)",
+          "sizeSmallest": "Kích thước (Nhỏ nhất)"
+        },
+        "error": "Không thể tìm kiếm tài liệu"
+      }
+    },
+    "commonSearch": {
+      "all": "Tất cả",
+      "filters": "Bộ lọc",
+      "majorLabel": "Chuyên ngành",
+      "majorPlaceholder": "Chọn chuyên ngành",
+      "courseCodeLabel": "Mã khóa học",
+      "courseCodePlaceholder": "Chọn mã khóa học",
+      "levelLabel": "Cấp độ",
+      "levelPlaceholder": "Chọn cấp độ",
+      "categoryLabel": "Danh mục",
+      "categoryPlaceholder": "Chọn danh mục",
+      "reset": "Đặt lại bộ lọc",
+      "apply": "Tìm kiếm",
+      "tagLabel": "Thẻ",
+      "tagsPlaceholder": "Tìm kiếm thẻ để chọn...",
+      "favoritesOnly": "Yêu thích"
+    },
+    "versions": {
+      "title": "Lịch sử phiên bản",
+      "total": "{{total}} phiên bản",
+      "current": "Hiện tại",
+      "versionNumber": "Phiên bản {{number}}",
+      "headers": {
+        "version": "Phiên bản",
+        "uploadedBy": "Tải lên bởi",
+        "date": "Ngày",
+        "size": "Kích thước",
+        "status": "Trạng thái",
+        "actions": "Hành động"
+      },
+      "actions": {
+        "view": "Xem",
+        "download": "Tải xuống",
+        "downloading": "Đang chuẩn bị tệp...",
+        "revert": "Khôi phục"
+      },
+      "error": {
+        "load": "Không thể tải phiên bản",
+        "download": "Không thể tải xuống phiên bản",
+        "revertError": "Không thể khôi phục về phiên bản này"
+      },
+      "status": {
+        "completed": "Đã xử lý",
+        "pending": "Đang chờ xử lý",
+        "failed": "Thất bại"
+      },
+      "revertSuccess": "Khôi phục thành công"
+    },
+    "related": {
+      "title": "Tài liệu liên quan",
+      "error": "Không thể tải tài liệu liên quan"
+    },
+    "preferences": {
+      "fetchError": "Không thể tải tùy chọn",
+      "tabs": {
+        "preferences": "Cài đặt tùy chọn",
+        "analytics": "Phân tích"
+      },
+      "contentPreferences": {
+        "title": "Tùy chọn nội dung",
+        "description": "Tùy chỉnh tùy chọn tài liệu để cá nhân hóa trải nghiệm của bạn",
+        "language": {
+          "label": "Ngôn ngữ ưa thích",
+          "placeholder": "Chọn ngôn ngữ ưa thích"
+        },
+        "majors": {
+          "label": "Chuyên ngành ưa thích",
+          "placeholder": "Chọn chuyên ngành ưa thích"
+        },
+        "courseCode": {
+          "label": "Mã khóa học ưa thích",
+          "placeholder": "Chọn mã khóa học ưa thích"
+        },
+        "levels": {
+          "label": "Cấp độ khóa học ưa thích",
+          "placeholder": "Chọn cấp độ khóa học ưa thích"
+        },
+        "categories": {
+          "label": "Danh mục ưa thích",
+          "placeholder": "Chọn danh mục ưa thích"
+        },
+        "tags": {
+          "label": "Thẻ ưa thích",
+          "placeholder": "Thêm thẻ ưa thích"
+        }
+      },
+      "analytics": {
+        "title": "Phân tích & Thống kê",
+        "description": "Xem thống kê tương tác tài liệu và trọng số loại nội dung của bạn",
+        "weights": {
+          "label": "Trọng số loại nội dung"
+        },
+        "stats": {
+          "label": "Thống kê tương tác",
+          "comments": "Tổng số bình luận",
+          "downloads": "Tổng số lượt tải xuống",
+          "uniqueDocuments": "Số tài liệu đã truy cập"
+        },
+        "contentTypes": {
+          "word": "Tài liệu Word",
+          "pdf": "Tài liệu PDF",
+          "excel": "Tài liệu Excel",
+          "ppt": "PowerPoint",
+          "text": "Tài liệu Văn bản",
+          "csv": "Tài liệu CSV",
+          "xml": "Tài liệu XML",
+          "json": "Tài liệu JSON",
+          "markdown": "Tài liệu Markdown"
+        }
+      },
+      "contentType": {
+        "view": "Lượt xem tài liệu",
+        "download": "Lượt tải xuống tài liệu",
+        "favorite": "Lượt yêu thích tài liệu",
+        "comment": "Lượt bình luận tài liệu",
+        "share": "Lượt chia sẻ tài liệu"
+      },
+      "actions": {
+        "save": "Lưu tùy chọn"
+      },
+      "updateSuccess": "Cập nhật tùy chọn thành công",
+      "updateError": "Không thể cập nhật tùy chọn"
+    },
+    "history": {
+      "title": "Lịch sử hoạt động",
+      "description": "Xem lịch sử tương tác tài liệu của bạn",
+      "searchPlaceholder": "Tìm kiếm theo tên tệp hoặc chi tiết tài liệu",
+      "documentNotAvailable": "Tài liệu không khả dụng",
+      "loading": "Đang tải lịch sử...",
+      "noResults": "Không tìm thấy bản ghi hoạt động nào",
+      "fetchError": "Không thể tải lịch sử hoạt động",
+      "filters": {
+        "actionType": "Loại hành động",
+        "allActions": "Tất cả hành động",
+        "fromDate": "Từ ngày",
+        "toDate": "Đến ngày",
+        "search": "Tìm kiếm",
+        "reset": "Đặt lại bộ lọc"
+      },
+      "tableHeaders": {
+        "actionType": "Hành động",
+        "documentTitle": "Tài liệu",
+        "details": "Chi tiết",
+        "version": "Phiên bản hiện tại",
+        "timestamp": "Thời gian"
+      },
+      "actionTypes": {
+        "uploadDocument": "Tải lên tài liệu",
+        "viewDocument": "Xem tài liệu",
+        "updateDocument": "Cập nhật thông tin",
+        "updateDocumentFile": "Cập nhật tệp",
+        "deleteDocument": "Xóa tài liệu",
+        "downloadFile": "Tải xuống tệp",
+        "downloadVersion": "Tải xuống phiên bản",
+        "revertVersion": "Khôi phục về phiên bản",
+        "share": "Chia sẻ tài liệu",
+        "favorite": "Yêu thích tài liệu",
+        "comment": "Bình luận",
+        "recommend": "Đề xuất tài liệu",
+        "note": "Ghi chú"
+      },
+      "pagination": {
+        "showing": "Hiển thị {{start}} đến {{end}} trong tổng số {{total}} hoạt động",
+        "page": "Trang {{current}} / {{total}}",
+        "previous": "Trước",
+        "next": "Tiếp"
+      },
+      "validation": {
+        "dateRange": "Ngày bắt đầu không thể lớn hơn ngày kết thúc"
+      }
+    },
+    "comments": {
+      "title": "Bình luận",
+      "description": "Tham gia thảo luận về mục này",
+      "placeholder": "Viết bình luận...",
+      "submit": "Đăng bình luận",
+      "reply": "Trả lời",
+      "delete": "Xóa",
+      "confirmDeleteMessage": "Bạn có chắc chắn muốn xóa bình luận này? Hành động này không thể hoàn tác.",
+      "edit": "Sửa",
+      "edited": "đã chỉnh sửa",
+      "replyingTo": "Đang trả lời @{{username}}",
+      "cancelReply": "Hủy trả lời",
+      "previous": "Trước",
+      "next": "Tiếp",
+      "empty": "Chưa có bình luận nào",
+      "createSuccess": "Đăng bình luận thành công",
+      "createError": "Không thể đăng bình luận",
+      "updateSuccess": "Cập nhật bình luận thành công",
+      "updateError": "Không thể cập nhật bình luận",
+      "deleteSuccess": "Xóa bình luận thành công",
+      "deleteError": "Không thể xóa bình luận",
+      "fetchError": "Không thể tải bình luận",
+      "editSuccess": "Cập nhật bình luận thành công",
+      "editError": "Không thể cập nhật bình luận",
+      "reportSuccess": "Báo cáo bình luận thành công",
+      "loading": "Đang tải",
+      "loadMore": "Tải thêm bình luận...",
+      "save": "Lưu",
+      "cancel": "Hủy",
+      "actions": {
+        "report": "Báo cáo",
+        "reported": "Đã báo cáo"
+      },
+      "report": {
+        "title": "Báo cáo vi phạm bình luận",
+        "description": "Báo cáo bình luận của @{{author}} do vi phạm",
+        "reason": "Lý do báo cáo",
+        "type": "Loại báo cáo",
+        "statusLabel": "Trạng thái",
+        "submit": "Gửi báo cáo",
+        "removedContent": "Bình luận này đã bị xóa do vi phạm.",
+        "alreadyReported": {
+          "title": "Đã báo cáo",
+          "description": "Bạn đã báo cáo bình luận này. Dưới đây là chi tiết báo cáo của bạn:"
+        },
+        "status": {
+          "resolved": "Vi phạm đã được xử lý",
+          "pending": "Đang chờ xem xét"
+        },
+        "form": {
+          "type": {
+            "label": "Loại vi phạm",
+            "placeholder": "Chọn loại vi phạm",
+            "description": "Chọn loại vi phạm bạn muốn báo cáo",
+            "required": "Vui lòng chọn loại báo cáo"
+          },
+          "description": {
+            "label": "Chi tiết bổ sung",
+            "placeholder": "Cung cấp thêm chi tiết về vi phạm...",
+            "description": "(Tùy chọn) Cung cấp thêm thông tin về vi phạm"
+          }
+        },
+        "createSuccess": "Gửi báo cáo thành công",
+        "createError": "Không thể gửi báo cáo"
+      }
+    },
+    "report": {
+      "title": "Báo cáo vi phạm tài liệu",
+      "reason": "Báo cáo {{name}} vì lý do",
+      "type": "Loại báo cáo",
+      "statusLabel": "Trạng thái",
+      "submit": "Gửi báo cáo",
+      "alreadyReported": {
+        "title": "Đã báo cáo",
+        "description": "Bạn đã báo cáo tài liệu này. Dưới đây là chi tiết báo cáo của bạn:"
+      },
+      "status": {
+        "resolved": "Đã xử lý",
+        "pending": "Đang chờ xem xét",
+        "removed": "Đã gỡ báo cáo"
+      },
+      "form": {
+        "type": {
+          "label": "Loại vi phạm",
+          "placeholder": "Chọn loại vi phạm",
+          "description": "Chọn loại vi phạm bạn muốn báo cáo",
+          "required": "Vui lòng chọn loại báo cáo"
+        },
+        "description": {
+          "label": "Chi tiết bổ sung",
+          "placeholder": "Cung cấp thêm chi tiết về vi phạm...",
+          "description": "(Tùy chọn) Cung cấp thêm thông tin về vi phạm"
+        }
+      },
+      "createSuccess": "Gửi báo cáo thành công",
+      "createError": "Không thể gửi báo cáo"
+    },
+    "recommendation": {
+      "addSuccess": "Đánh dấu tài liệu là đã đề xuất thành công",
+      "removeSuccess": "Gỡ đề xuất tài liệu thành công",
+      "error": "Không thể cập nhật trạng thái đề xuất"
+    },
+    "notes": {
+      "title": "Ghi chú của các mentor",
+      "description": "Ghi chú hướng dẫn từ các mentor giúp bạn hiểu rõ hơn về tài liệu này",
+      "add": "Thêm ghi chú",
+      "addNew": "Ghi chú mới",
+      "edit": "Sửa ghi chú",
+      "save": "Lưu ghi chú",
+      "update": "Cập nhật ghi chú",
+      "placeholder": "Thêm ghi chú hướng dẫn của bạn (tối đa 200 ký tự)...",
+      "characters": "ký tự",
+      "tooLong": "Quá nhiều ký tự",
+      "empty": "Chưa có ghi chú nào từ các mentor cho tài liệu này",
+      "addSuccess": "Thêm ghi chú thành công",
+      "editSuccess": "Cập nhật ghi chú thành công",
+      "addError": "Không thể thêm ghi chú",
+      "editError": "Không thể cập nhật ghi chú",
+      "fetchError": "Không thể tải ghi chú",
+      "error": {
+        "tooLong": "Ghi chú không thể vượt quá {{max}} ký tự"
       }
     }
   }

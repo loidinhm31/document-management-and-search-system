@@ -4,8 +4,11 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DocumentStatus } from "@/types/document";
 
 interface XmlViewerProps {
+  isAdmin: boolean;
+  documentStatus: DocumentStatus;
   content: string;
   onDownload: () => void;
   isDownloading?: boolean;
@@ -17,7 +20,14 @@ interface FormattedXmlPart {
   content: string;
 }
 
-export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload, isDownloading, loading }) => {
+export const XmlViewer: React.FC<XmlViewerProps> = ({
+  isAdmin,
+  documentStatus,
+  content,
+  onDownload,
+  isDownloading,
+  loading,
+}) => {
   const { t } = useTranslation();
 
   const formatXml = (xmlString: string): string => {
@@ -192,31 +202,33 @@ export const XmlViewer: React.FC<XmlViewerProps> = ({ content, onDownload, isDow
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-end p-2 bg-muted">
-        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
-          <Download className="h-4 w-4 mr-2" />
-          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
-        </Button>
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
+          <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
+            <Download className="h-4 w-4 mr-2" />
+            {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
+          </Button>
+        )}
       </div>
       <ScrollArea className="flex-1">
-        <pre className="p-4 text-sm font-mono whitespace-pre bg-white overflow-x-auto">
+        <pre className="p-4 text-sm font-mono whitespace-pre bg-background text-foreground overflow-x-auto">
           <code className="text-foreground">
             {highlightedParts.map((part, index) => {
               let className: string;
               switch (part.type) {
                 case "tag":
-                  className = "text-blue-600";
+                  className = "text-blue-600 dark:text-blue-400";
                   break;
                 case "attribute":
-                  className = "text-purple-600";
+                  className = "text-purple-600 dark:text-purple-400";
                   break;
                 case "attributeValue":
-                  className = "text-green-600";
+                  className = "text-green-600 dark:text-green-400";
                   break;
                 case "comment":
-                  className = "text-gray-500 italic";
+                  className = "text-gray-500 dark:text-gray-400 italic";
                   break;
                 case "cdata":
-                  className = "text-orange-600";
+                  className = "text-orange-600 dark:text-orange-400";
                   break;
                 default:
                   className = "text-foreground";

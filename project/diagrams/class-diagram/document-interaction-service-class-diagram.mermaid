@@ -1,0 +1,378 @@
+classDiagram
+%% Core Domain Models
+    class DocumentInformation {
+        +String id
+        +DocumentStatus status
+        +String summary
+        +DocumentType documentType
+        +Set~String~ majors
+        +Set~String~ courseCodes
+        +String courseLevel
+        +Set~String~ categories
+        +Set~String~ tags
+        +String userId
+        +SharingType sharingType
+        +Set~String~ sharedWith
+        +boolean deleted
+        +Integer currentVersion
+        +List~DocumentVersion~ versions
+        +Instant createdAt
+        +Instant updatedAt
+        +String createdBy
+        +String updatedBy
+        +DocumentReportStatus reportStatus
+        +Integer recommendationCount
+        +Optional getLatestVersion(): DocumentVersion
+        +Optional getVersion(Integer): DocumentVersion
+    }
+
+    class DocumentVersion {
+        +Integer versionNumber
+        +String filePath
+        +String thumbnailPath
+        +String filename
+        +Long fileSize
+        +String mimeType
+        +DocumentType documentType
+        +DocumentStatus status
+        +String language
+        +Map extractedMetadata
+        +String processingError
+        +String createdBy
+        +Instant createdAt
+    }
+
+    class DocumentComment {
+        +Long id
+        +String documentId
+        +UUID userId
+        +String content
+        +Long parentId
+        +Instant createdAt
+        +Instant updatedAt
+        +boolean edited
+        +Integer flag
+        +Long version
+        +List replies
+        +List reports
+    }
+
+%% Core Services
+    class DocumentService {
+        +DocumentInformation uploadDocument(MultipartFile, String, Set, Set, String, Set, Set, String)
+        +ThumbnailResponse getDocumentThumbnail(String, String)
+        +byte[] getDocumentContent(String, String, String, Boolean)
+        +DocumentInformation getDocumentDetails(String, String, Boolean)
+        +DocumentInformation updateDocument(String, DocumentUpdateRequest, String)
+        +DocumentInformation updateDocumentWithFile(String, MultipartFile, DocumentUpdateRequest, String)
+        +void deleteDocument(String, String)
+        +Set getPopularTags(String)
+        +byte[] getDocumentVersionContent(String, Integer, String, String, Boolean)
+        +DocumentInformation revertToVersion(String, Integer, String)
+        -validateDocument(MultipartFile)
+        -String createStoragePath(String)
+        -String getFileExtension(String)
+        -String getFileName(String)
+        -byte[] getProcessingPlaceholder()
+        -byte[] getErrorPlaceholder()
+    }
+
+    class DocumentCommentService {
+        +Page getDocumentComments(String, Pageable, String)
+        +CommentResponse createComment(String, CommentRequest, String)
+        +CommentResponse updateComment(String, Long, CommentRequest, String)
+        +void deleteComment(String, Long, String)
+        -Map batchFetchUsers(Set)
+        -List buildCommentTree(List, Map, Map)
+        -UserResponse getUserByUsername(String)
+        -CommentResponse mapToCommentResponse(DocumentComment, Map, Map)
+    }
+
+    class DocumentShareService {
+        +ShareSettings getDocumentShareSettings(String, String)
+        +DocumentInformation updateDocumentShareSettings(String, UpdateShareSettingsRequest, String)
+        +List searchShareableUsers(String)
+        +List getShareableUserDetails(List)
+        -DocumentInformation getDocumentWithAccessCheck(String, String)
+        -void validateSharedUsers(Set)
+    }
+
+    class S3Service {
+        +String uploadFile(MultipartFile, String)
+        +byte[] downloadFile(String)
+        +void deleteFile(String)
+        -String generateS3Key(String, String)
+    }
+
+    class DocumentReportService {
+        +ReportResponse createReport(String, ReportRequest, String)
+        +void updateReportStatus(String, DocumentReportStatus, String)
+        +Optional getUserReport(String, String)
+        +List getReportTypes()
+        +Page getAdminDocumentReports(String, Instant, Instant, DocumentReportStatus, String, Pageable)
+        +List getDocumentReportDetails(String, DocumentReportStatus)
+        -DocumentReportDetail mapToReportDetail(DocumentReport)
+        -String getUsernameById(UUID)
+        -UserResponse getUserFromUsername(String)
+    }
+
+    class DocumentFavoriteService {
+        +void favoriteDocument(String, String)
+        +void unfavoriteDocument(String, String)
+        +boolean isDocumentFavorited(String, String)
+    }
+
+    class DocumentHistoryService {
+        +DocumentStatisticsResponse getDocumentStatistics(String)
+        +Page getUserHistory(String, UserDocumentActionType, Instant, Instant, String, Pageable)
+        -Query buildHistoryQuery(String, UserDocumentActionType, Instant, Instant, String, List)
+        -List enrichWithDocumentTitles(List)
+        -UserHistoryResponse mapToResponse(DocumentUserHistory, String)
+        -UserResponse getUserFromUsername(String)
+        -List findDocumentIdsByName(String)
+    }
+
+    class DocumentNotificationService {
+        +void handleCommentNotification(DocumentInformation, String, UUID, Long)
+        +void handleFileVersionNotification(DocumentInformation, String, Integer)
+        +void handleRevertNotification(DocumentInformation, String, Integer)
+        +void sendCommentReportResolvedNotification(String, Long, UUID, int)
+        -boolean isNewCommenter(String, UUID, Long)
+        -void sendNotificationToFavoriters(DocumentInformation, String, NotificationType, Integer)
+    }
+
+    class DocumentPreferencesService {
+        +DocumentPreferences getDocumentPreferences(String)
+        +DocumentPreferences updateExplicitPreferences(String, UpdateDocumentPreferencesRequest)
+        +void recordInteraction(UUID, String, InteractionType)
+        +void updateImplicitPreferences(UUID, DocumentInformation, InteractionType)
+        +Map getCalculateContentTypeWeights(String)
+        +Set getRecommendedTags(String)
+        +Map getInteractionStatistics(String)
+        -void updateRecentDocuments(DocumentPreferences, String)
+        -void updateInteractionCounts(DocumentPreferences, DocumentInformation)
+        -Map calculateContentTypeWeights(UUID)
+        -DocumentPreferences createDefaultPreferences(String)
+        -double getInteractionCount(Map, String)
+        -Map normalizeWeights(Map)
+    }
+
+    class CommentReportService {
+        +CommentReportResponse createReport(String, Long, CommentReportRequest, String)
+        +Optional getUserReport(String, Long, String)
+        +List getReportTypes()
+        +void resolveCommentReport(Long, CommentReportStatus, String)
+        +Page getAdminCommentReports(Instant, Instant, String, String, CommentReportStatus, Pageable)
+        +List getCommentReportsByCommentId(Long, CommentReportStatus)
+        -Map batchFetchUsernames(Set)
+        -UserResponse getUserFromUsername(String)
+    }
+
+    class MasterDataService {
+        +List getAllByType(MasterDataType, Boolean)
+        +Optional getByTypeAndCode(MasterDataType, String)
+        +List searchByText(String)
+        +MasterDataResponse save(MasterDataRequest)
+        +MasterDataResponse update(String, MasterDataRequest)
+        +void deleteById(String)
+        +List getAllByTypeAndParentId(MasterDataType, String, Boolean)
+        -MasterDataResponse toResponse(MasterData)
+        -void updateMasterDataFromRequest(MasterData, MasterDataRequest)
+        -TranslationDTO toTranslationDTO(Translation)
+        -Translation toTranslation(TranslationDTO)
+        -void validateMasterDataRequest(MasterDataRequest)
+        -boolean isItemInUse(String)
+    }
+
+    class PublishEventService {
+        +void sendSyncEvent(SyncEventRequest)
+        +void sendNotificationEvent(NotificationEventRequest)
+    }
+
+%% Controllers
+    class DocumentController {
+        +ResponseEntity uploadDocument(MultipartFile, String, Set, Set, String, Set, Set, Jwt)
+        +ResponseEntity getDocumentDetails(String, boolean, Jwt)
+        +ResponseEntity downloadDocument(String, String, boolean, Jwt)
+        +ResponseEntity getDocumentThumbnail(String, Jwt, String)
+        +ResponseEntity updateDocumentWithFile(String, MultipartFile, String, Set, Set, String, Set, Set, Jwt)
+        +ResponseEntity updateDocument(String, DocumentUpdateRequest, Jwt)
+        +ResponseEntity deleteDocument(String, Jwt)
+        +ResponseEntity getTagSuggestions(String)
+        +ResponseEntity getDocumentShareSettings(String, Jwt)
+        +ResponseEntity updateDocumentShareSettings(String, UpdateShareSettingsRequest, Jwt)
+        +ResponseEntity searchShareableUsers(String)
+        +ResponseEntity getShareableUserDetails(List)
+        +ResponseEntity getDocumentStatistics(String)
+        +ResponseEntity getUserHistory(UserDocumentActionType, Instant, Instant, String, int, int, Jwt)
+        -String generateETag(DocumentInformation)
+    }
+
+    class DocumentCommentController {
+        +ResponseEntity createComment(String, CommentRequest, Jwt)
+        +ResponseEntity getDocumentComments(String, Pageable, Jwt)
+        +ResponseEntity updateComment(String, Long, CommentRequest, Jwt)
+        +ResponseEntity deleteComment(String, Long, Jwt)
+        +ResponseEntity reportComment(String, Long, CommentReportRequest, Jwt)
+        +ResponseEntity getUserReport(String, Long, Jwt)
+    }
+
+    class DocumentFavoriteController {
+        +ResponseEntity favoriteDocument(String, Jwt)
+        +ResponseEntity unfavoriteDocument(String, Jwt)
+        +ResponseEntity isDocumentFavorited(String, Jwt)
+    }
+
+    class DocumentReportController {
+        +ResponseEntity reportDocument(String, ReportRequest, Jwt)
+        +ResponseEntity getUserReport(String, Jwt)
+    }
+
+    class ReportController {
+        +ResponseEntity updateReportStatus(String, DocumentReportStatus, Jwt)
+        +ResponseEntity getAllDocumentReports(String, Instant, Instant, DocumentReportStatus, String, Pageable)
+        +ResponseEntity getDocumentReportDetails(String, DocumentReportStatus)
+        +ResponseEntity resolveCommentReport(Long, CommentReportStatus, Jwt)
+        +ResponseEntity getAllCommentReports(Instant, Instant, String, String, CommentReportStatus, Pageable)
+        +ResponseEntity getCommentReportsByCommentId(Long, CommentReportStatus)
+    }
+
+%% Repositories
+    class DocumentRepository {
+        +Optional findByIdAndUserId(String, String)
+        +List findByIdIn(List)
+        +List findDistinctTagsByPattern(String)
+        +List findAllTags()
+        +Optional findAccessibleDocumentByIdAndUserId(String, String)
+        +boolean existsByMajorCode(String)
+        +boolean existsByCourseCode(String)
+        +boolean existsByCourseLevelCode(String)
+        +boolean existsByCategoryCode(String)
+    }
+
+    class DocumentCommentRepository {
+        +Optional findByDocumentIdAndId(String, Long)
+        +List findCommentsWithReplies(String, int, int)
+        +long countTopLevelComments(String)
+        +List findAllDescendantIds(Long)
+        +void markCommentsAsDeleted(List)
+        +boolean existsByDocumentIdAndUserIdAndIdNot(String, UUID, Long)
+    }
+
+    class DocumentUserHistoryRepository {
+        +List getActionCountsForDocument(String)
+        +long countByUserIdAndActionType(String, UserDocumentActionType)
+    }
+
+    class DocumentFavoriteRepository {
+        +boolean existsByUserIdAndDocumentId(UUID, String)
+        +void deleteByUserIdAndDocumentId(UUID, String)
+        +Page findByUserId(UUID, Pageable)
+        +List findByDocumentId(String)
+    }
+
+    class DocumentReportRepository {
+        +boolean existsByDocumentIdAndUserIdAndProcessed(String, UUID, boolean)
+        +Optional findByDocumentIdAndUserIdAndProcessed(String, UUID, boolean)
+        +List findByDocumentIdAndProcessed(String, boolean)
+        +List findByDocumentIdAndStatus(String, DocumentReportStatus)
+        +Page findDocumentReportsGroupedByProcessed(String, Instant, Instant, String, Pageable)
+        +long countDocumentReportsGroupedByProcessed(String, Instant, Instant, String)
+    }
+
+    class CommentReportRepository {
+        +boolean existsByCommentIdAndUserIdAndProcessed(Long, UUID, boolean)
+        +Optional findByDocumentIdAndCommentIdAndUserIdAndProcessed(String, Long, UUID, boolean)
+        +List findReportsByUserAndDocument(UUID, String, boolean)
+        +List findByCommentIdAndStatus(Long, CommentReportStatus)
+        +List findByCommentIdAndProcessed(Long, boolean)
+        +Page findCommentReportsGroupedByProcessed(Instant, Instant, String, String, String, Pageable)
+        +long countCommentReportsGroupedByProcessed(Instant, Instant, String, String, String)
+    }
+
+    class DocumentPreferencesRepository {
+        +Optional findByUserId(String)
+        +boolean existsByPreferredMajor(String)
+        +boolean existsByPreferredCourseCode(String)
+        +boolean existsByPreferredLevel(String)
+        +boolean existsByPreferredCategory(String)
+        +boolean existsByPreferredTag(String)
+    }
+
+    class MasterDataRepository {
+        +List findByType(MasterDataType)
+        +List findByTypeAndIsActive(MasterDataType, boolean)
+        +Optional findByTypeAndCode(MasterDataType, String)
+        +List searchByText(String)
+        +List findByTypeAndParentId(MasterDataType, String)
+        +List findByTypeAndParentIdAndIsActive(MasterDataType, String, boolean)
+        +List findByParentId(String)
+    }
+
+    class DocumentInteractionRepository {
+        +Optional findByUserIdAndDocumentId(String, String)
+        +List findRecentInteractions(String, Date)
+        +AggregatedInteractionStats getAggregatedStats(String, Date)
+    }
+
+%% Relationships
+    DocumentController --> DocumentService 
+    DocumentController --> DocumentShareService 
+    DocumentController --> DocumentHistoryService 
+    DocumentCommentController --> DocumentCommentService 
+    DocumentCommentController --> CommentReportService 
+    DocumentFavoriteController --> DocumentFavoriteService 
+    DocumentReportController --> DocumentReportService 
+    ReportController --> DocumentReportService 
+    ReportController --> CommentReportService 
+
+    DocumentService --> DocumentRepository 
+    DocumentService --> S3Service 
+    DocumentService --> DocumentNotificationService 
+    DocumentService --> DocumentPreferencesService 
+    DocumentService --> DocumentUserHistoryRepository 
+    DocumentService --> PublishEventService 
+
+    DocumentCommentService --> DocumentCommentRepository 
+    DocumentCommentService --> DocumentRepository 
+    DocumentCommentService --> DocumentNotificationService 
+    DocumentCommentService --> DocumentPreferencesService 
+    DocumentCommentService --> CommentReportRepository 
+    DocumentCommentService --> DocumentUserHistoryRepository 
+
+    DocumentShareService --> DocumentRepository 
+    DocumentShareService --> DocumentUserHistoryRepository 
+    DocumentShareService --> DocumentPreferencesService 
+    DocumentShareService --> PublishEventService 
+
+    DocumentFavoriteService --> DocumentFavoriteRepository 
+    DocumentFavoriteService --> DocumentRepository 
+    DocumentFavoriteService --> DocumentUserHistoryRepository 
+    DocumentFavoriteService --> DocumentPreferencesService 
+
+    DocumentReportService --> DocumentReportRepository 
+    DocumentReportService --> DocumentRepository 
+    DocumentReportService --> MasterDataRepository 
+    DocumentReportService --> PublishEventService 
+
+    CommentReportService --> CommentReportRepository 
+    CommentReportService --> DocumentCommentRepository 
+    CommentReportService --> MasterDataRepository 
+    CommentReportService --> DocumentNotificationService 
+
+    DocumentNotificationService --> DocumentFavoriteRepository 
+    DocumentNotificationService --> DocumentCommentRepository 
+    DocumentNotificationService --> PublishEventService 
+
+    DocumentPreferencesService --> DocumentPreferencesRepository 
+    DocumentPreferencesService --> DocumentInteractionRepository 
+    DocumentPreferencesService --> DocumentRepository 
+
+    MasterDataService --> MasterDataRepository 
+    MasterDataService --> DocumentRepository 
+    MasterDataService --> DocumentPreferencesRepository 
+
+    DocumentHistoryService --> DocumentUserHistoryRepository 
+    DocumentHistoryService --> DocumentRepository 
+
+    DocumentInformation --> DocumentVersion : contains

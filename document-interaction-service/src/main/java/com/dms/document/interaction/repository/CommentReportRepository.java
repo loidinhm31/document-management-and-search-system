@@ -64,7 +64,18 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
             AND (CAST(:toDate AS date) IS NULL OR DATE(cr.created_at) <= DATE(:toDate))
             GROUP BY cr.comment_id, cr.document_id, cr.processed, cr.status, dc.content, dc.user_id
             ORDER BY MAX(cr.created_at) DESC
-            """, nativeQuery = true)
+            """,
+            countQuery = """
+                    SELECT COUNT(DISTINCT CONCAT(cr.comment_id, '_', COALESCE(cr.processed, false), '_', cr.status))
+                                FROM comment_reports cr
+                                JOIN document_comments dc ON cr.comment_id = dc.id
+                                WHERE (:commentContent IS NULL OR dc.content::text LIKE CONCAT('%', :commentContent, '%'))
+                                AND (:reportTypeCode IS NULL OR cr.report_type_code = :reportTypeCode)
+                                AND (:status IS NULL OR cr.status = :status)
+                                AND (CAST(:fromDate AS date) IS NULL OR DATE(cr.created_at) >= DATE(:fromDate))
+                                AND (CAST(:toDate AS date) IS NULL OR DATE(cr.created_at) <= DATE(:toDate))
+                    """,
+            nativeQuery = true)
     Page<CommentReportProjection> findCommentReportsGroupedByProcessed(
             @Param("fromDate") Instant fromDate,
             @Param("toDate") Instant toDate,
@@ -73,20 +84,4 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
             @Param("status") String status,
             Pageable pageable);
 
-    @Query(value = """
-            SELECT COUNT(DISTINCT CONCAT(cr.comment_id, '_', COALESCE(cr.processed, false), '_', cr.status))
-            FROM comment_reports cr
-            JOIN document_comments dc ON cr.comment_id = dc.id
-            WHERE (:commentContent IS NULL OR dc.content::text LIKE CONCAT('%', :commentContent, '%'))
-            AND (:reportTypeCode IS NULL OR cr.report_type_code = :reportTypeCode)
-            AND (:status IS NULL OR cr.status = :status)
-            AND (CAST(:fromDate AS date) IS NULL OR DATE(cr.created_at) >= DATE(:fromDate))
-            AND (CAST(:toDate AS date) IS NULL OR DATE(cr.created_at) <= DATE(:toDate))
-            """, nativeQuery = true)
-    long countCommentReportsGroupedByProcessed(
-            @Param("fromDate") Instant fromDate,
-            @Param("toDate") Instant toDate,
-            @Param("commentContent") String commentContent,
-            @Param("reportTypeCode") String reportTypeCode,
-            @Param("status") String status);
 }

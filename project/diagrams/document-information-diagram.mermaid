@@ -1,0 +1,97 @@
+classDiagram
+    class DocumentInformation {
+        +String id
+        +DocumentStatus status
+        +String summary
+        +DocumentType documentType
+        +Set~String~ majors
+        +Set~String~ courseCodes
+        +String courseLevel
+        +Set~String~ categories
+        +Set~String~ tags
+        +String userId
+        +SharingType sharingType
+        +Set~String~ sharedWith
+        +boolean deleted
+        +Integer currentVersion
+        +List~DocumentVersion~ versions
+        +String processingError
+        +String filename
+        +String filePath
+        +String thumbnailPath
+        +Long fileSize
+        +String mimeType
+        +Map~String,String~ extractedMetadata
+        +String content
+        +String language
+        +Instant createdAt
+        +Instant updatedAt
+        +String createdBy
+        +String updatedBy
+        +DocumentReportStatus reportStatus
+        +Integer recommendationCount
+        +Optional~DocumentVersion~ getLatestVersion()
+        +Optional~DocumentVersion~ getVersion(Integer)
+    }
+
+    class DocumentVersion {
+        +Integer versionNumber
+        +String filePath
+        +String thumbnailPath
+        +String filename
+        +Long fileSize
+        +String mimeType
+        +DocumentType documentType
+        +DocumentStatus status
+        +String language
+        +String processingError
+        +String createdBy
+        +Instant createdAt
+    }
+
+    class DocumentStatus {
+        <<enumeration>>
+        PENDING
+        PROCESSING
+        COMPLETED
+        FAILED
+    }
+
+    class DocumentType {
+        <<enumeration>>
+        PDF
+        WORD
+        WORD_DOCX
+        EXCEL
+        EXCEL_XLSX
+        POWERPOINT
+        POWERPOINT_PPTX
+        TEXT_PLAIN
+        CSV
+        XML
+        JSON
+        MARKDOWN
+    }
+
+    class DocumentReportStatus {
+        <<enumeration>>
+        PENDING
+        REJECTED
+        RESOLVED
+        REMEDIATED
+    }
+
+    class SharingType {
+        <<enumeration>>
+        PRIVATE
+        PUBLIC
+        SPECIFIC
+    }
+
+    DocumentInformation "1" *-- "many" DocumentVersion : contains
+    DocumentInformation --> DocumentStatus : has
+    DocumentInformation --> DocumentType : has
+    DocumentInformation --> SharingType : has
+    DocumentInformation --> DocumentReportStatus : has
+    DocumentVersion --> DocumentType : has
+    DocumentVersion --> DocumentStatus : has

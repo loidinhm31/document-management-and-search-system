@@ -1,0 +1,13 @@
+---
+config:
+  layout: elk
+---
+flowchart TD
+    Main["Main Application"] --> Auth["Authentication"] & UserSection["User Section"] & DocumentSection["Document Section"] & AdminSection["Admin Section"]
+    Auth --> Login["Login Screen"] & Register["Registration"] & ForgotPassword["Forgot Password"] & ResetPassword["Reset Password"] & OTPVerification["OTP Verification"] & OAuth2Redirect["OAuth2 Redirect Handler"]
+    UserSection --> Profile["User Profile"] & DocumentHistory["Document User History"] & Preferences["Document Preferences"]
+    DocumentSection --> Discover["Document Discovery"] & MyDocuments["My Documents"]
+    MyDocuments --> MyDocumentDetails["My Document Details"]
+    Discover --> DocumentDetailView["Document Detail View"]
+    AdminSection --> UserManagement["User Management"] & UserDetail["User Detail"] & MasterData["Master Data Management"] & ReportsManagement["Reports Management"]
+    ReportsManagement --> DocumentReportsTab["Document Reports Tab"] & CommentReportsTab["Comment Reports Tab"]

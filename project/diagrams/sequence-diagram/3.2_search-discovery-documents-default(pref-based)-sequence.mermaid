@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DC as DocumentController
+    participant DSS as DocumentSearchService
+    participant AuthS as AuthService
+    participant DB as Database
+    participant OS as OpenSearch
+
+    User->>Frontend: View recommendations dashboard
+    Frontend->>DC: GET /api/v1/documents/recommendation?favoriteOnly=true
+
+    DC->>DSS: getRecommendations(null, favoriteOnly, username, pageable)
+
+    DSS->>AuthS: getUserByUsername(token)
+    AuthS-->>DSS: UserResponse
+
+    DSS->>DB: getUserPreferences(userId)
+    DB-->>DSS: DocumentPreferences
+
+    alt favoriteOnly is true
+        DSS->>DB: getFavoriteDocumentIds(userId)
+        DB-->>DSS: List<String> favoriteIds
+    end
+
+    DSS->>DSS: preparePreferenceBasedSearchQuery()
+    Note over DSS: Prepare search query based on user preferences
+
+    DSS->>OS: executeSearch(searchQuery)
+    OS-->>DSS: SearchResults
+
+    DSS->>DSS: transformToResponseDtos()
+
+    DSS-->>DC: Page<DocumentResponseDto>
+    DC-->>Frontend: Recommendation results
+
+    Frontend-->>User: Display personalized recommendations

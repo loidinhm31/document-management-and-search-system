@@ -1,0 +1,44 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+    participant MB as MessageBroker
+    participant PS as ProcessorService
+    participant NS as Email
+
+    User->>Frontend: Enter <br> comment content
+    User->>Frontend: Submit comment
+
+    Frontend->>DIS: POST /api/v1/documents/<br>{id}/comments<br>{content: string, parentId: long}
+
+    DIS->>DB: validateUserAccess<br>(documentId, userId)
+    DB-->>DIS: accessAllowed
+
+    alt Access allowed
+        alt Reply Comment
+            DIS->>DB: checkValid<br>ParentComment(parentId)
+            DB-->>DIS: parentComment
+        end
+
+        DIS->>DB: createComment<br>(documentId, userId,<br> content)
+
+        DIS->>DB: recordUserHistory<br>(userId, COMMENT)
+        DIS->>DB: updateUserPreferences<br>(userId, documentId)
+        DB-->>DIS: commentId
+
+        DIS->>MB: publishEvent<br>(NEW_COMMENT_FROM_NEW_USER, commentId)
+        DIS-->>Frontend: 201 Created <br>{commentId, content, <br>timestamp}
+        Frontend-->>User: Display new <br> comment in list
+
+        MB->>PS: consumeEvent<br>(NEW_COMMENT_<br>FROM_NEW_USER)
+
+        PS->>DB: getFavoritedUserIds<br>(documentId)
+        DB-->>PS: userIds[]
+
+        Note left of NS: User is not commenter <br> and not owner
+        PS->>NS: sendNewCommentNotification<br>(userId, documentId, <br> commentId)
+    else Access denied
+        DIS-->>Frontend: 403 Forbidden<br>{error: "No access <br> to comment"}
+        Frontend-->>User: Display <br> error message
+    end

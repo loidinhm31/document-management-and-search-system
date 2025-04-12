@@ -10,18 +10,28 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { DocumentStatus } from "@/types/document";
 
 // Set the worker source
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
 interface PDFViewerProps {
+  isAdmin: boolean;
+  documentStatus: DocumentStatus;
   fileUrl: string;
   onDownload: () => void;
   isDownloading?: boolean;
   loading?: boolean;
 }
 
-export const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onDownload, isDownloading, loading }) => {
+export const PDFViewer: React.FC<PDFViewerProps> = ({
+  isAdmin,
+  documentStatus,
+  fileUrl,
+  onDownload,
+  isDownloading,
+  loading,
+}) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [numPages, setNumPages] = useState<number>(0);
@@ -70,6 +80,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onDownload, isDow
     setScale((currentScale) => Math.max(0.5, currentScale - 0.1));
   }, []);
 
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -86,10 +97,12 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ fileUrl, onDownload, isDow
     <div className="h-full flex flex-col">
       {/* Header with download button */}
       <div className="flex justify-end p-2 bg-muted">
-        <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
-          <Download className="h-4 w-4 mr-2" />
-          {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
-        </Button>
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
+          <Button onClick={onDownload} variant="outline" size="sm" disabled={isDownloading || loading}>
+            <Download className="h-4 w-4 mr-2" />
+            {!isDownloading ? t("document.viewer.buttons.download") : t("document.viewer.buttons.downloading")}
+          </Button>
+        )}
       </div>
 
       {/* Controls - Responsive layout */}

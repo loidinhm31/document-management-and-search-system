@@ -1,23 +1,34 @@
-import { ArrowLeft, Loader2, Trash2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  CalendarPlus2Icon,
+  FilePenLineIcon,
+  FileType2Icon,
+  Loader2,
+  Package2Icon,
+  Trash2,
+} from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
 
 import { DeleteDialog } from "@/components/common/delete-dialog";
-import { DocumentForm, DocumentFormValues } from "@/components/document/document-form";
+import { DocumentForm } from "@/components/document/document-form";
 import DocumentVersionHistory from "@/components/document/document-versions-history";
 import ShareDocumentDialog from "@/components/document/share-document-dialog";
 import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/auth-context";
-import { useProcessing } from "@/context/processing-provider";
 import { RoutePaths } from "@/core/route-config";
 import { useToast } from "@/hooks/use-toast";
+import { getDescriptionType } from "@/lib/utils";
+import { DocumentFormValues } from "@/schemas/document-schema";
 import { documentService } from "@/services/document.service";
-import { useAppDispatch } from "@/store/hook";
+import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
-import { DocumentInformation } from "@/types/document";
+import { addProcessingItem, selectProcessingItems } from "@/store/slices/processing-slice";
+import { DocumentInformation, DocumentStatus, ProcessingItem } from "@/types/document";
 
 export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
@@ -26,15 +37,47 @@ export default function MyDocumentDetailPage() {
   const { currentUser } = useAuth();
   const { documentId } = useParams<{ documentId: string }>();
 
-  const { addProcessingItem } = useProcessing();
-
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [documentData, setDocumentData] = useState<DocumentInformation | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [fileChange, setFileChange] = useState<boolean>(false);
   const { toast } = useToast();
+  const [pollingItem, setPollingItem] = useState<ProcessingItem>();
+  const [fileChange, setFileChange] = useState<boolean>(false);
+
+  const processingItems = useAppSelector(selectProcessingItems);
+  const latestProcessingItem = useMemo(
+    () => (processingItems.length > 0 ? processingItems[processingItems.length - 1] : null),
+    [processingItems],
+  );
+
+  // Prevent access share document public for my document
+  useEffect(() => {
+    if (
+      currentUser?.userId &&
+      documentData &&
+      documentData.userId !== currentUser.userId &&
+      !documentData?.sharedWith.includes(currentUser.userId)
+    ) {
+      toast({
+        title: t("common.error"),
+        description: t("document.detail.fetchError"),
+        variant: "destructive",
+      });
+      navigate("/documents/me");
+    }
+  }, [documentData, currentUser]);
+
+  useEffect(() => {
+    if (latestProcessingItem) {
+      setPollingItem(latestProcessingItem);
+      if (latestProcessingItem?.status === DocumentStatus.COMPLETED) {
+        fetchDocument();
+        setFileChange(true);
+      }
+    }
+  }, [latestProcessingItem?.status, documentId]);
 
   const fetchDocument = async () => {
     if (!documentId) return;
@@ -68,6 +111,7 @@ export default function MyDocumentDetailPage() {
     if (!documentId) return;
     setUpdating(true);
 
+    let updateResponse;
     try {
       if (file) {
         // Send both metadata and file in single request
@@ -80,12 +124,12 @@ export default function MyDocumentDetailPage() {
 
         // Handle majors (multiple values)
         if (data.majors && data.majors.length > 0) {
-          data.majors.forEach(major => formData.append("majors", major));
+          data.majors.forEach((major: string) => formData.append("majors", major));
         }
 
         // Handle course codes (multiple values)
         if (data.courseCodes && data.courseCodes.length > 0) {
-          data.courseCodes.forEach(courseCode => formData.append("courseCodes", courseCode));
+          data.courseCodes.forEach((courseCode: string) => formData.append("courseCodes", courseCode));
         }
 
         // Single value fields
@@ -93,19 +137,18 @@ export default function MyDocumentDetailPage() {
 
         // Handle categories (multiple values)
         if (data.categories && data.categories.length > 0) {
-          data.categories.forEach(category => formData.append("categories", category));
+          data.categories.forEach((category: string) => formData.append("categories", category));
         }
 
         // Tags (multiple values)
         if (data.tags && data.tags.length > 0) {
-          data.tags.forEach(tag => formData.append("tags", tag));
+          data.tags.forEach((tag: string) => formData.append("tags", tag));
         }
 
-        await handleFileUpdate(documentId, formData);
-        setFileChange(true);
+        updateResponse = await handleFileUpdate(documentId, formData);
       } else {
         // Metadata-only update
-        await documentService.updateDocument(documentId, {
+        updateResponse = await documentService.updateDocument(documentId, {
           summary: data.summary,
           majors: data.majors,
           courseCodes: data.courseCodes,
@@ -113,24 +156,22 @@ export default function MyDocumentDetailPage() {
           categories: data.categories,
           tags: data.tags,
         });
-        setFileChange(false);
       }
 
-      // Refresh document data
-      const response = await documentService.getDocumentDetails(documentId);
-      setDocumentData(response.data);
+      if (updateResponse && updateResponse.data) {
+        // Update the document data with the new response
+        const updatedDocument = updateResponse.data;
+        setDocumentData(updatedDocument);
+        dispatch(setCurrentDocument(updatedDocument));
 
-      toast({
-        title: t("common.success"),
-        description: t("document.detail.updateSuccess"),
-        variant: "success",
-      });
-    } catch (_error) {
-      toast({
-        title: t("common.error"),
-        description: t("document.detail.updateError"),
-        variant: "destructive",
-      });
+        toast({
+          title: t("common.success"),
+          description: t("document.detail.updateSuccess"),
+          variant: "success",
+        });
+      }
+    } catch (error) {
+      console.error(error);
     } finally {
       setUpdating(false);
     }
@@ -141,14 +182,21 @@ export default function MyDocumentDetailPage() {
       const response = await documentService.updateDocumentWithFile(documentId, formData);
       const document = response.data;
 
-      // Add to processing queue
-      addProcessingItem(document.id, document.originalFilename);
-    } catch (_error) {
-      toast({
-        title: t("common.error"),
-        description: t("document.detail.updateError"),
-        variant: "destructive",
-      });
+      // Add to processing queue using Redux directly
+      dispatch(
+        addProcessingItem({
+          id: uuidv4(),
+          documentId: document.id,
+          filename: document.filename,
+          status: DocumentStatus.PENDING,
+          addedAt: new Date().getTime(),
+        }),
+      );
+
+      return response;
+    } catch (error) {
+      console.log(error);
+      throw error;
     }
   };
 
@@ -184,6 +232,19 @@ export default function MyDocumentDetailPage() {
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  // Format dates for display
+  const formatDate = (date: Date) => {
+    if (!date) return "";
+    const formatDate = new Date(date);
+    return formatDate.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
@@ -248,16 +309,18 @@ export default function MyDocumentDetailPage() {
                   key={`df-${documentData.id}-${documentData.updatedAt}`}
                   initialValues={{
                     summary: documentData?.summary || "",
-                    majors: documentData?.majors || (documentData?.major ? [documentData.major] : []),
-                    courseCodes: documentData?.courseCodes || (documentData?.courseCode ? [documentData.courseCode] : []),
+                    majors: documentData?.majors || [],
+                    courseCodes: documentData?.courseCodes || [],
                     level: documentData?.courseLevel || "",
-                    categories: documentData?.categories || (documentData?.category ? [documentData.category] : []),
+                    categories: documentData?.categories || [],
                     tags: documentData?.tags || [],
                   }}
                   onSubmit={handleSubmit}
                   loading={updating}
                   submitLabel={t("document.detail.buttons.update")}
                   disabled={documentData?.userId !== currentUser?.userId}
+                  documentId={documentData.id}
+                  pollingItem={pollingItem}
                 />
               )}
             </CardContent>
@@ -266,12 +329,37 @@ export default function MyDocumentDetailPage() {
           {/* Document Preview */}
           <Card>
             <CardHeader>
-              <CardTitle>{documentData?.filename}</CardTitle>
-              <CardDescription>
-                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(3)} KB
-              </CardDescription>
+              <div>
+                <CardTitle className="truncate mb-2">{documentData?.filename}</CardTitle>
+                <div className="grid grid-cols-2 gap-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <FileType2Icon className="mr-2 h-4 w-4" />
+                    <span>{getDescriptionType(documentData?.documentType)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Package2Icon className="mr-2 h-4 w-4" />
+                    <span>{(documentData?.fileSize / 1024).toFixed(3)} KB</span>
+                  </div>
+                  {documentData?.createdAt && (
+                    <div className="flex items-center gap-1.5">
+                      <CalendarPlus2Icon className="mr-2 h-4 w-4" />
+                      <span>
+                        {t("common.created")}: {formatDate(documentData.createdAt)}
+                      </span>
+                    </div>
+                  )}
+                  {documentData?.updatedAt && (
+                    <div className="flex items-center gap-1.5">
+                      <FilePenLineIcon className="mr-2 h-4 w-4" />
+                      <span>
+                        {t("common.updated")}: {formatDate(documentData.updatedAt)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="h-full max-h-[1000px]">
+            <CardContent className="h-full max-h-[900px]">
               {documentData && (
                 <DocumentViewer
                   documentId={documentData.id}
@@ -279,6 +367,9 @@ export default function MyDocumentDetailPage() {
                   mimeType={documentData.mimeType}
                   fileName={documentData.filename}
                   fileChange={fileChange}
+                  setFileChange={setFileChange}
+                  documentStatus={documentData.status === DocumentStatus.PROCESSING ? documentData.status : null}
+                  bypass={true}
                 />
               )}
             </CardContent>

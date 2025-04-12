@@ -16,6 +16,11 @@
         "search": {
           "type": "text",
           "analyzer": "filename_analyzer"
+        },
+        "lowercase": {
+          "type": "keyword",
+          "normalizer": "lowercase_normalizer",
+          "ignore_above": 256
         }
       }
     },

@@ -29,6 +29,9 @@ public class TokenResponse {
     @With
     private boolean verified;
 
+    @With
+    private boolean expired;
+
     public TokenResponse(String accessToken, String refreshToken, String tokenType, String username, List<String> roles) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
@@ -47,11 +50,10 @@ public class TokenResponse {
     }
 
 
-    public TokenResponse(int otpCount, boolean locked, boolean verified) {
+    public TokenResponse(int otpCount, boolean locked, boolean verified, boolean expired) {
         this.otpCount = otpCount;
         this.locked = locked;
         this.verified = verified;
+        this.expired = expired;
     }
-
-
 }

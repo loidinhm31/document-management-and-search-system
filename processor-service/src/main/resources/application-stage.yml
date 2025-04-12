@@ -1,39 +1,40 @@
 app:
-  base-url: http://${FRONT_END_URL:100.104.245.71}:3000
-  document:
-    max-size-threshold-mb: 25MB
+  base-url: ${FRONTEND_URL}
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
-    minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
-    chunk-size: 5
-    max-threads: 2
+    chunk-size: 10
+    max-threads: 4
     temp-dir: /tmp/ocr
     dpi: 300
     image-type: RGB
+    large-size-threshold-mb: 8MB
   pdf:
     quality-threshold: 0.8
     min-text-density: 0.01
+    expected-min-chars-per-page: 250
+    minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
   email:
     batch-size: 50  # Number of emails per batch
 
 spring:
   data:
     mongodb:
-      uri: mongodb://mongodb:mongodbpw@${RESOURCE_URL:100.104.245.71}:27017/dms?authSource=admin
+      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
   # Database Configuration
   datasource:
-    url: jdbc:postgresql://${RESOURCE_URL:100.104.245.71}:5432/postgres?currentSchema=dms
-    username: postgres
-    password: postgrespw
+    url: jdbc:postgresql://${POSTGRES_URL}/postgres?currentSchema=dms
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: none
     show-sql: true
   rabbitmq:
-    host: ${RESOURCE_URL:100.104.245.71}
-    port: 5672
-    username: guest
-    password: guest
+    addresses: ${RABBITMQ_URL}:5671
+    host: ${RABBITMQ_URL}
+    port: 5671
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
     listener:
       simple:
         retry:
@@ -46,10 +47,10 @@ spring:
     publisher-returns: true
 
   mail:
-    host: smtp.gmail.com
+    host: ${MAIL_SERVER_HOST}
     port: 587
-    username: nebulea.event@gmail.com
-    password: kvcz hwsj gpwg zzlm
+    username: ${MAIL_SERVER_USERNAME}
+    password: ${MAIL_SERVER_PASSWORD}
     properties:
       mail:
         smtp:
@@ -58,35 +59,33 @@ spring:
             enable: true
 
 mail-sender:
-  from-email: no-reply@dms.com
+  from-email: service@dms-study.cloud
 
 opensearch:
-  host: ${RESOURCE_URL:100.104.245.71}
-  port: 9200
-  username: admin
-  password: admin
-  scheme: http
-  aws: false
+  host: ${OPENSEARCH_URL}
+  port: 443
+  username: ${OPENSEARCH_USERNAME}
+  password: ${OPENSEARCH_PASSWORD}
+  scheme: https
+  aws: true
 
 # RabbitMQ
 rabbitmq:
   exchanges:
-    internal: internal.exchange
-    dlx: dead.letter.exchange
+    document: document.exchange
     notification: notification.exchange
+    dlx: dead.letter.exchange
   queues:
-    document-sync: document-sync.queue
-    document-sync-dlq: document-sync.dlq
-    notification: notification.queue
-    notification-dlq: notification.dlq
-    otp: notification.otp.queue
-    password-reset: password-reset.queue
+    document-process: document-process.queue
+    document-process-dlq: document-process.dlq
+    email-document: notification.email.document.queue
+    email-document-dlq: notification.email.document.dlq
+    email-auth: notification.email-auth.queue
+    email-auth-dlq: notification.email-auth.dlq
   routing-keys:
-    internal-document-sync: internal.document-sync.routing-key
-    notification: notification.email.routing-key
-    dlq: dead.letter.routing-key
-    otp: notification.otp.email.routing-key
-    password-reset: notification.password-reset.routing-key
+    document-process: document-process.routing-key
+    email-auth: notification.email-auth.routing-key
+    dead-letter: dead.letter.routing-key
 
 aws:
   s3:

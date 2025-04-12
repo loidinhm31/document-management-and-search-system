@@ -1,0 +1,30 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    Note over User, DB: 2. Mark as Favorite Flow
+
+    User->>Frontend: Click <br>favorite button
+    Frontend->>DIS: POST /api/v1/documents/<br>{id}/favorites
+
+    DIS->>DB: checkExistingFavorite<br>(documentId, userId)
+    DB-->>DIS: exists
+
+    alt Not already favorited
+        DIS->>DB: addDocumentToFavorites<br>(documentId, userId)
+        DIS->>DB: recordUserHistory<br>(userId, FAVORITE, "ADD")
+        DIS->>DB: updateUserPreferences<br>(userId, documentId)
+        DIS-->>Frontend: 201 Created <br> {favorited: true}
+        Frontend-->>User: Update favorite <br> button UI
+
+    else Already favorited (toggle off)
+        DIS->>DB: removeDocument<br>FromFavorites<br>(documentId, userId)
+        DIS->>DB: recordUserHistory<br>(userId, FAVORITE, "REMOVE")
+
+        DIS-->>Frontend: 200 OK <br> {favorited: false}
+        Frontend-->>User: Update favorite <br> button UI
+
+        DIS->>DB: updateUserPreferences<br>(userId, documentId)
+    end

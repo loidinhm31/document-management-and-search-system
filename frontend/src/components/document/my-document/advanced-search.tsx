@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export interface SearchFilters {
   search?: string;
   majors?: string[];
+  courseCodes?: string[];
   level?: string;
   categories?: string[];
   sort?: string;
@@ -26,12 +27,12 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
   const { t } = useTranslation();
 
   const sortOptions = [
-    { label: "Created Date (Newest)", value: "createdAt,desc" },
-    { label: "Created Date (Oldest)", value: "createdAt,asc" },
-    { label: "Name (A-Z)", value: "filename,asc" },
-    { label: "Name (Z-A)", value: "filename,desc" },
-    { label: "Size (Largest)", value: "fileSize,desc" },
-    { label: "Size (Smallest)", value: "fileSize,asc" },
+    { label: t("document.myDocuments.search.sortOptions.createdDateNewest"), value: "createdAt,desc" },
+    { label: t("document.myDocuments.search.sortOptions.createdDateOldest"), value: "createdAt,asc" },
+    { label: t("document.myDocuments.search.sortOptions.nameAz"), value: "filename,asc" },
+    { label: t("document.myDocuments.search.sortOptions.nameZa"), value: "filename,desc" },
+    { label: t("document.myDocuments.search.sortOptions.sizeLargest"), value: "fileSize,desc" },
+    { label: t("document.myDocuments.search.sortOptions.sizeSmallest"), value: "fileSize,asc" },
   ];
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -51,8 +52,8 @@ export const AdvancedSearch = ({ onSearch }: AdvancedSearchProps) => {
     onSearch({
       search: searchTerm,
       majors: selectedMajors.length <= 0 ? undefined : selectedMajors,
-      courseCodes: selectedCourseCodes.length <= 0 ? undefined : selectedCategories,
-      level: selectedLevel ? undefined : selectedLevel,
+      courseCodes: selectedCourseCodes.length <= 0 ? undefined : selectedCourseCodes,
+      level: selectedLevel ? selectedLevel : undefined,
       categories: selectedCategories.length <= 0 ? undefined : selectedCategories,
       sort: selectedSort,
       tags: selectedTags.length > 0 ? selectedTags : undefined,

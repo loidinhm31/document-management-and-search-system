@@ -1,7 +1,6 @@
 import { debounce } from "lodash";
 import { X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 
 import { Input } from "@/components/ui/input";
 import { documentService } from "@/services/document.service";
@@ -18,7 +17,7 @@ interface TagInputProps {
 const TagInputDebounce = ({
   value,
   onChange,
-  placeholder = "Enter tags...",
+  placeholder = "Enter or select tags...",
   disabled = false,
   error = false,
   className = "",
@@ -28,28 +27,8 @@ const TagInputDebounce = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dropdownStyle, setDropdownStyle] = useState({ top: 0, left: 0, width: 0 });
   const [hasFetchedInitialSuggestions, setHasFetchedInitialSuggestions] = useState(false);
-
-  const updateDropdownPosition = () => {
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setDropdownStyle({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  };
-
-  useEffect(() => {
-    window.addEventListener("scroll", updateDropdownPosition);
-    window.addEventListener("resize", updateDropdownPosition);
-    return () => {
-      window.removeEventListener("scroll", updateDropdownPosition);
-      window.removeEventListener("resize", updateDropdownPosition);
-    };
-  }, []);
+  const mouseIsDownRef = useRef(false);
 
   const fetchTags = async (prefix?: string) => {
     if (!showSuggestions) return; // Only fetch if suggestions are being shown
@@ -127,7 +106,6 @@ const TagInputDebounce = ({
 
   const handleFocus = () => {
     setShowSuggestions(true);
-    updateDropdownPosition();
 
     // Only fetch initial suggestions on first focus
     if (!hasFetchedInitialSuggestions) {
@@ -136,42 +114,37 @@ const TagInputDebounce = ({
     }
   };
 
-  const SuggestionsDropdown = () => {
-    if (!showSuggestions || !suggestions.length) return null;
+  // Add global mouse down/up event listeners
+  useEffect(() => {
+    const handleMouseDown = () => {
+      mouseIsDownRef.current = true;
+    };
 
-    return createPortal(
-      <div
-        style={{
-          position: "absolute",
-          top: `${dropdownStyle.top}px`,
-          left: `${dropdownStyle.left}px`,
-          width: `${dropdownStyle.width}px`,
-          zIndex: 9999,
-        }}
-        className="bg-popover rounded-md border shadow-md"
-      >
-        <div className="p-1">
-          {loading ? (
-            <div className="text-sm text-muted-foreground px-2 py-1.5">Loading...</div>
-          ) : (
-            suggestions.map((suggestion) => (
-              <button
-                key={suggestion}
-                className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accent hover:text-accent-foreground"
-                onClick={() => addTag(suggestion)}
-              >
-                {suggestion}
-              </button>
-            ))
-          )}
-        </div>
-      </div>,
-      document.body,
-    );
+    const handleMouseUp = () => {
+      mouseIsDownRef.current = false;
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  // Handle blur more carefully
+  const handleBlur = () => {
+    // Delay the closing of suggestions so click events can complete
+    setTimeout(() => {
+      if (!mouseIsDownRef.current) {
+        setShowSuggestions(false);
+      }
+    }, 300);
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative w-full">
       <div
         className={`min-h-10 flex flex-wrap gap-2 p-2 rounded-md border bg-background
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-text"}
@@ -206,15 +179,40 @@ const TagInputDebounce = ({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
-          onBlur={() => {
-            setTimeout(() => setShowSuggestions(false), 200);
-          }}
+          onBlur={handleBlur}
           placeholder={value.length === 0 ? placeholder : ""}
           disabled={disabled}
           className="flex-1 !h-6 !min-h-6 !p-0 !border-0 !ring-0 !shadow-none focus-visible:ring-0 bg-transparent placeholder:text-muted-foreground"
         />
       </div>
-      <SuggestionsDropdown />
+
+      {showSuggestions && suggestions.length > 0 && (
+        <div
+          className="absolute left-0 right-0 mt-1 bg-popover rounded-md border shadow-md z-50"
+          style={{ minWidth: "100%" }}
+        >
+          <div className="p-1">
+            {loading ? (
+              <div className="text-sm text-muted-foreground px-2 py-1.5">Loading...</div>
+            ) : (
+              suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accent hover:text-accent-foreground"
+                  // Handle mouse events more directly
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addTag(suggestion);
+                  }}
+                >
+                  {suggestion}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

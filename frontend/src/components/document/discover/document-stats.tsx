@@ -1,7 +1,6 @@
 import { Eye, FileDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DocumentStatsProps {
   viewCount: number;

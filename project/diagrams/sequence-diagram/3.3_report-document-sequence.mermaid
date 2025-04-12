@@ -1,0 +1,35 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    Note over User, DB: 3. Report Violation Flow
+    User->>Frontend: Click <br> report button
+    Frontend->>DIS: GET /api/v1/documents/{id}/<br>reports/status
+    DIS->>DB: checkExistingReport<br>(documentId, userId)
+    DB-->>DIS: alreadyReported
+
+    alt Not previously reported
+        DIS-->>Frontend: 200 OK <br> {canReport: true}
+        Frontend-->>User: Display report <br>form with <br>violation reasons
+
+        User->>Frontend: Select violation<br> reason and <br>provide details
+        User->>Frontend: Submit report
+
+        Frontend->>DIS: POST /api/v1/documents/<br>{id}/reports<br>{reason: string, details: string}
+
+        DIS->>DB: validateUserAccess<br>(documentId, userId)
+        DB-->>DIS: isValidReporter
+
+        DIS->>DB: checkReportType<br>(reportType)
+        DB-->>DIS: reportTypeValid
+
+        DIS->>DB: saveDocumentReport<br>(documentId, userId,<br> reason, details)
+        DIS-->>Frontend: 201 Created <br> {reportId: string}
+        Frontend-->>User: Display <br> success notification
+
+    else Already reported
+        DIS-->>Frontend: 200 OK {canReport: <br> false, reportStatus: string}
+        Frontend-->>User: Display already <br> reported message <br> with status
+    end

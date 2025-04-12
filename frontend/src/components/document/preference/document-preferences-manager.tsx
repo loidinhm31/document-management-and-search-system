@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import TagInput from "@/components/common/tag-input";
-import TagInputHybrid from "@/components/common/tag-input-hybrid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -15,6 +14,7 @@ import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
 import { DocumentPreferences, InteractionStats, PreferenceCategory } from "@/types/document-preference";
+import { getDescriptionType } from "@/lib/utils";
 
 const SUPPORTED_LANGUAGES = [
   { code: "en", display: "English" },
@@ -82,7 +82,7 @@ export default function DocumentPreferencesManager() {
         );
         setStats(statsRes.data);
         setRecommendedTags(tagsRes.data);
-      } catch (error) {
+      } catch (_error) {
         toast({
           title: t("common.error"),
           description: t("document.preferences.fetchError"),
@@ -113,7 +113,7 @@ export default function DocumentPreferencesManager() {
         description: t("document.preferences.updateSuccess"),
         variant: "success",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.preferences.updateError"),
@@ -177,7 +177,7 @@ export default function DocumentPreferencesManager() {
                   }
                   recommendedTags={majors?.map((major) => major.code) || []}
                   getTagDisplay={getTagDisplay}
-                  placeholder={t("document.commonSearch.majorPlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.majors.placeholder")}
                 />
               </div>
 
@@ -194,7 +194,7 @@ export default function DocumentPreferencesManager() {
                   }
                   recommendedTags={courseCodes?.map((course) => course.code) || []}
                   getTagDisplay={getTagDisplay}
-                  placeholder={t("document.commonSearch.courseCodePlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.courseCode.placeholder")}
                 />
               </div>
 
@@ -211,7 +211,7 @@ export default function DocumentPreferencesManager() {
                   }
                   recommendedTags={levels?.map((level) => level.code) || []}
                   getTagDisplay={getTagDisplay}
-                  placeholder={t("document.commonSearch.levelPlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.levels.placeholder")}
                 />
               </div>
 
@@ -228,14 +228,14 @@ export default function DocumentPreferencesManager() {
                   }
                   recommendedTags={categories?.map((category) => category.code) || []}
                   getTagDisplay={getTagDisplay}
-                  placeholder={t("document.commonSearch.categoryPlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.categories.placeholder")}
                 />
               </div>
 
               {/* Preferred Tags */}
               <div className="space-y-2">
                 <Label>{t("document.preferences.contentPreferences.tags.label")}</Label>
-                <TagInputHybrid
+                <TagInput
                   value={Array.from(preferences?.preferredTags || [])}
                   onChange={(tags) =>
                     setPreferences((prev) => ({
@@ -244,16 +244,7 @@ export default function DocumentPreferencesManager() {
                     }))
                   }
                   recommendedTags={recommendedTags}
-                  onSearch={async (query) => {
-                    try {
-                      const response = await documentService.getTagSuggestions(query);
-                      return response.data;
-                    } catch (error) {
-                      console.info("Error fetching tag suggestions:", error);
-                      return [];
-                    }
-                  }}
-                  placeholder={t("document.commonSearch.tagsPlaceholder")}
+                  placeholder={t("document.preferences.contentPreferences.tags.placeholder")}
                 />
               </div>
 
@@ -282,9 +273,7 @@ export default function DocumentPreferencesManager() {
                       <div key={type} className="flex items-center justify-between space-x-2">
                         <div className="flex-1">
                           <p className="font-medium">{type}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {t(`preferences.contentType.${type.toLowerCase()}`)}
-                          </p>
+                          <p className="text-sm text-muted-foreground">{getDescriptionType(type)}</p>
                         </div>
                         <div className="w-24 text-right">
                           <span className="text-sm font-medium">{(weight * 100).toFixed(1)}%</span>
@@ -302,15 +291,21 @@ export default function DocumentPreferencesManager() {
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-lg border p-3">
                       <div className="text-sm font-medium text-muted-foreground">
-                        {t("document.preferences.analytics.stats.comments")}
-                      </div>
-                      <div className="text-2xl font-bold">{stats.interactionCounts?.COMMENT || 0}</div>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="text-sm font-medium text-muted-foreground">
                         {t("document.preferences.analytics.stats.uniqueDocuments")}
                       </div>
                       <div className="text-2xl font-bold">{stats.uniqueDocumentsAccessed || 0}</div>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <div className="text-sm font-medium text-muted-foreground">
+                        {t("document.preferences.analytics.stats.downloads")}
+                      </div>
+                      <div className="text-2xl font-bold">{stats.interactionCounts?.DOWNLOAD || 0}</div>
+                    </div>
+                    <div className="rounded-lg border p-3">
+                      <div className="text-sm font-medium text-muted-foreground">
+                        {t("document.preferences.analytics.stats.comments")}
+                      </div>
+                      <div className="text-2xl font-bold">{stats.interactionCounts?.COMMENT || 0}</div>
                     </div>
                   </div>
                 </div>

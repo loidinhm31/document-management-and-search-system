@@ -1,14 +1,13 @@
 package com.dms.processor.opensearch;
 
+import com.dms.processor.enums.DocumentReportStatus;
 import com.dms.processor.enums.DocumentStatus;
 import com.dms.processor.enums.DocumentType;
-import com.dms.processor.enums.DocumentReportStatus;
 import com.dms.processor.enums.SharingType;
 import lombok.Builder;
 import lombok.Data;
 
 import java.time.Instant;
-import java.util.Map;
 import java.util.Set;
 
 @Builder
@@ -33,6 +32,8 @@ public class DocumentIndex {
     private DocumentStatus status;
     private String language;
     private Instant createdAt;
+    private Instant updatedAt;
     private DocumentReportStatus reportStatus;
     private Integer recommendationCount;
+    private Integer currentVersion;
 }

@@ -1,0 +1,33 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    User->>Frontend: Click delete button on comment
+
+    Frontend->>DIS: GET /api/v1/comments/{commentId}/delete-permissions
+    DIS->>DB: checkCommentOwnership<br>(commentId, userId)
+    DB-->>DIS: isOwner
+
+    alt User is comment owner
+        DIS-->>Frontend: 200 OK {canDelete: true}
+        Frontend-->>User: Display delete confirmation dialog
+
+        User->>Frontend: Confirm deletion
+
+        Frontend->>DIS: DELETE /api/v1/comments/{commentId}
+        DIS->>DB: getDocumentIdForComment<br>(commentId)
+        DB-->>DIS: documentId
+
+        DIS->>DB: findAllDescendantIds(commentId)
+        DB-->>DIS: descendantCommentIds
+
+        DIS->>DB: markCommentAsDeleted<br>(descendantCommentIds)
+        DIS-->>Frontend: 204 No Content
+        Frontend-->>User: Remove comment from display
+
+    else User is not owner
+        DIS-->>Frontend: 403 Forbidden {canDelete: false}
+        Frontend-->>User: Hide delete option or show error
+    end

@@ -4,6 +4,13 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import { authService } from "@/services/auth.service";
 import { userService } from "@/services/user.service";
 import { JwtPayload, TokenResponse, User } from "@/types/auth";
+import { VIEWED_DOCUMENTS_KEY } from "@/types/document";
+
+// Constants for retry mechanism
+const MAX_REFRESH_RETRIES = 3;
+const RETRY_STORAGE_KEY = "refresh_retry_count";
+const RETRY_TIMESTAMP_KEY = "refresh_retry_timestamp";
+const RETRY_COOLDOWN = 60 * 1000; // 1 minute cooldown between retry cycles
 
 interface AuthContextType {
   token: string | null;
@@ -41,12 +48,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(data.accessToken);
     setRefreshToken(data.refreshToken);
 
+    // Reset retry counter on successful auth
+    localStorage.removeItem(RETRY_STORAGE_KEY);
+    localStorage.removeItem(RETRY_TIMESTAMP_KEY);
+
     // Start refresh timer
     startRefreshTimer(data.accessToken);
   };
 
   const clearAuthData = () => {
-    authService.logout(refreshToken).then((r) => {
+    authService.logout(refreshToken).then(() => {
       localStorage.removeItem("JWT_TOKEN");
       localStorage.removeItem("REFRESH_TOKEN");
       localStorage.removeItem("USER");
@@ -55,7 +66,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setRefreshToken(null);
       setCurrentUser(null);
       stopRefreshTimer();
+
+      // Clear viewed documents session
+      sessionStorage.removeItem(VIEWED_DOCUMENTS_KEY);
     });
+  };
+
+  const shouldAttemptRefresh = () => {
+    // Check if we're in a retry cooldown period
+    const lastRetryTimestamp = localStorage.getItem(RETRY_TIMESTAMP_KEY);
+    if (lastRetryTimestamp) {
+      const cooldownEndTime = parseInt(lastRetryTimestamp) + RETRY_COOLDOWN;
+      if (Date.now() < cooldownEndTime) {
+        console.log("In cooldown period, not attempting refresh");
+        return false;
+      }
+    }
+
+    // Get current retry count
+    const currentRetryCount = parseInt(localStorage.getItem(RETRY_STORAGE_KEY) || "0");
+
+    // If we've exceeded max retries, don't attempt refresh
+    if (currentRetryCount >= MAX_REFRESH_RETRIES) {
+      console.log(`Max retries (${MAX_REFRESH_RETRIES}) exceeded, not attempting refresh`);
+      return false;
+    }
+
+    return true;
   };
 
   const refreshAuthToken = async () => {
@@ -64,16 +101,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("No refresh token available");
       }
 
+      // Check if we should attempt a refresh based on retry count
+      if (!shouldAttemptRefresh()) {
+        // Reset auth and redirect to login
+        clearAuthData();
+        window.location.href = "/login";
+        return null;
+      }
+
+      // Increment retry count
+      const currentRetryCount = parseInt(localStorage.getItem(RETRY_STORAGE_KEY) || "0");
+      localStorage.setItem(RETRY_STORAGE_KEY, (currentRetryCount + 1).toString());
+      localStorage.setItem(RETRY_TIMESTAMP_KEY, Date.now().toString());
+
       const response = await authService.refreshToken(refreshToken);
       const newTokenData = response.data;
       setAuthData(newTokenData);
 
       console.log("Token refreshed successfully");
+      return newTokenData.accessToken;
     } catch (error) {
       console.info("Failed to refresh token:", error);
-      clearAuthData();
-      // Optionally redirect to log in
-      window.location.href = "/login";
+
+      // If we've hit max retries, clear auth and redirect
+      const currentRetryCount = parseInt(localStorage.getItem(RETRY_STORAGE_KEY) || "0");
+      if (currentRetryCount >= MAX_REFRESH_RETRIES) {
+        console.log("Max refresh retries reached, clearing auth data");
+        clearAuthData();
+        window.location.href = "/login";
+      }
+
+      return null;
     }
   };
 

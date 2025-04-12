@@ -19,11 +19,7 @@ public class UserDto {
     private String username;
     private String email;
     private boolean accountNonLocked;
-    private boolean accountNonExpired;
-    private boolean credentialsNonExpired;
     private boolean enabled;
-    private Instant credentialsExpiryDate;
-    private Instant accountExpiryDate;
     private String twoFactorSecret;
     private boolean isTwoFactorEnabled;
     private String signUpMethod;

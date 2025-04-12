@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Calendar, Download, Eye, Filter, Heart, Loader2, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, Calendar, Download, Eye, Filter, Heart, Loader2, Search } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -37,7 +37,7 @@ import {
   setTags,
   toggleFavoriteOnly,
 } from "@/store/slices/search-slice";
-import { DocumentInformation } from "@/types/document";
+import { DocumentInformation, DocumentStatus } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
 
 interface SortableColumn {
@@ -67,11 +67,11 @@ export const DocumentList = () => {
     currentPage,
     pageSize,
     favoriteOnly,
+    isSearchMode,
+    searchTerm,
   } = useAppSelector(selectSearchState);
 
-  const { majors, levels, categories } = useAppSelector(selectMasterData);
-  const { searchTerm } = useAppSelector(selectSearchState);
-  const { isSearchMode } = useAppSelector(selectSearchState);
+  const { majors, courseCodes, levels, categories } = useAppSelector(selectMasterData);
 
   const pageSizeOptions = [10, 20, 50, 100];
 
@@ -81,10 +81,10 @@ export const DocumentList = () => {
 
   const columns: SortableColumn[] = [
     { field: "filename", label: t("document.discover.headers.name"), sortable: !!isSearchMode },
-    { field: "major", label: t("document.discover.headers.majors"), sortable: !!isSearchMode },
-    { field: "courseCode", label: t("document.discover.headers.courses"), sortable: !!isSearchMode },
-    { field: "courseLevel", label: t("document.discover.headers.level"), sortable: !!isSearchMode },
-    { field: "category", label: t("document.discover.headers.categories"), sortable: !!isSearchMode },
+    { field: "majors", label: t("document.discover.headers.majors"), sortable: false },
+    { field: "courseCodes", label: t("document.discover.headers.courses"), sortable: false },
+    { field: "courseLevel", label: t("document.discover.headers.level"), sortable: false },
+    { field: "categories", label: t("document.discover.headers.categories"), sortable: false },
     { field: "tags", label: t("document.discover.headers.tags"), sortable: false },
     // Only show matches column in search mode
     ...(isSearchMode ? [{ field: "highlights", label: t("document.discover.headers.matches"), sortable: false }] : []),
@@ -129,11 +129,11 @@ export const DocumentList = () => {
   // Initial fetch
   useEffect(() => {
     if (
-      searchTerm ||
-      !selectedMajors.includes("all") ||
-      !selectedCourseCodes.includes("all") ||
-      selectedLevel !== "all" ||
-      !selectedCategories.includes("all") ||
+      searchTerm !== "" ||
+      selectedMajors.length > 0 ||
+      selectedCourseCodes.length > 0 ||
+      selectedCategories.length > 0 ||
+      selectedLevel !== "" ||
       selectedTags.length > 0 ||
       favoriteOnly
     ) {
@@ -145,18 +145,18 @@ export const DocumentList = () => {
 
   const handleSearch = () => {
     if (
-      !searchTerm.trim() &&
-      selectedMajors.includes("all") &&
-      selectedCourseCodes.includes("all") &&
-      selectedLevel === "all" &&
-      selectedCategories.includes("all") &&
-      selectedTags.length === 0 &&
-      !favoriteOnly
+      searchTerm !== "" ||
+      selectedMajors.length > 0 ||
+      selectedCourseCodes.length > 0 ||
+      selectedCategories.length > 0 ||
+      selectedLevel !== "" ||
+      selectedTags.length > 0 ||
+      favoriteOnly
     ) {
-      dispatch(fetchRecommendedDocuments());
-    } else {
       dispatch(setPage(0));
       dispatch(fetchSearchDocuments());
+    } else {
+      dispatch(fetchRecommendedDocuments());
     }
   };
 
@@ -164,7 +164,7 @@ export const DocumentList = () => {
     dispatch(setPageSize(parseInt(newSize)));
     dispatch(setPage(0)); // Reset to first page when changing page size
     if (isSearchMode) {
-      dispatch(fetchSearchDocuments());
+      // dispatch(fetchSearchDocuments());
     } else {
       dispatch(fetchRecommendedDocuments());
     }
@@ -250,8 +250,13 @@ export const DocumentList = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("document.discover.title")}</CardTitle>
-        <CardDescription>{t("document.discover.description")}</CardDescription>
+        <div className="flex items-center gap-2">
+          <BookOpen className="h-5 w-5" />
+          <div>
+            <CardTitle className="flex items-center gap-2">{t("document.discover.title")}</CardTitle>
+            <CardDescription>{t("document.discover.description")}</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -289,7 +294,7 @@ export const DocumentList = () => {
             {/* Filter and Reset Buttons */}
             <div className="flex gap-2">
               {/* Favorite Button */}
-              {!currentUser.roles.includes("ROLE_ADMIN") && (
+              {!currentUser?.roles.includes("ROLE_ADMIN") && (
                 <Button
                   variant={favoriteOnly ? "default" : "outline"}
                   onClick={handleToggleFavorites}
@@ -368,13 +373,23 @@ export const DocumentList = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.majors")}:</span>
                           <span className="text-sm">
-                            <MultiValueDisplay value={doc.majors} className="line-clamp-1" />
+                            <MultiValueDisplay
+                              value={doc.majors}
+                              type={MasterDataType.MAJOR}
+                              masterData={{ majors }}
+                              className="line-clamp-1"
+                            />
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.courses")}:</span>
                           <span className="text-sm">
-                            <MultiValueDisplay value={doc.courseCodes} className="line-clamp-1" />
+                            <MultiValueDisplay
+                              value={doc.courseCodes}
+                              type={MasterDataType.COURSE_CODE}
+                              masterData={{ courseCodes }}
+                              className="line-clamp-1"
+                            />
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
@@ -386,7 +401,12 @@ export const DocumentList = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">{t("document.discover.headers.categories")}:</span>
                           <span className="text-sm">
-                            <MultiValueDisplay value={doc.categories} className="line-clamp-1" />
+                            <MultiValueDisplay
+                              value={doc.categories}
+                              type={MasterDataType.DOCUMENT_CATEGORY}
+                              masterData={{ categories }}
+                              className="line-clamp-1"
+                            />{" "}
                           </span>
                         </div>
                         {doc.highlights && doc.highlights.length > 0 && (
@@ -398,9 +418,11 @@ export const DocumentList = () => {
                           <Button variant="outline" size="sm" onClick={() => handlePreview(doc)}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDownload(doc.id, doc.filename)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          {doc.status !== DocumentStatus.PROCESSING && (
+                            <Button variant="outline" size="sm" onClick={() => handleDownload(doc.id, doc.filename)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -451,7 +473,12 @@ export const DocumentList = () => {
                             />
                           </TableCell>
                           <TableCell className="truncate">
-                            <MultiValueDisplay value={doc.courseCodes} className="line-clamp-1" />
+                            <MultiValueDisplay
+                              value={doc.courseCodes}
+                              type={MasterDataType.COURSE_CODE}
+                              masterData={{ courseCodes }}
+                              className="line-clamp-1"
+                            />
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             {getMasterDataTranslation(doc.courseLevel, MasterDataType.COURSE_LEVEL, { levels })}
@@ -480,6 +507,8 @@ export const DocumentList = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <DocumentListActions
+                              isAdmin={currentUser?.roles.includes("ROLE_ADMIN")}
+                              documentStatus={doc.status}
                               onDownload={() => handleDownload(doc.id, doc.filename)}
                               onShowPreview={() => handlePreview(doc)}
                             />

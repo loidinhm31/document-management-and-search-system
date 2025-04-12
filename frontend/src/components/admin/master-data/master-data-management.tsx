@@ -1,4 +1,4 @@
-import { Loader2, Plus, Search } from "lucide-react";
+import { Database, Loader2, Plus, Search } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -15,7 +15,7 @@ import { masterDataService } from "@/services/master-data.service";
 import { MasterData, MasterDataType } from "@/types/master-data";
 
 export default function MasterDataManagement() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,7 +59,7 @@ export default function MasterDataManagement() {
       console.info("Error loading parent options:", error);
       toast({
         title: t("common.error"),
-        description: t("masterData.fetchError"),
+        description: t("admin.masterData.fetchError"),
         variant: "destructive",
       });
     } finally {
@@ -79,10 +79,10 @@ export default function MasterDataManagement() {
         response = await masterDataService.getAllByType(selectedType);
       }
       setMasterData(response.data);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
-        description: t("masterData.fetchError"),
+        description: t("admin.masterData.fetchError"),
         variant: "destructive",
       });
     } finally {
@@ -114,7 +114,7 @@ export default function MasterDataManagement() {
       } else {
         fetchMasterData();
       }
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.masterData.searchError"),
@@ -163,7 +163,7 @@ export default function MasterDataManagement() {
       const updatedItem = { ...item, active: !item.active };
       await masterDataService.save(updatedItem);
       fetchMasterData();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.masterData.updateError"),
@@ -182,8 +182,13 @@ export default function MasterDataManagement() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("admin.masterData.title")}</CardTitle>
-        <CardDescription>{t("admin.masterData.description")}</CardDescription>
+        <div className="flex items-center gap-2">
+          <Database className="h-5 w-5" />
+          <div>
+            <CardTitle>{t("admin.masterData.title")}</CardTitle>
+            <CardDescription>{t("admin.masterData.description")}</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
@@ -212,7 +217,7 @@ export default function MasterDataManagement() {
                   <SelectItem value="all">{t("admin.masterData.allParents")}</SelectItem>
                   {parentOptions.map((parent) => (
                     <SelectItem key={parent.id} value={parent.id}>
-                      {parent.translations.en})
+                      {parent.translations[i18n.language] || parent.translations.en}
                     </SelectItem>
                   ))}
                 </SelectContent>

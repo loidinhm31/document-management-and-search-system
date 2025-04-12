@@ -12,6 +12,7 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentNoteService } from "@/services/document-note.service";
 import { NoteResponse } from "@/types/document-note";
+import { formatDateMoment } from "@/lib/utils";
 
 interface DocumentNoteListProps {
   documentId: string;
@@ -36,7 +37,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
     try {
       const response = await documentNoteService.getAllNotes(documentId);
       setNotes(response.data);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.notes.fetchError"),
@@ -78,10 +79,6 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
     checkMentorNoteStatus();
   };
 
-  const formatDate = (dateString: string) => {
-    return moment(dateString).format("DD/MM/YYYY, h:mm a");
-  };
-
   const renderSkeleton = () => (
     <div className="space-y-4">
       <Skeleton className="h-20 w-full" />
@@ -91,6 +88,8 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
 
   const renderNoteItem = (note: NoteResponse) => {
     const isCurrentUserNote = currentUser?.userId === note?.mentorId;
+    // Determine which date to display
+    const displayDate = note.edited && note.updatedAt ? note.updatedAt.toString() : note.createdAt.toString();
 
     return (
       <Card key={note.id} className="mb-4">
@@ -111,7 +110,7 @@ export function DocumentNoteList({ documentId }: DocumentNoteListProps) {
             )}
           </div>
           <CardDescription className="text-xs">
-            {formatDate(note.createdAt)}
+            {formatDateMoment(displayDate)}
             {note.edited && <span className="ml-2 italic">({t("document.comments.edited")})</span>}
           </CardDescription>
         </CardHeader>

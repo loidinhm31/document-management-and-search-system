@@ -1,0 +1,61 @@
+flowchart TD
+    Client[Client] --> |Create Comment Request| DCC[DocumentCommentController]
+    DCC --> |Validate User| UC[UserClient]
+    UC --> |User Info| DCC
+    DCC --> |Process Comment| DCS[DocumentCommentService]
+
+    subgraph DocumentCommentService
+        validateAccess[Validate Document Access]
+        createComment[Create Comment]
+        saveComment[Save Comment]
+        notifyOwner[Notify Document Favoriters]
+        recordInteraction[Record Interaction]
+    end
+
+    DCS --> validateAccess
+    validateAccess --> |Check Access| DR[DocumentRepository]
+    DR --> |Document Info| validateAccess
+    validateAccess --> createComment
+    createComment --> saveComment
+    saveComment --> |Save| DCR[DocumentCommentRepository]
+    DCR --> |Save| PostgreSQL[(PostgreSQL)]
+    saveComment --> |Async| notifyOwner
+    saveComment --> |Async| recordInteraction
+
+    notifyOwner --> |Check if New Commenter| DCR
+    notifyOwner --> |Send Notification| DNS[DocumentNotificationService]
+    DNS --> |Publish Event| PES[PublishEventService]
+    PES --> |Produce| RMQ[RabbitMQ]
+
+    recordInteraction --> |Record| DPS[DocumentPreferencesService]
+    recordInteraction --> |Save History| DUHR[DocumentUserHistoryRepository]
+    DPS --> |Update Preferences| DPR[DocumentPreferencesRepository]
+    DPR --> MongoDB[(MongoDB)]
+
+    DUHR --> MongoDB
+
+    Client --> |Report Comment Request| DCC
+    DCC --> |Process Report| CRS[CommentReportService]
+
+    subgraph CommentReportService
+        validateReport[Validate Report]
+        createReport[Create Report]
+        saveReport[Save Report]
+    end
+
+    CRS --> validateReport
+    validateReport --> |Get Comment| DCR
+    validateReport --> |Get Report Type| MDR[MasterDataRepository]
+
+
+    MDR --> |Report Type| validateReport
+
+
+    validateReport --> createReport
+    createReport --> saveReport
+    saveReport --> |Save| CRR[CommentReportRepository]
+    CRR --> PostgreSQL
+
+    DCS --> |Comment Response| DCC
+    DCC --> |Response| Client
+    CRS --> |Report Response| DCC
