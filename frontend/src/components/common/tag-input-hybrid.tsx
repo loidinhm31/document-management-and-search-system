@@ -23,7 +23,7 @@ const TagInputHybrid = ({
   onChange,
   recommendedTags = [],
   onSearch,
-  placeholder = "Enter tags...",
+  placeholder = "Enter or select tags...",
   disabled = false,
   error = false,
   className = "",

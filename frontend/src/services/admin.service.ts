@@ -3,20 +3,12 @@ import i18next from "i18next";
 import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { User } from "@/types/auth";
-import { GetUsersParams, PageResponse, Role, UpdateStatusRequest, UserData } from "@/types/user";
+import { GetUsersRequest, PageResponse, Role, UpdateStatusRequest, UserData } from "@/types/user";
 
 class AdminService extends BaseService {
-  getAllUsers(params: GetUsersParams = {}) {
+  getAllUsers(usersRequest: GetUsersRequest = {}) {
     return this.handleApiResponse<PageResponse<User>>(
-      axiosInstance.get("/auth/api/v1/admin/users", {
-        params: {
-          search: params.search,
-          enabled: params.enabled,
-          role: params.role,
-          page: params.page || 0,
-          size: params.size || 10,
-        },
-      }),
+      axiosInstance.post("/auth/api/v1/admin/users", usersRequest),
     );
   }
 
@@ -40,23 +32,6 @@ class AdminService extends BaseService {
       successMessage: i18next.t("admin.users.actions.updateAccount.success"),
       errorMessage: i18next.t("admin.users.actions.updateAccount.error"),
     });
-  }
-
-  getStats() {
-    return this.handleApiResponse(axiosInstance.get("/auth/api/v1/admin/stats"));
-  }
-
-  getAuditLogs(
-    params: {
-      username?: string;
-      action?: string;
-      fromDate?: string;
-      toDate?: string;
-      page?: number;
-      size?: number;
-    } = {},
-  ) {
-    return this.handleApiResponse(axiosInstance.get("/auth/api/v1/admin/audit-logs", { params }));
   }
 }
 

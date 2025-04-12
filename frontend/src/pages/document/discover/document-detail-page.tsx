@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { MdOutlineFavorite, MdOutlineFavoriteBorder } from "react-icons/md";
 import { useNavigate, useParams } from "react-router-dom";
 
+import MultiValueDisplay from "@/components/common/multi-value-display";
 import { CommentSection } from "@/components/document/discover/comment/comment-section";
 import DocumentStats from "@/components/document/discover/document-stats";
 import { DocumentNoteList } from "@/components/document/discover/note/document-note-list";
@@ -18,14 +19,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
-import { getMasterDataTranslation } from "@/lib/utils";
+import { formatDate, getDescriptionType, getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
 import { fetchMasterData, selectMasterData } from "@/store/slices/master-data-slice";
-import { DocumentInformation } from "@/types/document";
+import { DocumentInformation, DocumentStatus, VIEWED_DOCUMENTS_KEY } from "@/types/document";
 import { MasterDataType } from "@/types/master-data";
-import MultiValueDisplay from "@/components/common/multi-value-display";
 
 export default function DocumentDetailPage() {
   const { t } = useTranslation();
@@ -47,10 +47,20 @@ export default function DocumentDetailPage() {
 
   const { majors, courseCodes, levels, categories, loading: masterDataLoading } = useAppSelector(selectMasterData);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+  // Function to check if the document has been viewed in this session
+  const checkIfDocumentViewed = (docId: string): boolean => {
+    const viewedDocuments = JSON.parse(sessionStorage.getItem(VIEWED_DOCUMENTS_KEY) || "[]");
+    return viewedDocuments.includes(docId);
   };
 
+  // Function to mark document as viewed in this session
+  const markDocumentAsViewed = (docId: string): void => {
+    const viewedDocuments = JSON.parse(sessionStorage.getItem(VIEWED_DOCUMENTS_KEY) || "[]");
+    if (!viewedDocuments.includes(docId)) {
+      viewedDocuments.push(docId);
+      sessionStorage.setItem(VIEWED_DOCUMENTS_KEY, JSON.stringify(viewedDocuments));
+    }
+  };
 
   const handleFavorite = async () => {
     if (!documentId) return;
@@ -97,7 +107,9 @@ export default function DocumentDetailPage() {
       if (!documentId) return;
 
       try {
-        const docResponse = await documentService.getDocumentDetails(documentId, true);
+        // Get document details (with a parameter to track view or not)
+        const isFirstView = !checkIfDocumentViewed(documentId);
+        const docResponse = await documentService.getDocumentDetails(documentId, isFirstView);
         setDocumentData(docResponse.data);
         dispatch(setCurrentDocument(docResponse.data));
 
@@ -108,12 +120,21 @@ export default function DocumentDetailPage() {
         documentService.getDocumentStatistics(documentId).then((statisticsResponse) => {
           setStatistics(statisticsResponse.data);
         });
-      } catch (_error) {
+
+        if (isFirstView) {
+          // Mark this document as viewed in this session
+          markDocumentAsViewed(documentId);
+        }
+      } catch (error: any) {
         toast({
           title: t("common.error"),
           description: t("document.detail.fetchError"),
           variant: "destructive",
         });
+
+        if (error.response?.status === 400) {
+          navigate("/");
+        }
       } finally {
         setLoading(false);
       }
@@ -126,6 +147,13 @@ export default function DocumentDetailPage() {
     };
   }, [documentId]);
 
+  const handleDownloadSuccess = async () => {
+    const statisticsResponse = await documentService.getDocumentStatistics(documentId);
+    setStatistics(statisticsResponse.data);
+  };
+
+  const isMentor = currentUser?.roles.includes("ROLE_MENTOR");
+
   if (loading || masterDataLoading) {
     return (
       <div className="flex h-[400px] items-center justify-center">
@@ -135,13 +163,6 @@ export default function DocumentDetailPage() {
   }
 
   if (!documentData) return null;
-
-  const handleDownloadSuccess = async () => {
-    const statisticsResponse = await documentService.getDocumentStatistics(documentId);
-    setStatistics(statisticsResponse.data);
-  };
-
-  const isMentor = currentUser?.roles.includes("ROLE_MENTOR");
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -158,7 +179,7 @@ export default function DocumentDetailPage() {
             <CardHeader>
               <CardTitle>{documentData?.filename}</CardTitle>
               <CardDescription>
-                {documentData?.documentType} - {(documentData?.fileSize / 1024).toFixed(3)} KB
+                {getDescriptionType(documentData?.documentType)} - {(documentData?.fileSize / 1024).toFixed(3)} KB
               </CardDescription>
             </CardHeader>
             <CardContent className="h-full max-h-[770px]">
@@ -170,6 +191,7 @@ export default function DocumentDetailPage() {
                   fileName={documentData.filename}
                   history={true}
                   onDownloadSuccess={handleDownloadSuccess}
+                  documentStatus={documentData.status === DocumentStatus.PROCESSING ? documentData.status : null}
                 />
               )}
             </CardContent>
@@ -230,7 +252,7 @@ export default function DocumentDetailPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Languages className="h-4 w-4" />
-                    {documentData.language}
+                    {documentData.language ? documentData.language : t("common.noLang")}
                   </div>
                 </div>
 
@@ -247,17 +269,17 @@ export default function DocumentDetailPage() {
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.majors")}</Label>
                       <MultiValueDisplay
-                        value={documentData.majors || documentData.major}
+                        value={documentData.majors}
                         type={MasterDataType.MAJOR}
                         masterData={{ majors }}
                       />
                     </div>
 
-                    {(documentData.courseCodes || documentData.courseCode) && (
+                    {documentData.courseCodes && (
                       <div className="space-y-2">
                         <Label>{t("document.detail.fields.courseCodes")}</Label>
                         <MultiValueDisplay
-                          value={documentData.courseCodes || documentData.courseCode}
+                          value={documentData.courseCodes}
                           type={MasterDataType.COURSE_CODE}
                           masterData={{ courseCodes }}
                         />
@@ -275,7 +297,7 @@ export default function DocumentDetailPage() {
                   <div className="space-y-2">
                     <Label>{t("document.detail.fields.categories")}</Label>
                     <MultiValueDisplay
-                      value={documentData.categories || documentData.category}
+                      value={documentData.categories}
                       type={MasterDataType.DOCUMENT_CATEGORY}
                       masterData={{ categories }}
                     />
@@ -310,7 +332,9 @@ export default function DocumentDetailPage() {
         </div>
 
         {/* Related Documents Section */}
-        <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
+        {!currentUser?.roles.includes("ROLE_ADMIN") && (
+          <RelatedDocuments documentId={documentId} onDocumentClick={(doc) => navigate(`/discover/${doc.id}`)} />
+        )}
 
         {/* Mentor Notes Section */}
         <DocumentNoteList documentId={documentId} />

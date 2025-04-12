@@ -16,19 +16,23 @@ import { UnsupportedViewer } from "@/components/document/viewers/unsupported-vie
 import { WordViewer } from "@/components/document/viewers/word-viewer";
 import { XmlViewer } from "@/components/document/viewers/xml-viewer";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { DocumentType } from "@/types/document";
+import { DocumentStatus, DocumentType } from "@/types/document";
 
 interface DocumentViewerProps {
   documentId: string;
+  documentStatus?: DocumentStatus;
   mimeType: string;
   documentType: DocumentType;
   fileName: string;
   versionNumber?: number;
-  fileChange?: boolean;
   history?: boolean;
   onDownloadSuccess?: () => void;
+  fileChange?: boolean;
+  setFileChange?: (fileChange: boolean) => void;
+  bypass?: boolean;
 }
 
 export interface ExcelSheet {
@@ -38,17 +42,21 @@ export interface ExcelSheet {
 
 export const DocumentViewer = ({
   documentId,
+  documentStatus,
   mimeType,
   documentType,
   fileName,
   versionNumber,
-  fileChange,
   history = false,
   onDownloadSuccess,
+  fileChange,
+  setFileChange,
+  bypass,
 }: DocumentViewerProps) => {
   const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [wordContent, setWordContent] = useState<string | null>(null);
@@ -58,35 +66,53 @@ export const DocumentViewer = ({
   const [powerPointContent, setPowerPointContent] = useState<string[]>([]);
   const [activeSheet, setActiveSheet] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const { currentUser } = useAuth();
   const { toast } = useToast();
 
+  const isAdmin = currentUser?.roles.includes("ROLE_ADMIN");
+
+  // Load document content when component mounts or when documentId changes
   useEffect(() => {
-    loadDocument();
+    loadDocumentFileContent();
+
     return () => {
       // Cleanup URL object on unmount
       if (fileUrl) {
         URL.revokeObjectURL(fileUrl);
       }
     };
-  }, [documentId, mimeType, documentType]);
+  }, [documentId, mimeType]);
 
   useEffect(() => {
     if (fileChange) {
-      loadDocument();
+      loadDocumentFileContent().then(() => setFileChange(false));
     }
-  }, [fileChange]);
+  }, [fileChange, documentType]);
 
-  const loadDocument = async () => {
+  useEffect(() => {
+    if (documentStatus === DocumentStatus.FAILED) {
+      setMessage(t("document.viewer.error.processFailStatus"));
+    } else if (documentStatus === DocumentStatus.PROCESSING) {
+      setMessage(t("document.viewer.error.processingStatus"));
+    }
+  }, [documentStatus]);
+
+  const loadDocumentFileContent = async () => {
     setLoading(true);
+    setDataLoaded(false);
     setError(null);
 
     try {
+      // Fetch document based on whether it's a version or not
       const response =
         versionNumber !== undefined
           ? await documentService.downloadDocumentVersion({ documentId, versionNumber })
           : await documentService.downloadDocument({ id: documentId });
+
       const blob = new Blob([response.data], { type: mimeType });
 
+      // Process different document types
       switch (documentType) {
         case DocumentType.PDF: {
           const url = URL.createObjectURL(blob);
@@ -128,7 +154,7 @@ export const DocumentViewer = ({
 
         case DocumentType.CSV: {
           const text = await blob.text();
-          Papa.parse(text, {
+          Papa.parse<Array<unknown>>(text, {
             complete: (results) => {
               // Transform and type the data properly
               const typedData = results.data.map((row) =>
@@ -138,16 +164,18 @@ export const DocumentViewer = ({
                   if (typeof cell === "boolean") return cell;
                   return String(cell);
                 }),
-              ) as Array<Array<string | number | boolean | Date>>;
+              ) as Array<Array<string | number | boolean | Date | null>>;
               setCsvContent(typedData);
             },
-            error: (error) => {
+            error: (error: Error) => {
               console.info("Error parsing CSV:", error);
               setError("Failed to parse CSV file");
             },
             delimiter: ",", // auto-detect delimiter
             dynamicTyping: true, // convert numbers and booleans
             skipEmptyLines: true,
+            worker: false,
+            download: false,
           });
           break;
         }
@@ -183,24 +211,9 @@ export const DocumentViewer = ({
           break;
         }
 
-        case DocumentType.TEXT_PLAIN: {
-          const text = await blob.text();
-          setTextContent(text);
-          break;
-        }
-
-        case DocumentType.JSON: {
-          const text = await blob.text();
-          setTextContent(text);
-          break;
-        }
-
-        case DocumentType.XML: {
-          const text = await blob.text();
-          setTextContent(text);
-          break;
-        }
-
+        case DocumentType.TEXT_PLAIN:
+        case DocumentType.JSON:
+        case DocumentType.XML:
         case DocumentType.MARKDOWN: {
           const text = await blob.text();
           setTextContent(text);
@@ -212,6 +225,9 @@ export const DocumentViewer = ({
           break;
         }
       }
+
+      // Mark data as loaded only after all processing is complete
+      setDataLoaded(true);
     } catch (err) {
       console.info("Error loading document:", err);
       setError(t("document.viewer.error.loading"));
@@ -237,6 +253,7 @@ export const DocumentViewer = ({
               history: history,
             })
           : await documentService.downloadDocument({ id: documentId, action: "download", history: history });
+
       const blob = new Blob([response.data], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -248,9 +265,11 @@ export const DocumentViewer = ({
       URL.revokeObjectURL(url);
 
       // Tracking download
-      onDownloadSuccess?.();
+      if (onDownloadSuccess) {
+        onDownloadSuccess();
+      }
     } catch (error) {
-      console.info("err:", error);
+      console.info("Error downloading:", error);
       toast({
         title: t("document.viewer.error.title"),
         description: t("document.viewer.error.download"),
@@ -261,6 +280,7 @@ export const DocumentViewer = ({
     }
   };
 
+  // Show loading indicator while data is being loaded
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -270,132 +290,158 @@ export const DocumentViewer = ({
     );
   }
 
-  if (error) {
+  // Show error message if loading failed
+  if (
+    error ||
+    (documentStatus &&
+      !bypass &&
+      (documentStatus === DocumentStatus.FAILED || documentStatus === DocumentStatus.PROCESSING))
+  ) {
     return (
       <div className="flex flex-col items-center h-full gap-4">
-        <p className="text-destructive">{error}</p>
-        <Button onClick={handleDownload} variant="outline" disabled={isDownloading || loading}>
-          <Download className="h-4 w-4 mr-2" />
-          {!isDownloading ? t("document.viewer.buttons.downloadInstead") : t("document.viewer.buttons.downloading")}
-        </Button>
+        {error && <p className="text-destructive">{error}</p>}
+        {message && <p className="text-destructive">{message}</p>}
+        {!isAdmin && documentStatus !== DocumentStatus.PROCESSING && (
+          <Button onClick={handleDownload} variant="outline" disabled={isDownloading || loading}>
+            <Download className="h-4 w-4 mr-2" />
+            {!isDownloading ? t("document.viewer.buttons.downloadInstead") : t("document.viewer.buttons.downloading")}
+          </Button>
+        )}
       </div>
     );
   }
 
+  // Only render the viewer when data is loaded
+  if (!dataLoaded) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">{t("document.viewer.loading")}</span>
+      </div>
+    );
+  }
+
+  // Render the appropriate viewer based on document type
   switch (documentType) {
     case DocumentType.PDF:
-      return (
-        fileUrl && (
-          <PDFViewer fileUrl={fileUrl} onDownload={handleDownload} isDownloading={isDownloading} loading={loading} />
-        )
-      );
+      return fileUrl ? (
+        <PDFViewer
+          isAdmin={isAdmin}
+          documentStatus={documentStatus}
+          fileUrl={fileUrl}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      ) : null;
 
     case DocumentType.WORD:
     case DocumentType.WORD_DOCX:
-      return (
-        wordContent && (
-          <WordViewer
-            content={wordContent}
-            onDownload={handleDownload}
-            isDownloading={isDownloading}
-            loading={loading}
-          />
-        )
-      );
+      return wordContent ? (
+        <WordViewer
+          isAdmin={isAdmin}
+          documentStatus={documentStatus}
+          content={wordContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      ) : null;
 
     case DocumentType.EXCEL:
     case DocumentType.EXCEL_XLSX:
-      return (
-        excelContent.length > 0 && (
-          <SpreadsheetViewer
-            sheets={excelContent}
-            activeSheet={activeSheet}
-            onSheetChange={setActiveSheet}
-            onDownload={handleDownload}
-            isDownloading={isDownloading}
-            loading={loading}
-          />
-        )
-      );
+      return excelContent.length > 0 ? (
+        <SpreadsheetViewer
+          isAdmin={isAdmin}
+          documentStatus={documentStatus}
+          sheets={excelContent}
+          activeSheet={activeSheet}
+          onSheetChange={setActiveSheet}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      ) : null;
 
     case DocumentType.CSV:
-      return (
-        csvContent.length > 0 && (
-          <SpreadsheetViewer
-            sheets={[{ name: "Sheet1", data: csvContent }]}
-            activeSheet={0}
-            onSheetChange={() => {}}
-            onDownload={handleDownload}
-            isDownloading={isDownloading}
-            loading={loading}
-          />
-        )
-      );
+      return csvContent.length > 0 ? (
+        <SpreadsheetViewer
+          isAdmin={isAdmin}
+          documentStatus={documentStatus}
+          sheets={[{ name: "Sheet1", data: csvContent }]}
+          activeSheet={0}
+          onSheetChange={() => {}}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      ) : null;
 
     case DocumentType.POWERPOINT:
     case DocumentType.POWERPOINT_PPTX:
-      return (
-        powerPointContent.length > 0 && (
-          <PowerPointViewer
-            content={powerPointContent}
-            onDownload={handleDownload}
-            isDownloading={isDownloading}
-            loading={loading}
-          />
-        )
-      );
+      return powerPointContent.length > 0 ? (
+        <PowerPointViewer
+          isAdmin={isAdmin}
+          documentStatus={documentStatus}
+          content={powerPointContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      ) : null;
 
     case DocumentType.TEXT_PLAIN:
-      return (
-        textContent && (
-          <TextViewer
-            content={textContent}
-            onDownload={handleDownload}
-            isDownloading={isDownloading}
-            loading={loading}
-          />
-        )
-      );
+      return textContent ? (
+        <TextViewer
+          isAdmin={isAdmin}
+          documentStatus={documentStatus}
+          content={textContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      ) : null;
 
     case DocumentType.JSON:
-      return (
-        textContent && (
-          <JsonViewer
-            content={textContent}
-            onDownload={handleDownload}
-            isDownloading={isDownloading}
-            loading={loading}
-          />
-        )
-      );
+      return textContent ? (
+        <JsonViewer
+          isAdmin={isAdmin}
+          documentStatus={documentStatus}
+          content={textContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      ) : null;
 
     case DocumentType.XML:
-      return (
-        textContent && (
-          <XmlViewer
-            content={textContent}
-            onDownload={handleDownload}
-            isDownloading={isDownloading}
-            loading={loading}
-          />
-        )
-      );
+      return textContent ? (
+        <XmlViewer
+          isAdmin={isAdmin}
+          documentStatus={documentStatus}
+          content={textContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      ) : null;
 
     case DocumentType.MARKDOWN:
-      return (
-        textContent && (
-          <MarkdownViewer
-            content={textContent}
-            onDownload={handleDownload}
-            isDownloading={isDownloading}
-            loading={loading}
-          />
-        )
-      );
+      return textContent ? (
+        <MarkdownViewer
+          isAdmin={isAdmin}
+          documentStatus={documentStatus}
+          content={textContent}
+          onDownload={handleDownload}
+          isDownloading={isDownloading}
+          loading={loading}
+        />
+      ) : null;
 
     default:
       return (
         <UnsupportedViewer
+          isAdmin={isAdmin}
           documentType={documentType}
           onDownload={handleDownload}
           isDownloading={isDownloading}

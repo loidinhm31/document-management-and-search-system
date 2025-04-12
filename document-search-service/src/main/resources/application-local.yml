@@ -37,6 +37,6 @@ opensearch:
   host: localhost
   port: 9200
   username: admin
-  password: 27H4Gwxb24XGsARfuh3b
+  password: 27H4Gwxb24XGsARfuh3b#
   scheme: http
   aws: false

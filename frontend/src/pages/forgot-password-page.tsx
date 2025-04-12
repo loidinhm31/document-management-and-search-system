@@ -1,28 +1,23 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import * as z from "zod";
 
 import LanguageSwitcher from "@/components/common/language-switcher";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { createForgotPasswordSchema, ForgotPasswordFormValues } from "@/schemas/forgot-password-schema";
 import { authService } from "@/services/auth.service";
 
-const forgotPasswordSchema = z.object({
-  email: z.string().email("Invalid email address"),
-});
-
-type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
-
 export default function ForgotPasswordPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { token } = useAuth();
   const { toast } = useToast();
@@ -30,11 +25,22 @@ export default function ForgotPasswordPage() {
 
   // Initialize form with react-hook-form and zod validation
   const form = useForm<ForgotPasswordFormValues>({
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: zodResolver(createForgotPasswordSchema(t)),
+    mode: "onBlur",
     defaultValues: {
       email: "",
     },
   });
+
+  useEffect(() => {
+    // Get fields that have been touched by the user
+    const touchedFields = Object.keys(form.formState.touchedFields);
+
+    // Only trigger validation for fields the user has interacted with
+    if (touchedFields.length > 0) {
+      form.trigger(touchedFields as any);
+    }
+  }, [i18n.language]);
 
   // Handle form submission
   const onSubmit = async (data: ForgotPasswordFormValues) => {
@@ -48,7 +54,7 @@ export default function ForgotPasswordPage() {
       });
       form.reset();
       navigate("/login");
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("auth.forgotPassword.error"),
@@ -67,8 +73,9 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
+      <div className="absolute right-4 top-4 flex items-center gap-2">
         <LanguageSwitcher />
+        <ThemeToggle />
       </div>
 
       <Card className="w-full max-w-md">

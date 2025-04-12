@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    User->>Frontend: Navigate to document detail page
+    Frontend->>DIS: GET /api/v1/documents/{id}
+    DIS->>DB: getDocumentById<br>(documentId, userId)
+    DB-->>DIS: documentDetails
+    DIS-->>Frontend: 200 OK {document}
+    Frontend-->>User: Display document details
+
+    User->>Frontend: Navigate to comments section
+    Frontend->>DIS: GET /api/v1/documents/{id}/comments<br>?page=1&size=10
+    DIS->>DB: getDocumentComments<br>(documentId, page, size)
+    DB-->>DIS: {comments, totalPages, totalElements}
+
+    Note left of DB: Comments sorted by timestamp<br>newest first with pagination
+
+    DIS-->>Frontend: 200 OK {comments, pagination}
+    Frontend-->>User: Display comments list with:<br>- Commenter names<br>- Content<br>- Timestamps<br>- Reply threads

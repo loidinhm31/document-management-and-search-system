@@ -1,40 +1,29 @@
 package com.dms.processor.service;
 
 import com.dms.processor.model.DocumentContent;
-import com.dms.processor.repository.DocumentContentRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.Optional;
 
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class DocumentContentService {
-    private final DocumentContentRepository documentContentRepository;
+public interface DocumentContentService {
 
-    public void saveVersionContent(String documentId, Integer versionNumber,
-                                   String content, Map<String, String> metadata) {
-        String contentId = generateContentId(documentId, versionNumber);
+    /**
+     * Saves content for a specific version of a document
+     *
+     * @param documentId Unique identifier of the document
+     * @param versionNumber Version number of the document
+     * @param content Content of the document
+     * @param metadata Additional metadata associated with the document
+     */
+    void saveVersionContent(String documentId, Integer versionNumber,
+                            String content, Map<String, String> metadata);
 
-        DocumentContent docContent = DocumentContent.builder()
-                .id(contentId)
-                .documentId(documentId)
-                .versionNumber(versionNumber)
-                .content(content.trim())
-                .extractedMetadata(metadata)
-                .build();
-
-        documentContentRepository.save(docContent);
-    }
-
-    public Optional<DocumentContent> getVersionContent(String documentId, Integer versionNumber) {
-        return documentContentRepository.findByDocumentIdAndVersionNumber(documentId, versionNumber);
-    }
-
-    private String generateContentId(String documentId, Integer versionNumber) {
-        return String.format("%s-v%d", documentId, versionNumber);
-    }
+    /**
+     * Retrieves content for a specific version of a document
+     *
+     * @param documentId Unique identifier of the document
+     * @param versionNumber Version number of the document
+     * @return Optional containing the document content if found, empty otherwise
+     */
+    Optional<DocumentContent> getVersionContent(String documentId, Integer versionNumber);
 }

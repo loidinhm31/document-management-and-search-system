@@ -1,6 +1,6 @@
-import { Label } from "@radix-ui/react-menu";
+import { Label } from "@radix-ui/react-label";
 import { Loader2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
-const TIMER_DURATION = 1; // 5 minutes in seconds
+const TIMER_DURATION = 5 * 60; // 5 minutes in seconds
 const MAX_ATTEMPTS = 5;
 const LOCK_DURATION = 1800; // 30 minutes in seconds
 
-export default function OtpVerificationForm({ onVerified, onResend }) {
+interface OtpVerificationResponse {
+  data?: {
+    verified: boolean;
+    locked: boolean;
+    otpCount: number;
+    expired: boolean;
+  };
+}
+
+interface OtpVerificationFormProps {
+  onVerified: (otp: string) => Promise<OtpVerificationResponse>;
+  onResend: () => Promise<void>;
+}
+
+export default function OtpVerificationForm({ onVerified, onResend }: OtpVerificationFormProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -21,10 +35,11 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
   const [isLockTimer, setIsLockTimer] = useState(false);
   const [lockTimer, setLockTimer] = useState(0);
   const [otpValue, setOtpValue] = useState("");
+  const [resending, setResending] = useState(false);
 
   // Timer countdown effect
   useEffect(() => {
-    let interval;
+    let interval: NodeJS.Timeout | undefined;
     if (timer > 0) {
       interval = setInterval(() => {
         setTimer((prev) => prev - 1);
@@ -35,7 +50,7 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
 
   // Lock timer countdown effect
   useEffect(() => {
-    let interval;
+    let interval: NodeJS.Timeout | undefined;
     if (lockTimer > 0) {
       interval = setInterval(() => {
         setLockTimer((prev) => prev - 1);
@@ -46,32 +61,52 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
     return () => clearInterval(interval);
   }, [lockTimer, isLocked]);
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
-  const handleResendOtp = async () => {
-    setIsLoading(true);
-    await onResend();
-    setTimer(TIMER_DURATION);
-    setIsLoading(false);
+  const handleResendOtp = async (): Promise<void> => {
+    setResending(true);
+    try {
+      await onResend();
+      setTimer(TIMER_DURATION);
+      toast({
+        title: t("common.success"),
+        description: t("auth.otp.resendSuccess"),
+        variant: "success",
+      });
+    } catch (error) {
+      toast({
+        title: t("common.error"),
+        description: t("auth.otp.resendError"),
+        variant: "destructive",
+      });
+    } finally {
+      setResending(false);
+    }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     if (isLockTimer || isLocked || !otpValue || otpValue.length !== 6) return;
 
     setIsLoading(true);
     const response = await onVerified(otpValue);
-    if (response.data) {
+    if (response?.data) {
       if (response.data.locked) {
-        console.log("kicj");
         setIsLocked(true);
         setOtpValue("");
       } else if (!response.data.verified) {
-        if (response.data.otpCount >= MAX_ATTEMPTS) {
+        if (response.data.expired) {
+          setOtpValue("");
+          toast({
+            title: t("common.error"),
+            description: t("auth.otp.otpExpired"),
+            variant: "destructive",
+          });
+        } else if (response.data.otpCount >= MAX_ATTEMPTS) {
           setIsLocked(true);
           setLockTimer(LOCK_DURATION);
           toast({
@@ -100,7 +135,7 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
     setIsLoading(false);
   };
 
-  const handleOtpChange = (e) => {
+  const handleOtpChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const value = e.target.value.replace(/[^\d]/g, "").slice(0, 6);
     setOtpValue(value);
   };
@@ -148,11 +183,18 @@ export default function OtpVerificationForm({ onVerified, onResend }) {
                 <Button
                   type="button"
                   variant="link"
-                  disabled={isLoading || timer > 0}
+                  disabled={resending || timer > 0}
                   onClick={handleResendOtp}
                   className="w-full"
                 >
-                  {t("auth.otp.resend")}
+                  {resending ? (
+                    <span className="flex items-center">
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t("auth.otp.resending")}
+                    </span>
+                  ) : (
+                    t("auth.otp.resend")
+                  )}
                 </Button>
               </>
             )}

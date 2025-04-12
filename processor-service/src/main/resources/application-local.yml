@@ -1,7 +1,5 @@
 app:
   base-url: http://localhost:3000
-  document:
-    max-size-threshold-mb: 25MB
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
@@ -10,9 +8,12 @@ app:
     temp-dir: /tmp/ocr
     dpi: 300
     image-type: RGB
+    large-size-threshold-mb: 8MB
   pdf:
     quality-threshold: 0.8
     min-text-density: 0.01
+    expected-min-chars-per-page: 250
+    minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
   email:
     batch-size: 50  # Number of emails per batch
 
@@ -46,7 +47,7 @@ spring:
     publisher-returns: true
 
   mail:
-    host: smtp.gmail.com
+    host:
     port: 587
     username:
     password:
@@ -58,7 +59,7 @@ spring:
             enable: true
 
 mail-sender:
-  from-email: no-reply@dms.com
+  from-email: service@dms-study.cloud
 
 opensearch:
   host: localhost
@@ -75,15 +76,15 @@ rabbitmq:
     notification: notification.exchange
     dlx: dead.letter.exchange
   queues:
-    document-process: document.process.queue
-    document-process-dlq: document.process.dlq
+    document-process: document-process.queue
+    document-process-dlq: document-process.dlq
     email-document: notification.email.document.queue
     email-document-dlq: notification.email.document.dlq
-    email-auth: notification.email.auth.queue
-    email-auth-dlq: notification.email.auth.dlq
+    email-auth: notification.email-auth.queue
+    email-auth-dlq: notification.email-auth.dlq
   routing-keys:
-    document-process: document.process.routing-key
-    email-auth: notification.email.auth.routing-key
+    document-process: document-process.routing-key
+    email-auth: notification.email-auth.routing-key
     dead-letter: dead.letter.routing-key
 
 aws:

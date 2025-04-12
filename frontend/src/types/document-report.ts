@@ -4,7 +4,7 @@ export const ReportStatusValues = {
   PENDING: "PENDING" as ReportStatus,
   RESOLVED: "RESOLVED" as ReportStatus,
   REJECTED: "REJECTED" as ReportStatus,
-  REMEDIATED: "REMEDIATED" as ReportStatus
+  REMEDIATED: "REMEDIATED" as ReportStatus,
 };
 
 export interface DocumentReport {
@@ -16,8 +16,7 @@ export interface DocumentReport {
   status: ReportStatus;
   processed: boolean;
   reportTypeTranslation?: {
-    en: string;
-    vi: string;
+    [key: string]: string;
   };
   description?: string;
   resolvedBy: string | null;
@@ -36,8 +35,7 @@ export interface ReportReason {
 export interface ReportType {
   code: string;
   translations: {
-    en: string;
-    vi: string;
+    [key: string]: string;
   };
   description?: string;
 }
@@ -53,7 +51,7 @@ export interface CommentReport {
   documentId: string;
   documentTitle: string;
   commentContent: string;
-  commentDate: string;
+  createdAt: Date;
   commentUsername: string;
   reportCount: number;
   status: ReportStatus;

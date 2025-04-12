@@ -2,7 +2,7 @@ import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { ReportStatus, ReportType } from "@/types/document-report";
 
-interface DocumentReportFilter {
+export interface DocumentReportFilter {
   documentTitle?: string;
   uploaderUsername?: string;
   fromDate?: Date;
@@ -13,12 +13,12 @@ interface DocumentReportFilter {
   size?: number;
 }
 
-interface CommentReportFilter {
+export interface CommentReportFilter {
   commentContent?: string;
   reportTypeCode?: string;
   fromDate?: Date;
   toDate?: Date;
-  resolved?: boolean;
+  status?: string;
   page?: number;
   size?: number;
 }
@@ -67,8 +67,8 @@ class ReportService extends BaseService {
     if (filters.toDate) params.append("toDate", filters.toDate.toISOString());
     if (filters.reportTypeCode && filters.reportTypeCode !== "all")
       params.append("reportTypeCode", filters.reportTypeCode);
-    if (filters.resolved !== null && filters.resolved !== undefined) {
-      params.append("resolved", filters.resolved.toString());
+    if (filters.status && filters.status !== "all") {
+      params.append("status", filters.status);
     }
 
     params.append("page", String(filters.page || 0));
@@ -80,11 +80,13 @@ class ReportService extends BaseService {
   }
 
   getCommentReportDetail(commentId: number, status: ReportStatus) {
-    return this.handleApiResponse(axiosInstance.get(`/document-interaction/api/v1/reports/comments/${commentId}`, {
-      params: {
-        status
-      }
-    }));
+    return this.handleApiResponse(
+      axiosInstance.get(`/document-interaction/api/v1/reports/comments/${commentId}`, {
+        params: {
+          status,
+        },
+      }),
+    );
   }
 
   resolveCommentReport(reportId: number, status: string) {

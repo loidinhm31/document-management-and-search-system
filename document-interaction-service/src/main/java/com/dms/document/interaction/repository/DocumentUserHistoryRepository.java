@@ -1,7 +1,7 @@
 package com.dms.document.interaction.repository;
 
-import com.dms.document.interaction.model.ActionCountResult;
 import com.dms.document.interaction.model.DocumentUserHistory;
+import com.dms.document.interaction.model.projection.ActionCountResult;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 

@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { TwoFactorForm } from "@/components/auth/two-factor-form";
+import LanguageSwitcher from "@/components/common/language-switcher";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { JwtPayload, TokenResponse } from "@/types/auth";
@@ -72,8 +74,14 @@ export default function OAuth2RedirectHandler() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <TwoFactorForm username={username} onSuccess={handle2FASuccess} />
+    <div className="flex min-h-screen items-center justify-center p-4 sm:p-8">
+      <div className="absolute right-4 top-4 flex items-center gap-2">
+        <LanguageSwitcher />
+        <ThemeToggle />
+      </div>
+      <div className="w-full max-w-md space-y-6">
+        <TwoFactorForm username={username} onSuccess={handle2FASuccess} />
+      </div>
     </div>
   );
 }

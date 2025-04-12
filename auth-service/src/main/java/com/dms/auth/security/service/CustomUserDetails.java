@@ -32,15 +32,19 @@ public class CustomUserDetails implements UserDetails {
 
     private boolean is2faEnabled;
 
+    private boolean accountNonLocked;
+
     private Collection<? extends GrantedAuthority> authorities;
 
     public CustomUserDetails(UUID id, String username, String email, String password,
-                             boolean is2faEnabled, Collection<? extends GrantedAuthority> authorities) {
+                             boolean is2faEnabled, boolean accountNonLocked,
+                             Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.password = password;
         this.is2faEnabled = is2faEnabled;
+        this.accountNonLocked = accountNonLocked;
         this.authorities = authorities;
     }
 
@@ -53,10 +57,10 @@ public class CustomUserDetails implements UserDetails {
                 user.getEmail(),
                 user.getPassword(),
                 user.isTwoFactorEnabled(),
-                List.of(authority) // Wrapping the single authority in a list
+                user.isAccountNonLocked(),
+                List.of(authority)
         );
     }
-
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -80,7 +84,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return accountNonLocked;
     }
 
     @Override
@@ -90,7 +94,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return true; // Enable for active verify OTP
     }
 
     public boolean is2faEnabled() {

@@ -1,0 +1,31 @@
+sequenceDiagram
+    actor User
+    participant Frontend
+    participant DIS as DocumentInteractionService
+    participant DB as Database
+
+    User->>Frontend: Click edit button on comment
+
+    Frontend->>DIS: GET /api/v1/comments/{commentId}/edit-permissions
+    DIS->>DB: checkCommentOwnership<br>(commentId, userId)
+    DB-->>DIS: isOwner
+
+    alt User is comment owner
+        DIS-->>Frontend: 200 OK {canEdit: true}
+        Frontend-->>User: Display edit form with current content
+
+        User->>Frontend: Modify comment content
+        User->>Frontend: Submit changes
+
+        Frontend->>DIS: PUT /api/v1/comments/{commentId}<br>{content: string}
+        DIS->>DB: updateCommentContent<br>(commentId, newContent)
+        DIS->>DB: markCommentAsEdited<br>(commentId)
+
+        DIS-->>Frontend: 200 OK {content, updatedAt, edited: true}
+        Frontend-->>User: Display updated comment with "edited" mark
+
+    %% No notifications are sent for comment edits
+    else User is not owner
+        DIS-->>Frontend: 403 Forbidden {canEdit: false}
+        Frontend-->>User: Hide edit option or show error
+    end

@@ -1,6 +1,6 @@
 app:
   eureka:
-    url: http://${EUREKA_URI:100.101.13.113}:8081
+    url: ${EUREKA_URI}
   auth-service:
     api-key: ${AUTH_SERVICE_API_KEY:document-search-api-key}
 
@@ -9,11 +9,15 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://${SERVICE_ENDPOINT_URL:100.101.13.113}:8082
-          jwk-set-uri: http://${SERVICE_ENDPOINT_URL:100.101.13.113}:8082/.well-known/jwks.json
+          issuer-uri: ${AUTH_SERVICE_ENDPOINT_URL}
+          jwk-set-uri: ${AUTH_SERVICE_ENDPOINT_URL}/.well-known/jwks.json
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_URL}/postgres?currentSchema=dms
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
   data:
     mongodb:
-      uri: mongodb://mongodb:mongodbpw@${RESOURCE_URL:100.104.245.71}:27017/dms?authSource=admin
+      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
 
 # Eureka Client
 eureka:
@@ -25,14 +29,14 @@ eureka:
     enabled: true
   instance:
     preferIpAddress: true
-    hostname: ${EUREKA_URI:100.101.13.113}
+    hostname: ${EUREKA_HOST}
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 20
 
 opensearch:
-  host: ${RESOURCE_URL:100.104.245.71}
-  port: 9200
-  username: admin
-  password: admin
-  scheme: http
-  aws: false
+  host: ${OPENSEARCH_URL}
+  port: 443
+  username: ${OPENSEARCH_USERNAME}
+  password: ${OPENSEARCH_PASSWORD}
+  scheme: https
+  aws: true

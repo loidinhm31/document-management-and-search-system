@@ -1,6 +1,6 @@
 package com.dms.auth.security.oauth2;
 
-import com.dms.auth.entity.RefreshToken;
+import com.dms.auth.entity.AuthToken;
 import com.dms.auth.entity.Role;
 import com.dms.auth.entity.User;
 import com.dms.auth.enums.AppRole;
@@ -8,7 +8,7 @@ import com.dms.auth.repository.RoleRepository;
 import com.dms.auth.repository.UserRepository;
 import com.dms.auth.security.jwt.JwtUtils;
 import com.dms.auth.security.service.CustomUserDetails;
-import com.dms.auth.service.impl.RefreshTokenService;
+import com.dms.auth.service.TokenService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,7 +38,7 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final RefreshTokenService refreshTokenService;
+    private final TokenService tokenService;
     private final JwtUtils jwtUtils;
 
     @Value("${app.frontend.url}")
@@ -98,9 +98,7 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
         newUser.setCreatedBy(username);
         newUser.setUpdatedBy(username);
         newUser.setEnabled(true);
-        newUser.setAccountNonExpired(true);
         newUser.setAccountNonLocked(true);
-        newUser.setCredentialsNonExpired(true);
         newUser.setCreatedAt(Instant.now());
         return newUser;
     }
@@ -158,8 +156,11 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
         Set<SimpleGrantedAuthority> authorities = getUpdatedAuthorities(oauth2User, user);
         String jwtToken = generateJwtToken(user, email, authorities);
 
+        // Save access token
+        tokenService.createAccessToken(user, jwtToken, request);
+
         // Generate refresh token
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user, request);
+        AuthToken refreshToken = tokenService.createRefreshToken(user, request);
 
         String targetUrl = buildRedirectUrl(jwtToken, refreshToken.getToken());
 
@@ -176,14 +177,9 @@ public class OAuth2AuthenticationSuccessHandler extends SavedRequestAwareAuthent
     }
 
     private String generateJwtToken(User user, String email, Set<SimpleGrantedAuthority> authorities) {
-        CustomUserDetails userDetails = new CustomUserDetails(
-                null,
-                user.getUsername(),
-                email,
-                null,
-                user.isTwoFactorEnabled(),
-                authorities
-        );
+        CustomUserDetails userDetails = CustomUserDetails.build(user);
+        userDetails.setEmail(email);
+        userDetails.setAuthorities(authorities);
         return jwtUtils.generateTokenFromUsername(userDetails);
     }
 

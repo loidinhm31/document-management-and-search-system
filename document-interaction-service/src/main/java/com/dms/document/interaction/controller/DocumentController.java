@@ -6,7 +6,6 @@ import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentVersion;
 import com.dms.document.interaction.service.DocumentHistoryService;
-import com.dms.document.interaction.service.DocumentReportService;
 import com.dms.document.interaction.service.DocumentService;
 import com.dms.document.interaction.service.DocumentShareService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,7 +16,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.util.DigestUtils;
@@ -208,8 +206,8 @@ public class DocumentController {
             description = "Search users that document can be shared with")
     @GetMapping("/sharing/users")
     public ResponseEntity<List<UserResponse>> searchShareableUsers(
-            @RequestParam String query) {
-        return ResponseEntity.ok(documentShareService.searchShareableUsers(query));
+            @RequestParam String query, @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(documentShareService.searchShareableUsers(query, jwt.getSubject()));
     }
 
     @Operation(summary = "Get shared users details",

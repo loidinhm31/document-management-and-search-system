@@ -26,7 +26,7 @@ public interface UserService {
     void updatePassword(UUID userId, UpdatePasswordRequest request, UserDetails currentUser) throws InvalidRequestException;
 
     UserDto getUserById(UUID id);
-    void updateUserRole(UUID userId, String roleName);
+    void updateUserRole(UUID userId, String roleName, UserDetails currentUser);
     UserDto getUserByUsername(String username);
 
     GoogleAuthenticatorKey generate2FASecret(UUID userId);

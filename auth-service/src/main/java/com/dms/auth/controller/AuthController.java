@@ -2,13 +2,12 @@ package com.dms.auth.controller;
 
 import com.dms.auth.dto.request.*;
 import com.dms.auth.dto.response.OtpVerificationResponse;
-import com.dms.auth.entity.OtpVerification;
 import com.dms.auth.exception.ResourceNotFoundException;
 import com.dms.auth.security.request.RefreshTokenRequest;
 import com.dms.auth.security.request.Verify2FARequest;
 import com.dms.auth.security.response.TokenResponse;
 import com.dms.auth.service.UserService;
-import com.dms.auth.service.impl.OtpService;
+import com.dms.auth.service.OtpService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;

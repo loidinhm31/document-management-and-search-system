@@ -44,25 +44,37 @@ export default function OtpVerificationPage() {
 
         navigate("/");
       }
-      return response;
+
+      return {
+        data: {
+          verified: !!response.data.verified,
+          locked: !!response.data.locked,
+          otpCount: response.data.otpCount || 0,
+          expired: !!response.data.expired
+        },
+      };
     } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("auth.otp.failure"),
         variant: "destructive",
       });
+
+      return { data: undefined };
     }
   };
 
   const handleResend = async () => {
     try {
       await authService.resendOtp({ username });
+      return Promise.resolve();
     } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("auth.otp.resendError"),
         variant: "destructive",
       });
+      return Promise.reject(_error);
     }
   };
 

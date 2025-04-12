@@ -1,5 +1,8 @@
 package com.dms.auth.security.jwt;
 
+import com.dms.auth.entity.AuthToken;
+import com.dms.auth.enums.TokenType;
+import com.dms.auth.service.TokenService;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
@@ -10,6 +13,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
@@ -18,10 +22,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -30,10 +31,16 @@ public class JwtUtils {
     @Value("${spring.app.accessTokenExpirationMs}")
     private int accessTokenExpirationMs;
 
+    private final TokenService tokenService;
+
     private RSAPrivateKey privateKey;
     @Getter
     private RSAPublicKey publicKey;
     private String keyId;
+
+    public JwtUtils(TokenService tokenService) {
+        this.tokenService = tokenService;
+    }
 
     @PostConstruct
     public void init() {
@@ -70,6 +77,8 @@ public class JwtUtils {
                 .issuer("dms-auth-service")
                 .subject(userDetails.getUsername())
                 .claim("is2faEnabled", userDetails.is2faEnabled())
+                .claim("accountNonLocked", userDetails.isAccountNonLocked())
+                .claim("enabled", userDetails.isEnabled())
                 .claim("roles", userDetails.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toList()))
@@ -100,22 +109,24 @@ public class JwtUtils {
 
     public boolean validateJwtToken(String authToken) {
         try {
+            // Perform existing signature validation
             Jwts.parser()
                     .verifyWith(publicKey)
                     .build()
                     .parseSignedClaims(authToken);
+
+            // Check if token has been revoked by its hash
+            String tokenHash = DigestUtils.sha256Hex(authToken);
+            Optional<AuthToken> storedToken = tokenService.findByTokenAndType(tokenHash, TokenType.ACCESS);
+            if (storedToken.isPresent() && storedToken.get().isRevoked()) {
+                log.info("JWT token is revoked: {}", authToken);
+                return false;
+            }
+
             return true;
-        } catch (MalformedJwtException e) {
-            log.error("Invalid JWT token: {}", e.getMessage());
-        } catch (ExpiredJwtException e) {
-            log.error("JWT token is expired: {}", e.getMessage());
-        } catch (UnsupportedJwtException e) {
-            log.error("JWT token is unsupported: {}", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            log.error("JWT claims string is empty: {}", e.getMessage());
-        } catch (SecurityException e) {
-            log.error("Invalid JWT signature: {}", e.getMessage());
+        } catch (Exception e) {
+            log.info("Invalid JWT token: {}", e.getMessage());
+            return false;
         }
-        return false;
     }
 }

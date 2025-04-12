@@ -3,7 +3,6 @@ import { Flag, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,22 +18,16 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { createDocumentReportSchema, ReportFormValues } from "@/schemas/report-schemas";
 import { documentReportService } from "@/services/document-report.service";
-import { CreateReportRequest, DocumentReport, ReportType } from "@/types/document-report";
 import { reportService } from "@/services/report.service";
+import { CreateReportRequest, DocumentReport, ReportType } from "@/types/document-report";
 
 interface ReportDialogProps {
   documentId: string;
   documentName: string;
   iconOnly?: boolean;
 }
-
-const formSchema = z.object({
-  reportTypeCode: z.string({
-    required_error: "Please select a report type",
-  }),
-  description: z.string().optional(),
-});
 
 export function ReportDocumentDialog({ documentId, documentName, iconOnly = false }: ReportDialogProps) {
   const { t, i18n } = useTranslation();
@@ -45,9 +38,19 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
   const [existingReport, setExistingReport] = useState<DocumentReport | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<ReportFormValues>({
+    resolver: zodResolver(createDocumentReportSchema(t)),
   });
+
+  useEffect(() => {
+    // Get fields that have been touched by the user
+    const touchedFields = Object.keys(form.formState.touchedFields);
+
+    // Only trigger validation for fields the user has interacted with
+    if (touchedFields.length > 0) {
+      form.trigger(touchedFields as any);
+    }
+  }, [i18n.language]);
 
   useEffect(() => {
     checkExistingReport();
@@ -79,7 +82,7 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: ReportFormValues) => {
     setLoading(true);
     try {
       const request: CreateReportRequest = {
@@ -96,7 +99,7 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
         variant: "success",
       });
       setOpen(false);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.report.createError"),
@@ -143,7 +146,11 @@ export function ReportDocumentDialog({ documentId, documentName, iconOnly = fals
               <div className="grid gap-2">
                 <h4 className="font-medium">{t("document.report.statusLabel")}</h4>
                 <p className="text-sm text-muted-foreground">
-                  {existingReport.status === "RESOLVED" ? t("document.report.status.resolved") : existingReport.status === "PENDING" ? t("document.report.status.pending") : ""}
+                  {existingReport.status === "RESOLVED"
+                    ? t("document.report.status.resolved")
+                    : existingReport.status === "PENDING"
+                      ? t("document.report.status.pending")
+                      : ""}
                 </p>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -20,25 +21,32 @@ const TagInput = ({
   onChange,
   recommendedTags = [],
   onSearch,
-  placeholder = "Enter tags...",
+  placeholder = "Enter or select tags...",
   disabled = false,
   className = "",
   getTagDisplay = (tag) => tag,
 }: TagInputProps) => {
+  const { t } = useTranslation();
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isFocused, setIsFocused] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null); // Track highlighted suggestion
+  const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch suggestions when input changes
+  // Set initial suggestions from recommendedTags
+  useEffect(() => {
+    if (!onSearch) {
+      // When no onSearch is provided, just set all available recommendedTags
+      setSuggestions(recommendedTags.filter((tag) => !value.includes(tag)));
+    }
+  }, [recommendedTags, value, onSearch]);
+
+  // Handle onSearch if provided
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (!onSearch || !inputValue.trim() || !isFocused) {
-        setSuggestions(recommendedTags.filter((tag) => !value.includes(tag)));
-        setHighlightedIndex(null); // Reset highlight when suggestions change
+      if (!onSearch || !isFocused) {
         return;
       }
 
@@ -46,22 +54,26 @@ const TagInput = ({
       try {
         const results = await onSearch(inputValue);
         setSuggestions(results.filter((tag) => !value.includes(tag)));
-        setHighlightedIndex(null); // Reset highlight when suggestions change
       } catch (error) {
         console.error("Error fetching suggestions:", error);
         setSuggestions([]);
-        setHighlightedIndex(null);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSuggestions();
-  }, [inputValue, isFocused, onSearch, recommendedTags, value]);
+    if (onSearch && isFocused) {
+      fetchSuggestions();
+    }
+  }, [inputValue, isFocused, onSearch, value]);
+
+  // Reset highlighted index when input or suggestions change
+  useEffect(() => {
+    setHighlightedIndex(null);
+  }, [inputValue, suggestions]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
-    setHighlightedIndex(null); // Reset highlight on manual input change
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -105,7 +117,6 @@ const TagInput = ({
       // Allow free input if no onSearch
       onChange([...value, tag]);
       setInputValue("");
-      setSuggestions(recommendedTags.filter((t) => !value.includes(t) && t !== tag));
       setHighlightedIndex(null);
     }
   };
@@ -114,9 +125,13 @@ const TagInput = ({
     onChange(value.filter((t) => t !== tag));
   };
 
-  const filteredSuggestions = suggestions.filter((suggestion) =>
-    suggestion.toLowerCase().includes(inputValue.toLowerCase()),
-  );
+  // Filter suggestions based on translated display value, not raw tag code
+  const filteredSuggestions = suggestions.filter((suggestion) => {
+    const displayValue = getTagDisplay(suggestion).toLowerCase();
+    return displayValue.includes(inputValue.toLowerCase());
+  });
+
+  const showDropdown = isFocused && (filteredSuggestions.length > 0 || loading || inputValue.trim().length > 0);
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
@@ -127,6 +142,11 @@ const TagInput = ({
           isFocused && "border-primary",
           "focus-within:ring-1 focus-within:ring-primary",
         )}
+        onClick={() => {
+          if (!disabled && inputRef.current) {
+            inputRef.current.focus();
+          }
+        }}
       >
         {value.map((tag) => (
           <span
@@ -137,7 +157,10 @@ const TagInput = ({
             {!disabled && (
               <button
                 type="button"
-                onClick={() => removeTag(tag)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeTag(tag);
+                }}
                 className="rounded-full hover:bg-primary/20 transition-colors p-0.5"
               >
                 <X className="h-3.5 w-3.5" />
@@ -160,11 +183,11 @@ const TagInput = ({
         />
       </div>
 
-      {isFocused && (filteredSuggestions.length > 0 || loading) && (
+      {showDropdown && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-popover rounded-md border shadow-md z-10 max-h-60 overflow-y-auto">
           {loading ? (
             <div className="p-2 text-sm text-muted-foreground">Loading...</div>
-          ) : (
+          ) : filteredSuggestions.length > 0 ? (
             filteredSuggestions.map((suggestion, index) => (
               <button
                 key={suggestion}
@@ -181,6 +204,8 @@ const TagInput = ({
                 {getTagDisplay(suggestion)}
               </button>
             ))
+          ) : (
+            <div className="p-2 text-sm text-muted-foreground">{t("common.noMatchingOptions")}</div>
           )}
         </div>
       )}

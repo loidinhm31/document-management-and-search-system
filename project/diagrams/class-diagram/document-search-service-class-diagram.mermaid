@@ -1,0 +1,238 @@
+classDiagram
+%% Controllers
+    class DiscoverDocumentController {
+        -DiscoverDocumentSearchService discoverDocumentSearchService
+        +searchDocuments(DocumentSearchRequest, Jwt): ResponseEntity
+        +getSuggestions(SuggestionRequest, Jwt): ResponseEntity
+    }
+
+    class DocumentController {
+        -DocumentService documentService
+        -DocumentRecommendationService documentRecommendationService
+        +searchUserDocuments(Jwt, DocumentSearchRequest): ResponseEntity
+        +getRecommendationDocuments(String, Boolean, int, int, Jwt): ResponseEntity
+    }
+
+%% Services and their inheritance relationships
+    class OpenSearchBaseService {
+        #String INDEX_NAME
+        #addSharingAccessFilter(BoolQueryBuilder, String): void
+        #addFilterConditions(BoolQueryBuilder, Set~String~, Set~String~, String, Set~String~, Set~String~): void
+        #configureHighlightFields(SearchContext): HighlightBuilder
+        #processSearchResults(SearchHit[], long, Pageable): Page~DocumentResponseDto~
+        #addRecommendationBoost(BoolQueryBuilder): void
+        #addPreferredFieldBoost(BoolQueryBuilder, String, Set~String~, float): void
+        #addBasicPreferenceBoosts(BoolQueryBuilder, DocumentPreferences): void
+    }
+
+    class DiscoverDocumentSearchService {
+        -RestHighLevelClient openSearchClient
+        -UserClient userClient
+        -DocumentPreferencesRepository documentPreferencesRepository
+        -DocumentFavoriteService documentFavoriteService
+        +searchDocuments(DocumentSearchRequest, String): Page~DocumentResponseDto~
+        +getSuggestions(SuggestionRequest, String): List~String~
+        -buildSearchRequest(DocumentSearchRequest, SearchContext, UUID): SearchRequest
+        -addDefinitionSearchConditions(BoolQueryBuilder, SearchContext): void
+        -addGeneralSearchConditions(BoolQueryBuilder, SearchContext): void
+        -analyzeQuery(String): SearchContext
+    }
+
+    class DocumentService {
+        -MongoTemplate mongoTemplate
+        -UserClient userClient
+        +getUserDocuments(String, DocumentSearchCriteria, int, int): Page~DocumentInformation~
+    }
+
+    class DocumentRecommendationService {
+        -RestHighLevelClient openSearchClient
+        -UserClient userClient
+        -DocumentPreferencesRepository documentPreferencesRepository
+        -DocumentFavoriteService documentFavoriteService
+        +getRecommendations(String, Boolean, String, Pageable): Page~DocumentResponseDto~
+        -getContentBasedRecommendations(String, String, DocumentPreferences, Pageable): Page~DocumentResponseDto~
+        -getPreferenceBasedRecommendations(UUID, DocumentPreferences, Boolean, Pageable): Page~DocumentResponseDto~
+        -addContentSimilarityBoosts(BoolQueryBuilder, Map): void
+        -addMetadataSimilarityBoosts(BoolQueryBuilder, Map): void
+        -addPreferenceBoosts(BoolQueryBuilder, DocumentPreferences): void
+    }
+
+    class DocumentFavoriteService {
+        -DocumentFavoriteRepository documentFavoriteRepository
+        +addFavoriteFilter(BoolQueryBuilder, UUID): void
+        -getFavoriteDocumentIds(UUID): Set~String~
+        -hasTooManyFavorites(UUID): boolean
+    }
+
+    class OpenSearchIndexService {
+        -RestHighLevelClient openSearchClient
+        -ObjectMapper objectMapper
+        +setupIndex(): void
+        +verifyIndexMapping(): void
+        +reindexAll(): void
+    }
+
+%% Models
+    class DocumentInformation {
+        -String id
+        -DocumentStatus status
+        -String summary
+        -DocumentType documentType
+        -Set~String~ majors
+        -Set~String~ courseCodes
+        -String courseLevel
+        -Set~String~ categories
+        -Set~String~ tags
+        -String userId
+        -SharingType sharingType
+        -Set~String~ sharedWith
+        -boolean deleted
+        -String content
+        -Instant createdAt
+        -Instant updatedAt
+    }
+
+    class DocumentFavorite {
+        -Long id
+        -UUID userId
+        -String documentId
+        -Instant createdAt
+    }
+
+    class DocumentPreferences {
+        -String id
+        -String userId
+        -Set~String~ preferredMajors
+        -Set~String~ preferredCourseCodes
+        -Set~String~ preferredLevels
+        -Set~String~ preferredCategories
+        -Set~String~ preferredTags
+        -Set~String~ languagePreferences
+        -Map~String, Double~ contentTypeWeights
+        -Set~String~ recentViewedDocuments
+    }
+
+%% DTOs
+    class DocumentResponseDto {
+        -String id
+        -String filename
+        -String content
+        -String userId
+        -Long fileSize
+        -String mimeType
+        -DocumentType documentType
+        -Set~String~ majors
+        -Set~String~ courseCodes
+        -String courseLevel
+        -Set~String~ categories
+        -Set~String~ tags
+        -List~String~ highlights
+    }
+
+    class DocumentSearchRequest {
+        -String search
+        -Set~String~ majors
+        -Set~String~ courseCodes
+        -String level
+        -Set~String~ categories
+        -Boolean favoriteOnly
+        -String sortField
+        -String sortDirection
+        -Set~String~ tags
+        -int page
+        -int size
+    }
+
+    class DocumentSearchCriteria {
+        -String search
+        -Set~String~ majors
+        -Set~String~ courseCodes
+        -String level
+        -Set~String~ categories
+        -Set~String~ tags
+        -String sortField
+        -String sortDirection
+        +getSortField(): String
+        +getSortDirection(): String
+    }
+
+    class SuggestionRequest {
+        -String query
+        -Set~String~ majors
+        -Set~String~ courseCodes
+        -String level
+        -Set~String~ categories
+        -Set~String~ tags
+    }
+
+    class SearchContext {
+        -QueryType queryType
+        -String originalQuery
+        -String uppercaseQuery
+        -String lowercaseQuery
+    }
+
+%% Repositories
+    class DocumentRepository {
+        +findAccessibleDocumentByIdAndUserId(String, String): Optional~DocumentInformation~
+    }
+
+    class DocumentFavoriteRepository {
+        +findDocumentIdsByUserId(UUID): Set~String~
+        +existsByUserIdAndDocumentId(UUID, String): boolean
+        +findRecentFavoriteDocumentIdsByUserId(UUID, int): Set~String~
+    }
+
+    class DocumentPreferencesRepository {
+        +findByUserId(String): Optional~DocumentPreferences~
+    }
+
+%% Clients
+    class UserClient {
+        +getUserByUsername(String): ResponseEntity~UserResponse~
+    }
+
+%% Configuration
+    class FeignConfig {
+        -String serviceApiKey
+        +bearerTokenRequestInterceptor(): RequestInterceptor
+    }
+
+    class OpenSearchConfig {
+        -String openSearchHost
+        -int openSearchPort
+        -String openSearchUsername
+        -String openSearchPassword
+        -String scheme
+        -boolean isAws
+        +openSearchClient(): RestHighLevelClient
+    }
+
+    class SecurityConfig {
+        -String jwkSetUri
+        +securityFilterChain(HttpSecurity): SecurityFilterChain
+        +jwtDecoder(): JwtDecoder
+        +jwtAuthenticationConverter(): JwtAuthenticationConverter
+    }
+
+%% Inheritance relationships
+    OpenSearchBaseService <|-- DiscoverDocumentSearchService
+    OpenSearchBaseService <|-- DocumentRecommendationService
+
+%% Dependencies between controllers and services
+    DiscoverDocumentController --> DiscoverDocumentSearchService
+    DocumentController --> DocumentService
+    DocumentController --> DocumentRecommendationService
+
+%% Dependencies between services and repositories
+    DiscoverDocumentSearchService --> DocumentPreferencesRepository
+    DiscoverDocumentSearchService --> DocumentFavoriteService
+    DocumentRecommendationService --> DocumentPreferencesRepository
+    DocumentRecommendationService --> DocumentFavoriteService
+    DocumentFavoriteService --> DocumentFavoriteRepository
+    DocumentService --> DocumentRepository
+
+%% Dependencies on client
+    DiscoverDocumentSearchService --> UserClient
+    DocumentRecommendationService --> UserClient
+    DocumentService --> UserClient

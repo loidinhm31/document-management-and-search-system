@@ -1,50 +1,44 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import * as z from "zod";
+import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { createPasswordSchema, PasswordFormValues } from "@/schemas/password-update-schema";
 import { userService } from "@/services/user.service";
 
-const passwordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z
-      .string()
-      .min(6, "Password must be at least 6 characters")
-      .regex(
-        /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
-        "Password must contain at least one digit, lowercase, uppercase, and special character",
-      ),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type PasswordFormValues = z.infer<typeof passwordSchema>;
-
 export default function PasswordUpdateForm() {
-  const { t } = useTranslation();
-  const { currentUser } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { currentUser, clearAuthData } = useAuth();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const form = useForm<PasswordFormValues>({
-    resolver: zodResolver(passwordSchema),
+    resolver: zodResolver(createPasswordSchema(t)),
+    mode: "onBlur",
     defaultValues: {
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
     },
   });
+
+  useEffect(() => {
+    // Get fields that have been touched by the user
+    const touchedFields = Object.keys(form.formState.touchedFields);
+
+    // Only trigger validation for fields the user has interacted with
+    if (touchedFields.length > 0) {
+      form.trigger(touchedFields as any);
+    }
+  }, [i18n.language]);
 
   const onSubmit = async (data: PasswordFormValues) => {
     if (!currentUser?.userId) return;
@@ -63,6 +57,10 @@ export default function PasswordUpdateForm() {
       });
 
       form.reset();
+      setTimeout(() => {
+        clearAuthData();
+        navigate("/login");
+      }, 2000);
     } catch (error: any) {
       console.log("error", error?.response);
 

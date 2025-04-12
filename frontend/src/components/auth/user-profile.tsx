@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { userService } from "@/services/user.service";
+import { formatDateMoment } from "@/lib/utils";
 
 export default function UserProfile() {
   const { t } = useTranslation();
@@ -143,7 +144,7 @@ export default function UserProfile() {
         description: t("profile.twoFactor.messages.enableSuccess"),
         variant: "success",
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("profile.twoFactor.messages.verifyError"),
@@ -152,6 +153,11 @@ export default function UserProfile() {
     } finally {
       setLoading((prev) => ({ ...prev, twoFactor: false }));
     }
+  };
+
+  const handleOtpChange = (e: { target: { value: string } }) => {
+    const value = e.target.value.replace(/[^\d]/g, "").slice(0, 6);
+    setVerificationCode(value);
   };
 
   if (loading.page) {
@@ -209,13 +215,13 @@ export default function UserProfile() {
             <div className="rounded-lg border p-4">
               <h3 className="font-semibold">{t("profile.createdDate.title")}</h3>
               <p className="text-sm text-muted-foreground">
-                <p>{moment(currentUser.createdDate).format("DD/MM/YYYY, h:mm:ss a")}</p>
+                <p>{formatDateMoment(currentUser.createdDate)}</p>
               </p>
             </div>
             {loginSession && (
               <div className="rounded-lg border p-4">
                 <h3 className="font-semibold">{t("profile.lastLogin.title")}</h3>
-                <p className="text-sm text-muted-foreground">{loginSession}</p>
+                <p className="text-sm text-muted-foreground">{formatDateMoment(loginSession)}</p>
               </div>
             )}
           </CardContent>
@@ -274,12 +280,54 @@ export default function UserProfile() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    navigator.clipboard.writeText(secret);
-                                    toast({
-                                      title: t("common.success"),
-                                      description: t("profile.twoFactor.codeCopied"),
-                                      variant: "success",
-                                    });
+                                    // Function to show success message
+                                    const showSuccess = () => {
+                                      toast({
+                                        title: t("common.success"),
+                                        description: t("profile.twoFactor.codeCopied"),
+                                        variant: "success",
+                                      });
+                                    };
+
+                                    // Function to show error message
+                                    const showError = (error: any) => {
+                                      console.error("Failed to copy to clipboard:", error);
+                                      toast({
+                                        title: t("common.error"),
+                                        description:
+                                          t("profile.twoFactor.copyFailed") || "Failed to copy code to clipboard",
+                                        variant: "destructive",
+                                      });
+                                    };
+
+                                    // Try modern clipboard API first
+                                    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                                      navigator.clipboard.writeText(secret).then(showSuccess).catch(showError);
+                                    } else {
+                                      // Fallback method using temporary textarea element
+                                      try {
+                                        const textarea = document.createElement("textarea");
+                                        textarea.value = secret;
+                                        // Make the textarea out of viewport
+                                        textarea.style.position = "fixed";
+                                        textarea.style.left = "-999999px";
+                                        textarea.style.top = "-999999px";
+                                        document.body.appendChild(textarea);
+                                        textarea.focus();
+                                        textarea.select();
+
+                                        const successful = document.execCommand("copy");
+                                        document.body.removeChild(textarea);
+
+                                        if (successful) {
+                                          showSuccess();
+                                        } else {
+                                          showError(new Error("execCommand returned false"));
+                                        }
+                                      } catch (error) {
+                                        showError(error);
+                                      }
+                                    }
                                   }}
                                 >
                                   {t("profile.twoFactor.copy")}
@@ -301,7 +349,7 @@ export default function UserProfile() {
                     placeholder={t("profile.twoFactor.verificationCodePlaceholder")}
                     value={verificationCode}
                     maxLength={6}
-                    onChange={(e) => setVerificationCode(e.target.value)}
+                    onChange={handleOtpChange}
                   />
                   <Button onClick={verify2FA} disabled={loading.twoFactor}>
                     {loading.twoFactor && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -1,0 +1,33 @@
+flowchart TD
+    Client[Client] --> |Upload Document Request| DC[DocumentController]
+    DC --> |Validate User| UC[UserClient]
+    UC --> |User Info| DC
+    DC --> |Process Upload| DS[DocumentService]
+
+    subgraph DocumentService
+        validateDoc[Validate Document]
+        uploadToS3[Upload to S3]
+        createMetadata[Create Document Metadata]
+        saveDocument[Save Document to DB]
+        recordHistory[Record History Entry]
+        sendEvent[Send Processing Event]
+    end
+
+    DS --> validateDoc
+    validateDoc --> uploadToS3
+    uploadToS3 --> |S3 Key| createMetadata
+    createMetadata --> saveDocument
+    saveDocument --> |Async| recordHistory
+    recordHistory --> |Async| sendEvent
+
+    uploadToS3 --> |Upload File| S3[Amazon S3]
+    S3 --> |S3 Object Key| uploadToS3
+    saveDocument --> |Save| DR[DocumentRepository]
+    DR --> |Save| MongoDB[(MongoDB)]
+    recordHistory --> |Save History| DUHR[DocumentUserHistoryRepository]
+    DUHR --> MongoDB
+    sendEvent --> |Publish Event| PES[PublishEventService]
+    PES --> |Produce| RMQ[RabbitMQ]
+
+    DS --> |Document Info| DC
+    DC --> |Response| Client

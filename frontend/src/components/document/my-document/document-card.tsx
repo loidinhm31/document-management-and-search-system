@@ -1,4 +1,5 @@
 import { Download, Eye } from "lucide-react";
+import moment from "moment-timezone";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -6,12 +7,11 @@ import { LazyThumbnail } from "@/components/document/my-document/lazy-thumbnail"
 import DocumentViewerDialog from "@/components/document/viewers/viewer-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { documentService } from "@/services/document.service";
-import { DocumentInformation } from "@/types/document";
-import moment from "moment-timezone";
-import { Separator } from "@/components/ui/separator";
+import { DocumentInformation, DocumentStatus } from "@/types/document";
 
 interface DocumentCardProps {
   documentInformation: DocumentInformation;
@@ -31,7 +31,7 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
       const response = await documentService.downloadDocument({
         id: documentInformation.id,
         action: "download",
-        history: true,
+        history: false,
       });
       const url = URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
@@ -71,24 +71,28 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
           </div>
           <div className="mt-2">
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Created at:</span>
+              <span className="text-sm text-muted-foreground">{t("common.created")}:</span>
               <span className="text-sm font-semibold">
                 {moment(documentInformation?.createdAt).format("DD/MM/YYYY, h:mm a")}
               </span>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">File size:</span>
+              <span className="text-sm text-muted-foreground">{t("common.size")}:</span>
               <span className="text-sm font-semibold">
-                {(documentInformation.fileSize / (1024 * 1024)).toFixed(3)} MB
+                {documentInformation.fileSize < 1024 * 1024
+                  ? `${(documentInformation.fileSize / 1024).toFixed(2)} KB`
+                  : `${(documentInformation.fileSize / (1024 * 1024)).toFixed(2)} MB`}
               </span>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Language:</span>
-              <span className="text-sm font-semibold">{documentInformation.language}</span>
+              <span className="text-sm text-muted-foreground">{t("common.language")}:</span>
+              <span className="text-sm font-semibold">
+                {documentInformation.language ? documentInformation.language : t("common.noLang")}
+              </span>
             </div>
             {documentInformation.sharedWith.includes(currentUser?.userId) && (
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Shared by:</span>
+                <span className="text-sm text-muted-foreground">{t("common.sharedBy")}:</span>
                 <span className="text-sm font-semibold">{documentInformation.createdBy}</span>
               </div>
             )}
@@ -104,14 +108,16 @@ export const DocumentCard = React.memo(({ documentInformation, onClick }: Docume
             >
               <Eye className="h-4 w-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center justify-center w-10 h-10 p-0"
-              onClick={handleDownload}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
+            {documentInformation.status !== DocumentStatus.PROCESSING && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center justify-center w-10 h-10 p-0"
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </CardFooter>
       </Card>

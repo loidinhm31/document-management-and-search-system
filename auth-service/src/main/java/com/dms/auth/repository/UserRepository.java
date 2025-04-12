@@ -15,17 +15,9 @@ import java.util.UUID;
 public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
     Optional<User> findByUsername(String username);
     Optional<User> findByEmail(String email);
+    Optional<User> findByUsernameOrEmail(String username, String email);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
-
-    @Query("SELECT COUNT(u) FROM User u WHERE u.enabled = true")
-    long countByEnabledTrue();
-
-    @Query("SELECT COUNT(u) FROM User u WHERE u.accountNonLocked = false")
-    long countByAccountNonLockedFalse();
-
-    @Query("SELECT COUNT(u) FROM User u WHERE u.accountNonExpired = false")
-    long countByAccountNonExpiredFalse();
 
     @Query("SELECT COUNT(u) FROM User u WHERE u.role = :role")
     long countByRole(Role role);

@@ -1,13 +1,10 @@
 package com.dms.document.interaction.model;
 
+import com.dms.document.interaction.enums.DocumentReportStatus;
 import com.dms.document.interaction.enums.DocumentStatus;
 import com.dms.document.interaction.enums.DocumentType;
-import com.dms.document.interaction.enums.DocumentReportStatus;
 import com.dms.document.interaction.enums.SharingType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -98,6 +95,7 @@ public class DocumentInformation {
     @Field("extracted_metadata")
     private Map<String, String> extractedMetadata;
 
+    @With
     @Field("content")
     private String content;
 

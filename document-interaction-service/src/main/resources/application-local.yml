@@ -66,4 +66,4 @@ rabbitmq:
     document: document.exchange
     notification: notification.exchange
   routing-keys:
-    document-process: document.process.routing-key
+    document-process: document-process.routing-key

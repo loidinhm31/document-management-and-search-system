@@ -1,0 +1,271 @@
+classDiagram
+    %% Controllers
+    class AuthController {
+        + login(LoginRequest, HttpServletRequest): ResponseEntity~TokenResponse~
+        + refreshToken(RefreshTokenRequest): ResponseEntity~TokenResponse~
+        + logout(RefreshTokenRequest): ResponseEntity~Void~
+        + register(SignupRequest): ResponseEntity~Void~
+        + forgotPassword(String): ResponseEntity~Map~
+        + resetPassword(PasswordResetRequest): ResponseEntity~Void~
+        + verify2FA(Verify2FARequest): ResponseEntity~String~
+        + verifyOtp(OtpVerificationRequest, HttpServletRequest): ResponseEntity~TokenResponse~
+        + resendOtp(ResendOtpRequest): ResponseEntity~OtpVerificationResponse~
+    }
+    
+    class UserController {
+        + getUserByUsername(String): ResponseEntity~UserDto~
+        + getUser(UUID): ResponseEntity~UserDto~
+        + updateProfile(UUID, UpdateProfileRequest): ResponseEntity~Void~
+        + updateUserRole(UUID, UpdateUserRequest): ResponseEntity~Void~
+        + updateStatus(UUID, UpdateStatusRequest): ResponseEntity~Void~
+        + updatePassword(UUID, UpdatePasswordRequest, UserDetails): ResponseEntity~Void~
+        + getCurrentUser(UserDetails): ResponseEntity~UserInfoResponse~
+        + enable2FA(UserDetails, UUID): ResponseEntity~String~
+        + verify2FA(UUID, Verify2FARequest): ResponseEntity~Void~
+        + disable2FA(UUID): ResponseEntity~Void~
+        + get2FAStatus(UserDetails, UUID): ResponseEntity~Boolean~
+        + searchUsers(String): ResponseEntity~List~
+        + getUsersByIds(List~UUID~): ResponseEntity~List~
+    }
+    
+    class AdminController {
+        + getAllUsers(String, Boolean, String, Pageable): ResponseEntity~Page~
+        + getAllRoles(): ResponseEntity~List~
+    }
+    
+    class JwkSetRestController {
+        + jwks(): ResponseEntity~Map~
+    }
+    
+    %% Services
+    class UserService {
+        + authenticateUser(LoginRequest, HttpServletRequest): TokenResponse
+        + refreshToken(String): TokenResponse
+        + logout(String): void
+        + registerUser(SignupRequest): void
+        + getUserInfo(UserDetails): UserInfoResponse
+        + generatePasswordResetToken(String): void
+        + resetPassword(String, String): void
+        + updatePassword(UUID, UpdatePasswordRequest, UserDetails): void
+        + getUserById(UUID): UserDto
+        + updateUserRole(UUID, String): void
+        + getUserByUsername(String): UserDto
+        + generate2FASecret(UUID): GoogleAuthenticatorKey
+        + verify2FACode(UUID, Verify2FARequest): void
+        + validate2FACode(Verify2FARequest): boolean
+        + enable2FA(String): void
+        + disable2FA(UUID): void
+        + get2FAStatus(String): boolean
+        + getQrCodeUrl(GoogleAuthenticatorKey, String): String
+        + updateProfile(UUID, UpdateProfileRequest): void
+        + updateStatus(UUID, UpdateStatusRequest, boolean): void
+        + searchUsers(String): List~UserSearchResponse~
+        + getUsersByIds(List~UUID~): List~UserSearchResponse~
+    }
+    
+    class AdminService {
+        + getAllUsers(String, Boolean, String, Pageable): Page~UserDto~
+        + getAllRoles(): List~Role~
+    }
+    
+    class OtpService {
+        + resendOtp(String): void
+        + generateAndSendOtp(User): void
+        + verifyOtp(String, String, HttpServletRequest): TokenResponse
+    }
+    
+    class RefreshTokenService {
+        + createRefreshToken(User, HttpServletRequest): RefreshToken
+        + findByToken(String): Optional~RefreshToken~
+        + verifyExpiration(RefreshToken): RefreshToken
+        + revokeToken(String): void
+        + revokeAllUserTokens(User): void
+        + findActiveTokensByUser(User): List~RefreshToken~
+        + removeExpiredTokens(): void
+    }
+    
+    class TotpService {
+        + generateSecret(): GoogleAuthenticatorKey
+        + getQrCodeUrl(GoogleAuthenticatorKey, String): String
+        + verifyCode(String, int): boolean
+    }
+    
+    class JwtUtils {
+        - privateKey: RSAPrivateKey
+        - publicKey: RSAPublicKey
+        + generateTokenFromUsername(CustomUserDetails): String
+        + getUserNameFromJwtToken(String): String
+        + getJwks(): Map~String,Object~
+        + validateJwtToken(String): boolean
+        + getJwtFromHeader(HttpServletRequest): String
+    }
+    
+    %% Repositories
+    class UserRepository {
+        + findByUsername(String): Optional~User~
+        + findByEmail(String): Optional~User~
+        + existsByUsername(String): boolean
+        + existsByEmail(String): boolean
+        + countByEnabledTrue(): long
+        + countByAccountNonLockedFalse(): long
+        + countByAccountNonExpiredFalse(): long
+        + countByRole(Role): long
+        + findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(String, String): List~User~
+    }
+    
+    class RoleRepository {
+        + findByRoleName(AppRole): Optional~Role~
+    }
+    
+    class RefreshTokenRepository {
+        + findByToken(String): Optional~RefreshToken~
+        + findActiveTokensByUser(User): List~RefreshToken~
+        + revokeAllUserTokens(User): void
+        + deleteAllExpiredTokens(Instant): void
+    }
+    
+    class OtpVerificationRepository {
+        + findByEmailAndValidatedFalse(String): Optional~OtpVerification~
+        + findValidOtpByUsername(String): Optional~OtpVerification~
+        + existsByEmailAndLockedUntilAfter(String, Instant): boolean
+    }
+    
+    class PasswordResetTokenRepository {
+        + findByTokenAndUsed(String, boolean): Optional~PasswordResetToken~
+        + findLatestByUserEmail(String): Optional~PasswordResetToken~
+        + findAllByUserId(UUID): List~PasswordResetToken~
+    }
+    
+    %% Entities
+    class User {
+        - userId: UUID
+        - username: String
+        - email: String
+        - password: String
+        - accountNonLocked: boolean
+        - enabled: boolean
+        - twoFactorSecret: String
+        - isTwoFactorEnabled: boolean
+        - signUpMethod: String
+        - role: Role
+    }
+    
+    class Role {
+        - roleId: UUID
+        - roleName: AppRole
+        - users: Set~User~
+    }
+    
+    class RefreshToken {
+        - id: UUID
+        - token: String
+        - user: User
+        - expiryDate: Instant
+        - revoked: boolean
+        - userAgent: String
+        - ipAddress: String
+    }
+    
+    class OtpVerification {
+        - id: UUID
+        - otp: String
+        - email: String
+        - expiryTime: Instant
+        - attemptCount: int
+        - validated: boolean
+        - lockedUntil: Instant
+        - user: User
+        + isExpired(): boolean
+        + isLocked(): boolean
+        + hasExceededMaxAttempts(): boolean
+    }
+    
+    class PasswordResetToken {
+        - id: UUID
+        - token: String
+        - expiryDate: Instant
+        - used: boolean
+        - user: User
+    }
+    
+    %% Response Classes
+    class TokenResponse {
+        - accessToken: String
+        - refreshToken: String
+        - tokenType: String
+        - username: String
+        - roles: List~String~
+        - enabled: boolean
+        - otpCount: int
+        - locked: boolean
+        - verified: boolean
+    }
+    
+    class UserInfoResponse {
+        - userId: UUID
+        - username: String
+        - email: String
+        - accountNonLocked: boolean
+        - accountNonExpired: boolean
+        - credentialsNonExpired: boolean
+        - enabled: boolean
+        - credentialsExpiryDate: Instant
+        - accountExpiryDate: Instant
+        - isTwoFactorEnabled: boolean
+        - createdDate: Instant
+        - roles: List~String~
+    }
+    
+    class UserDto {
+        - userId: UUID
+        - username: String
+        - email: String
+        - accountNonLocked: boolean
+        - accountNonExpired: boolean
+        - credentialsNonExpired: boolean
+        - enabled: boolean
+        - credentialsExpiryDate: Instant
+        - accountExpiryDate: Instant
+        - twoFactorSecret: String
+        - isTwoFactorEnabled: boolean
+        - signUpMethod: String
+        - role: RoleDto
+        - createdDate: Instant
+        - updatedDate: Instant
+    }
+    
+    %% Relationships
+    AuthController --> UserService
+    AuthController --> OtpService
+    UserController --> UserService
+    AdminController --> AdminService
+    JwkSetRestController --> JwtUtils
+    
+    UserService --> UserRepository
+    UserService --> RoleRepository
+    UserService --> PasswordResetTokenRepository
+    UserService --> RefreshTokenService
+    UserService --> JwtUtils
+    UserService --> TotpService
+    UserService --> OtpService
+    
+    OtpService --> OtpVerificationRepository
+    OtpService --> UserRepository
+    OtpService --> RefreshTokenService
+    OtpService --> JwtUtils
+    
+    RefreshTokenService --> RefreshTokenRepository
+    
+    AdminService --> UserRepository
+    AdminService --> RoleRepository
+    
+    User "1" --o "1" Role
+    User "1" --* "many" RefreshToken
+    User "1" --* "many" OtpVerification
+    User "1" --* "many" PasswordResetToken
+    
+    UserRepository ..> User
+    RoleRepository ..> Role
+    RefreshTokenRepository ..> RefreshToken
+    OtpVerificationRepository ..> OtpVerification
+    PasswordResetTokenRepository ..> PasswordResetToken

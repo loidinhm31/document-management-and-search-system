@@ -3,6 +3,12 @@ import axios, { AxiosError, AxiosHeaders, AxiosResponse, CreateAxiosDefaults } f
 import { APP_API_URL } from "@/env";
 import { TokenResponse } from "@/types/auth";
 
+// Constants for retry mechanism
+const MAX_REFRESH_RETRIES = 3;
+const RETRY_STORAGE_KEY = "refresh_retry_count";
+const RETRY_TIMESTAMP_KEY = "refresh_retry_timestamp";
+const RETRY_COOLDOWN = 60 * 1000; // 1 minute cooldown between retry cycles
+
 const config: CreateAxiosDefaults = {
   baseURL: `${APP_API_URL}`,
   headers: new AxiosHeaders({
@@ -22,7 +28,9 @@ let refreshSubscribers: ((token: string) => void)[] = [];
 axiosInstance.interceptors.request.use(
   async (config) => {
     const token = localStorage.getItem("JWT_TOKEN");
-    if (token) {
+    // Only add Authorization header for non-auth endpoints
+    const isAuthEndpoint = config.url?.match(/^\/auth\/api\/v\d+\/auth/);
+    if (token && !isAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -32,12 +40,46 @@ axiosInstance.interceptors.request.use(
   },
 );
 
+// Function to check if refresh should be attempted based on retry limits
+const shouldAttemptRefresh = () => {
+  // Check if we're in a retry cooldown period
+  const lastRetryTimestamp = localStorage.getItem(RETRY_TIMESTAMP_KEY);
+  if (lastRetryTimestamp) {
+    const cooldownEndTime = parseInt(lastRetryTimestamp) + RETRY_COOLDOWN;
+    if (Date.now() < cooldownEndTime) {
+      console.log("In cooldown period, not attempting refresh");
+      return false;
+    }
+  }
+
+  // Get current retry count
+  const currentRetryCount = parseInt(localStorage.getItem(RETRY_STORAGE_KEY) || "0");
+
+  // If we've exceeded max retries, don't attempt refresh
+  if (currentRetryCount >= MAX_REFRESH_RETRIES) {
+    console.log(`Max retries (${MAX_REFRESH_RETRIES}) exceeded, not attempting refresh`);
+    return false;
+  }
+
+  return true;
+};
+
 // Function to refresh token
 const refreshAuthToken = async () => {
   const refreshToken = localStorage.getItem("REFRESH_TOKEN");
   if (!refreshToken) {
     return Promise.reject("No refresh token");
   }
+
+  // Check if we should attempt a refresh based on retry count
+  if (!shouldAttemptRefresh()) {
+    return Promise.reject("Max refresh attempts reached");
+  }
+
+  // Increment retry count
+  const currentRetryCount = parseInt(localStorage.getItem(RETRY_STORAGE_KEY) || "0");
+  localStorage.setItem(RETRY_STORAGE_KEY, (currentRetryCount + 1).toString());
+  localStorage.setItem(RETRY_TIMESTAMP_KEY, Date.now().toString());
 
   try {
     const response = await axios.post<TokenResponse>(`${APP_API_URL}/auth/api/v1/auth/refresh-token`, {
@@ -47,6 +89,10 @@ const refreshAuthToken = async () => {
     const { accessToken, refreshToken: newRefreshToken } = response.data;
     localStorage.setItem("JWT_TOKEN", accessToken);
     localStorage.setItem("REFRESH_TOKEN", newRefreshToken);
+
+    // Reset retry counter on successful refresh
+    localStorage.removeItem(RETRY_STORAGE_KEY);
+    localStorage.removeItem(RETRY_TIMESTAMP_KEY);
 
     return accessToken;
   } catch (error) {
@@ -74,8 +120,11 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // If error is 401, and it's not a refresh token request
-    if (error.response?.status === 401 && !originalRequest.url?.includes("refresh-token")) {
+    // Extract the request URL path
+    const requestUrl = originalRequest.url || '';
+
+    // Only handle 401 errors for non-auth endpoints
+    if (error.response?.status === 401 && !requestUrl.match(/^\/auth\/api\/v\d+\/auth/)) {
       if (!isRefreshing) {
         isRefreshing = true;
 
@@ -95,7 +144,12 @@ axiosInstance.interceptors.response.use(
           localStorage.removeItem("REFRESH_TOKEN");
           localStorage.removeItem("USER");
           localStorage.removeItem("IS_ADMIN");
-          window.location.href = "/login";
+
+          // Only redirect if hit max retries
+          const currentRetryCount = parseInt(localStorage.getItem(RETRY_STORAGE_KEY) || "0");
+          if (currentRetryCount >= MAX_REFRESH_RETRIES) {
+            window.location.href = "/login";
+          }
 
           return Promise.reject(refreshError);
         }

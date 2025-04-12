@@ -3,11 +3,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import MultiValueDisplay from "@/components/common/multi-value-display";
 import { LazyThumbnail } from "@/components/document/my-document/lazy-thumbnail";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { getMasterDataTranslation } from "@/lib/utils";
 import { documentService } from "@/services/document.service";
 import { useAppSelector } from "@/store/hook";
 import { selectMasterData } from "@/store/slices/master-data-slice";
@@ -22,7 +22,7 @@ interface RelatedDocumentsProps {
 export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumentsProps) {
   const { t } = useTranslation();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const { majors, categories } = useAppSelector(selectMasterData);
+  const { majors } = useAppSelector(selectMasterData);
   const { toast } = useToast();
 
   const [documents, setDocuments] = useState<DocumentInformation[]>([]);
@@ -44,7 +44,7 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
 
       setDocuments(newDocs);
       setHasMore(newDocs.length === ITEMS_PER_PAGE);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("document.related.error"),
@@ -57,33 +57,38 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
   }, [documentId, t, toast]);
 
   const fetchMoreDocuments = useCallback(async () => {
-    if (!documentId || !hasMore || loading) return;
+    if (!documentId || !hasMore) return;
+
+    // Prevent duplicate requests while loading
+    if (loading) return;
 
     setLoading(true);
     try {
       const response = await documentService.getRecommendationDocuments(documentId, ITEMS_PER_PAGE, currentPage);
       const newDocs = response.data.content;
 
-      if (!newDocs.length) {
+      if (newDocs.length === 0) {
         setHasMore(false);
         return;
       }
 
       setDocuments((prev) => {
         const existingIds = new Set(prev.map((doc) => doc.id));
-        const uniqueNewDocs = newDocs.filter((doc) => !existingIds.has(doc.id));
+        const uniqueNewDocs = newDocs.filter((doc: { id: string }) => !existingIds.has(doc.id));
         return [...prev, ...uniqueNewDocs];
       });
+
+      // Update hasMore based on if we received a full page of results
       setHasMore(newDocs.length === ITEMS_PER_PAGE);
-    } catch (error) {
+    } catch (_error) {
       setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, [documentId, currentPage, hasMore, loading, t, toast]);
+  }, [documentId, currentPage, hasMore, t, toast]);
 
+  // Reset component when document ID changes
   useEffect(() => {
-    console.log("Document ID changed, resetting state");
     setDocuments([]);
     setCurrentPage(0);
     setHasMore(true);
@@ -92,38 +97,39 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
     fetchInitialDocuments();
   }, [documentId, fetchInitialDocuments]);
 
+  // Fetch more documents when page changes
   useEffect(() => {
     if (currentPage > 0) {
-      console.log("Page changed, fetching more:", currentPage);
       fetchMoreDocuments();
     }
   }, [currentPage, fetchMoreDocuments]);
 
   const handleScroll = useCallback(
     (direction: "left" | "right") => {
-      const newIndex = direction === "left" ? Math.max(0, currentIndex - VISIBLE_ITEMS) : currentIndex + VISIBLE_ITEMS;
-
-      console.log("Handle scroll:", {
-        direction,
-        currentIndex,
-        newIndex,
-        documentsLength: documents.length,
-      });
+      const newIndex = direction === "left"
+        ? Math.max(0, currentIndex - VISIBLE_ITEMS)
+        : currentIndex + VISIBLE_ITEMS;
 
       setCurrentIndex(newIndex);
 
-      // Load more data if needed
-      if (direction === "right" && newIndex + VISIBLE_ITEMS >= documents.length && hasMore) {
+      // Only load more data if scrolling right, approaching the end, and not currently loading
+      if (
+        direction === "right" &&
+        !loading &&
+        newIndex + VISIBLE_ITEMS >= documents.length &&
+        hasMore
+      ) {
         setCurrentPage((prev) => prev + 1);
       }
     },
-    [currentIndex, documents.length, hasMore],
+    [currentIndex, documents.length, hasMore, loading],
   );
 
   if (!documents.length && !loading) return null;
 
   const showLeftButton = currentIndex > 0;
-  const showRightButton = currentIndex + VISIBLE_ITEMS < documents.length || hasMore;
+  // Only show right button if there are more items to show OR we're loading more
+  const showRightButton = (currentIndex + VISIBLE_ITEMS < documents.length) || (hasMore && !loading);
 
   return (
     <div className="relative w-full">
@@ -178,10 +184,9 @@ export function RelatedDocuments({ documentId, onDocumentClick }: RelatedDocumen
                   </div>
                   <div>
                     <h4 className="font-medium line-clamp-2 text-sm">{doc.filename}</h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {getMasterDataTranslation(doc.major, MasterDataType.MAJOR, { majors })} -{" "}
-                      {getMasterDataTranslation(doc.category, MasterDataType.DOCUMENT_CATEGORY, { categories })}
-                    </p>
+                    <div className="my-2">
+                      <MultiValueDisplay value={doc.majors} type={MasterDataType.MAJOR} masterData={{ majors }} />
+                    </div>
                   </div>
                 </div>
               </Card>

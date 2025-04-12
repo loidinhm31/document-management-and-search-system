@@ -4,7 +4,11 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 
-export const HighlightCell = ({ highlights }) => {
+interface HighlightCellProps {
+  highlights: string[];
+}
+
+export const HighlightCell: React.FC<HighlightCellProps> = ({ highlights }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const MAX_VISIBLE_HIGHLIGHTS = 2;
@@ -19,7 +23,7 @@ export const HighlightCell = ({ highlights }) => {
   return (
     <div className="space-y-2">
       <div className="space-y-1">
-        {visibleHighlights.map((highlight, index) => (
+        {visibleHighlights.map((highlight: string, index: number) => (
           <div
             key={index}
             className="text-sm text-muted-foreground rounded-md bg-muted/50 p-2"

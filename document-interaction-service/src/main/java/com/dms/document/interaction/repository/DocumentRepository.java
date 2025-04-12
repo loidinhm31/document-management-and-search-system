@@ -20,17 +20,28 @@ public interface DocumentRepository extends MongoRepository<DocumentInformation,
     @Query(value = "{'tags': {'$exists': true}, 'deleted': {'$ne': true}}", fields = "{'_id': 0, 'tags': 1}")
     List<TagsResponse> findAllTags();
 
-    @Query("{ '_id': ?0, '$or': [ " +
-           "{ 'user_id': ?1 }, " +
-           "{ 'sharing_type': 'PUBLIC' }, " +
-           "{ '$and': [ " +
-           "    { 'sharing_type': 'SPECIFIC' }, " +
-           "    { 'shared_with': ?1 } " +
-           "  ] } " +
-           "]," +
-           "report_status: {$ne: 'RESOLVED'} " +
-           "}")
+    @Query("""
+            { '_id': ?0, '$or': [
+            { 'user_id': ?1 },
+            { 'sharing_type': 'PUBLIC' },
+            { '$and': [
+                { 'sharing_type': 'SPECIFIC' },
+                { 'shared_with': ?1 }
+              ] }
+            ],
+            'deleted': {'$ne': true},
+            'report_status': {$ne: 'RESOLVED'}
+            }
+            """)
     Optional<DocumentInformation> findAccessibleDocumentByIdAndUserId(String id, String userId);
+
+    @Query("""
+            { '_id': ?0,
+            'deleted': {'$ne': true},
+            'report_status': {$ne: 'RESOLVED'}
+            }
+            """)
+    Optional<DocumentInformation> findAccessibleDocumentById(String id);
 
     @Query(value = "{'majors': ?0, 'deleted': {$ne: true}}", exists = true)
     boolean existsByMajorCode(String code);
@@ -43,4 +54,13 @@ public interface DocumentRepository extends MongoRepository<DocumentInformation,
 
     @Query(value = "{'categories': ?0, 'deleted': {$ne: true}}", exists = true)
     boolean existsByCategoryCode(String code);
+
+    @Query(value = "{'filename': {'$regex': ?0, '$options': 'i'}, 'deleted': {'$ne': true}}")
+    List<DocumentInformation> findByFilenameLikeIgnoreCase(String filename);
+
+    @Query(value = "{'user_id': ?0, 'deleted': {'$ne': true}}")
+    List<DocumentInformation> findByUserIdAndNotDeleted(String userId);
+
+    @Query(value = "{'filename': {'$regex': ?0, '$options': 'i'}, 'user_id': ?1, 'deleted': {'$ne': true}}")
+    List<DocumentInformation> findByFilenameLikeIgnoreCaseAndUserId(String filename, String userId);
 }

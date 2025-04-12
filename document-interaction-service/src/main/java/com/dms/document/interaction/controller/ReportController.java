@@ -50,6 +50,7 @@ public class ReportController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<AdminDocumentReportResponse>> getAllDocumentReports(
             @RequestParam(required = false) String documentTitle,
+            @RequestParam(required = false) String uploaderUsername,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant toDate,
             @RequestParam(required = false) DocumentReportStatus status,
@@ -57,7 +58,7 @@ public class ReportController {
             Pageable pageable) {
 
         return ResponseEntity.ok(documentReportService.getAdminDocumentReports(
-                documentTitle, fromDate, toDate, status, reportTypeCode, pageable));
+                documentTitle, uploaderUsername, fromDate, toDate, status, reportTypeCode, pageable));
     }
 
     @Operation(summary = "Get all report details for a specific document",

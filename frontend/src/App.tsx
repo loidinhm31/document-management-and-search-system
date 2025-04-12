@@ -12,7 +12,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/context/auth-context";
-import { ProcessingProvider } from "@/context/processing-provider";
 import { ProcessingStatus } from "@/context/processing-status";
 import { getRoutes } from "@/core/route-config";
 
@@ -50,35 +49,33 @@ export default function App() {
     <BrowserRouter>
       <ThemeProvider defaultTheme="light" storageKey="ui-theme">
         <AuthProvider>
-          <ProcessingProvider>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                <Route path="/" element={<Navigate to="/home" replace />} />
-                <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-                {getRoutes().map((route) => {
-                  const Component = route.component;
-                  return (
-                    <Route
-                      key={route.path}
-                      path={route.path}
-                      element={
-                        route.isSecure ? (
-                          <ProtectedRoute permission={route.permission}>
-                            <AuthenticatedLayout children={<Component />} />
-                          </ProtectedRoute>
-                        ) : (
-                          <Component />
-                        )
-                      }
-                    />
-                  );
-                })}
-                <Route path="*" element={<Navigate to="/home" replace />} />
-              </Routes>
-              <ProcessingStatus />
-              <Toaster />
-            </Suspense>
-          </ProcessingProvider>
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/home" replace />} />
+              <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+              {getRoutes().map((route) => {
+                const Component = route.component;
+                return (
+                  <Route
+                    key={route.path}
+                    path={route.path}
+                    element={
+                      route.isSecure ? (
+                        <ProtectedRoute permission={route.permission}>
+                          <AuthenticatedLayout children={<Component />} />
+                        </ProtectedRoute>
+                      ) : (
+                        <Component />
+                      )
+                    }
+                  />
+                );
+              })}
+              <Route path="*" element={<Navigate to="/home" replace />} />
+            </Routes>
+            <ProcessingStatus />
+            <Toaster />
+          </Suspense>
         </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>

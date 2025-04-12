@@ -4,34 +4,21 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import * as z from "zod";
 
 import LanguageSwitcher from "@/components/common/language-switcher";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { createSignupSchema, SignupFormValues } from "@/schemas/register-schema";
 import { authService } from "@/services/auth.service";
 import { SignupRequest } from "@/types/auth";
 
-const signupSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  email: z.string().email("Invalid email address"),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters")
-    .regex(
-      /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).*$/,
-      "Password must contain at least one digit, lowercase, uppercase, and special character",
-    ),
-});
-
-type SignupFormValues = z.infer<typeof signupSchema>;
-
 export default function RegisterPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { token } = useAuth();
   const { toast } = useToast();
@@ -39,13 +26,24 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const form = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
+    resolver: zodResolver(createSignupSchema(t)),
+    mode: "onBlur",
     defaultValues: {
       username: "",
       email: "",
       password: "",
     },
   });
+
+  useEffect(() => {
+    // Get fields that have been touched by the user
+    const touchedFields = Object.keys(form.formState.touchedFields);
+
+    // Only trigger validation for fields the user has interacted with
+    if (touchedFields.length > 0) {
+      form.trigger(touchedFields as any);
+    }
+  }, [i18n.language]);
 
   useEffect(() => {
     if (token) {
@@ -60,7 +58,6 @@ export default function RegisterPage() {
         username: data.username,
         email: data.email,
         password: data.password,
-        role: ["ROLE_USER"],
       };
       await authService.register(signupData);
 
@@ -101,8 +98,9 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
+      <div className="absolute right-4 top-4 flex items-center gap-2">
         <LanguageSwitcher />
+        <ThemeToggle />
       </div>
 
       <Card className="w-full max-w-md">

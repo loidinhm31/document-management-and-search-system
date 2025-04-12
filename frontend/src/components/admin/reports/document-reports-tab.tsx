@@ -1,23 +1,21 @@
-import { Calendar, Search, UserRound, X } from "lucide-react";
-import moment from "moment-timezone";
-import React, { useEffect, useState } from "react";
+import { Search, UserRound } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 
 import DocumentReportProcessDialog from "@/components/admin/reports/document-report-process-dialog";
 import DocumentReportReasonsDialog from "@/components/admin/reports/document-report-reasons-dialog";
+import DatePicker from "@/components/common/date-picker";
+import TableSkeleton from "@/components/common/table-skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { reportService } from "@/services/report.service";
-import TableSkeleton from "@/components/common/table-skeleton";
-import { CommentReport, DocumentReport, ReportStatus, ReportStatusValues, ReportType } from "@/types/document-report";
-import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { DocumentReportFilter, reportService } from "@/services/report.service";
+import { DocumentReport, ReportStatus, ReportType } from "@/types/document-report";
 
 interface DocumentReportsResponse {
   content: DocumentReport[];
@@ -42,6 +40,7 @@ const DocumentReportsTab = () => {
   const [status, setStatus] = useState("all");
   const [fromDate, setFromDate] = useState<Date | undefined>(undefined);
   const [toDate, setToDate] = useState<Date | undefined>(undefined);
+  const [dateRangeError, setDateRangeError] = useState<string | null>(null);
 
   const [selectedReport, setSelectedReport] = useState<DocumentReport | null>(null);
   const [showReasonsDialog, setShowReasonsDialog] = useState(false);
@@ -49,15 +48,36 @@ const DocumentReportsTab = () => {
   const [processingReport, setProcessingReport] = useState(false);
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
 
+  // Validate date range
+  const validateDateRange = useCallback(() => {
+    if (fromDate && toDate) {
+      // Create date objects for midnight on the selected dates for proper comparison
+      const fromDateObj = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+
+      const toDateObj = new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+
+      // Compare dates
+      if (fromDateObj > toDateObj) {
+        setDateRangeError(t("document.history.validation.dateRange"));
+      } else {
+        setDateRangeError(null);
+      }
+    } else {
+      // If both dates aren't selected, no error
+      setDateRangeError(null);
+    }
+  }, [fromDate, toDate, t]);
+
+  // Check validation whenever dates change
+  useEffect(() => {
+    validateDateRange();
+  }, [fromDate, toDate, validateDateRange]);
+
   // Initial fetch
   useEffect(() => {
     loadReportTypes();
+    fetchReports(); // Initial load of reports
   }, []);
-
-  // Fetch reports on initial load and when filters change
-  useEffect(() => {
-    fetchReports();
-  }, [currentPage]);
 
   const loadReportTypes = async () => {
     try {
@@ -68,17 +88,41 @@ const DocumentReportsTab = () => {
     }
   };
 
-  const fetchReports = async () => {
+  const fetchReports = async (overrideFilters: DocumentReportFilter = {}) => {
+    if (dateRangeError && !Object.prototype.hasOwnProperty.call(overrideFilters, "fromDate")) {
+      return;
+    }
+
     setLoading(true);
     try {
       const filters = {
-        documentTitle: documentTitle || undefined,
-        uploaderUsername: uploaderUsername || undefined,
-        reportTypeCode: reportTypeCode === "all" ? undefined : reportTypeCode,
-        status: status === "all" ? undefined : status,
-        fromDate: fromDate,
-        toDate: toDate,
-        page: currentPage,
+        documentTitle:
+          overrideFilters.documentTitle !== undefined ? overrideFilters.documentTitle : documentTitle || undefined,
+        uploaderUsername:
+          overrideFilters.uploaderUsername !== undefined
+            ? overrideFilters.uploaderUsername
+            : uploaderUsername || undefined,
+        reportTypeCode:
+          overrideFilters.reportTypeCode !== undefined
+            ? overrideFilters.reportTypeCode === "all"
+              ? undefined
+              : overrideFilters.reportTypeCode
+            : reportTypeCode === "all"
+              ? undefined
+              : reportTypeCode,
+        status:
+          overrideFilters.status !== undefined
+            ? overrideFilters.status === "all"
+              ? undefined
+              : overrideFilters.status
+            : status === "all"
+              ? undefined
+              : status,
+        fromDate: Object.prototype.hasOwnProperty.call(overrideFilters, "fromDate")
+          ? overrideFilters.fromDate
+          : fromDate,
+        toDate: Object.prototype.hasOwnProperty.call(overrideFilters, "toDate") ? overrideFilters.toDate : toDate,
+        page: overrideFilters.page !== undefined ? overrideFilters.page : currentPage,
         size: 10,
       };
 
@@ -87,7 +131,7 @@ const DocumentReportsTab = () => {
 
       setReports(data.content);
       setTotalPages(data.totalPages);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.reports.documents.fetchError"),
@@ -99,6 +143,10 @@ const DocumentReportsTab = () => {
   };
 
   const handleSearch = () => {
+    if (dateRangeError) {
+      return;
+    }
+
     setCurrentPage(0);
     fetchReports();
   };
@@ -107,14 +155,27 @@ const DocumentReportsTab = () => {
     setDocumentTitle("");
     setUploaderUsername("");
     setStatus("all");
+    setReportTypeCode("all");
     setFromDate(undefined);
     setToDate(undefined);
     setCurrentPage(0);
-    fetchReports();
+    setDateRangeError(null);
+
+    // Fetch reports with reset filters directly instead of relying on state
+    fetchReports({
+      documentTitle: "",
+      uploaderUsername: "",
+      status: "all",
+      reportTypeCode: "all",
+      fromDate: undefined,
+      toDate: undefined,
+      page: 0,
+    });
   };
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
+    fetchReports({ page: newPage });
   };
 
   const handleViewReasons = (report: DocumentReport) => {
@@ -137,7 +198,7 @@ const DocumentReportsTab = () => {
         variant: "success",
       });
       fetchReports();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.reports.documents.processError"),
@@ -147,10 +208,6 @@ const DocumentReportsTab = () => {
       setProcessingReport(false);
       setShowProcessDialog(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return moment(dateString).format("DD/MM/YYYY, h:mm a");
   };
 
   const canResolve = (report: DocumentReport) => {
@@ -178,49 +235,53 @@ const DocumentReportsTab = () => {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <div>
           <Label>{t("admin.reports.documents.filters.documentTitle")}</Label>
-          <div className="mt-1">
+          <div className="mt-1 w-full">
             <Input
               value={documentTitle}
               onChange={(e) => setDocumentTitle(e.target.value)}
               placeholder={t("admin.reports.documents.filters.documentTitle")}
+              className="w-full"
             />
           </div>
         </div>
 
         <div>
           <Label>{t("admin.reports.documents.filters.uploaderUsername")}</Label>
-          <div className="mt-1">
+          <div className="mt-1 w-full">
             <Input
               value={uploaderUsername}
               onChange={(e) => setUploaderUsername(e.target.value)}
               placeholder={t("admin.reports.documents.filters.uploaderUsername")}
+              className="w-full"
             />
           </div>
         </div>
 
         <div>
           <Label>{t("admin.reports.documents.filters.reportType")}</Label>
-          <Select value={reportTypeCode} onValueChange={setReportTypeCode}>
-            <SelectTrigger>
-              <SelectValue placeholder={t("admin.reports.documents.filters.reportType")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("admin.reports.documents.filters.allTypes")}</SelectItem>
+          <div className="mt-1 w-full">
+            <Select value={reportTypeCode} onValueChange={setReportTypeCode}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t("admin.reports.documents.filters.reportType")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("admin.reports.documents.filters.allTypes")}</SelectItem>
 
-              {reportTypes.map((type) => (
-                <SelectItem key={type.code} value={type.code}>
-                  {type.translations[i18n.language] || type.translations.en}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                {reportTypes.map((type) => (
+                  <SelectItem key={type.code} value={type.code}>
+                    {type.translations[i18n.language] || type.translations.en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div>
           <Label>{t("admin.reports.documents.filters.status")}</Label>
-          <div className="mt-1">
+          <div className="mt-1 w-full">
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder={t("admin.reports.documents.filters.allStatuses")} />
               </SelectTrigger>
               <SelectContent>
@@ -236,66 +297,37 @@ const DocumentReportsTab = () => {
 
         <div>
           <Label>{t("admin.reports.documents.filters.fromDate")}</Label>
-          <div className="mt-1">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {fromDate ? (
-                    formatDate(fromDate.toISOString())
-                  ) : (
-                    <span>{t("admin.reports.documents.filters.fromDate")}</span>
-                  )}
-                  {fromDate && (
-                    <X
-                      className="ml-auto h-4 w-4 cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFromDate(undefined);
-                      }}
-                    />
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent mode="single" selected={fromDate} onSelect={setFromDate} initialFocus />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <DatePicker
+            value={fromDate}
+            onChange={setFromDate}
+            placeholder={t("admin.reports.documents.filters.fromDate")}
+            clearAriaLabel="Clear from date"
+            className="w-full mt-1"
+          />
         </div>
 
         <div>
           <Label>{t("admin.reports.documents.filters.toDate")}</Label>
-          <div className="mt-1">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left font-normal">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {toDate ? (
-                    formatDate(toDate.toISOString())
-                  ) : (
-                    <span>{t("admin.reports.documents.filters.toDate")}</span>
-                  )}
-                  {toDate && (
-                    <X
-                      className="ml-auto h-4 w-4 cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setToDate(undefined);
-                      }}
-                    />
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <CalendarComponent mode="single" selected={toDate} onSelect={setToDate} initialFocus />
-              </PopoverContent>
-            </Popover>
-          </div>
+          <DatePicker
+            value={toDate}
+            onChange={setToDate}
+            placeholder={t("admin.reports.documents.filters.toDate")}
+            clearAriaLabel="Clear to date"
+            className="w-full mt-1"
+          />
         </div>
 
+        {/* Date Range Error Display */}
+        {dateRangeError && (
+          <div className="col-span-full">
+            <div className="rounded-md bg-destructive/15 px-3 py-2 text-sm text-destructive">
+              <span>{dateRangeError}</span>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-end gap-2">
-          <Button onClick={handleSearch} className="flex-1">
+          <Button onClick={handleSearch} className="flex-1" disabled={!!dateRangeError}>
             <Search className="mr-2 h-4 w-4" />
             {t("admin.reports.documents.filters.search")}
           </Button>
@@ -329,7 +361,7 @@ const DocumentReportsTab = () => {
                       <div className="flex items-center">
                         <Button
                           variant="link"
-                          className="text-wrap"
+                          className="font-medium truncate p-0 h-auto text-left text-wrap"
                           onClick={() => navigate(`/discover/${report.documentId}`)}
                         >
                           {report.documentTitle}

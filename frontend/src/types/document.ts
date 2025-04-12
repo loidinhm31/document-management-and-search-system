@@ -1,3 +1,6 @@
+ // Session storage key for tracking viewed documents
+ export const VIEWED_DOCUMENTS_KEY = "viewedDocuments";
+
 export enum DocumentType {
   PDF = "PDF",
   WORD = "WORD",
@@ -13,7 +16,7 @@ export enum DocumentType {
   MARKDOWN = "MARKDOWN",
 }
 
-export const MAX_FILE_SIZE = 25 * 1024 * 1024; // 10MB in bytes
+export const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB in bytes
 
 export interface DocumentInformation {
   id: string;
@@ -29,7 +32,6 @@ export interface DocumentInformation {
   majors?: string[];
   courseCodes?: string[];
   courseLevel: string;
-  category: string;
   categories?: string[];
   tags?: string[];
   extractedMetadata?: Record<string, string>;
@@ -125,3 +127,12 @@ export const ACCEPT_TYPE_MAP = {
   "text/x-markdown": [".md"],
   "application/markdown": [".md"],
 };
+
+export interface ProcessingItem {
+  id: string;
+  documentId: string;
+  filename: string;
+  status: DocumentStatus;
+  error?: string;
+  addedAt: number;
+}

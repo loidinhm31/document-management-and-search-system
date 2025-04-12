@@ -1,4 +1,4 @@
-export interface GetUsersParams {
+export interface GetUsersRequest {
   search?: string;
   enabled?: boolean;
   role?: string;
@@ -25,11 +25,7 @@ export interface UserData {
   email: string;
   role: Role;
   accountNonLocked: boolean;
-  accountNonExpired: boolean;
-  credentialsNonExpired: boolean;
   enabled: boolean;
-  credentialsExpiryDate: string;
-  accountExpiryDate: string;
   twoFactorEnabled: boolean;
   signUpMethod: string;
   createdDate: string;

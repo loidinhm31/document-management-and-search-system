@@ -1,4 +1,4 @@
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -11,9 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CommentReport, ReportStatus, ReportStatusValues } from "@/types/document-report";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CommentReport, ReportStatus, ReportStatusValues } from "@/types/document-report";
 
 interface CommentReportResolveDialogProps {
   open: boolean;
@@ -35,7 +35,7 @@ const CommentReportProcessDialog: React.FC<CommentReportResolveDialogProps> = ({
 
   const handleSetStatus = (status: ReportStatus) => {
     setSelectedStatus(status);
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -74,7 +74,6 @@ const CommentReportProcessDialog: React.FC<CommentReportResolveDialogProps> = ({
               </div>
             </div>
           </RadioGroup>
-
         </div>
 
         <DialogFooter>

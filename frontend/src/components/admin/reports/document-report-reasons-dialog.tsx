@@ -43,7 +43,7 @@ const DocumentReportReasonsDialog: React.FC<DocumentReportReasonsDialogProps> = 
     try {
       const response = await reportService.getDocumentReportDetail(documentId, status);
       setReportReasons(response.data || []);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("admin.reports.documents.reasonsError"),

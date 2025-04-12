@@ -114,12 +114,11 @@ export const DocumentFilter = ({
         <Label>{t("document.commonSearch.majorLabel")}</Label>
         <TagInput
           value={majors.includes("all") ? [] : majors}
-          onChange={(values) => onMajorsChange(values.length > 0 ? values : ["all"])}
+          onChange={(values) => onMajorsChange(values.length > 0 ? values : [])}
           recommendedTags={availableMajors?.map((major) => major.code) || []}
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.majorPlaceholder")}
           disabled={!availableMajors}
-          allowMultiple={true}
         />
       </div>
 
@@ -128,19 +127,18 @@ export const DocumentFilter = ({
         <Label>{t("document.commonSearch.courseCodeLabel")}</Label>
         <TagInput
           value={courseCodes.includes("all") ? [] : courseCodes}
-          onChange={(values) => onCourseCodesChange(values.length > 0 ? values : ["all"])}
+          onChange={(values) => onCourseCodesChange(values.length > 0 ? values : [])}
           recommendedTags={filteredCourseCodes?.map((course) => course.code) || []}
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.courseCodePlaceholder")}
           disabled={!filteredCourseCodes || majors.length === 0 || majors.includes("all")}
-          allowMultiple={true}
         />
       </div>
 
-      {/* Level Filter - Keep as is */}
+      {/* Level Filter */}
       <div className="space-y-2">
         <Label>{t("document.commonSearch.levelLabel")}</Label>
-        <Select value={undefined} onValueChange={onLevelChange}>
+        <Select value={level} onValueChange={onLevelChange}>
           <SelectTrigger disabled={!levels}>
             <SelectValue placeholder={t("document.commonSearch.levelPlaceholder")} />
           </SelectTrigger>
@@ -159,12 +157,11 @@ export const DocumentFilter = ({
         <Label>{t("document.commonSearch.categoryLabel")}</Label>
         <TagInput
           value={categories.includes("all") ? [] : categories}
-          onChange={(values) => onCategoriesChange(values.length > 0 ? values : ["all"])}
+          onChange={(values) => onCategoriesChange(values.length > 0 ? values : [])}
           recommendedTags={availableCategories?.map((category) => category.code) || []}
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.categoryPlaceholder")}
           disabled={!availableCategories}
-          allowMultiple={true}
         />
       </div>
 

@@ -3,7 +3,6 @@ import { Flag, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
-import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,9 +18,10 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { createCommentReportSchema, ReportFormValues } from "@/schemas/report-schemas";
 import { documentReportService } from "@/services/document-report.service";
-import { ReportType } from "@/types/document-report";
 import { reportService } from "@/services/report.service";
+import { ReportType } from "@/types/document-report";
 
 interface ReportCommentDialogProps {
   documentId: string;
@@ -31,13 +31,6 @@ interface ReportCommentDialogProps {
   isReported?: boolean;
   onReportSuccess?: () => void;
 }
-
-const formSchema = z.object({
-  reportTypeCode: z.string({
-    required_error: "Please select a report type",
-  }),
-  description: z.string().optional(),
-});
 
 export function ReportCommentDialog({
   documentId,
@@ -55,8 +48,9 @@ export function ReportCommentDialog({
   const [reportTypes, setReportTypes] = useState<ReportType[]>([]);
   const [existingReport, setExistingReport] = useState<any | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<ReportFormValues>({
+    resolver: zodResolver(createCommentReportSchema(t)),
+    mode: "onBlur",
   });
 
   useEffect(() => {
@@ -87,7 +81,7 @@ export function ReportCommentDialog({
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: ReportFormValues) => {
     setLoading(true);
     try {
       const request = {
@@ -109,7 +103,7 @@ export function ReportCommentDialog({
       }
 
       setOpen(false);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: t("common.error"),
         description: t("comments.report.createError"),
