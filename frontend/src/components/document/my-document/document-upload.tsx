@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useDispatch } from "react-redux";
+import { v4 as uuidv4 } from "uuid";
 
 import { DocumentForm } from "@/components/document/document-form";
-import { useProcessing } from "@/context/processing-provider";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentFormValues } from "@/schemas/document-schema";
 import { documentService } from "@/services/document.service";
+import { addProcessingItem } from "@/store/slices/processing-slice";
+import { DocumentStatus } from "@/types/document";
 
 interface DocumentUploadProps {
   onUploadSuccess?: () => void;
@@ -13,7 +16,7 @@ interface DocumentUploadProps {
 
 export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess }) => {
   const { t } = useTranslation();
-  const { addProcessingItem } = useProcessing();
+  const dispatch = useDispatch();
 
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
@@ -56,7 +59,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
         formData.append("tags", cleanedTags.join(","));
       }
 
-      handleUpload(formData);
+      await handleUpload(formData);
 
       // Call the success callback if provided
       onUploadSuccess?.();
@@ -77,7 +80,15 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({ onUploadSuccess 
       const document = response.data;
 
       // Add to processing queue
-      addProcessingItem(document.id, document.filename);
+      dispatch(
+        addProcessingItem({
+          id: uuidv4(),
+          documentId: document.id,
+          filename: document.filename,
+          status: DocumentStatus.PENDING,
+          addedAt: new Date().getTime(),
+        }),
+      );
 
       // Close dialog or continue with your existing flow
       onUploadSuccess?.();

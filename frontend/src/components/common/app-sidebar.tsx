@@ -1,7 +1,7 @@
 import { Activity, AlertTriangle, BookOpen, Database, FileText, Settings2Icon, Users } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import LanguageSwitcher from "@/components/common/language-switcher";
 import { LogoHeader } from "@/components/common/logo-header";
@@ -65,19 +65,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     {
       title: t("navigation.admin.userManagement"),
       icon: Users,
-      href: RoutePaths.ADMIN.USERS,
+      path: RoutePaths.ADMIN.USERS,
       isActive: location.pathname.startsWith(RoutePaths.ADMIN.USERS),
     },
     {
       title: t("navigation.admin.masterData"),
       icon: Database,
-      href: RoutePaths.ADMIN.MASTER_DATA,
+      path: RoutePaths.ADMIN.MASTER_DATA,
       isActive: location.pathname.startsWith(RoutePaths.ADMIN.MASTER_DATA),
     },
     {
       title: t("navigation.admin.reports"),
       icon: AlertTriangle,
-      href: RoutePaths.ADMIN.REPORTS,
+      path: RoutePaths.ADMIN.REPORTS,
       isActive: location.pathname.startsWith(RoutePaths.ADMIN.REPORTS),
     },
   ];
@@ -109,10 +109,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 item?.permissions?.includes(role) && (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild tooltip={item.title} isActive={item.isActive}>
-                      <a href={item.href}>
+                      <Link to={item.href}>
                         <item.icon />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ),
@@ -126,12 +126,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroupLabel>{t("navigation.admin.title")}</SidebarGroupLabel>
             <SidebarMenu>
               {adminNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
+                <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton asChild tooltip={item.title} isActive={item.isActive}>
-                    <a href={item.href}>
+                    <Link to={item.path}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

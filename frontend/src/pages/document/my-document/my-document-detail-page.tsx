@@ -10,6 +10,7 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
 
 import { DeleteDialog } from "@/components/common/delete-dialog";
 import { DocumentForm } from "@/components/document/document-form";
@@ -19,16 +20,15 @@ import DocumentViewer from "@/components/document/viewers/document-viewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/auth-context";
-import { useProcessing } from "@/context/processing-provider";
 import { RoutePaths } from "@/core/route-config";
 import { useToast } from "@/hooks/use-toast";
+import { getDescriptionType } from "@/lib/utils";
 import { DocumentFormValues } from "@/schemas/document-schema";
 import { documentService } from "@/services/document.service";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { setCurrentDocument } from "@/store/slices/document-slice";
-import { selectProcessingItems } from "@/store/slices/processing-slice";
+import { addProcessingItem, selectProcessingItems } from "@/store/slices/processing-slice";
 import { DocumentInformation, DocumentStatus, ProcessingItem } from "@/types/document";
-import { getDescriptionType } from "@/lib/utils";
 
 export default function MyDocumentDetailPage() {
   const { t } = useTranslation();
@@ -36,8 +36,6 @@ export default function MyDocumentDetailPage() {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { documentId } = useParams<{ documentId: string }>();
-
-  const { addProcessingItem } = useProcessing();
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -59,7 +57,8 @@ export default function MyDocumentDetailPage() {
     if (
       currentUser?.userId &&
       documentData &&
-      (documentData.userId !== currentUser.userId && !documentData?.sharedWith.includes(currentUser.userId))
+      documentData.userId !== currentUser.userId &&
+      !documentData?.sharedWith.includes(currentUser.userId)
     ) {
       toast({
         title: t("common.error"),
@@ -183,10 +182,21 @@ export default function MyDocumentDetailPage() {
       const response = await documentService.updateDocumentWithFile(documentId, formData);
       const document = response.data;
 
-      // Add to processing queue
-      addProcessingItem(document.id, document.originalFilename);
+      // Add to processing queue using Redux directly
+      dispatch(
+        addProcessingItem({
+          id: uuidv4(),
+          documentId: document.id,
+          filename: document.filename,
+          status: DocumentStatus.PENDING,
+          addedAt: new Date().getTime(),
+        }),
+      );
+
+      return response;
     } catch (error) {
       console.log(error);
+      throw error;
     }
   };
 

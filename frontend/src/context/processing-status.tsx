@@ -1,14 +1,22 @@
 import { AlertCircle, CheckCircle2, Loader2, Timer, X } from "lucide-react";
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { useDispatch, useSelector } from "react-redux";
 
-import { useProcessing } from "@/context/processing-provider";
 import { documentService } from "@/services/document.service";
+import {
+  removeProcessingItem,
+  selectProcessingItems,
+  selectProcessingVisibility,
+  updateProcessingItem,
+} from "@/store/slices/processing-slice";
 import { DocumentStatus } from "@/types/document";
 
 export function ProcessingStatus() {
   const { t } = useTranslation();
-  const { items, updateProcessingItem, removeProcessingItem } = useProcessing();
+  const dispatch = useDispatch();
+  const items = useSelector(selectProcessingItems);
+  const isVisible = useSelector(selectProcessingVisibility);
 
   // Poll for status updates
   useEffect(() => {
@@ -21,18 +29,27 @@ export function ProcessingStatus() {
         try {
           console.info("Polling", item);
           const response = await documentService.getDocumentDetails(item.documentId);
-          updateProcessingItem(item.documentId, response.data.status, response.data.processingError);
+          dispatch(
+            updateProcessingItem({
+              documentId: item.documentId,
+              status: response.data.status,
+              error: response.data.processingError,
+            }),
+          );
         } catch (error) {
           console.info("Failed to check status:", error);
         }
       }
     };
 
-    const interval = setInterval(checkStatuses, 5000);
-    return () => clearInterval(interval);
-  }, [items, updateProcessingItem]);
+    // Only poll if there are items to check
+    if (items.length > 0) {
+      const interval = setInterval(checkStatuses, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [items, dispatch]);
 
-  // Auto-remove completed items after 5 seconds
+  // Auto-remove completed items after delay
   useEffect(() => {
     const completedItems = items.filter(
       (item) => item.status === DocumentStatus.COMPLETED || item.status === DocumentStatus.FAILED,
@@ -40,14 +57,15 @@ export function ProcessingStatus() {
 
     completedItems.forEach((item) => {
       const timer = setTimeout(() => {
-        removeProcessingItem(item.id);
+        dispatch(removeProcessingItem(item.id));
       }, 5000);
 
       return () => clearTimeout(timer);
     });
-  }, [items, removeProcessingItem]);
+  }, [items, dispatch]);
 
-  if (items.length === 0) return null;
+  // If no items or explicitly hidden, don't render
+  if (items.length === 0 || !isVisible) return null;
 
   return (
     <div className="fixed right-4 top-4 z-50 flex flex-col gap-2 w-80">
@@ -80,7 +98,7 @@ export function ProcessingStatus() {
             </div>
 
             {/* Close button */}
-            <button onClick={() => removeProcessingItem(item.id)} className="rounded-md p-1 hover:bg-muted">
+            <button onClick={() => dispatch(removeProcessingItem(item.id))} className="rounded-md p-1 hover:bg-muted">
               <X className="h-4 w-4" />
             </button>
           </div>

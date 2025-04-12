@@ -353,13 +353,13 @@
           "error": "Failed to update account status"
         },
         "revokeTokens": {
-          "title": "Revoke Refresh Tokens",
-          "description": "This action will invalidate all refresh tokens for this user. The user will need to log in again on all devices. This cannot be undone.",
-          "button": "Revoke Refresh Tokens",
-          "confirm": "Revoke Refresh Tokens",
+          "title": "Revoke Tokens",
+          "description": "This action will invalidate all tokens for this user. The user will need to log in again on all devices. This cannot be undone.",
+          "button": "Revoke Tokens",
+          "confirm": "Revoke Tokens",
           "processing": "Revoking...",
-          "success": "Refresh Tokens successfully revoked",
-          "error": "Failed to revoke refresh tokens"
+          "success": "Tokens successfully revoked",
+          "error": "Failed to revoke tokens"
         }
       },
       "messages": {
@@ -388,9 +388,9 @@
         },
         "accountStatus": {
           "title": "Account Status",
-          "locked": "Account Locked",
+          "locked": "Account Lock",
           "lockedDescription": "Temporarily lock account access",
-          "tokenExpired": "Refresh Token Expired",
+          "tokenExpired": "Access and refresh token",
           "tokenExpiredDescription": "Force revoke all refresh tokens",
           "twoFactor": "Two-Factor Authentication",
           "twoFactorEnabledDescription": "User has enabled two-factor authentication",

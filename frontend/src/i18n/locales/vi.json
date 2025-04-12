@@ -353,13 +353,13 @@
           "error": "Không thể cập nhật trạng thái tài khoản"
         },
         "revokeTokens": {
-          "title": "Thu hồi Refresh Tokens",
-          "description": "Hành động này sẽ vô hiệu hóa tất cả các refresh token cho người dùng này. Người dùng sẽ cần phải đăng nhập lại trên tất cả các thiết bị. Không thể hoàn tác thao tác này.",
-          "button": "Thu hồi Refresh Token",
-          "confirm": "Thu hồi Refresh Token",
+          "title": "Thu hồi Tokens",
+          "description": "Hành động này sẽ vô hiệu hóa tất cả các token cho người dùng này. Người dùng sẽ cần phải đăng nhập lại trên tất cả các thiết bị. Không thể hoàn tác thao tác này.",
+          "button": "Thu hồi Token",
+          "confirm": "Thu hồi Token",
           "processing": "Đang thu hồi...",
-          "success": "Đã thu hồi refresh token thành công",
-          "error": "Không thu hồi được refresh token"
+          "success": "Đã thu hồi token thành công",
+          "error": "Không thu hồi được token"
         }
       },
       "messages": {
@@ -388,9 +388,9 @@
         },
         "accountStatus": {
           "title": "Trạng thái tài khoản",
-          "locked": "Tài khoản bị khóa",
+          "locked": "Khóa tài khoản",
           "lockedDescription": "Tạm thời khóa quyền truy cập tài khoản",
-          "tokenExpired": "Token làm mới đã hết hạn",
+          "tokenExpired": "Token truy cập và làm mới",
           "tokenExpiredDescription": "Buộc thu hồi tất cả token làm mới",
           "twoFactor": "Xác thực 2 yếu tố",
           "twoFactorEnabledDescription": "Người dùng đã bật xác thực hai yếu tố",
