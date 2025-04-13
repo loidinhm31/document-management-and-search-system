@@ -98,9 +98,9 @@ public class OcrLargeFileProcessor {
         }
     }
 
-    public String processLargePdf(Path pdfPath) throws IOException, TesseractException {
+    public String processLargeFile(Path pdfPath) throws IOException, TesseractException {
         if (Objects.isNull(pdfPath)) {
-            throw new IllegalArgumentException("PDF path cannot be null");
+            throw new IllegalArgumentException("Large file path cannot be null");
         }
 
         File tempDirectory = createTempDirectory();
@@ -116,11 +116,11 @@ public class OcrLargeFileProcessor {
             // Try text extraction first - this is a quick check
             String extractedText = ocrService.extractTextFromPdf(pdfPath);
             if (isTextSufficient(extractedText)) {
-                log.info("Using direct text extraction for large PDF - sufficient text found");
+                log.info("Using direct text extraction for large file - sufficient text found");
                 return extractedText;
             }
 
-            log.info("Starting parallel OCR processing for large PDF with {} pages in chunks of {}",
+            log.info("Starting parallel OCR processing for large file with {} pages in chunks of {}",
                     totalPages, chunkSize);
 
             return processPageImagesInChunks(pageImageFiles, totalPages);

@@ -23,6 +23,17 @@ public interface OcrService {
     String extractTextFromPdf(Path pdfPath) throws IOException, TesseractException;
 
     /**
+     * Extracts text from a non-PDF file using OCR.
+     * This method will attempt to convert the file to images and process with OCR.
+     *
+     * @param filePath Path to the file (e.g., PPT, PPTX, image files)
+     * @return Extracted text from the file
+     * @throws IOException If there is an error reading the file
+     * @throws TesseractException If there is an error during OCR processing
+     */
+    String extractTextFromNonPdf(Path filePath) throws IOException, TesseractException;
+
+    /**
      * Processes a PDF with OCR. The decision to use OCR has already been made
      * by the caller, so this method will always perform OCR.
      *

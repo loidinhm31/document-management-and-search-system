@@ -139,7 +139,7 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
         log.info("Successfully processed reverted document: {}", document.getId());
     }
 
-    private void processFullDocument(DocumentInformation document, Path tempFile) throws IOException {
+    private void processFullDocument(DocumentInformation document, Path tempFile) {
         Integer versionNumber = document.getCurrentVersion();
         if (Objects.isNull(versionNumber)) {
             throw new DocumentProcessingException("No version number provided");

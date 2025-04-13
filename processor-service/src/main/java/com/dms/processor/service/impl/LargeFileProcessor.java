@@ -8,6 +8,7 @@ import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.ToTextContentHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.xml.sax.ContentHandler;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -95,13 +96,13 @@ public class LargeFileProcessor {
     protected String processChunk(byte[] buffer, int bytesRead, Parser parser, ParseContext context)
             throws IOException {
         try {
-            ToTextContentHandler handler = new ToTextContentHandler();
-            Metadata metadata = new Metadata();
+            ContentHandler handler = new ToTextContentHandler();
+            Metadata tikaMetadata = new Metadata();
 
             parser.parse(
                     new ByteArrayInputStream(buffer, 0, bytesRead),
                     handler,
-                    metadata,
+                    tikaMetadata,
                     context
             );
 

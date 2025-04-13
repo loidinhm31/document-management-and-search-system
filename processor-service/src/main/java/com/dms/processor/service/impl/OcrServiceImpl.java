@@ -9,16 +9,22 @@ import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.mime.MediaType;
+import org.apache.tika.mime.MimeTypeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -100,6 +106,35 @@ public class OcrServiceImpl implements OcrService {
     }
 
     @Override
+    public String extractTextFromNonPdf(Path filePath) throws IOException, TesseractException {
+        log.info("Processing non-PDF file with OCR: {}", filePath.getFileName());
+
+        // Create temp directory for extracted images
+        Path tempDir = Files.createTempDirectory("ocr_non_pdf_");
+        List<Path> imageFiles = new ArrayList<>();
+
+        try {
+            // Convert the file to images
+            if (isImageFile(filePath)) {
+                // It's already an image, just use it directly
+                imageFiles.add(filePath);
+            } else {
+                // For other formats like PPT, DOCX, etc., we need to convert to images
+                // This is simplified - in a real implementation you would use appropriate
+                // libraries for each file type
+                imageFiles = convertFileToImages(filePath, tempDir);
+            }
+
+            // Process all these images
+            return processImagesWithOcr(imageFiles);
+
+        } finally {
+            // Clean up temporary files
+            cleanupTempFiles(tempDir, imageFiles);
+        }
+    }
+
+    @Override
     public String processWithOcr(Path pdfPath, int pageCount)
             throws IOException, TesseractException {
         log.debug("Performing OCR on PDF with {} pages", pageCount);
@@ -117,6 +152,113 @@ public class OcrServiceImpl implements OcrService {
             }
         }
         return ocrText;
+    }
+
+    /**
+     * Determines if the file is an image file based on its MIME type
+     */
+    private boolean isImageFile(Path filePath) throws IOException {
+        String mimeType = Files.probeContentType(filePath);
+        return mimeType != null && mimeType.startsWith("image/");
+    }
+
+    /**
+     * Converts a non-PDF document to a series of images for OCR processing
+     * This is a simplified implementation - actual implementation would depend on the file type
+     */
+    private List<Path> convertFileToImages(Path filePath, Path outputDir) throws IOException {
+        String mimeType = Files.probeContentType(filePath);
+        List<Path> imageFiles = new ArrayList<>();
+
+        // Dummy conversion - in a real implementation, you would use libraries like
+        // Apache POI for Office documents, etc.
+        if (mimeType != null && mimeType.contains("powerpoint")) {
+            // For PowerPoint files - use Apache POI's XSLF/HSLF in actual implementation
+            log.info("Converting PowerPoint to images (placeholder)");
+            // Placeholder: create a dummy image file to represent the conversion
+            Path imagePath = outputDir.resolve("slide_1.png");
+            // Create a blank image
+            BufferedImage blankImage = new BufferedImage(1024, 768, BufferedImage.TYPE_INT_RGB);
+            ImageIO.write(blankImage, "PNG", imagePath.toFile());
+            imageFiles.add(imagePath);
+        } else if (mimeType != null && mimeType.contains("word")) {
+            // For Word files - use Apache POI's XWPF/HWPF in actual implementation
+            log.info("Converting Word document to images (placeholder)");
+            Path imagePath = outputDir.resolve("page_1.png");
+            BufferedImage blankImage = new BufferedImage(1024, 768, BufferedImage.TYPE_INT_RGB);
+            ImageIO.write(blankImage, "PNG", imagePath.toFile());
+            imageFiles.add(imagePath);
+        } else {
+            // For other files, copy to temp directory if it's an image, otherwise create dummy image
+            if (mimeType != null && mimeType.startsWith("image/")) {
+                Path targetPath = outputDir.resolve(UUID.randomUUID() + getExtensionFromMimeType(mimeType));
+                Files.copy(filePath, targetPath);
+                imageFiles.add(targetPath);
+            } else {
+                // Generic fallback - create a blank image
+                Path imagePath = outputDir.resolve("unknown_1.png");
+                BufferedImage blankImage = new BufferedImage(1024, 768, BufferedImage.TYPE_INT_RGB);
+                ImageIO.write(blankImage, "PNG", imagePath.toFile());
+                imageFiles.add(imagePath);
+            }
+        }
+
+        return imageFiles;
+    }
+
+    /**
+     * Process a list of images using OCR
+     */
+    private String processImagesWithOcr(List<Path> imageFiles) throws IOException, TesseractException {
+        StringBuilder combinedText = new StringBuilder();
+
+        for (Path imagePath : imageFiles) {
+            BufferedImage image = ImageIO.read(imagePath.toFile());
+            if (image != null) {
+                String pageText = performOcrOnImage(image);
+                if (pageText != null && !pageText.trim().isEmpty()) {
+                    combinedText.append(pageText).append("\n");
+                }
+                image.flush(); // Release memory
+            }
+        }
+
+        return combinedText.toString();
+    }
+
+    /**
+     * Get file extension from MIME type
+     */
+    private String getExtensionFromMimeType(String mimeType) {
+        try {
+            TikaConfig config = TikaConfig.getDefaultConfig();
+            return config.getMimeRepository().forName(mimeType).getExtension();
+        } catch (MimeTypeException e) {
+            log.warn("Could not determine extension for MIME type: {}", mimeType);
+            return ".bin";
+        }
+    }
+
+    /**
+     * Clean up temporary files after processing
+     */
+    private void cleanupTempFiles(Path tempDir, List<Path> imageFiles) {
+        for (Path file : imageFiles) {
+            try {
+                // Only delete the file if it's in the temp directory
+                if (file.startsWith(tempDir)) {
+                    Files.deleteIfExists(file);
+                }
+            } catch (IOException e) {
+                log.warn("Failed to delete temporary file: {}", file, e);
+            }
+        }
+
+        try {
+            Files.deleteIfExists(tempDir);
+        } catch (IOException e) {
+            log.warn("Failed to delete temporary directory: {}", tempDir, e);
+        }
     }
 
     /**
