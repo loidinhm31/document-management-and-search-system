@@ -9,7 +9,6 @@ CREATE TABLE document_comments
     updated_at  TIMESTAMP WITH TIME ZONE NOT NULL,
     edited      BOOLEAN  DEFAULT FALSE,
     flag        SMALLINT DEFAULT 1,
-    version     BIGINT   DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users (user_id),
     CONSTRAINT fk_comments_user FOREIGN KEY (user_id) REFERENCES users (user_id),
     CONSTRAINT fk_comments_parent FOREIGN KEY (parent_id) REFERENCES document_comments (id)
