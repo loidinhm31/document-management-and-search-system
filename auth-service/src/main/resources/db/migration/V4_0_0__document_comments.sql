@@ -3,7 +3,7 @@ CREATE TABLE document_comments
     id          BIGINT PRIMARY KEY,
     document_id VARCHAR                  NOT NULL,
     user_id     UUID                     NOT NULL,
-    content     VARCHAR(1000)            NOT NULL,
+    content     VARCHAR(200)             NOT NULL,
     parent_id   BIGINT,
     created_at  TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at  TIMESTAMP WITH TIME ZONE NOT NULL,

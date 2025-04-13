@@ -71,7 +71,7 @@ public class OcrLargeFileProcessorTest {
     }
 
     @Test
-    public void testProcessLargePdf_DirectTextExtraction() throws IOException, TesseractException {
+    public void testProcessLarge_File_DirectTextExtraction() throws IOException, TesseractException {
         // Setup - create a valid dummy PDF file
         Path pdfPath = createDummyPdfFile();
 
@@ -93,7 +93,7 @@ public class OcrLargeFileProcessorTest {
         doReturn(true).when(ocrLargeFileProcessor).isTextSufficient(anyString());
 
         // Execute
-        String result = ocrLargeFileProcessor.processLargePdf(pdfPath);
+        String result = ocrLargeFileProcessor.processLargeFile(pdfPath);
 
         // Verify
         verify(ocrService).extractTextFromPdf(any(Path.class));
@@ -102,7 +102,7 @@ public class OcrLargeFileProcessorTest {
     }
 
     @Test
-    public void testProcessLargePdf_WithImageExtraction() throws IOException, TesseractException {
+    public void testProcessLarge_File_WithImageExtraction() throws IOException, TesseractException {
         // Setup - create a valid dummy PDF file
         Path pdfPath = createDummyPdfFile();
 
@@ -126,7 +126,7 @@ public class OcrLargeFileProcessorTest {
         doReturn(expectedResult).when(ocrLargeFileProcessor).processPageImagesInChunks(anyList(), anyInt());
 
         // Execute
-        String result = ocrLargeFileProcessor.processLargePdf(pdfPath);
+        String result = ocrLargeFileProcessor.processLargeFile(pdfPath);
 
         // Verify
         verify(ocrService).extractTextFromPdf(any(Path.class));
@@ -214,20 +214,20 @@ public class OcrLargeFileProcessorTest {
     }
 
     @Test
-    void testProcessLargePdf_WithNullPath() {
+    void testProcessLarge_File_WithNullPath() {
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () ->
-                ocrLargeFileProcessor.processLargePdf(null));
+                ocrLargeFileProcessor.processLargeFile(null));
     }
 
     @Test
-    void testProcessLargePdf_WithNonExistentFile() {
+    void testProcessLarge_File_WithNonExistentFile() {
         // Arrange
         Path nonExistentPath = tempDir.resolve("non-existent.pdf");
 
         // Act & Assert
         assertThrows(IOException.class, () ->
-                ocrLargeFileProcessor.processLargePdf(nonExistentPath));
+                ocrLargeFileProcessor.processLargeFile(nonExistentPath));
     }
 
     @Test
@@ -373,7 +373,7 @@ public class OcrLargeFileProcessorTest {
     }
 
     @Test
-    void testProcessLargePdf_CleanupOnSuccess() throws IOException, TesseractException {
+    void testProcessLarge_File_CleanupOnSuccess() throws IOException, TesseractException {
         // Arrange
         Path pdfPath = createDummyPdfFile();
         File mockTempDir = spy(new File(tempDir.toFile(), "cleanup-test"));
@@ -384,7 +384,7 @@ public class OcrLargeFileProcessorTest {
         doReturn(true).when(ocrLargeFileProcessor).isTextSufficient(anyString());
 
         // Act
-        ocrLargeFileProcessor.processLargePdf(pdfPath);
+        ocrLargeFileProcessor.processLargeFile(pdfPath);
 
         // Assert
         verify(ocrLargeFileProcessor).cleanupTempDirectory(mockTempDir);
@@ -507,14 +507,14 @@ public class OcrLargeFileProcessorTest {
     }
 
     @Test
-    void testProcessLargePdf_ExceptionDuringExtraction() throws IOException, TesseractException {
+    void testProcessLarge_File_ExceptionDuringExtraction() throws IOException, TesseractException {
         // Arrange
         Path pdfPath = createDummyPdfFile();
         doThrow(new IOException("Extraction failed"))
             .when(ocrLargeFileProcessor).extractPagesToImages(any(Path.class), any(File.class));
 
         // Act & Assert
-        assertThrows(IOException.class, () -> ocrLargeFileProcessor.processLargePdf(pdfPath));
+        assertThrows(IOException.class, () -> ocrLargeFileProcessor.processLargeFile(pdfPath));
     }
 
     @Test

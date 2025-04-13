@@ -2,7 +2,6 @@ package com.dms.processor.service.impl;
 
 import com.dms.processor.dto.DocumentExtractContent;
 import com.dms.processor.dto.ExtractedText;
-import com.dms.processor.enums.DocumentType;
 import com.dms.processor.util.MimeTypeUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -290,13 +289,13 @@ class ContentExtractorServiceImplTest {
                     .thenAnswer(i -> new ByteArrayInputStream("Sample PDF content".getBytes()));
 
             // Setup OCR processor mock
-            when(ocrLargeFileProcessor.processLargePdf(any(Path.class))).thenReturn("Large PDF OCR content");
+            when(ocrLargeFileProcessor.processLargeFile(any(Path.class))).thenReturn("Large PDF OCR content");
 
             // Act
             DocumentExtractContent result = contentExtractorService.extractContent(filePath);
 
             // Assert
-            verify(ocrLargeFileProcessor).processLargePdf(filePath);
+            verify(ocrLargeFileProcessor).processLargeFile(filePath);
             assertEquals("Large PDF OCR content", result.content());
             assertEquals("chunked", result.metadata().get("Processing-Method"));
         }

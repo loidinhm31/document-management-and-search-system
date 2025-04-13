@@ -9,22 +9,28 @@ import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.poi.hslf.usermodel.HSLFSlide;
+import org.apache.poi.hslf.usermodel.HSLFSlideShow;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.tika.config.TikaConfig;
-import org.apache.tika.mime.MediaType;
+import org.apache.tika.exception.TikaException;
 import org.apache.tika.mime.MimeTypeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.xml.sax.SAXException;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -106,7 +112,7 @@ public class OcrServiceImpl implements OcrService {
     }
 
     @Override
-    public String extractTextFromNonPdf(Path filePath) throws IOException, TesseractException {
+    public String extractTextFromRegularFile(Path filePath) throws IOException, TesseractException {
         log.info("Processing non-PDF file with OCR: {}", filePath.getFileName());
 
         // Create temp directory for extracted images
@@ -119,15 +125,15 @@ public class OcrServiceImpl implements OcrService {
                 // It's already an image, just use it directly
                 imageFiles.add(filePath);
             } else {
-                // For other formats like PPT, DOCX, etc., we need to convert to images
-                // This is simplified - in a real implementation you would use appropriate
-                // libraries for each file type
+                // For other formats (currently only support PPT, PPTX) we need to convert to images
                 imageFiles = convertFileToImages(filePath, tempDir);
             }
 
             // Process all these images
             return processImagesWithOcr(imageFiles);
 
+        } catch (TikaException | SAXException e) {
+            throw new RuntimeException(e);
         } finally {
             // Clean up temporary files
             cleanupTempFiles(tempDir, imageFiles);
@@ -166,44 +172,95 @@ public class OcrServiceImpl implements OcrService {
      * Converts a non-PDF document to a series of images for OCR processing
      * This is a simplified implementation - actual implementation would depend on the file type
      */
-    private List<Path> convertFileToImages(Path filePath, Path outputDir) throws IOException {
+    private List<Path> convertFileToImages(Path filePath, Path outputDir) throws IOException, TikaException, SAXException {
         String mimeType = Files.probeContentType(filePath);
         List<Path> imageFiles = new ArrayList<>();
 
-        // Dummy conversion - in a real implementation, you would use libraries like
-        // Apache POI for Office documents, etc.
-        if (mimeType != null && mimeType.contains("powerpoint")) {
-            // For PowerPoint files - use Apache POI's XSLF/HSLF in actual implementation
-            log.info("Converting PowerPoint to images (placeholder)");
-            // Placeholder: create a dummy image file to represent the conversion
-            Path imagePath = outputDir.resolve("slide_1.png");
-            // Create a blank image
-            BufferedImage blankImage = new BufferedImage(1024, 768, BufferedImage.TYPE_INT_RGB);
-            ImageIO.write(blankImage, "PNG", imagePath.toFile());
-            imageFiles.add(imagePath);
-        } else if (mimeType != null && mimeType.contains("word")) {
-            // For Word files - use Apache POI's XWPF/HWPF in actual implementation
-            log.info("Converting Word document to images (placeholder)");
-            Path imagePath = outputDir.resolve("page_1.png");
-            BufferedImage blankImage = new BufferedImage(1024, 768, BufferedImage.TYPE_INT_RGB);
-            ImageIO.write(blankImage, "PNG", imagePath.toFile());
-            imageFiles.add(imagePath);
-        } else {
-            // For other files, copy to temp directory if it's an image, otherwise create dummy image
-            if (mimeType != null && mimeType.startsWith("image/")) {
-                Path targetPath = outputDir.resolve(UUID.randomUUID() + getExtensionFromMimeType(mimeType));
-                Files.copy(filePath, targetPath);
-                imageFiles.add(targetPath);
-            } else {
-                // Generic fallback - create a blank image
-                Path imagePath = outputDir.resolve("unknown_1.png");
-                BufferedImage blankImage = new BufferedImage(1024, 768, BufferedImage.TYPE_INT_RGB);
-                ImageIO.write(blankImage, "PNG", imagePath.toFile());
-                imageFiles.add(imagePath);
+        if (mimeType != null && (mimeType.contains("powerpoint") || mimeType.contains("presentation"))) {
+            // For PowerPoint files - use Apache POI to extract slides as images
+            try (InputStream is = Files.newInputStream(filePath)) {
+                // Handle both PPTX and PPT formats
+                if (mimeType.contains("openxmlformats")) {
+                    // PPTX format
+                    XMLSlideShow pptx = new XMLSlideShow(is);
+                    return extractSlidesFromPPTX(pptx, outputDir);
+                } else {
+                    // PPT format
+                    HSLFSlideShow ppt = new HSLFSlideShow(is);
+                    return extractSlidesFromPPT(ppt, outputDir);
+                }
             }
         }
-
         return imageFiles;
+    }
+
+
+    // Helper methods for PowerPoint processing
+    private List<Path> extractSlidesFromPPTX(XMLSlideShow pptx, Path outputDir) throws IOException {
+        List<Path> slideImages = new ArrayList<>();
+        Dimension pgsize = pptx.getPageSize();
+        List<XSLFSlide> slides = pptx.getSlides();
+
+        for (int i = 0; i < slides.size(); i++) {
+            BufferedImage img = new BufferedImage(pgsize.width, pgsize.height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = img.createGraphics();
+
+            // Set rendering hints for better quality
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+            // Draw the slide
+            graphics.setPaint(Color.WHITE);
+            graphics.fill(new Rectangle2D.Float(0, 0, pgsize.width, pgsize.height));
+            slides.get(i).draw(graphics);
+
+            // Save the image
+            Path imagePath = outputDir.resolve("slide_" + (i + 1) + ".png");
+            ImageIO.write(img, "PNG", imagePath.toFile());
+            slideImages.add(imagePath);
+
+            // Clean up
+            graphics.dispose();
+            img.flush();
+        }
+
+        return slideImages;
+    }
+
+
+    private List<Path> extractSlidesFromPPT(HSLFSlideShow ppt, Path outputDir) throws IOException {
+        List<Path> slideImages = new ArrayList<>();
+        Dimension pgsize = ppt.getPageSize();
+        List<HSLFSlide> slides = ppt.getSlides();
+
+        for (int i = 0; i < slides.size(); i++) {
+            BufferedImage img = new BufferedImage(pgsize.width, pgsize.height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = img.createGraphics();
+
+            // Set rendering hints for better quality
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+            // Fill with white background
+            graphics.setPaint(Color.WHITE);
+            graphics.fill(new Rectangle2D.Float(0, 0, pgsize.width, pgsize.height));
+
+            // Draw the slide
+            slides.get(i).draw(graphics);
+
+            // Save the image
+            Path imagePath = outputDir.resolve("slide_" + (i + 1) + ".png");
+            ImageIO.write(img, "PNG", imagePath.toFile());
+            slideImages.add(imagePath);
+
+            // Clean up
+            graphics.dispose();
+            img.flush();
+        }
+
+        return slideImages;
     }
 
     /**
@@ -268,13 +325,12 @@ public class OcrServiceImpl implements OcrService {
      * @param pageCount Number of pages in the PDF
      * @return Extracted text from all pages
      * @throws IOException If an error occurs during PDF processing
-     * @throws TesseractException If an error occurs during OCR
      */
     protected String processWithParallelOcr(Path pdfPath, int pageCount)
-            throws IOException, TesseractException {
+            throws IOException {
         log.debug("Performing parallel OCR on PDF with {} pages", pageCount);
 
-        // We need to save PDF pages as images to process them in parallel
+        // Save PDF pages as images to process them in parallel
         // to avoid PDFBox thread safety issues
         List<Path> pageImages = new ArrayList<>();
         Path tempDir = Files.createTempDirectory("ocr_parallel_");

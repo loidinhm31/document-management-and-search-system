@@ -31,7 +31,7 @@ public interface OcrService {
      * @throws IOException If there is an error reading the file
      * @throws TesseractException If there is an error during OCR processing
      */
-    String extractTextFromNonPdf(Path filePath) throws IOException, TesseractException;
+    String extractTextFromRegularFile(Path filePath) throws IOException, TesseractException;
 
     /**
      * Processes a PDF with OCR. The decision to use OCR has already been made
