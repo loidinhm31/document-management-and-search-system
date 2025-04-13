@@ -275,16 +275,14 @@ export default function DocumentDetailPage() {
                       />
                     </div>
 
-                    {documentData.courseCodes && (
-                      <div className="space-y-2">
-                        <Label>{t("document.detail.fields.courseCodes")}</Label>
-                        <MultiValueDisplay
-                          value={documentData.courseCodes}
-                          type={MasterDataType.COURSE_CODE}
-                          masterData={{ courseCodes }}
-                        />
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      <Label>{t("document.detail.fields.courseCodes")}</Label>
+                      <MultiValueDisplay
+                        value={documentData.courseCodes}
+                        type={MasterDataType.COURSE_CODE}
+                        masterData={{ courseCodes }}
+                      />
+                    </div>
 
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.level")}</Label>
@@ -303,15 +301,13 @@ export default function DocumentDetailPage() {
                     />
                   </div>
 
-                  {documentData.tags && documentData.tags.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>{t("document.detail.fields.tags")}</Label>
-                      <MultiValueDisplay
-                        value={documentData.tags}
-                        pillClassName="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                      />
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label>{t("document.detail.fields.tags")}</Label>
+                    <MultiValueDisplay
+                      value={documentData.tags}
+                      pillClassName="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                    />
+                  </div>
                 </div>
               </div>
 
