@@ -3,7 +3,6 @@ package com.dms.processor.service.impl;
 import com.dms.processor.dto.ExtractedText;
 import com.dms.processor.dto.TextMetrics;
 import com.dms.processor.service.OcrService;
-import com.dms.processor.service.TextQualityAnalyzer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.TesseractException;
@@ -24,7 +23,7 @@ import java.util.regex.Pattern;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ContentQualityAnalyzer implements TextQualityAnalyzer {
+public class ContentQualityAnalyzer {
 
     private final OcrService ocrService;
 
@@ -77,7 +76,7 @@ public class ContentQualityAnalyzer implements TextQualityAnalyzer {
     }
 
     /**
-     * Calculates text quality metrics for a sample of pages from a PDF
+     * Calculates text quality metrics for a sample of pages from a PDF.
      */
     public TextMetrics calculateMetricsForSample(Path pdfPath, int samplePages) throws IOException {
         try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
@@ -132,7 +131,6 @@ public class ContentQualityAnalyzer implements TextQualityAnalyzer {
      * Determines if OCR should be used based on text metrics
      * Implemented from TextQualityAnalyzer interface for reuse by other components
      */
-    @Override
     public boolean shouldUseOcr(TextMetrics metrics, String text) {
         // First check if content have enough text at all
         if (text == null || text.trim().length() < minimumTextLength) {
@@ -149,7 +147,6 @@ public class ContentQualityAnalyzer implements TextQualityAnalyzer {
      * Analyze text quality for any type of content, not just PDFs
      * Allows reuse of this logic for non-PDF documents
      */
-    @Override
     public TextMetrics analyzeTextQuality(String text, int estimatedPages) {
         double textDensity = calculateTextDensity(text, estimatedPages);
         double textQuality = assessTextQuality(text);

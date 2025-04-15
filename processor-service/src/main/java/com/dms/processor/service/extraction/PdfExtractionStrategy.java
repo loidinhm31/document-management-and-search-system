@@ -4,12 +4,15 @@ import com.dms.processor.dto.DocumentExtractContent;
 import com.dms.processor.dto.ExtractedText;
 import com.dms.processor.dto.TextMetrics;
 import com.dms.processor.exception.DocumentProcessingException;
-import com.dms.processor.service.TextQualityAnalyzer;
+import com.dms.processor.service.OcrService;
+import com.dms.processor.service.impl.ContentQualityAnalyzer;
 import com.dms.processor.service.impl.LargeFileProcessor;
 import com.dms.processor.service.impl.OcrLargeFileProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.TesseractException;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -33,11 +36,11 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 public class PdfExtractionStrategy implements DocumentExtractionStrategy {
 
-    private final ContentQualityAnalysis contentQualityAnalysis;
-    private final TextQualityAnalyzer textQualityAnalyzer;
+    private final ContentQualityAnalyzer contentQualityAnalyzer;
     private final LargeFileProcessor largeFileProcessor;
     private final OcrLargeFileProcessor ocrLargeFileProcessor;
     private final MetadataExtractor metadataExtractor;
+    private final OcrService ocrService;
 
     @Value("${app.ocr.large-size-threshold-mb}")
     private DataSize largeSizeThreshold;
@@ -55,7 +58,6 @@ public class PdfExtractionStrategy implements DocumentExtractionStrategy {
         log.info("Using pdf extraction strategy for file: {} with MIME type: {}",
                 filePath.getFileName(), mimeType);
         try {
-            metadata.put("Detected-MIME-Type", mimeType);
             metadata.put("Document-Type", "PDF");
             metadata.put("Document-Type-Display", "PDF Document");
 
@@ -76,7 +78,7 @@ public class PdfExtractionStrategy implements DocumentExtractionStrategy {
             if (isLargeFile) {
                 extractedText = processLargePdf(filePath, metadata);
             } else {
-                ExtractedText result = contentQualityAnalysis.extractText(filePath);
+                ExtractedText result = extractTextPdfFile(filePath);
                 metadata.put("Processing-Method", result.usedOcr() ? "ocr" : "direct");
                 metadata.put("Used-OCR", String.valueOf(result.usedOcr()));
                 extractedText = result.text();
@@ -86,6 +88,42 @@ public class PdfExtractionStrategy implements DocumentExtractionStrategy {
         } catch (Exception e) {
             log.error("Error extracting content from PDF: {}", filePath, e);
             throw new DocumentProcessingException("Failed to extract content from PDF", e);
+        }
+    }
+
+
+    /**
+     * Extracts text from a PDF file, using OCR only when necessary.
+     *
+     * @param pdfPath Path to the PDF file
+     * @return Extracted text and information about whether OCR was used
+     */
+    public ExtractedText extractTextPdfFile(Path pdfPath) throws IOException, TesseractException {
+        try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
+            int pageCount = document.getNumberOfPages();
+
+            // Extract text and calculate metrics
+            PDFTextStripper textStripper = new PDFTextStripper();
+            String pdfText = textStripper.getText(document);
+
+            TextMetrics metrics = contentQualityAnalyzer.analyzeTextQuality(pdfText, pageCount);
+            log.debug("PDF metrics - Density: {}, Quality: {}, HasMeaningfulText: {}",
+                    metrics.getTextDensity(), metrics.getTextQuality(), metrics.isHasMeaningfulText());
+
+            // Decide whether to use OCR based on metrics and text length
+            if (!contentQualityAnalyzer.shouldUseOcr(metrics, pdfText)) {
+                log.info("Using PDFTextStripper - Density: {}, Quality: {}",
+                        metrics.getTextDensity(), metrics.getTextQuality());
+                return new ExtractedText(pdfText, false);
+            }
+
+            // Use OCR if needed
+            log.info("Using OCR - Low text metrics - Density: {}, Quality: {}",
+                    metrics.getTextDensity(), metrics.getTextQuality());
+
+            // Use OCR with Tesseract
+            String ocrText = ocrService.processWithOcr(pdfPath, document.getNumberOfPages());
+            return new ExtractedText(ocrText, true);
         }
     }
 
@@ -116,10 +154,9 @@ public class PdfExtractionStrategy implements DocumentExtractionStrategy {
      */
     private boolean shouldUseOcrForLargePdf(Path pdfPath) {
         try {
-            // Use ContentQualityAnalysis to analyze only the first few pages
-            TextMetrics metrics = contentQualityAnalysis.calculateMetricsForSample(pdfPath, sampleSizePages);
-            // Use the TextQualityAnalyzer interface for the decision
-            return textQualityAnalyzer.shouldUseOcr(metrics, "");
+            // Analyze only the first few pages
+            TextMetrics metrics = contentQualityAnalyzer.calculateMetricsForSample(pdfPath, sampleSizePages);
+            return contentQualityAnalyzer.shouldUseOcr(metrics, "");
         } catch (Exception e) {
             log.error("Error sampling PDF for OCR decision", e);
             // Default to true (use OCR) in case of error

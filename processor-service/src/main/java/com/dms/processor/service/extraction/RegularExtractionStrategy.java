@@ -4,7 +4,7 @@ import com.dms.processor.dto.DocumentExtractContent;
 import com.dms.processor.dto.TextMetrics;
 import com.dms.processor.exception.DocumentProcessingException;
 import com.dms.processor.service.OcrService;
-import com.dms.processor.service.TextQualityAnalyzer;
+import com.dms.processor.service.impl.ContentQualityAnalyzer;
 import com.dms.processor.service.impl.LargeFileProcessor;
 import com.dms.processor.service.impl.OcrLargeFileProcessor;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class RegularExtractionStrategy implements DocumentExtractionStrategy {
 
     private final TikaExtractor tikaExtractor;
     private final OcrService ocrService;
-    private final TextQualityAnalyzer textQualityAnalyzer;
+    private final ContentQualityAnalyzer contentQualityAnalyzer;
     private final LargeFileProcessor largeFileProcessor;
     private final OcrLargeFileProcessor ocrLargeFileProcessor;
     private final MetadataExtractor metadataExtractor;
@@ -118,10 +118,10 @@ public class RegularExtractionStrategy implements DocumentExtractionStrategy {
             tikaBackupResult = result;
 
             int estimatedPages = 1; // Default for small files
-            TextMetrics metrics = textQualityAnalyzer.analyzeTextQuality(result, estimatedPages);
+            TextMetrics metrics = contentQualityAnalyzer.analyzeTextQuality(result, estimatedPages);
 
             // If result quality is poor, try OCR directly
-            if (textQualityAnalyzer.shouldUseOcr(metrics, result)) {
+            if (contentQualityAnalyzer.shouldUseOcr(metrics, result)) {
                 log.info("Initial extraction yielded poor results, trying OCR for {}", mimeType);
                 result = ocrService.extractTextFromRegularFile(filePath);
             }
@@ -162,8 +162,8 @@ public class RegularExtractionStrategy implements DocumentExtractionStrategy {
             int estimatedPages = Math.max(1, extractedSample.length() / 3000);
 
             // Use the same quality analysis as for PDFs
-            TextMetrics metrics = textQualityAnalyzer.analyzeTextQuality(extractedSample, estimatedPages);
-            return textQualityAnalyzer.shouldUseOcr(metrics, extractedSample);
+            TextMetrics metrics = contentQualityAnalyzer.analyzeTextQuality(extractedSample, estimatedPages);
+            return contentQualityAnalyzer.shouldUseOcr(metrics, extractedSample);
         } catch (Exception e) {
             log.error("Error sampling file for OCR decision", e);
             // Default to false for regular files

@@ -1,14 +1,13 @@
 package com.dms.processor.service.impl;
 
 import com.dms.processor.service.OcrService;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.hslf.usermodel.HSLFSlide;
 import org.apache.poi.hslf.usermodel.HSLFSlideShow;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
@@ -31,11 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.*;
 
 @Service
 @Slf4j
@@ -46,9 +41,6 @@ public class OcrServiceImpl implements OcrService {
     @Value("${app.ocr.image-type:RGB}")
     private String imageType;
 
-    @Value("${app.ocr.parallel.max-threads:0}")
-    private int maxThreads;
-
     @Value("${app.ocr.data-path}")
     private String tessdataPath;
 
@@ -56,42 +48,12 @@ public class OcrServiceImpl implements OcrService {
     private int ocrPageThreshold;
 
     private final Tesseract tesseract;
-    private ExecutorService executorService;
+    private final ThreadPoolManager threadPoolManager;
 
     @Autowired
-    public OcrServiceImpl(Tesseract tesseract) {
+    public OcrServiceImpl(Tesseract tesseract, ThreadPoolManager threadPoolManager) {
         this.tesseract = tesseract;
-    }
-
-    @PostConstruct
-    protected void initialize() {
-        // If maxThreads is 0 or negative, use available processors
-        int threads = maxThreads <= 0 ?
-                Runtime.getRuntime().availableProcessors() :
-                maxThreads;
-
-        // Create a named thread factory for better debugging
-        ThreadFactory threadFactory = new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r, "ocr-worker-" + threadNumber.getAndIncrement());
-                thread.setDaemon(true);
-                return thread;
-            }
-        };
-
-        this.executorService = Executors.newFixedThreadPool(threads, threadFactory);
-        log.info("Initialized OCR thread pool with {} threads", threads);
-    }
-
-    @PreDestroy
-    public void shutdown() {
-        if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown();
-            log.info("OCR thread pool shut down");
-        }
+        this.threadPoolManager = threadPoolManager;
     }
 
     @Override
@@ -194,7 +156,6 @@ public class OcrServiceImpl implements OcrService {
         return imageFiles;
     }
 
-
     // Helper methods for PowerPoint processing
     private List<Path> extractSlidesFromPPTX(XMLSlideShow pptx, Path outputDir) throws IOException {
         List<Path> slideImages = new ArrayList<>();
@@ -227,7 +188,6 @@ public class OcrServiceImpl implements OcrService {
 
         return slideImages;
     }
-
 
     private List<Path> extractSlidesFromPPT(HSLFSlideShow ppt, Path outputDir) throws IOException {
         List<Path> slideImages = new ArrayList<>();
@@ -385,7 +345,7 @@ public class OcrServiceImpl implements OcrService {
             final int pageNum = i;
             final Path imagePath = pageImages.get(i);
 
-            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<String> future = threadPoolManager.submitOcrTask(() -> {
                 try {
                     log.debug("Processing page {} in parallel", pageNum + 1);
 
@@ -404,7 +364,7 @@ public class OcrServiceImpl implements OcrService {
                     log.error("Error processing page {} in parallel", pageNum + 1, e);
                     return ""; // Return empty string on error
                 }
-            }, executorService);
+            });
 
             futures.add(future);
         }
