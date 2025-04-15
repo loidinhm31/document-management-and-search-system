@@ -1,4 +1,4 @@
-import { Award } from "lucide-react";
+import { StarIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -68,7 +68,7 @@ export function RecommendationButton({ documentId }: RecommendationButtonProps) 
       onClick={handleToggleRecommendation}
       disabled={loading}
     >
-      <Award className={isRecommended ? "h-4 w-4 fill-amber-500 text-amber-500" : "h-4 w-4"} />
+      <StarIcon className={isRecommended ? "h-4 w-4 fill-amber-500 text-amber-500" : "h-4 w-4"} />
       {isRecommended ? t("document.actions.recommended") : t("document.actions.recommend")}
     </Button>
   );

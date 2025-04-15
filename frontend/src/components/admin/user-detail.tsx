@@ -171,7 +171,7 @@ export default function UserDetail() {
     }
   };
 
-  const mappingRole = (role) => {
+  const mappingRole = (role: string): string => {
     switch (role) {
       case "ROLE_ADMIN":
         return "Admin";
@@ -179,6 +179,8 @@ export default function UserDetail() {
         return "Mentor";
       case "ROLE_USER":
         return "User";
+      default:
+        return "Unknown";
     }
   };
 

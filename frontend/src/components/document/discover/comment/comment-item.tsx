@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Comment, CommentEditData, User } from "@/types/comment";
+import { Comment, CommentEditData } from "@/types/comment";
 import { formatDateMoment } from "@/lib/utils";
+import { User } from "@/types/auth";
 
 interface CommentItemProps {
   comment: Comment;
