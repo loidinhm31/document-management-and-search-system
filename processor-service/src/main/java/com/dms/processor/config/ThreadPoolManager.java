@@ -1,23 +1,22 @@
-package com.dms.processor.service.impl;
-
-import lombok.Getter;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+package com.dms.processor.config;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Unified thread pool manager service that provides dynamic resource allocation
+ * Unified thread pool manager that provides dynamic resource allocation
  * based on system capabilities. Uses a shared thread pool to maximize resource
  * utilization across different types of document processing tasks.
  */
-@Service
+@Component
 @Slf4j
 public class ThreadPoolManager {
 

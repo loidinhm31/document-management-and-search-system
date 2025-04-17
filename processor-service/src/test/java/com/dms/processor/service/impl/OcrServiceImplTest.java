@@ -1,10 +1,15 @@
 package com.dms.processor.service.impl;
 
+import com.dms.processor.config.ThreadPoolManager;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.poi.hslf.usermodel.HSLFSlide;
+import org.apache.poi.hslf.usermodel.HSLFSlideShow;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -17,22 +22,23 @@ import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.anyFloat;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -42,6 +48,9 @@ public class OcrServiceImplTest {
     private Tesseract tesseract;
 
     @Mock
+    private ThreadPoolManager threadPoolManager;
+
+    @Mock
     private PDDocument document;
 
     @Mock
@@ -49,9 +58,6 @@ public class OcrServiceImplTest {
 
     @Mock
     private BufferedImage image;
-
-    @Mock
-    private ExecutorService executorService;
 
     @InjectMocks
     private OcrServiceImpl ocrService;
@@ -70,14 +76,16 @@ public class OcrServiceImplTest {
         // Set the required fields in OcrServiceImpl
         ReflectionTestUtils.setField(ocrService, "dpi", 300f);
         ReflectionTestUtils.setField(ocrService, "imageType", "RGB");
-        ReflectionTestUtils.setField(ocrService, "maxThreads", 2);
         ReflectionTestUtils.setField(ocrService, "tessdataPath", "/path/to/tessdata");
         ReflectionTestUtils.setField(ocrService, "ocrPageThreshold", 5);
 
-        // Set the executorService field using reflection
-        Field executorServiceField = OcrServiceImpl.class.getDeclaredField("executorService");
-        executorServiceField.setAccessible(true);
-        executorServiceField.set(ocrService, executorService);
+        // Mock ThreadPoolManager behavior
+        when(threadPoolManager.submitOcrTask(any(Callable.class)))
+                .thenAnswer(invocation -> {
+                    Callable<String> task = invocation.getArgument(0);
+                    String result = task.call();
+                    return CompletableFuture.completedFuture(result);
+                });
     }
 
     @Test
@@ -126,7 +134,7 @@ public class OcrServiceImplTest {
     void testExtractTextFromPdf_SinglePage() throws IOException, TesseractException {
         // Arrange
         try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
-            pdDocumentMockedStatic.when(() -> PDDocument.load(any(java.io.File.class))).thenReturn(document);
+            pdDocumentMockedStatic.when(() -> PDDocument.load(any(File.class))).thenReturn(document);
             when(document.getNumberOfPages()).thenReturn(1);
 
             // Mock the processWithOcr method
@@ -146,7 +154,7 @@ public class OcrServiceImplTest {
     void testExtractTextFromPdf_MultiplePages() throws IOException, TesseractException {
         // Arrange
         try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
-            pdDocumentMockedStatic.when(() -> PDDocument.load(any(java.io.File.class))).thenReturn(document);
+            pdDocumentMockedStatic.when(() -> PDDocument.load(any(File.class))).thenReturn(document);
             when(document.getNumberOfPages()).thenReturn(10);
 
             // Mock the parallel processing method
@@ -168,10 +176,9 @@ public class OcrServiceImplTest {
         OcrServiceImpl spyOcrService = spy(ocrService);
 
         try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
-            pdDocumentMockedStatic.when(() -> PDDocument.load(any(java.io.File.class))).thenReturn(document);
+            pdDocumentMockedStatic.when(() -> PDDocument.load(any(File.class))).thenReturn(document);
             when(document.getNumberOfPages()).thenReturn(3); // Below threshold
 
-            // Properly mock PDFRenderer with any() instead of trying to mock getRenderer()
             doReturn("sequential ocr result").when(spyOcrService).processOcrSequentially(any(PDFRenderer.class), eq(3));
 
             // Act
@@ -189,114 +196,18 @@ public class OcrServiceImplTest {
         OcrServiceImpl spyOcrService = spy(ocrService);
 
         try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
-            pdDocumentMockedStatic.when(() -> PDDocument.load(any(java.io.File.class))).thenReturn(document);
+            pdDocumentMockedStatic.when(() -> PDDocument.load(any(File.class))).thenReturn(document);
             when(document.getNumberOfPages()).thenReturn(10); // Above threshold
 
-            // Act
             doReturn("parallel ocr result").when(spyOcrService).processWithParallelOcr(eq(pdfPath), eq(10));
+
+            // Act
             String result = spyOcrService.processWithOcr(pdfPath, 10);
 
             // Assert
             assertEquals("parallel ocr result", result);
             verify(spyOcrService).processWithParallelOcr(pdfPath, 10);
         }
-    }
-
-    @Test
-    void testProcessImagesInParallel() throws Exception {
-        // This test checks if processWithParallelOcr is correctly called during extractTextFromPdf
-        OcrServiceImpl spyOcrService = spy(ocrService);
-
-        try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
-            pdDocumentMockedStatic.when(() -> PDDocument.load(any(java.io.File.class))).thenReturn(document);
-            when(document.getNumberOfPages()).thenReturn(10); // Above threshold for parallel processing
-
-            // Mock processWithParallelOcr directly and verify it's called
-            doReturn("parallel processing result").when(spyOcrService).processWithParallelOcr(pdfPath, 10);
-
-            // Act
-            String result = spyOcrService.extractTextFromPdf(pdfPath);
-
-            // Assert
-            assertEquals("parallel processing result", result);
-            verify(spyOcrService).processWithParallelOcr(pdfPath, 10);
-        }
-    }
-
-    @Test
-    void testCreateTesseractInstance() throws Exception {
-        // This test uses reflection to verify the private method's behavior
-        // Get the private method
-        java.lang.reflect.Method createTesseractInstanceMethod =
-                OcrServiceImpl.class.getDeclaredMethod("createTesseractInstance");
-        createTesseractInstanceMethod.setAccessible(true);
-
-        // Invoke the method
-        Tesseract newInstance = (Tesseract) createTesseractInstanceMethod.invoke(ocrService);
-
-        // Verify the instance has the correct configuration
-        assertNotNull(newInstance);
-
-        // Use reflection to verify configuration parameters
-        assertEquals("/path/to/tessdata", getFieldValue(newInstance, "datapath"));
-        assertEquals("eng+vie", getFieldValue(newInstance, "language"));
-        assertEquals(1, getFieldValue(newInstance, "psm"));
-
-        // The field might be named differently than "oem" - check if it's "ocrEngineMode" instead
-        try {
-            assertEquals(1, getFieldValue(newInstance, "ocrEngineMode"));
-        } catch (NoSuchFieldException e) {
-            // If that fails too, just verify the variable was set via the tesseract.setOcrEngineMode method
-            verify(tesseract).setOcrEngineMode(1);
-        }
-    }
-
-    @Test
-    void testInitializeMethod() throws Exception {
-        // Call the PostConstruct method manually
-        java.lang.reflect.Method initializeMethod =
-                OcrServiceImpl.class.getDeclaredMethod("initialize");
-        initializeMethod.setAccessible(true);
-
-        // Create a fresh instance to test the initialization logic
-        OcrServiceImpl freshOcrService = new OcrServiceImpl(tesseract);
-        ReflectionTestUtils.setField(freshOcrService, "maxThreads", 4);
-
-        // Act
-        initializeMethod.invoke(freshOcrService);
-
-        // Verify the executor service was created properly
-        Field executorServiceField = OcrServiceImpl.class.getDeclaredField("executorService");
-        executorServiceField.setAccessible(true);
-        ExecutorService createdExecutorService = (ExecutorService) executorServiceField.get(freshOcrService);
-
-        assertNotNull(createdExecutorService);
-        // We can't check the thread pool size directly, but we can verify it's not null
-    }
-
-    @Test
-    void testShutdownMethod() throws Exception {
-        // Mock the executor service shutdown behavior
-        doNothing().when(executorService).shutdown();
-        when(executorService.isShutdown()).thenReturn(false);
-
-        // Call the PreDestroy method manually
-        java.lang.reflect.Method shutdownMethod =
-                OcrServiceImpl.class.getDeclaredMethod("shutdown");
-        shutdownMethod.setAccessible(true);
-
-        // Act
-        shutdownMethod.invoke(ocrService);
-
-        // Verify
-        verify(executorService).shutdown();
-    }
-
-    // Helper method to get private field value
-    private Object getFieldValue(Object object, String fieldName) throws Exception {
-        Field field = object.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field.get(object);
     }
 
     @Test
@@ -307,67 +218,52 @@ public class OcrServiceImplTest {
         BufferedImage realImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
         PDDocument mockDocument = mock(PDDocument.class);
 
-        // Create a controlled ExecutorService with 2 threads
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
-        ReflectionTestUtils.setField(spyOcrService, "executorService", executorService);
+        try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
+            pdDocumentMockedStatic.when(() -> PDDocument.load(pdfPath.toFile())).thenReturn(mockDocument);
+            when(mockDocument.getNumberOfPages()).thenReturn(2);
 
-        try {
-            try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
-                pdDocumentMockedStatic.when(() -> PDDocument.load(pdfPath.toFile())).thenReturn(mockDocument);
-                when(mockDocument.getNumberOfPages()).thenReturn(2);
+            // Mock createTesseractInstance
+            Tesseract mockTesseract = mock(Tesseract.class);
+            doReturn(mockTesseract).when(spyOcrService).createTesseractInstance();
+            when(mockTesseract.doOCR(any(BufferedImage.class))).thenReturn("page text");
 
-                // Mock createTesseractInstance
-                Tesseract mockTesseract = mock(Tesseract.class);
-                doReturn(mockTesseract).when(spyOcrService).createTesseractInstance();
-                when(mockTesseract.doOCR(any(BufferedImage.class))).thenReturn("page text");
+            // Mock ImageIO operations
+            try (MockedStatic<ImageIO> imageIOMockedStatic = Mockito.mockStatic(ImageIO.class)) {
+                imageIOMockedStatic.when(() -> ImageIO.write(
+                        any(RenderedImage.class),
+                        eq("PNG"),
+                        any(File.class)
+                )).thenReturn(true);
 
-                // Mock ImageIO operations
-                try (MockedStatic<ImageIO> imageIOMockedStatic = Mockito.mockStatic(ImageIO.class)) {
-                    imageIOMockedStatic.when(() -> ImageIO.write(
-                            any(RenderedImage.class),
-                            eq("PNG"),
-                            any(File.class)
-                    )).thenReturn(true);
-
-                    imageIOMockedStatic.when(() -> ImageIO.read(any(File.class)))
-                            .thenReturn(realImage);
-                }
-
-                // Mock the PDFRenderer creation
-                try (MockedConstruction<PDFRenderer> mockConstruction =
-                             Mockito.mockConstruction(PDFRenderer.class,
-                                     (mock, context) -> {
-                                         when(mock.renderImageWithDPI(
-                                                 anyInt(),
-                                                 anyFloat(),
-                                                 any(ImageType.class)
-                                         )).thenReturn(realImage);
-                                     })) {
-
-                    // Act
-                    String result = spyOcrService.processWithParallelOcr(pdfPath, 2);
-
-                    // Assert
-                    assertNotNull(result);
-                    assertTrue(result.contains("page text"));
-                    verify(mockTesseract, atLeast(2)).doOCR(any(BufferedImage.class));
-                }
+                imageIOMockedStatic.when(() -> ImageIO.read(any(File.class)))
+                        .thenReturn(realImage);
             }
-        } finally {
-            // Ensure executor service is shut down
-            executorService.shutdownNow();
-            try {
-                if (!executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-                    System.out.println("Executor service did not terminate in time");
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+
+            // Mock the PDFRenderer creation
+            try (MockedConstruction<PDFRenderer> mockConstruction =
+                         Mockito.mockConstruction(PDFRenderer.class,
+                                 (mock, context) -> {
+                                     when(mock.renderImageWithDPI(
+                                             anyInt(),
+                                             anyFloat(),
+                                             any(ImageType.class)
+                                     )).thenReturn(realImage);
+                                 })) {
+
+                // Act
+                String result = spyOcrService.processWithParallelOcr(pdfPath, 2);
+
+                // Assert
+                assertNotNull(result);
+                assertTrue(result.contains("page text"));
+                verify(mockTesseract, atLeast(2)).doOCR(any(BufferedImage.class));
+                verify(threadPoolManager, times(2)).submitOcrTask(any(Callable.class));
             }
         }
     }
 
     @Test
-    void testRenderPage() throws Exception {
+    void testRenderPage() throws IOException {
         // Arrange
         PDFRenderer mockRenderer = mock(PDFRenderer.class);
         BufferedImage mockImage = mock(BufferedImage.class);
@@ -384,27 +280,6 @@ public class OcrServiceImplTest {
         BufferedImage binaryResult = ocrService.renderPage(mockRenderer, 0);
         assertNotNull(binaryResult);
         verify(mockRenderer).renderImageWithDPI(eq(0), eq(300f), eq(ImageType.BINARY));
-    }
-
-    @Test
-    void testShutdown() throws Exception {
-        // Test when executorService is null
-        ReflectionTestUtils.setField(ocrService, "executorService", null);
-        ocrService.shutdown();
-        // No exception should be thrown
-
-        // Test when executorService is not null
-        ExecutorService mockExecutorService = mock(ExecutorService.class);
-        when(mockExecutorService.isShutdown()).thenReturn(false);
-        ReflectionTestUtils.setField(ocrService, "executorService", mockExecutorService);
-
-        ocrService.shutdown();
-        verify(mockExecutorService).shutdown();
-
-        // Test when executorService is already shutdown
-        when(mockExecutorService.isShutdown()).thenReturn(true);
-        ocrService.shutdown();
-        verify(mockExecutorService, times(1)).shutdown(); // Should not be called again
     }
 
     @Test
@@ -430,90 +305,345 @@ public class OcrServiceImplTest {
     }
 
     @Test
-    void testInitialize_WithZeroThreads() throws Exception {
-        // Arrange
-        ReflectionTestUtils.setField(ocrService, "maxThreads", 0);
-        int expectedThreads = Runtime.getRuntime().availableProcessors();
-
-        // Act
-        ocrService.initialize();
-
-        // Assert
-        ExecutorService executorService = (ExecutorService) ReflectionTestUtils.getField(ocrService, "executorService");
-        assertNotNull(executorService);
-        assertInstanceOf(ThreadPoolExecutor.class, executorService);
-    }
-
-    @Test
     @Timeout(value = 5, unit = TimeUnit.SECONDS)
     void testProcessWithParallelOcr_ErrorHandling() throws IOException, TesseractException {
         // Arrange
         OcrServiceImpl spyOcrService = spy(ocrService);
-        // Create a minimal real BufferedImage instead of mocking
         BufferedImage testImage = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
         PDDocument mockDocument = mock(PDDocument.class);
 
-        // Create a controlled ExecutorService with 2 threads
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
-        ReflectionTestUtils.setField(spyOcrService, "executorService", executorService);
+        try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
+            pdDocumentMockedStatic.when(() -> PDDocument.load(pdfPath.toFile())).thenReturn(mockDocument);
+            when(mockDocument.getNumberOfPages()).thenReturn(2);
 
-        try {
-            try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
-                // Mock PDDocument loading
-                pdDocumentMockedStatic.when(() -> PDDocument.load(pdfPath.toFile())).thenReturn(mockDocument);
-                when(mockDocument.getNumberOfPages()).thenReturn(2);
+            // Mock createTesseractInstance
+            Tesseract mockTesseract = mock(Tesseract.class);
+            doReturn(mockTesseract).when(spyOcrService).createTesseractInstance();
 
-                // Mock createTesseractInstance with error handling
-                Tesseract mockTesseract = mock(Tesseract.class);
-                doReturn(mockTesseract).when(spyOcrService).createTesseractInstance();
+            // Mock Tesseract OCR behavior - first call throws exception, second succeeds
+            when(mockTesseract.doOCR(any(BufferedImage.class)))
+                    .thenThrow(new TesseractException()) // First page fails
+                    .thenReturn("page 2 text"); // Second page succeeds
 
-                // Mock Tesseract OCR behavior - first call throws exception, second succeeds
-                when(mockTesseract.doOCR(any(BufferedImage.class)))
-                        .thenThrow(new TesseractException()) // First page fails
-                        .thenReturn("page 2 text"); // Second page succeeds
+            // Mock ImageIO operations
+            try (MockedStatic<ImageIO> imageIOMockedStatic = Mockito.mockStatic(ImageIO.class)) {
+                imageIOMockedStatic.when(() -> ImageIO.write(
+                        any(RenderedImage.class),
+                        eq("PNG"),
+                        any(File.class)
+                )).thenReturn(true);
 
-                // Mock ImageIO operations
-                try (MockedStatic<ImageIO> imageIOMockedStatic = Mockito.mockStatic(ImageIO.class)) {
-                    imageIOMockedStatic.when(() -> ImageIO.write(
-                            any(RenderedImage.class),
-                            eq("PNG"),
-                            any(File.class)
-                    )).thenReturn(true);
-
-                    imageIOMockedStatic.when(() -> ImageIO.read(any(File.class)))
-                            .thenReturn(testImage);
-                }
-
-                // Mock the PDFRenderer creation
-                try (MockedConstruction<PDFRenderer> mockConstruction =
-                             Mockito.mockConstruction(PDFRenderer.class,
-                                     (mock, context) -> {
-                                         when(mock.renderImageWithDPI(
-                                                 anyInt(),
-                                                 anyFloat(),
-                                                 any(ImageType.class)
-                                         )).thenReturn(testImage);
-                                     })) {
-
-                    // Act
-                    String result = spyOcrService.processWithParallelOcr(pdfPath, 2);
-
-                    // Assert
-                    assertNotNull(result);
-                    assertTrue(result.contains("page 2 text"));
-                    verify(mockTesseract, times(2)).doOCR(any(BufferedImage.class));
-                }
+                imageIOMockedStatic.when(() -> ImageIO.read(any(File.class)))
+                        .thenReturn(testImage);
             }
-        } finally {
-            // Ensure executor service is shut down
-            executorService.shutdownNow();
-            try {
-                if (!executorService.awaitTermination(2, TimeUnit.SECONDS)) {
-                    System.out.println("Executor service did not terminate in time");
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+
+            // Mock the PDFRenderer creation
+            try (MockedConstruction<PDFRenderer> mockConstruction =
+                         Mockito.mockConstruction(PDFRenderer.class,
+                                 (mock, context) -> {
+                                     when(mock.renderImageWithDPI(
+                                             anyInt(),
+                                             anyFloat(),
+                                             any(ImageType.class)
+                                     )).thenReturn(testImage);
+                                 })) {
+
+                // Act
+                String result = spyOcrService.processWithParallelOcr(pdfPath, 2);
+
+                // Assert
+                assertNotNull(result);
+                assertTrue(result.contains("page 2 text"));
+                verify(mockTesseract, times(2)).doOCR(any(BufferedImage.class));
+                verify(threadPoolManager, times(2)).submitOcrTask(any(Callable.class));
             }
         }
     }
+
+    @Test
+    void testExtractTextFromRegularFile_PPTX() throws IOException, TesseractException, Exception {
+        // Arrange
+        Path pptxPath = tempDir.resolve("test.pptx");
+        Files.createFile(pptxPath);
+
+        // Mock Files.probeContentType to return PowerPoint MIME type
+        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class, CALLS_REAL_METHODS)) {
+            filesMock.when(() -> Files.probeContentType(pptxPath))
+                    .thenReturn("application/vnd.openxmlformats-officedocument.presentationml.presentation");
+
+            // Mock XMLSlideShow and slide extraction
+            try (MockedConstruction<XMLSlideShow> pptxConstruction = Mockito.mockConstruction(XMLSlideShow.class,
+                    (mock, context) -> {
+                        XSLFSlide mockSlide = mock(XSLFSlide.class);
+                        when(mock.getSlides()).thenReturn(Arrays.asList(mockSlide));
+                        when(mock.getPageSize()).thenReturn(new Dimension(720, 540)); // Ensure non-null page size
+                    })) {
+                // Mock ImageIO for slide image
+                BufferedImage slideImage = new BufferedImage(720, 540, BufferedImage.TYPE_INT_RGB);
+                try (MockedStatic<ImageIO> imageIOMock = Mockito.mockStatic(ImageIO.class)) {
+                    imageIOMock.when(() -> ImageIO.read(any(File.class))).thenReturn(slideImage);
+                    imageIOMock.when(() -> ImageIO.write(any(), eq("PNG"), any(File.class))).thenReturn(true);
+
+                    // Mock Tesseract OCR
+                    when(tesseract.doOCR(any(BufferedImage.class))).thenReturn("slide text");
+
+                    // Act
+                    String result = ocrService.extractTextFromRegularFile(pptxPath);
+
+                    // Assert
+                    assertNotNull(result);
+                    assertTrue(result.contains("slide text"));
+                    verify(tesseract).doOCR(any(BufferedImage.class));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testExtractTextFromRegularFile_PPT() throws IOException, TesseractException, Exception {
+        // Arrange
+        Path pptPath = tempDir.resolve("test.ppt");
+        Files.createFile(pptPath);
+
+        // Mock Files.probeContentType to return PPT MIME type
+        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class, CALLS_REAL_METHODS)) {
+            filesMock.when(() -> Files.probeContentType(pptPath)).thenReturn("application/vnd.ms-powerpoint");
+
+            // Mock HSLFSlideShow and slide extraction
+            try (MockedConstruction<HSLFSlideShow> pptConstruction = Mockito.mockConstruction(HSLFSlideShow.class,
+                    (mock, context) -> {
+                        HSLFSlide mockSlide = mock(HSLFSlide.class);
+                        when(mock.getSlides()).thenReturn(Arrays.asList(mockSlide));
+                        when(mock.getPageSize()).thenReturn(new Dimension(720, 540)); // Ensure non-null page size
+                    })) {
+                // Mock ImageIO for slide image
+                BufferedImage slideImage = new BufferedImage(720, 540, BufferedImage.TYPE_INT_RGB);
+                try (MockedStatic<ImageIO> imageIOMock = Mockito.mockStatic(ImageIO.class)) {
+                    imageIOMock.when(() -> ImageIO.read(any(File.class))).thenReturn(slideImage);
+                    imageIOMock.when(() -> ImageIO.write(any(), eq("PNG"), any(File.class))).thenReturn(true);
+
+                    // Mock Tesseract OCR
+                    when(tesseract.doOCR(any(BufferedImage.class))).thenReturn("slide text");
+
+                    // Act
+                    String result = ocrService.extractTextFromRegularFile(pptPath);
+
+                    // Assert
+                    assertNotNull(result);
+                    assertTrue(result.contains("slide text"));
+                    verify(tesseract).doOCR(any(BufferedImage.class));
+                }
+            }
+        }
+    }
+
+    @Test
+    void testExtractTextFromRegularFile_ImageFile() throws IOException, TesseractException {
+        // Arrange
+        Path imagePath = tempDir.resolve("test.png");
+        Files.createFile(imagePath);
+
+        // Mock Files.probeContentType to return image MIME type
+        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class, CALLS_REAL_METHODS)) {
+            filesMock.when(() -> Files.probeContentType(imagePath)).thenReturn("image/png");
+
+            // Mock ImageIO
+            BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+            try (MockedStatic<ImageIO> imageIOMock = Mockito.mockStatic(ImageIO.class)) {
+                imageIOMock.when(() -> ImageIO.read(imagePath.toFile())).thenReturn(image);
+
+                // Mock Tesseract OCR
+                when(tesseract.doOCR(any(BufferedImage.class))).thenReturn("image text");
+
+                // Act
+                String result = ocrService.extractTextFromRegularFile(imagePath);
+
+                // Assert
+                assertEquals("image text\n", result);
+                verify(tesseract).doOCR(any(BufferedImage.class));
+            }
+        }
+    }
+
+    @Test
+    void testExtractTextFromRegularFile_UnsupportedFileType() throws IOException, TesseractException {
+        // Arrange
+        Path filePath = tempDir.resolve("test.txt");
+        Files.createFile(filePath);
+
+        // Mock Files.probeContentType to return unsupported MIME type
+        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class, CALLS_REAL_METHODS)) {
+            filesMock.when(() -> Files.probeContentType(filePath)).thenReturn("text/plain");
+
+            // Act
+            String result = ocrService.extractTextFromRegularFile(filePath);
+
+            // Assert
+            assertEquals("", result); // Empty result for unsupported file type
+        }
+    }
+
+    @Test
+    void testExtractTextFromRegularFile_TikaException() throws IOException {
+        // Arrange
+        Path filePath = tempDir.resolve("test.pptx");
+        Files.createFile(filePath);
+
+        // Mock Files.probeContentType to throw IOException
+        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class, CALLS_REAL_METHODS)) {
+            filesMock.when(() -> Files.probeContentType(filePath)).thenThrow(new IOException("Tika error"));
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(RuntimeException.class, () -> ocrService.extractTextFromRegularFile(filePath));
+            assertTrue(exception.getCause() instanceof IOException);
+            assertTrue(exception.getMessage().contains("Failed to process file"));
+        }
+    }
+
+    @Test
+    void testIsImageFile() throws IOException {
+        // Arrange
+        Path imagePath = tempDir.resolve("test.png");
+        Path nonImagePath = tempDir.resolve("test.txt");
+        Files.createFile(imagePath);
+        Files.createFile(nonImagePath);
+
+        // Mock Files.probeContentType
+        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class, CALLS_REAL_METHODS)) {
+            filesMock.when(() -> Files.probeContentType(imagePath)).thenReturn("image/png");
+            filesMock.when(() -> Files.probeContentType(nonImagePath)).thenReturn("text/plain");
+            filesMock.when(() -> Files.probeContentType(tempDir.resolve("invalid"))).thenReturn(null);
+
+            // Act & Assert
+            assertTrue(ocrService.isImageFile(imagePath));
+            assertFalse(ocrService.isImageFile(nonImagePath));
+            assertFalse(ocrService.isImageFile(tempDir.resolve("invalid")));
+        }
+    }
+
+    @Test
+    void testCleanupTempFiles_PartialFailure() throws IOException {
+        // Arrange - Use a fixed path instead of creating real files
+        Path tempDir = Paths.get("/temp/ocr_test");
+        Path file1 = tempDir.resolve("file1.png");
+        Path file2 = tempDir.resolve("file2.png");
+
+        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class)) {
+            // Setup mocks - file1 deletion succeeds, file2 deletion fails
+            filesMock.when(() -> Files.deleteIfExists(file1)).thenReturn(true);
+            filesMock.when(() -> Files.deleteIfExists(file2)).thenThrow(new IOException("Cannot delete"));
+            filesMock.when(() -> Files.deleteIfExists(tempDir)).thenReturn(true);
+
+            // Act - should not throw exception despite file2 deletion failure
+            ocrService.cleanupTempFiles(tempDir, Arrays.asList(file1, file2));
+
+            // Verify that all expected methods were called
+            filesMock.verify(() -> Files.deleteIfExists(file1));
+            filesMock.verify(() -> Files.deleteIfExists(file2));
+            filesMock.verify(() -> Files.deleteIfExists(tempDir));
+        }
+    }
+
+    @Test
+    void testCleanupTempFiles_EmptyFileList() throws IOException {
+        Path tempDir = Files.createTempDirectory("ocr_test_");
+        ocrService.cleanupTempFiles(tempDir, Collections.emptyList());
+        assertFalse(Files.exists(tempDir), "Empty directory should be deleted");
+    }
+
+    @Test
+    void testCleanupTempFiles_NonExistentDirectory() {
+        Path tempDir = Paths.get("non_existent_dir");
+        ocrService.cleanupTempFiles(tempDir, Collections.emptyList());
+        assertFalse(Files.exists(tempDir), "Non-existent directory should not cause errors");
+    }
+
+    @Test
+    void testProcessWithParallelOcr_AllTasksFail() throws IOException, TesseractException {
+        // Arrange
+        OcrServiceImpl spyOcrService = spy(ocrService);
+        PDDocument mockDocument = mock(PDDocument.class);
+
+        try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
+            pdDocumentMockedStatic.when(() -> PDDocument.load(pdfPath.toFile())).thenReturn(mockDocument);
+            when(mockDocument.getNumberOfPages()).thenReturn(2);
+
+            // Mock createTesseractInstance
+            Tesseract mockTesseract = mock(Tesseract.class);
+            doReturn(mockTesseract).when(spyOcrService).createTesseractInstance();
+            when(mockTesseract.doOCR(any(BufferedImage.class))).thenThrow(new TesseractException("OCR failed"));
+
+            // Mock ImageIO operations
+            BufferedImage testImage = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
+            try (MockedStatic<ImageIO> imageIOMock = Mockito.mockStatic(ImageIO.class)) {
+                imageIOMock.when(() -> ImageIO.write(any(), eq("PNG"), any(File.class))).thenReturn(true);
+                imageIOMock.when(() -> ImageIO.read(any(File.class))).thenReturn(testImage);
+            }
+
+            // Mock PDFRenderer
+            try (MockedConstruction<PDFRenderer> mockConstruction = Mockito.mockConstruction(PDFRenderer.class,
+                    (mock, context) -> when(mock.renderImageWithDPI(anyInt(), anyFloat(), any())).thenReturn(testImage))) {
+
+                // Act
+                String result = spyOcrService.processWithParallelOcr(pdfPath, 2);
+
+                // Assert
+                assertEquals("", result); // All tasks failed, so result is empty
+                verify(mockTesseract, times(2)).doOCR(any(BufferedImage.class));
+                verify(threadPoolManager, times(2)).submitOcrTask(any(Callable.class));
+            }
+        }
+    }
+
+
+    @Test
+    void testExtractTextFromPdf_EmptyDocument() throws IOException, TesseractException {
+        // Arrange
+        try (MockedStatic<PDDocument> pdDocumentMockedStatic = Mockito.mockStatic(PDDocument.class)) {
+            pdDocumentMockedStatic.when(() -> PDDocument.load(any(File.class))).thenReturn(document);
+            when(document.getNumberOfPages()).thenReturn(0);
+
+            // Act
+            String result = ocrService.extractTextFromPdf(pdfPath);
+
+            // Assert
+            assertEquals("", result); // Empty document should return empty string
+        }
+    }
+
+    @Test
+    void testExtractTextFromRegularFile_PPTX_NullPageSize() throws IOException, TesseractException, Exception {
+        // Arrange
+        Path pptxPath = tempDir.resolve("test.pptx");
+        Files.createFile(pptxPath);
+
+        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class, CALLS_REAL_METHODS)) {
+            filesMock.when(() -> Files.probeContentType(pptxPath))
+                    .thenReturn("application/vnd.openxmlformats-officedocument.presentationml.presentation");
+
+            try (MockedConstruction<XMLSlideShow> pptxConstruction = Mockito.mockConstruction(XMLSlideShow.class,
+                    (mock, context) -> {
+                        XSLFSlide mockSlide = mock(XSLFSlide.class);
+                        when(mock.getSlides()).thenReturn(Arrays.asList(mockSlide));
+                        when(mock.getPageSize()).thenReturn(null); // Simulate null page size
+                    })) {
+                BufferedImage slideImage = new BufferedImage(720, 540, BufferedImage.TYPE_INT_RGB);
+                try (MockedStatic<ImageIO> imageIOMock = Mockito.mockStatic(ImageIO.class)) {
+                    imageIOMock.when(() -> ImageIO.read(any(File.class))).thenReturn(slideImage);
+                    imageIOMock.when(() -> ImageIO.write(any(), eq("PNG"), any(File.class))).thenReturn(true);
+
+                    when(tesseract.doOCR(any(BufferedImage.class))).thenReturn("slide text");
+
+                    // Act
+                    String result = ocrService.extractTextFromRegularFile(pptxPath);
+
+                    // Assert
+                    assertNotNull(result);
+                    assertTrue(result.contains("slide text"));
+                    verify(tesseract).doOCR(any(BufferedImage.class));
+                }
+            }
+        }
+    }
+
 }

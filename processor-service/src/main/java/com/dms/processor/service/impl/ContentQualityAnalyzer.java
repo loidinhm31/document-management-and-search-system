@@ -44,38 +44,6 @@ public class ContentQualityAnalyzer {
             Pattern.compile("[a-zA-Z]{2,}\\s+([a-zA-Z]{2,}\\s+){2,}");
 
     /**
-     * Extracts text from a PDF file, using OCR only when necessary
-     */
-    public ExtractedText extractText(Path pdfPath) throws IOException, TesseractException {
-        try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
-            int pageCount = document.getNumberOfPages();
-
-            // Extract text and calculate metrics
-            PDFTextStripper textStripper = new PDFTextStripper();
-            String pdfText = textStripper.getText(document);
-
-            TextMetrics metrics = calculateTextMetrics(pdfText, pageCount);
-            log.debug("PDF metrics - Density: {}, Quality: {}, HasMeaningfulText: {}",
-                    metrics.getTextDensity(), metrics.getTextQuality(), metrics.isHasMeaningfulText());
-
-            // Decide whether to use OCR based on metrics and text length
-            if (!shouldUseOcr(metrics, pdfText)) {
-                log.info("Using PDFTextStripper - Density: {}, Quality: {}",
-                        metrics.getTextDensity(), metrics.getTextQuality());
-                return new ExtractedText(pdfText, false);
-            }
-
-            // Use OCR if needed
-            log.info("Using OCR - Low text metrics - Density: {}, Quality: {}",
-                    metrics.getTextDensity(), metrics.getTextQuality());
-
-            // Use OCR with Tesseract
-            String ocrText = ocrService.processWithOcr(pdfPath, document.getNumberOfPages());
-            return new ExtractedText(ocrText, true);
-        }
-    }
-
-    /**
      * Calculates text quality metrics for a sample of pages from a PDF.
      */
     public TextMetrics calculateMetricsForSample(Path pdfPath, int samplePages) throws IOException {

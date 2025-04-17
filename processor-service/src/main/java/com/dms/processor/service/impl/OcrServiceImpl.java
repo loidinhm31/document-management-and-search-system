@@ -1,5 +1,6 @@
 package com.dms.processor.service.impl;
 
+import com.dms.processor.config.ThreadPoolManager;
 import com.dms.processor.service.OcrService;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.Tesseract;
@@ -7,7 +8,6 @@ import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.hslf.usermodel.HSLFSlide;
 import org.apache.poi.hslf.usermodel.HSLFSlideShow;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
@@ -94,8 +94,8 @@ public class OcrServiceImpl implements OcrService {
             // Process all these images
             return processImagesWithOcr(imageFiles);
 
-        } catch (TikaException | SAXException e) {
-            throw new RuntimeException(e);
+        } catch (TikaException | SAXException | IOException e) {
+            throw new RuntimeException("Failed to process file: " + filePath, e);
         } finally {
             // Clean up temporary files
             cleanupTempFiles(tempDir, imageFiles);
@@ -125,7 +125,7 @@ public class OcrServiceImpl implements OcrService {
     /**
      * Determines if the file is an image file based on its MIME type
      */
-    private boolean isImageFile(Path filePath) throws IOException {
+    protected boolean isImageFile(Path filePath) throws IOException {
         String mimeType = Files.probeContentType(filePath);
         return mimeType != null && mimeType.startsWith("image/");
     }
@@ -160,6 +160,10 @@ public class OcrServiceImpl implements OcrService {
     private List<Path> extractSlidesFromPPTX(XMLSlideShow pptx, Path outputDir) throws IOException {
         List<Path> slideImages = new ArrayList<>();
         Dimension pgsize = pptx.getPageSize();
+        if (pgsize == null) {
+            log.warn("Page size is null, using default dimensions");
+            pgsize = new Dimension(720, 540); // Default size
+        }
         List<XSLFSlide> slides = pptx.getSlides();
 
         for (int i = 0; i < slides.size(); i++) {
@@ -259,7 +263,7 @@ public class OcrServiceImpl implements OcrService {
     /**
      * Clean up temporary files after processing
      */
-    private void cleanupTempFiles(Path tempDir, List<Path> imageFiles) {
+    protected void cleanupTempFiles(Path tempDir, List<Path> imageFiles) {
         for (Path file : imageFiles) {
             try {
                 // Only delete the file if it's in the temp directory
