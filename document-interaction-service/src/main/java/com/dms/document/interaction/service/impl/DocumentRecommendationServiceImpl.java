@@ -58,8 +58,7 @@ public class DocumentRecommendationServiceImpl implements DocumentRecommendation
         recommendationRepository.save(recommendation);
 
         // Update document recommendation count
-        long recommendationCount = recommendationRepository.countByDocumentId(documentId);
-        document.setRecommendationCount((int) recommendationCount);
+        document.setRecommendationCount(document.getRecommendationCount() + 1);
         documentRepository.save(document);
 
         // Record history asynchronously
@@ -73,7 +72,7 @@ public class DocumentRecommendationServiceImpl implements DocumentRecommendation
                     .createdAt(Instant.now())
                     .build());
 
-            // Notify OpenSearch for reindexing
+            // Notify reindexing
             sendSyncEvent(document, userResponse.userId().toString());
         });
 
@@ -101,8 +100,7 @@ public class DocumentRecommendationServiceImpl implements DocumentRecommendation
         recommendationRepository.delete(recommendation.get());
 
         // Update document recommendation count
-        long recommendationCount = recommendationRepository.countByDocumentId(documentId);
-        document.setRecommendationCount((int) recommendationCount);
+        document.setRecommendationCount(document.getRecommendationCount() - 1);
         documentRepository.save(document);
 
         // Record history asynchronously
@@ -116,7 +114,7 @@ public class DocumentRecommendationServiceImpl implements DocumentRecommendation
                     .createdAt(Instant.now())
                     .build());
 
-            // Notify OpenSearch for reindexing
+            // Notify reindexing
             sendSyncEvent(document, userResponse.userId().toString());
         });
 

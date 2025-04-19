@@ -1,5 +1,7 @@
 package com.dms.document.interaction.service;
 
+import com.dms.document.interaction.dto.DocumentFavoriteCheck;
+
 /**
  * Service interface for managing document favorites.
  */
@@ -22,11 +24,11 @@ public interface DocumentFavoriteService {
     void unfavoriteDocument(String documentId, String username);
 
     /**
-     * Checks if a document is in a user's favorites.
+     * Checks if a document is in a user's favorites, also return number of favorites for a specific document.
      *
      * @param documentId The document ID to check
      * @param username The username of the user
-     * @return True if the document is favorited by the user, false otherwise
+     * @return DocumentFavoriteCheck to check with True if the document is favorited by the user, False otherwise, also containing favorite count
      */
-    boolean isDocumentFavorited(String documentId, String username);
+    DocumentFavoriteCheck checkDocumentFavorited(String documentId, String username);
 }

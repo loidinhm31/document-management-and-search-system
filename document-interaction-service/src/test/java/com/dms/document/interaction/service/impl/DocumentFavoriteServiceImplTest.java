@@ -20,7 +20,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -236,42 +235,42 @@ class DocumentFavoriteServiceImplTest {
     }
 
     @Test
-    void isDocumentFavorited_ReturnsTrueWhenFavorited() {
+    void checkDocumentFavorited_ReturnsTrueWhenFavorited() {
         // Arrange
         when(documentFavoriteRepository.existsByUserIdAndDocumentId(userId, documentId)).thenReturn(true);
 
         // Act
-        boolean result = documentFavoriteService.isDocumentFavorited(documentId, username);
+        boolean result = documentFavoriteService.checkDocumentFavorited(documentId, username);
 
         // Assert
         assertTrue(result);
     }
 
     @Test
-    void isDocumentFavorited_ReturnsFalseWhenNotFavorited() {
+    void checkDocumentFavorited_ReturnsFalseWhenNotFavorited() {
         // Arrange
         when(documentFavoriteRepository.existsByUserIdAndDocumentId(userId, documentId)).thenReturn(false);
 
         // Act
-        boolean result = documentFavoriteService.isDocumentFavorited(documentId, username);
+        boolean result = documentFavoriteService.checkDocumentFavorited(documentId, username);
 
         // Assert
         assertFalse(result);
     }
 
     @Test
-    void isDocumentFavorited_UserNotFound() {
+    void checkDocumentFavorited_UserNotFound() {
         // Arrange
         when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.notFound().build());
 
         // Act & Assert
         assertThrows(InvalidDataAccessResourceUsageException.class, () ->
-                documentFavoriteService.isDocumentFavorited(documentId, username));
+                documentFavoriteService.checkDocumentFavorited(documentId, username));
         verify(documentFavoriteRepository, never()).existsByUserIdAndDocumentId(any(), anyString());
     }
 
     @Test
-    void isDocumentFavorited_InvalidRole() {
+    void checkDocumentFavorited_InvalidRole() {
         // Arrange
         UserResponse adminUser = new UserResponse(userId, username, "admin@example.com",
                 new RoleResponse(UUID.randomUUID(), AppRole.ROLE_ADMIN));
@@ -280,27 +279,27 @@ class DocumentFavoriteServiceImplTest {
 
         // Act & Assert
         assertThrows(InvalidDataAccessResourceUsageException.class, () ->
-                documentFavoriteService.isDocumentFavorited(documentId, username));
+                documentFavoriteService.checkDocumentFavorited(documentId, username));
         verify(documentFavoriteRepository, never()).existsByUserIdAndDocumentId(any(), anyString());
     }
 
     @Test
-    void isDocumentFavorited_ClientConnectionError() {
+    void checkDocumentFavorited_ClientConnectionError() {
         // Arrange
         when(userClient.getUserByUsername(username)).thenReturn(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
 
         // Act & Assert
         assertThrows(InvalidDataAccessResourceUsageException.class, () ->
-                documentFavoriteService.isDocumentFavorited(documentId, username));
+                documentFavoriteService.checkDocumentFavorited(documentId, username));
     }
 
     @Test
-    void isDocumentFavorited_NullUserResponse() {
+    void checkDocumentFavorited_NullUserResponse() {
         // Arrange
         when(userClient.getUserByUsername(username)).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
         // Act & Assert
         assertThrows(InvalidDataAccessResourceUsageException.class, () ->
-                documentFavoriteService.isDocumentFavorited(documentId, username));
+                documentFavoriteService.checkDocumentFavorited(documentId, username));
     }
 }

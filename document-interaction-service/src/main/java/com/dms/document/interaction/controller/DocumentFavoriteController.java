@@ -1,6 +1,7 @@
 package com.dms.document.interaction.controller;
 
 import com.dms.document.interaction.constant.ApiConstant;
+import com.dms.document.interaction.dto.DocumentFavoriteCheck;
 import com.dms.document.interaction.service.DocumentFavoriteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,9 +41,9 @@ public class DocumentFavoriteController {
     @Operation(summary = "Check favorite status",
             description = "Check if a document is in user's favorites")
     @GetMapping("/status")
-    public ResponseEntity<Boolean> isDocumentFavorited(
+    public ResponseEntity<DocumentFavoriteCheck> isDocumentFavorited(
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(documentFavoriteService.isDocumentFavorited(id, jwt.getSubject()));
+        return ResponseEntity.ok(documentFavoriteService.checkDocumentFavorited(id, jwt.getSubject()));
     }
 }

@@ -18,10 +18,4 @@ public interface DocumentRecommendationRepository extends JpaRepository<Document
 
     Optional<DocumentRecommendation> findByDocumentIdAndMentorId(String documentId, UUID mentorId);
 
-    Page<DocumentRecommendation> findByMentorId(UUID mentorId, Pageable pageable);
-
-    @Query("SELECT COUNT(r) FROM DocumentRecommendation r WHERE r.documentId = :documentId")
-    long countByDocumentId(@Param("documentId") String documentId);
-
-    void deleteByDocumentIdAndMentorId(String documentId, UUID mentorId);
 }
