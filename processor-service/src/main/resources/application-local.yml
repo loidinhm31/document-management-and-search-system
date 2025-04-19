@@ -4,7 +4,6 @@ app:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
     chunk-size: 10
-    max-threads: 4
     temp-dir: /tmp/ocr
     dpi: 300
     image-type: RGB

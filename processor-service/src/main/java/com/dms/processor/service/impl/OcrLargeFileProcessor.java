@@ -52,7 +52,6 @@ public class OcrLargeFileProcessor {
             throw new IllegalArgumentException("Large file path cannot be null");
         }
 
-        String fileId = pdfPath.getFileName().toString();
         File tempDirectory = createTempDirectory();
         processedPages.set(0);
 

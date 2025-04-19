@@ -106,10 +106,10 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
-        // Add sharing access filter
+        // Add a sharing access filter
         addSharingAccessFilter(queryBuilder, userId.toString(), userRole);
 
-        // Add favorite filter if requested
+        // Add a favorite filter if requested
         if (Boolean.TRUE.equals(request.getFavoriteOnly())) {
             documentFavoriteService.addFavoriteFilter(queryBuilder, userId);
         }

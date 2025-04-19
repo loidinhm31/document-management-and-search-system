@@ -1,11 +1,8 @@
 package com.dms.processor.service.impl;
 
-import com.dms.processor.dto.ExtractedText;
 import com.dms.processor.dto.TextMetrics;
-import com.dms.processor.service.OcrService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,9 +21,6 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 @Slf4j
 public class ContentQualityAnalyzer {
-
-    private final OcrService ocrService;
-
     @Value("${app.pdf.quality-threshold:0.8}")
     private double qualityThreshold;
 

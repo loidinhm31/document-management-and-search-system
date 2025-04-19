@@ -15,10 +15,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Refactored implementation of ContentExtractorService.
- * Uses the strategy pattern to delegate extraction to specialized components.
- */
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
