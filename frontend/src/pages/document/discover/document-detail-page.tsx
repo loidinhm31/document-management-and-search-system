@@ -67,11 +67,8 @@ export default function DocumentDetailPage() {
     if (!documentId) return;
 
     try {
-      if (isFavorited) {
-        await documentService.unfavoriteDocument(documentId);
-      } else {
-        await documentService.favoriteDocument(documentId);
-      }
+      await documentService.favoriteDocument(documentId, !isFavorited);
+
       documentService.checkDocumentFavorited(documentId).then((response) => {
         setIsFavorited(response?.data?.isFavorited);
         setStatistics({
@@ -82,13 +79,13 @@ export default function DocumentDetailPage() {
         if (response?.data?.isFavorited) {
           toast({
             title: t("common.success"),
-            description: t("document.favorite.removeSuccess"),
+            description: t("document.favorite.addSuccess"),
             variant: "success",
           });
         } else {
           toast({
             title: t("common.success"),
-            description: t("document.favorite.addSuccess"),
+            description: t("document.favorite.removeSuccess"),
             variant: "success",
           });
         }

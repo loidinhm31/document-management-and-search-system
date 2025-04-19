@@ -117,6 +117,9 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         // Boost documents based on recommendation count
         addRecommendationBoost(queryBuilder);
 
+        // Boost documents based on favorite count
+        addFavoriteCountBoost(queryBuilder);
+
         // Add filter conditions
         addFilterConditions(queryBuilder, request.getMajors(), request.getCourseCodes(), request.getLevel(), request.getCategories(), request.getTags());
 
@@ -362,6 +365,9 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
 
         // Boost documents based on recommendation count
         addRecommendationBoost(queryBuilder);
+
+        // Boost documents based on favorite count
+        addFavoriteCountBoost(queryBuilder);
 
         searchSourceBuilder.query(queryBuilder)
                 .size(MAX_SUGGESTIONS)

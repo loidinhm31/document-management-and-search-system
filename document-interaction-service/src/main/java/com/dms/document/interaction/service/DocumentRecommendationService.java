@@ -6,22 +6,14 @@ package com.dms.document.interaction.service;
 public interface DocumentRecommendationService {
 
     /**
-     * Recommends a document for a user.
+     * Recommends/ Removes a recommendation for a document for a user.
      *
      * @param documentId the ID of the document to recommend
-     * @param username the username of the user making the recommendation
-     * @return true if recommendation was successful, false if already recommended
+     * @param recommend true to recommend, false to remove recommendation
+     * @param username the username of the user making/ removing the recommendation
+     * @return true if the recommendation was successful, false if already recommended
      */
-    boolean recommendDocument(String documentId, String username);
-
-    /**
-     * Removes a recommendation for a document from a user.
-     *
-     * @param documentId the ID of the document to unrecommend
-     * @param username the username of the user removing the recommendation
-     * @return true if unrecommendation was successful, false if not recommended
-     */
-    boolean unrecommendDocument(String documentId, String username);
+    boolean recommendDocument(String documentId, boolean recommend, String username);
 
     /**
      * Checks if a document is recommended by a specific user.

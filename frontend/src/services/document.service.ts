@@ -109,12 +109,8 @@ class DocumentService extends BaseService {
     );
   }
 
-  favoriteDocument(id: string) {
-    return this.handleApiResponse(axiosInstance.post(`/document-interaction/api/v1/documents/${id}/favorites`));
-  }
-
-  unfavoriteDocument(id: string) {
-    return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/documents/${id}/favorites`));
+  favoriteDocument(id: string, favorite: boolean) {
+    return this.handleApiResponse(axiosInstance.post(`/document-interaction/api/v1/documents/${id}/favorites?favorite=${favorite}`));
   }
 
   async checkDocumentFavorited(id: string) {

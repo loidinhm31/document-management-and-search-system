@@ -18,24 +18,15 @@ import org.springframework.web.bind.annotation.*;
 public class DocumentFavoriteController {
     private final DocumentFavoriteService documentFavoriteService;
 
-    @Operation(summary = "Add document to favorites",
-            description = "Mark a document as favorite for the current user")
+    @Operation(summary = "Add/ Remove document to favorites",
+            description = "Mark/ Remove a document as favorite for the current user")
     @PostMapping
     public ResponseEntity<Void> favoriteDocument(
             @PathVariable String id,
+            @RequestParam(required = false) boolean favorite,
             @AuthenticationPrincipal Jwt jwt) {
-        documentFavoriteService.favoriteDocument(id, jwt.getSubject());
+        documentFavoriteService.favoriteDocument(id, favorite, jwt.getSubject());
         return ResponseEntity.ok().build();
-    }
-
-    @Operation(summary = "Remove document from favorites",
-            description = "Remove a document from user's favorites")
-    @DeleteMapping
-    public ResponseEntity<Void> unfavoriteDocument(
-            @PathVariable String id,
-            @AuthenticationPrincipal Jwt jwt) {
-        documentFavoriteService.unfavoriteDocument(id, jwt.getSubject());
-        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Check favorite status",

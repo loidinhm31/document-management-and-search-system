@@ -4,7 +4,6 @@ import com.dms.document.interaction.client.UserClient;
 import com.dms.document.interaction.dto.SyncEventRequest;
 import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.enums.EventType;
-import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentRecommendation;
@@ -30,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 @Slf4j
 public class DocumentRecommendationServiceImpl implements DocumentRecommendationService {
-    private final DocumentRecommendationRepository recommendationRepository;
+    private final DocumentRecommendationRepository documentRecommendationRepository;
     private final DocumentRepository documentRepository;
     private final UserClient userClient;
     private final DocumentUserHistoryRepository documentUserHistoryRepository;
@@ -38,27 +37,44 @@ public class DocumentRecommendationServiceImpl implements DocumentRecommendation
 
 
     @Override@Transactional
-    public boolean recommendDocument(String documentId, String username) {
+    public boolean recommendDocument(String documentId, boolean recommend, String username) {
         UserResponse userResponse = getUserInfo(username);
 
         // Verify document exists
         DocumentInformation document = documentRepository.findAccessibleDocumentByIdAndUserId(documentId, userResponse.userId().toString())
                 .orElseThrow(() -> new InvalidDocumentException("Document not found or not accessible"));
 
-        // Check if already recommended
-        if (recommendationRepository.existsByDocumentIdAndMentorId(documentId, userResponse.userId())) {
-            return false; // Already recommended
+        // Check if recommended
+        Optional<DocumentRecommendation> documentRecommendation = documentRecommendationRepository.findByDocumentIdAndMentorId(
+                documentId, userResponse.userId());
+
+        if (recommend) {
+            if (documentRecommendation.isPresent()) {
+                return false; // Already recommended
+            }
+
+            // Create recommendation
+            DocumentRecommendation recommendation = new DocumentRecommendation();
+            recommendation.setDocumentId(documentId);
+            recommendation.setMentorId(userResponse.userId());
+            recommendation.setCreatedAt(Instant.now());
+            documentRecommendationRepository.save(recommendation);
+
+            // Update document recommendation count
+            document.setRecommendationCount(Objects.nonNull(document.getRecommendationCount()) ? document.getRecommendationCount() + 1 : 0);
+
+        } else {
+            if (documentRecommendation.isEmpty()) {
+                return false; // Not recommended
+            }
+
+            // Delete recommendation
+            documentRecommendationRepository.delete(documentRecommendation.get());
+
+            // Update document recommendation count
+            document.setRecommendationCount(document.getRecommendationCount() - 1);
         }
 
-        // Create recommendation
-        DocumentRecommendation recommendation = new DocumentRecommendation();
-        recommendation.setDocumentId(documentId);
-        recommendation.setMentorId(userResponse.userId());
-        recommendation.setCreatedAt(Instant.now());
-        recommendationRepository.save(recommendation);
-
-        // Update document recommendation count
-        document.setRecommendationCount(document.getRecommendationCount() + 1);
         documentRepository.save(document);
 
         // Record history asynchronously
@@ -68,49 +84,7 @@ public class DocumentRecommendationServiceImpl implements DocumentRecommendation
                     .documentId(documentId)
                     .userDocumentActionType(com.dms.document.interaction.enums.UserDocumentActionType.RECOMMENDATION)
                     .version(document.getCurrentVersion())
-                    .detail("ADD")
-                    .createdAt(Instant.now())
-                    .build());
-
-            // Notify reindexing
-            sendSyncEvent(document, userResponse.userId().toString());
-        });
-
-        return true;
-    }
-
-
-    @Override@Transactional
-    public boolean unrecommendDocument(String documentId, String username) {
-        UserResponse userResponse = getUserInfo(username);
-
-        // Verify document exists
-        DocumentInformation document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
-
-        // Check if recommended
-        Optional<DocumentRecommendation> recommendation = recommendationRepository.findByDocumentIdAndMentorId(
-                documentId, userResponse.userId());
-
-        if (recommendation.isEmpty()) {
-            return false; // Not recommended
-        }
-
-        // Delete recommendation
-        recommendationRepository.delete(recommendation.get());
-
-        // Update document recommendation count
-        document.setRecommendationCount(document.getRecommendationCount() - 1);
-        documentRepository.save(document);
-
-        // Record history asynchronously
-        CompletableFuture.runAsync(() -> {
-            documentUserHistoryRepository.save(DocumentUserHistory.builder()
-                    .userId(userResponse.userId().toString())
-                    .documentId(documentId)
-                    .userDocumentActionType(UserDocumentActionType.RECOMMENDATION)
-                    .version(document.getCurrentVersion())
-                    .detail("REMOVE")
+                    .detail(recommend ? "ADD" : "REMOVE")
                     .createdAt(Instant.now())
                     .build());
 
@@ -124,7 +98,7 @@ public class DocumentRecommendationServiceImpl implements DocumentRecommendation
     @Override
     public boolean isDocumentRecommendedByUser(String documentId, String username) {
         UserResponse userResponse = getUserInfo(username);
-        return recommendationRepository.existsByDocumentIdAndMentorId(documentId, userResponse.userId());
+        return documentRecommendationRepository.existsByDocumentIdAndMentorId(documentId, userResponse.userId());
     }
 
     private UserResponse getUserInfo(String username) {

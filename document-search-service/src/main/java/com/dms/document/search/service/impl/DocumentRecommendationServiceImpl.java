@@ -113,6 +113,9 @@ public class DocumentRecommendationServiceImpl extends OpenSearchBaseService imp
         // Boost documents based on recommendation count
         addRecommendationBoost(queryBuilder);
 
+        // Boost documents based on favorite count
+        addFavoriteCountBoost(queryBuilder);
+
         // Content similarity
         addContentSimilarityBoosts(queryBuilder, sourceDoc.getSourceAsMap());
 
@@ -302,6 +305,12 @@ public class DocumentRecommendationServiceImpl extends OpenSearchBaseService imp
         if (Boolean.TRUE.equals(favoriteOnly)) {
             documentFavoriteService.addFavoriteFilter(queryBuilder, userId);
         }
+
+        // Boost documents based on recommendation count
+        addRecommendationBoost(queryBuilder);
+
+        // Boost documents based on favorite count
+        addFavoriteCountBoost(queryBuilder);
 
         // Add preference-based boosts
         addPreferenceBoosts(queryBuilder, preferences);

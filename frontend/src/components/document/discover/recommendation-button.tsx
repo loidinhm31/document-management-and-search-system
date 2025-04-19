@@ -33,15 +33,15 @@ export function RecommendationButton({ documentId }: RecommendationButtonProps) 
   const handleToggleRecommendation = async () => {
     setLoading(true);
     try {
+      await documentRecommendationService.recommendDocument(documentId, !isRecommended);
+
       if (isRecommended) {
-        await documentRecommendationService.unrecommendDocument(documentId);
         toast({
           title: t("common.success"),
           description: t("document.recommendation.removeSuccess"),
           variant: "success",
         });
       } else {
-        await documentRecommendationService.recommendDocument(documentId);
         toast({
           title: t("common.success"),
           description: t("document.recommendation.addSuccess"),

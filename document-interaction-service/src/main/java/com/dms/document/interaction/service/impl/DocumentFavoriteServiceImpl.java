@@ -12,6 +12,7 @@ import com.dms.document.interaction.exception.DuplicateFavoriteException;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentFavorite;
 import com.dms.document.interaction.model.DocumentInformation;
+import com.dms.document.interaction.model.DocumentRecommendation;
 import com.dms.document.interaction.model.DocumentUserHistory;
 import com.dms.document.interaction.repository.DocumentFavoriteRepository;
 import com.dms.document.interaction.repository.DocumentRepository;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -41,7 +43,7 @@ public class DocumentFavoriteServiceImpl implements DocumentFavoriteService {
     private final PublishEventService publishEventService;
 
     @Override
-    public void favoriteDocument(String documentId, String username) {
+    public void favoriteDocument(String documentId, boolean favorite, String username) {
         ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
         if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
             throw new InvalidDataAccessResourceUsageException("User not found");
@@ -56,18 +58,32 @@ public class DocumentFavoriteServiceImpl implements DocumentFavoriteService {
         DocumentInformation document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new InvalidDocumentException("Document not found"));
 
-        // Check for existing favorite
-        if (documentFavoriteRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId)) {
-            throw new DuplicateFavoriteException("Document already favorited");
-        }
-
-        DocumentFavorite favorite = new DocumentFavorite();
-        favorite.setUserId(userResponse.userId());
-        favorite.setDocumentId(documentId);
-        documentFavoriteRepository.saveAndFlush(favorite);
+        // Check if recommended
+        boolean isFavorited = documentFavoriteRepository.existsByUserIdAndDocumentId(userResponse.userId(), documentId);
 
         // Update document favorite count
-        document.setFavoriteCount(document.getFavoriteCount() + 1);
+        if (favorite) {
+            // Check for existing favorite
+            if (isFavorited) {
+                throw new DuplicateFavoriteException("Document already favorited");
+            }
+
+            DocumentFavorite documentfavorite = new DocumentFavorite();
+            documentfavorite.setUserId(userResponse.userId());
+            documentfavorite.setDocumentId(documentId);
+            documentFavoriteRepository.save(documentfavorite);
+
+            document.setFavoriteCount(Objects.nonNull(document.getFavoriteCount()) ? document.getFavoriteCount() + 1 : 0);
+        } else {
+            // Check for existing favorite
+            if (!isFavorited) {
+                throw new DuplicateFavoriteException("Document not favorited");
+            }
+
+            documentFavoriteRepository.deleteByUserIdAndDocumentId(userResponse.userId(), documentId);
+
+            document.setFavoriteCount(document.getFavoriteCount() - 1);
+        }
         documentRepository.save(document);
 
         CompletableFuture.runAsync(() -> {
@@ -77,49 +93,11 @@ public class DocumentFavoriteServiceImpl implements DocumentFavoriteService {
                     .documentId(documentId)
                     .userDocumentActionType(UserDocumentActionType.FAVORITE)
                     .version(document.getCurrentVersion())
-                    .detail("ADD")
+                    .detail(favorite ? "ADD" : "REMOVE")
                     .createdAt(Instant.now())
                     .build());
 
             documentPreferencesService.recordInteraction(userResponse.userId(), documentId, InteractionType.FAVORITE);
-
-            // Notify reindexing
-            sendSyncEvent(document, userResponse.userId().toString());
-        });
-    }
-
-    @Override
-    public void unfavoriteDocument(String documentId, String username) {
-        ResponseEntity<UserResponse> response = userClient.getUserByUsername(username);
-        if (!response.getStatusCode().is2xxSuccessful() || Objects.isNull(response.getBody())) {
-            throw new InvalidDataAccessResourceUsageException("User not found");
-        }
-        UserResponse userResponse = response.getBody();
-        if (!(Objects.equals(userResponse.role().roleName(), AppRole.ROLE_USER) ||
-              Objects.equals(userResponse.role().roleName(), AppRole.ROLE_MENTOR))) {
-            throw new InvalidDataAccessResourceUsageException("Invalid role");
-        }
-
-        // Check if document exists
-        DocumentInformation document = documentRepository.findById(documentId)
-                .orElseThrow(() -> new InvalidDocumentException("Document not found"));
-
-        documentFavoriteRepository.deleteByUserIdAndDocumentId(userResponse.userId(), documentId);
-
-        // Update document favorite count
-        document.setFavoriteCount(document.getFavoriteCount() - 1);
-        documentRepository.save(document);
-
-        CompletableFuture.runAsync(() -> {
-            // History
-            documentUserHistoryRepository.save(DocumentUserHistory.builder()
-                    .userId(userResponse.userId().toString())
-                    .documentId(documentId)
-                    .userDocumentActionType(UserDocumentActionType.FAVORITE)
-                    .version(document.getCurrentVersion())
-                    .detail("REMOVE")
-                    .createdAt(Instant.now())
-                    .build());
 
             // Notify reindexing
             sendSyncEvent(document, userResponse.userId().toString());
