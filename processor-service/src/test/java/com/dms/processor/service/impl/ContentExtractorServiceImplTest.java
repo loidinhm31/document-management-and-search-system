@@ -2,8 +2,8 @@ package com.dms.processor.service.impl;
 
 import com.dms.processor.dto.DocumentExtractContent;
 import com.dms.processor.enums.DocumentType;
-import com.dms.processor.service.extraction.DocumentExtractorFactory;
-import com.dms.processor.service.extraction.DocumentExtractionStrategy;
+import com.dms.processor.extraction.DocumentExtractorFactory;
+import com.dms.processor.extraction.DocumentExtractionStrategy;
 import com.dms.processor.util.MimeTypeUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

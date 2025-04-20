@@ -1,4 +1,4 @@
-package com.dms.processor.service.extraction;
+package com.dms.processor.extraction;
 
 import com.dms.processor.exception.DocumentProcessingException;
 import lombok.extern.slf4j.Slf4j;

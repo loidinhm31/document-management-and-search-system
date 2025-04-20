@@ -2,9 +2,8 @@ package com.dms.processor.service.impl;
 
 import com.dms.processor.dto.DocumentExtractContent;
 import com.dms.processor.enums.DocumentType;
-import com.dms.processor.exception.DocumentProcessingException;
 import com.dms.processor.service.ContentExtractorService;
-import com.dms.processor.service.extraction.DocumentExtractorFactory;
+import com.dms.processor.extraction.DocumentExtractorFactory;
 import com.dms.processor.util.MimeTypeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

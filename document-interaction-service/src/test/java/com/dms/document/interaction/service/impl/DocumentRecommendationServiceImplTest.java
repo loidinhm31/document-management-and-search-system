@@ -7,6 +7,7 @@ import com.dms.document.interaction.dto.UserResponse;
 import com.dms.document.interaction.enums.AppRole;
 import com.dms.document.interaction.enums.DocumentStatus;
 import com.dms.document.interaction.enums.EventType;
+import com.dms.document.interaction.enums.UserDocumentActionType;
 import com.dms.document.interaction.exception.InvalidDocumentException;
 import com.dms.document.interaction.model.DocumentInformation;
 import com.dms.document.interaction.model.DocumentRecommendation;
@@ -19,9 +20,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,7 @@ import org.springframework.http.ResponseEntity;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,6 +64,7 @@ class DocumentRecommendationServiceImplTest {
     private UserResponse userResponse;
     private DocumentInformation documentInformation;
     private DocumentRecommendation recommendation;
+    private MockedStatic<CompletableFuture> mockedCompletableFuture;
 
     @BeforeEach
     void setUp() {
@@ -70,7 +73,7 @@ class DocumentRecommendationServiceImplTest {
                 USER_ID,
                 USERNAME,
                 "test@example.com",
-                new RoleResponse(UUID.randomUUID(), AppRole.ROLE_MENTOR)
+                new RoleResponse(UUID.randomUUID(), AppRole.ROLE_USER)
         );
 
         // Create test document
@@ -86,20 +89,37 @@ class DocumentRecommendationServiceImplTest {
         recommendation.setDocumentId(DOCUMENT_ID);
         recommendation.setMentorId(USER_ID);
         recommendation.setCreatedAt(Instant.now());
+
+        // Mock CompletableFuture.runAsync to run synchronously
+        mockedCompletableFuture = mockStatic(CompletableFuture.class);
+        mockedCompletableFuture.when(() -> CompletableFuture.runAsync(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(0);
+            runnable.run();
+            return CompletableFuture.completedFuture(null);
+        });
+
+        // Mock user response
+        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        if (mockedCompletableFuture != null) {
+            mockedCompletableFuture.close();
+        }
     }
 
     @Test
-    void recommendDocument_Success() {
+    void recommendDocument_Success_Recommend() {
         // Arrange
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
         when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
                 .thenReturn(Optional.of(documentInformation));
-        when(recommendationRepository.existsByDocumentIdAndMentorId(DOCUMENT_ID, USER_ID)).thenReturn(false);
-        when(recommendationRepository.countByDocumentId(DOCUMENT_ID)).thenReturn(1L);
+        when(recommendationRepository.findByDocumentIdAndMentorId(DOCUMENT_ID, USER_ID)).thenReturn(Optional.empty());
+        when(recommendationRepository.save(any(DocumentRecommendation.class))).thenReturn(recommendation);
         when(documentRepository.save(any(DocumentInformation.class))).thenReturn(documentInformation);
 
         // Act
-        boolean result = recommendationService.recommendDocument(DOCUMENT_ID, USERNAME);
+        boolean result = recommendationService.recommendDocument(DOCUMENT_ID, true, USERNAME);
 
         // Assert
         assertTrue(result);
@@ -110,59 +130,32 @@ class DocumentRecommendationServiceImplTest {
         verify(documentRepository).save(docCaptor.capture());
         DocumentInformation savedDoc = docCaptor.getValue();
         assertEquals(1, savedDoc.getRecommendationCount());
+
+        // Verify history is recorded
+        ArgumentCaptor<DocumentUserHistory> historyCaptor = ArgumentCaptor.forClass(DocumentUserHistory.class);
+        verify(documentUserHistoryRepository).save(historyCaptor.capture());
+        DocumentUserHistory history = historyCaptor.getValue();
+        assertEquals(USER_ID.toString(), history.getUserId());
+        assertEquals(DOCUMENT_ID, history.getDocumentId());
+        assertEquals(UserDocumentActionType.RECOMMENDATION, history.getUserDocumentActionType());
+        assertEquals("ADD", history.getDetail());
+
+        // Verify sync event is sent
+        verify(publishEventService).sendSyncEvent(any(SyncEventRequest.class));
     }
 
     @Test
-    void recommendDocument_AlreadyRecommended_ReturnsFalse() {
+    void recommendDocument_Success_Unrecommend() {
         // Arrange
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
+        documentInformation.setRecommendationCount(1);
         when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
                 .thenReturn(Optional.of(documentInformation));
-        when(recommendationRepository.existsByDocumentIdAndMentorId(DOCUMENT_ID, USER_ID)).thenReturn(true);
-
-        // Act
-        boolean result = recommendationService.recommendDocument(DOCUMENT_ID, USERNAME);
-
-        // Assert
-        assertFalse(result);
-        verify(recommendationRepository, never()).save(any(DocumentRecommendation.class));
-        verify(documentRepository, never()).save(any(DocumentInformation.class));
-    }
-
-    @Test
-    void recommendDocument_DocumentNotFound_ThrowsException() {
-        // Arrange
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
-        when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
-                .thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(InvalidDocumentException.class,
-                () -> recommendationService.recommendDocument(DOCUMENT_ID, USERNAME));
-    }
-
-    @Test
-    void recommendDocument_UserNotFound_ThrowsException() {
-        // Arrange
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-
-        // Act & Assert
-        assertThrows(InvalidDataAccessResourceUsageException.class,
-                () -> recommendationService.recommendDocument(DOCUMENT_ID, USERNAME));
-    }
-
-    @Test
-    void unrecommendDocument_Success() {
-        // Arrange
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
-        when(documentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(documentInformation));
         when(recommendationRepository.findByDocumentIdAndMentorId(DOCUMENT_ID, USER_ID))
                 .thenReturn(Optional.of(recommendation));
-        when(recommendationRepository.countByDocumentId(DOCUMENT_ID)).thenReturn(0L);
         when(documentRepository.save(any(DocumentInformation.class))).thenReturn(documentInformation);
 
         // Act
-        boolean result = recommendationService.unrecommendDocument(DOCUMENT_ID, USERNAME);
+        boolean result = recommendationService.recommendDocument(DOCUMENT_ID, false, USERNAME);
 
         // Assert
         assertTrue(result);
@@ -173,50 +166,92 @@ class DocumentRecommendationServiceImplTest {
         verify(documentRepository).save(docCaptor.capture());
         DocumentInformation savedDoc = docCaptor.getValue();
         assertEquals(0, savedDoc.getRecommendationCount());
+
+        // Verify history is recorded
+        ArgumentCaptor<DocumentUserHistory> historyCaptor = ArgumentCaptor.forClass(DocumentUserHistory.class);
+        verify(documentUserHistoryRepository).save(historyCaptor.capture());
+        DocumentUserHistory history = historyCaptor.getValue();
+        assertEquals(USER_ID.toString(), history.getUserId());
+        assertEquals(DOCUMENT_ID, history.getDocumentId());
+        assertEquals(UserDocumentActionType.RECOMMENDATION, history.getUserDocumentActionType());
+        assertEquals("REMOVE", history.getDetail());
+
+        // Verify sync event is sent
+        verify(publishEventService).sendSyncEvent(any(SyncEventRequest.class));
     }
 
     @Test
-    void unrecommendDocument_NotRecommended_ReturnsFalse() {
+    void recommendDocument_AlreadyRecommended_ReturnsFalse() {
         // Arrange
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
-        when(documentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(documentInformation));
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
+                .thenReturn(Optional.of(documentInformation));
+        when(recommendationRepository.findByDocumentIdAndMentorId(DOCUMENT_ID, USER_ID))
+                .thenReturn(Optional.of(recommendation));
+
+        // Act
+        boolean result = recommendationService.recommendDocument(DOCUMENT_ID, true, USERNAME);
+
+        // Assert
+        assertFalse(result);
+        verify(recommendationRepository, never()).save(any(DocumentRecommendation.class));
+        verify(documentRepository, never()).save(any(DocumentInformation.class));
+        verify(documentUserHistoryRepository, never()).save(any(DocumentUserHistory.class));
+        verify(publishEventService, never()).sendSyncEvent(any(SyncEventRequest.class));
+    }
+
+    @Test
+    void recommendDocument_NotRecommendedForUnrecommend_ReturnsFalse() {
+        // Arrange
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
+                .thenReturn(Optional.of(documentInformation));
         when(recommendationRepository.findByDocumentIdAndMentorId(DOCUMENT_ID, USER_ID))
                 .thenReturn(Optional.empty());
 
         // Act
-        boolean result = recommendationService.unrecommendDocument(DOCUMENT_ID, USERNAME);
+        boolean result = recommendationService.recommendDocument(DOCUMENT_ID, false, USERNAME);
 
         // Assert
         assertFalse(result);
         verify(recommendationRepository, never()).delete(any(DocumentRecommendation.class));
         verify(documentRepository, never()).save(any(DocumentInformation.class));
+        verify(documentUserHistoryRepository, never()).save(any(DocumentUserHistory.class));
+        verify(publishEventService, never()).sendSyncEvent(any(SyncEventRequest.class));
     }
 
     @Test
-    void unrecommendDocument_DocumentNotFound_ThrowsException() {
+    void recommendDocument_DocumentNotFound_ThrowsException() {
         // Arrange
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
-        when(documentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+        when(documentRepository.findAccessibleDocumentByIdAndUserId(DOCUMENT_ID, USER_ID.toString()))
+                .thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(InvalidDocumentException.class,
-                () -> recommendationService.unrecommendDocument(DOCUMENT_ID, USERNAME));
+                () -> recommendationService.recommendDocument(DOCUMENT_ID, true, USERNAME));
+        verify(recommendationRepository, never()).save(any(DocumentRecommendation.class));
+        verify(recommendationRepository, never()).delete(any(DocumentRecommendation.class));
+        verify(documentRepository, never()).save(any(DocumentInformation.class));
+        verify(documentUserHistoryRepository, never()).save(any(DocumentUserHistory.class));
+        verify(publishEventService, never()).sendSyncEvent(any(SyncEventRequest.class));
     }
 
     @Test
-    void unrecommendDocument_UserNotFound_ThrowsException() {
+    void recommendDocument_UserNotFound_ThrowsException() {
         // Arrange
         when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
 
         // Act & Assert
         assertThrows(InvalidDataAccessResourceUsageException.class,
-                () -> recommendationService.unrecommendDocument(DOCUMENT_ID, USERNAME));
+                () -> recommendationService.recommendDocument(DOCUMENT_ID, true, USERNAME));
+        verify(recommendationRepository, never()).save(any(DocumentRecommendation.class));
+        verify(recommendationRepository, never()).delete(any(DocumentRecommendation.class));
+        verify(documentRepository, never()).save(any(DocumentInformation.class));
+        verify(documentUserHistoryRepository, never()).save(any(DocumentUserHistory.class));
+        verify(publishEventService, never()).sendSyncEvent(any(SyncEventRequest.class));
     }
 
     @Test
     void isDocumentRecommendedByUser_RecommendedDocument_ReturnsTrue() {
         // Arrange
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
         when(recommendationRepository.existsByDocumentIdAndMentorId(DOCUMENT_ID, USER_ID)).thenReturn(true);
 
         // Act
@@ -229,7 +264,6 @@ class DocumentRecommendationServiceImplTest {
     @Test
     void isDocumentRecommendedByUser_NotRecommendedDocument_ReturnsFalse() {
         // Arrange
-        when(userClient.getUserByUsername(USERNAME)).thenReturn(ResponseEntity.ok(userResponse));
         when(recommendationRepository.existsByDocumentIdAndMentorId(DOCUMENT_ID, USER_ID)).thenReturn(false);
 
         // Act
@@ -247,5 +281,17 @@ class DocumentRecommendationServiceImplTest {
         // Act & Assert
         assertThrows(InvalidDataAccessResourceUsageException.class,
                 () -> recommendationService.isDocumentRecommendedByUser(DOCUMENT_ID, USERNAME));
+        verify(recommendationRepository, never()).existsByDocumentIdAndMentorId(anyString(), any(UUID.class));
+    }
+
+    @Test
+    void isDocumentRecommendedByUser_NullUserResponse_ThrowsException() {
+        // Arrange
+        when(userClient.getUserByUsername(USERNAME)).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        // Act & Assert
+        assertThrows(InvalidDataAccessResourceUsageException.class,
+                () -> recommendationService.isDocumentRecommendedByUser(DOCUMENT_ID, USERNAME));
+        verify(recommendationRepository, never()).existsByDocumentIdAndMentorId(anyString(), any(UUID.class));
     }
 }

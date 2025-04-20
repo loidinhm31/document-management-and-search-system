@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Data Transfer Object for PDF text quality metrics
+ * Data Transfer Object for text quality metrics
  */
 @Data
 @AllArgsConstructor

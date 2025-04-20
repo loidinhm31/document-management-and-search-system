@@ -1,10 +1,9 @@
-package com.dms.processor.service.extraction;
+package com.dms.processor.extraction;
 
 import com.dms.processor.dto.DocumentExtractContent;
 import com.dms.processor.dto.TextMetrics;
 import com.dms.processor.exception.DocumentProcessingException;
 import com.dms.processor.service.OcrService;
-import com.dms.processor.service.impl.ContentQualityAnalyzer;
 import com.dms.processor.service.impl.LargeFileProcessor;
 import com.dms.processor.service.impl.OcrLargeFileProcessor;
 import lombok.RequiredArgsConstructor;

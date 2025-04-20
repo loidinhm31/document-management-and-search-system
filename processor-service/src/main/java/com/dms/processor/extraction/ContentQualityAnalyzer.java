@@ -1,4 +1,4 @@
-package com.dms.processor.service.impl;
+package com.dms.processor.extraction;
 
 import com.dms.processor.dto.TextMetrics;
 import lombok.RequiredArgsConstructor;

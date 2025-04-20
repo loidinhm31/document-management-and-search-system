@@ -35,13 +35,19 @@ public class EmailService {
     private String fromEmail;
 
     public void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
+        if (to == null || to.trim().isEmpty()) {
+            throw new IllegalArgumentException("Recipient email cannot be null or empty");
+        }
+        if (htmlContent == null) {
+            throw new IllegalArgumentException("HTML content cannot be null");
+        }
         log.info("Sending email");
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
         helper.setFrom(fromEmail);
         helper.setTo(to);
-        helper.setSubject(subject);
+        helper.setSubject(subject != null ? subject : ""); // Allow empty subject
         helper.setText(htmlContent, true);
 
         mailSender.send(message);
@@ -85,6 +91,9 @@ public class EmailService {
      * Divides emails into batches of the configured size
      */
     protected List<List<String>> partitionEmails(Collection<String> emails) {
+        if (batchSize <= 0) {
+            throw new IllegalArgumentException("Batch size must be positive");
+        }
         return emails.stream()
                 .collect(Collectors.groupingBy(email ->
                         emails.stream().toList().indexOf(email) / batchSize))
@@ -103,8 +112,8 @@ public class EmailService {
                 try {
                     // Create a copy of template vars for this specific recipient
                     Map<String, Object> personalizedVars = new HashMap<>(templateVars);
-                    User recipient = recipientMap.get(email);
-                    personalizedVars.put("recipientName", recipient.getUsername());
+                    User recipient = recipientMap != null ? recipientMap.get(email) : null;
+                    personalizedVars.put("recipientName", recipient != null ? recipient.getUsername() : "Unknown");
 
                     // Prepare email content
                     String htmlContent = renderTemplate(templateName, personalizedVars);
