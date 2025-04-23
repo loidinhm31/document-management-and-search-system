@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.s3.model.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -45,10 +46,19 @@ public class S3ServiceImpl implements S3Service {
                     .key(s3Key)
                     .build();
 
-            String fileName = s3Key.substring(s3Key.lastIndexOf('/') + 1);
+            String originalFileName = s3Key.substring(s3Key.lastIndexOf('/') + 1);
+
+            // Sanitize the filename to handle international characters properly
+            String sanitizedFileName = sanitizeFileName(originalFileName);
+
+            // Create a unique directory for each download to avoid collisions
             Path tempDir = Path.of(s3Properties.getTempDir(), UUID.randomUUID().toString());
             Files.createDirectories(tempDir);
-            Path tempFile = tempDir.resolve(fileName);
+
+            // Use the sanitized filename for the temporary file
+            Path tempFile = tempDir.resolve(sanitizedFileName);
+
+            log.info("Downloading S3 object '{}' to temp file '{}'", s3Key, tempFile);
 
             ResponseInputStream<GetObjectResponse> response = s3Client.getObject(getObjectRequest);
             FileUtils.copyInputStreamToFile(response, tempFile.toFile());
@@ -58,6 +68,39 @@ public class S3ServiceImpl implements S3Service {
             log.error("Error downloading file from S3: {}", e.getMessage());
             throw new IOException("Failed to download file from S3", e);
         }
+    }
+
+    private String sanitizeFileName(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return "unnamed_" + UUID.randomUUID();
+        }
+
+        // Normalize and remove diacritics
+        String normalized = Normalizer.normalize(fileName, Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}", "");
+
+        // Replace any remaining non-ASCII or problematic characters with underscores
+        String sanitized = normalized.replaceAll("[^a-zA-Z0-9._\\-]", "_");
+
+        // Add a timestamp prefix if the file was completely sanitized to ensure uniqueness
+        if (sanitized.equals("_") || sanitized.isEmpty()) {
+            sanitized = "file_" + System.currentTimeMillis();
+        }
+
+        // Preserve the original extension if possible
+        if (fileName.contains(".") && !sanitized.contains(".")) {
+            String extension = fileName.substring(fileName.lastIndexOf('.'));
+            if (extension.matches("\\.[a-zA-Z0-9]+")) {
+                sanitized += extension;
+            }
+        }
+
+        // Log the transformation for debugging
+        if (!fileName.equals(sanitized)) {
+            log.info("Sanitized filename: '{}' -> '{}'", fileName, sanitized);
+        }
+
+        return sanitized;
     }
 
     public void deleteFile(String key) {

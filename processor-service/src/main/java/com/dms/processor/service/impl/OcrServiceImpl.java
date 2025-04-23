@@ -248,19 +248,6 @@ public class OcrServiceImpl implements OcrService {
     }
 
     /**
-     * Get file extension from MIME type
-     */
-    private String getExtensionFromMimeType(String mimeType) {
-        try {
-            TikaConfig config = TikaConfig.getDefaultConfig();
-            return config.getMimeRepository().forName(mimeType).getExtension();
-        } catch (MimeTypeException e) {
-            log.warn("Could not determine extension for MIME type: {}", mimeType);
-            return ".bin";
-        }
-    }
-
-    /**
      * Clean up temporary files after processing
      */
     protected void cleanupTempFiles(Path tempDir, List<Path> imageFiles) {
