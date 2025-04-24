@@ -33,9 +33,6 @@ public class ThreadPoolManager {
     @Value("${app.threads.keep-alive-seconds:60}")
     private int keepAliveSeconds;
 
-    @Value("${app.threads.ocr-task-weight:3}")
-    private int ocrTaskWeight;
-
     @Value("${app.threads.adaptive:true}")
     private boolean adaptive;
 
