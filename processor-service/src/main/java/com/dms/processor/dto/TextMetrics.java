@@ -5,12 +5,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Data Transfer Object for PDF text quality metrics
+ * Data Transfer Object for text quality metrics
  */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PdfTextMetrics {
+public class TextMetrics {
 
     /**
      * Measure of text density (characters per page relative to expectation)

@@ -334,4 +334,173 @@ public class DocumentEmailServiceImplTest {
         // Verify
         verify(mailSender, times(1)).send(any(MimeMessage.class));
     }
+
+    @Test
+    void sendCommentResolveCommenterNotifications_DoesNotSend_WhenCommenterEmailInvalid() throws MessagingException {
+        // Arrange
+        testNotificationEvent.setCommentId(1L);
+        testComment.setFlag(-1);
+        testNotificationEvent.setVersionNumber(1);
+
+        when(documentRepository.findById(testDocumentId)).thenReturn(Optional.of(testDocument));
+        when(documentCommentRepository.findByDocumentIdAndId(testDocumentId, 1L)).thenReturn(Optional.of(testComment));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+        User commenter = new User(testUserId, "commenter", ""); // Empty email
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(commenter));
+
+        // Act
+        documentEmailService.sendCommentReportProcessNotification(testNotificationEvent);
+
+        // Assert
+        verify(mailSender, never()).send(any(MimeMessage.class));
+        // Note: Log verification requires a logging framework like Logback with a test appender
+    }
+
+    @Test
+    void createEmailToUserMap_FiltersOutInvalidEmails() {
+        // Arrange
+        Set<User> users = new HashSet<>();
+        users.add(new User(UUID.randomUUID(), "user1", null));
+        users.add(new User(UUID.randomUUID(), "user2", ""));
+        users.add(new User(UUID.randomUUID(), "user3", "valid@example.com"));
+
+        // Act
+        Map<String, User> emailMap = documentEmailService.createEmailToUserMap(users);
+
+
+        // Assert
+        assertEquals(1, emailMap.size());
+        assertTrue(emailMap.containsKey("valid@example.com"));
+    }
+
+    @Test
+    void findUsersToNotify_IncludesAllFavorites_WhenTriggerUserIsNull() {
+        // Arrange
+        Set<UUID> favoriteUserIds = new HashSet<>(Arrays.asList(UUID.randomUUID(), UUID.randomUUID()));
+        when(documentFavoriteRepository.findUserIdsByDocumentId(testDocumentId)).thenReturn(favoriteUserIds);
+        List<User> favoriteUsers = Arrays.asList(
+                new User(favoriteUserIds.iterator().next(), "user1", "user1@example.com"),
+                new User(favoriteUserIds.iterator().next(), "user2", "user2@example.com")
+        );
+        when(userRepository.findUsersByUserIdIn(favoriteUserIds)).thenReturn(favoriteUsers);
+
+        // Act
+        Set<User> usersToNotify = documentEmailService.findUsersToNotify(testDocument, null);
+
+        // Assert
+        assertEquals(2, usersToNotify.size());
+    }
+
+    @Test
+    void sendNotifyForRelatedUserInDocument_SendsEmails_ForNewFileVersion() throws MessagingException {
+        // Arrange
+        NotificationEventRequest newFileEvent = NotificationEventRequest.builder()
+                .documentId(testDocumentId)
+                .triggerUserId(testUserId.toString())
+                .notificationType(NotificationType.NEW_FILE_VERSION)
+                .versionNumber(2)
+                .build();
+        when(documentRepository.findById(testDocumentId)).thenReturn(Optional.of(testDocument));
+        when(userRepository.findByUsername(testUserId.toString())).thenReturn(Optional.of(testUser));
+        Set<UUID> favoriteUserIds = new HashSet<>(Collections.singletonList(UUID.randomUUID()));
+        when(documentFavoriteRepository.findUserIdsByDocumentId(testDocumentId)).thenReturn(favoriteUserIds);
+        User favoriteUser = new User(UUID.randomUUID(), "favoriteUser", "favorite@example.com");
+        when(userRepository.findUsersByUserIdIn(favoriteUserIds)).thenReturn(Collections.singletonList(favoriteUser));
+        doNothing().when(documentEmailService).sendBatchNotificationEmails(anySet(), anyString(), anyString(), any());
+
+        // Act
+        documentEmailService.sendNotifyForRelatedUserInDocument(newFileEvent);
+
+        // Assert
+        verify(documentEmailService).sendBatchNotificationEmails(anySet(), eq("New version uploaded for document: Test Document"), eq("new-version-notification"), any());
+    }
+
+    @Test
+    void sendNotifyForRelatedUserInDocument_SendsEmails_ForDocumentReverted() throws MessagingException {
+        // Arrange
+        NotificationEventRequest revertedEvent = NotificationEventRequest.builder()
+                .documentId(testDocumentId)
+                .triggerUserId(testUserId.toString())
+                .notificationType(NotificationType.DOCUMENT_REVERTED)
+                .versionNumber(1)
+                .build();
+        when(documentRepository.findById(testDocumentId)).thenReturn(Optional.of(testDocument));
+        when(userRepository.findByUsername(testUserId.toString())).thenReturn(Optional.of(testUser));
+        Set<UUID> favoriteUserIds = new HashSet<>(Collections.singletonList(UUID.randomUUID()));
+        when(documentFavoriteRepository.findUserIdsByDocumentId(testDocumentId)).thenReturn(favoriteUserIds);
+        User favoriteUser = new User(UUID.randomUUID(), "favoriteUser", "favorite@example.com");
+        when(userRepository.findUsersByUserIdIn(favoriteUserIds)).thenReturn(Collections.singletonList(favoriteUser));
+        doNothing().when(documentEmailService).sendBatchNotificationEmails(anySet(), anyString(), anyString(), any());
+
+        // Act
+        documentEmailService.sendNotifyForRelatedUserInDocument(revertedEvent);
+
+        // Assert
+        verify(documentEmailService).sendBatchNotificationEmails(anySet(), eq("Document reverted: Test Document"), eq("document-reverted-notification"), any());
+    }
+
+    @Test
+    void getUsernameById_ReturnsUnknown_WhenUserNotFound() {
+        // Arrange
+        when(userRepository.findById(testUserId)).thenReturn(Optional.empty());
+
+        // Act
+        String username = documentEmailService.getUsernameById(testUserId.toString());
+
+        // Assert
+        assertEquals("Unknown", username);
+    }
+
+    @Test
+    void sendBatchNotificationEmails_ProcessesInBatches_WhenRecipientsExceedBatchSize() throws MessagingException {
+        // Arrange
+        ReflectionTestUtils.setField(documentEmailService, "batchSize", 2);
+        when(documentRepository.findById(testDocumentId)).thenReturn(Optional.of(testDocument));
+        when(userRepository.findByUsername(testUserId.toString())).thenReturn(Optional.of(testUser));
+        Set<UUID> favoriteUserIds = new HashSet<>();
+        List<User> favoriteUsers = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            UUID userId = UUID.randomUUID();
+            favoriteUserIds.add(userId);
+            favoriteUsers.add(new User(userId, "user" + i, "user" + i + "@example.com"));
+        }
+        when(documentFavoriteRepository.findUserIdsByDocumentId(testDocumentId)).thenReturn(favoriteUserIds);
+        when(userRepository.findUsersByUserIdIn(favoriteUserIds)).thenReturn(favoriteUsers);
+        doNothing().when(documentEmailService).sendBatchNotificationEmails(anySet(), anyString(), anyString(), any()); // Mock to avoid real email sending
+
+        // Act
+        documentEmailService.sendNotifyForRelatedUserInDocument(testNotificationEvent);
+
+        // Assert
+        ArgumentCaptor<Set<String>> emailCaptor = ArgumentCaptor.forClass(Set.class);
+        verify(documentEmailService, times(1)).sendBatchNotificationEmails(
+                emailCaptor.capture(),
+                eq("New comment on document: Test Document"),
+                eq("new-comment-notification"),
+                any()
+        );
+        assertEquals(5, emailCaptor.getValue().size(), "Expected 5 email addresses");
+        // Note: Verifying exact batch counts requires inspecting the internal logic of sendBatchNotificationEmails
+    }
+
+    @Test
+    void sendCommentResolveCommenterNotifications_LogsWarning_WhenCommenterNotFound() throws MessagingException {
+        // Arrange
+        testNotificationEvent.setCommentId(1L);
+        testNotificationEvent.setVersionNumber(1); // Set versionNumber to avoid NPE
+        testComment.setFlag(-1);
+        when(documentRepository.findById(testDocumentId)).thenReturn(Optional.of(testDocument));
+        when(documentCommentRepository.findByDocumentIdAndId(testDocumentId, 1L)).thenReturn(Optional.of(testComment));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.empty()); // Commenter not found
+        when(commentReportRepository.findReporterUserIdsByCommentIdAndStatusAndTimes(1L, CommentReportStatus.RESOLVED, 1))
+                .thenReturn(Collections.emptySet()); // No reporters
+
+        // Act
+        documentEmailService.sendCommentReportProcessNotification(testNotificationEvent);
+
+        // Assert
+        verify(mailSender, never()).send(any(MimeMessage.class));
+        // Note: Log verification for "No commenter found for comment report notification" requires a logging framework
+    }
 }

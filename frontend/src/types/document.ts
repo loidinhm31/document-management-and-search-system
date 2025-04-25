@@ -46,8 +46,8 @@ export interface DocumentInformation {
   sharingType?: string;
   sharedWith?: string[];
   language?: string;
+  favoriteCount?: number;
 
-  // Add version-related fields
   currentVersion: number;
   versions: DocumentVersion[];
 }

@@ -42,6 +42,7 @@ export default function DocumentDetailPage() {
   const [statistics, setStatistics] = useState<{
     viewCount: number;
     downloadCount: number;
+    favoriteCount: number;
     totalInteractions: number;
   } | null>(null);
 
@@ -66,23 +67,29 @@ export default function DocumentDetailPage() {
     if (!documentId) return;
 
     try {
-      if (isFavorited) {
-        await documentService.unfavoriteDocument(documentId);
-        setIsFavorited(false);
-        toast({
-          title: t("common.success"),
-          description: t("document.favorite.removeSuccess"),
-          variant: "success",
+      await documentService.favoriteDocument(documentId, !isFavorited);
+
+      documentService.checkDocumentFavorited(documentId).then((response) => {
+        setIsFavorited(response?.data?.isFavorited);
+        setStatistics({
+          ...statistics,
+          favoriteCount: response?.data?.favoriteCount || 0,
         });
-      } else {
-        await documentService.favoriteDocument(documentId);
-        setIsFavorited(true);
-        toast({
-          title: t("common.success"),
-          description: t("document.favorite.addSuccess"),
-          variant: "success",
-        });
-      }
+
+        if (response?.data?.isFavorited) {
+          toast({
+            title: t("common.success"),
+            description: t("document.favorite.addSuccess"),
+            variant: "success",
+          });
+        } else {
+          toast({
+            title: t("common.success"),
+            description: t("document.favorite.removeSuccess"),
+            variant: "success",
+          });
+        }
+      });
     } catch (_error) {
       toast({
         title: t("common.error"),
@@ -113,12 +120,14 @@ export default function DocumentDetailPage() {
         setDocumentData(docResponse.data);
         dispatch(setCurrentDocument(docResponse.data));
 
-        documentService.isDocumentFavorited(documentId).then((favoriteResponse) => {
-          setIsFavorited(favoriteResponse.data);
-        });
+        const documentFavoriteCheck = await documentService.checkDocumentFavorited(documentId);
+        setIsFavorited(documentFavoriteCheck?.data?.isFavorited);
 
         documentService.getDocumentStatistics(documentId).then((statisticsResponse) => {
-          setStatistics(statisticsResponse.data);
+          setStatistics({
+            ...statisticsResponse.data,
+            favoriteCount: documentFavoriteCheck?.data?.favoriteCount || 0,
+          });
         });
 
         if (isFirstView) {
@@ -149,7 +158,11 @@ export default function DocumentDetailPage() {
 
   const handleDownloadSuccess = async () => {
     const statisticsResponse = await documentService.getDocumentStatistics(documentId);
-    setStatistics(statisticsResponse.data);
+    const favCount = statisticsResponse.data?.favoriteCount || 0;
+    setStatistics({
+      ...statisticsResponse.data,
+      favoriteCount: favCount, // Keep it as it was
+    });
   };
 
   const isMentor = currentUser?.roles.includes("ROLE_MENTOR");
@@ -208,11 +221,21 @@ export default function DocumentDetailPage() {
                       <>
                         <MdOutlineFavorite className="h-4 w-4 fill-red-500" />
                         {t("document.actions.favorited")}
+                        {statistics?.favoriteCount > 0 && (
+                          <span className="ml-1 text-xs bg-muted rounded-full px-2 py-0.5">
+                            {statistics.favoriteCount}
+                          </span>
+                        )}
                       </>
                     ) : (
                       <>
                         <MdOutlineFavoriteBorder className="h-4 w-4" />
                         {t("document.actions.favorite")}
+                        {statistics?.favoriteCount > 0 && (
+                          <span className="ml-1 text-xs bg-muted rounded-full px-2 py-0.5">
+                            {statistics.favoriteCount}
+                          </span>
+                        )}
                       </>
                     )}
                   </Button>
@@ -275,16 +298,14 @@ export default function DocumentDetailPage() {
                       />
                     </div>
 
-                    {documentData.courseCodes && (
-                      <div className="space-y-2">
-                        <Label>{t("document.detail.fields.courseCodes")}</Label>
-                        <MultiValueDisplay
-                          value={documentData.courseCodes}
-                          type={MasterDataType.COURSE_CODE}
-                          masterData={{ courseCodes }}
-                        />
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      <Label>{t("document.detail.fields.courseCodes")}</Label>
+                      <MultiValueDisplay
+                        value={documentData.courseCodes}
+                        type={MasterDataType.COURSE_CODE}
+                        masterData={{ courseCodes }}
+                      />
+                    </div>
 
                     <div className="space-y-2">
                       <Label>{t("document.detail.fields.level")}</Label>
@@ -303,15 +324,13 @@ export default function DocumentDetailPage() {
                     />
                   </div>
 
-                  {documentData.tags && documentData.tags.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>{t("document.detail.fields.tags")}</Label>
-                      <MultiValueDisplay
-                        value={documentData.tags}
-                        pillClassName="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
-                      />
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label>{t("document.detail.fields.tags")}</Label>
+                    <MultiValueDisplay
+                      value={documentData.tags}
+                      pillClassName="inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+                    />
+                  </div>
                 </div>
               </div>
 

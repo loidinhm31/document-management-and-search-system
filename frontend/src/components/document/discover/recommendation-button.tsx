@@ -1,4 +1,4 @@
-import { Award } from "lucide-react";
+import { StarIcon } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -33,15 +33,15 @@ export function RecommendationButton({ documentId }: RecommendationButtonProps) 
   const handleToggleRecommendation = async () => {
     setLoading(true);
     try {
+      await documentRecommendationService.recommendDocument(documentId, !isRecommended);
+
       if (isRecommended) {
-        await documentRecommendationService.unrecommendDocument(documentId);
         toast({
           title: t("common.success"),
           description: t("document.recommendation.removeSuccess"),
           variant: "success",
         });
       } else {
-        await documentRecommendationService.recommendDocument(documentId);
         toast({
           title: t("common.success"),
           description: t("document.recommendation.addSuccess"),
@@ -68,7 +68,7 @@ export function RecommendationButton({ documentId }: RecommendationButtonProps) 
       onClick={handleToggleRecommendation}
       disabled={loading}
     >
-      <Award className={isRecommended ? "h-4 w-4 fill-amber-500 text-amber-500" : "h-4 w-4"} />
+      <StarIcon className={isRecommended ? "h-4 w-4 fill-amber-500 text-amber-500" : "h-4 w-4"} />
       {isRecommended ? t("document.actions.recommended") : t("document.actions.recommend")}
     </Button>
   );

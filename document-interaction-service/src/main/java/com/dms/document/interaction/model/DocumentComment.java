@@ -47,9 +47,6 @@ public class DocumentComment {
     @Column(name = "flag")
     private Integer flag;
 
-    @Version
-    private Long version;
-
     @Transient
     private List<DocumentComment> replies = new ArrayList<>();
 

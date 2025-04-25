@@ -180,7 +180,6 @@ export const DocumentViewer = ({
           break;
         }
 
-        case DocumentType.POWERPOINT:
         case DocumentType.POWERPOINT_PPTX: {
           const arrayBuffer = await blob.arrayBuffer();
           const data = new Uint8Array(arrayBuffer);
@@ -191,6 +190,7 @@ export const DocumentViewer = ({
             .filter((fileName) => fileName.match(/ppt\/slides\/slide[0-9]+\.xml/))
             .sort();
 
+          const imageCache: { [path: string]: string } = {};
           const slides: string[] = [];
 
           for (const slideFile of slideFiles) {
@@ -199,11 +199,68 @@ export const DocumentViewer = ({
               // Convert slide XML to HTML (simplified version)
               const parser = new DOMParser();
               const xmlDoc = parser.parseFromString(content, "text/xml");
-              const texts = Array.from(xmlDoc.getElementsByTagName("a:t")).map((t) => t.textContent);
-              const slideHtml = `<div class="slide">
-                ${texts.map((text) => `<p>${text}</p>`).join("")}
-              </div>`;
-              slides.push(slideHtml);
+
+              // Load relationships for the slide
+              const relsFile = `ppt/slides/_rels/${slideFile.split("/").pop()}.rels`;
+              const relsContent = await zip.file(relsFile)?.async("string");
+              const imageMap: { [id: string]: string } = {};
+              if (relsContent) {
+                const relsDoc = parser.parseFromString(relsContent, "text/xml");
+                const relationships = relsDoc.getElementsByTagName("Relationship");
+                for (const rel of Array.from(relationships)) {
+                  const id = rel.getAttribute("Id");
+                  const type = rel.getAttribute("Type");
+                  const target = rel.getAttribute("Target");
+                  if (
+                    id &&
+                    type === "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" &&
+                    target
+                  ) {
+                    imageMap[id] = `ppt/${target.replace("../", "")}`;
+                  }
+                }
+              }
+
+              // Parse slide content
+              const spTree = xmlDoc.getElementsByTagName("p:spTree")[0];
+              if (spTree) {
+                let slideHtml = '<div class="slide">';
+                for (const elem of Array.from(spTree.children)) {
+                  if (elem.tagName === "p:sp") {
+                    // Text shape
+                    const texts = Array.from(elem.getElementsByTagName("a:t")).map((t) => t.textContent || "");
+                    if (texts.length > 0) {
+                      slideHtml += `<p>${texts.join(" ")}</p>`;
+                    }
+                  } else if (elem.tagName === "p:pic") {
+                    // Picture
+                    const blip = elem.getElementsByTagName("a:blip")[0];
+                    if (blip) {
+                      const embedId = blip.getAttribute("r:embed");
+                      if (embedId && imageMap[embedId]) {
+                        const imagePath = imageMap[embedId];
+                        if (!imageCache[imagePath]) {
+                          const imageFile = zip.file(imagePath);
+                          if (imageFile) {
+                            const imageData = await imageFile.async("base64");
+                            const ext = imagePath.split(".").pop()?.toLowerCase();
+                            let mimeType = "image/jpeg";
+                            if (ext === "png") mimeType = "image/png";
+                            else if (ext === "gif") mimeType = "image/gif";
+                            else if (ext === "bmp") mimeType = "image/bmp";
+                            imageCache[imagePath] = `data:${mimeType};base64,${imageData}`;
+                          }
+                        }
+                        if (imageCache[imagePath]) {
+                          slideHtml += `<img src="${imageCache[imagePath]}" style="max-width: 100%; height: auto;" />`;
+                        }
+                      }
+                    }
+                  }
+                }
+                slideHtml += "</div>";
+                slides.push(slideHtml);
+              }
             }
           }
 
@@ -221,7 +278,6 @@ export const DocumentViewer = ({
         }
 
         default: {
-          setError(t("document.viewer.error.unsupported", { type: documentType }));
           break;
         }
       }
@@ -377,7 +433,7 @@ export const DocumentViewer = ({
         />
       ) : null;
 
-    case DocumentType.POWERPOINT:
+
     case DocumentType.POWERPOINT_PPTX:
       return powerPointContent.length > 0 ? (
         <PowerPointViewer

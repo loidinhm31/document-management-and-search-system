@@ -330,7 +330,7 @@ export default function MyDocumentDetailPage() {
           <Card>
             <CardHeader>
               <div>
-                <CardTitle className="truncate mb-2">{documentData?.filename}</CardTitle>
+                <CardTitle className="truncate mb-2 pb-2">{documentData?.filename}</CardTitle>
                 <div className="grid grid-cols-2 gap-y-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <FileType2Icon className="mr-2 h-4 w-4" />

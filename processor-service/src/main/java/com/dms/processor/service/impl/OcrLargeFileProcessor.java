@@ -1,8 +1,7 @@
 package com.dms.processor.service.impl;
 
+import com.dms.processor.config.ThreadPoolManager;
 import com.dms.processor.service.OcrService;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
@@ -16,10 +15,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -28,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class OcrLargeFileProcessor {
 
     private final OcrService ocrService;
-    private ExecutorService executorService;
+    private final ThreadPoolManager threadPoolManager;
     private final AtomicInteger processedPages = new AtomicInteger(0);
 
     @Value("${app.ocr.chunk-size:10}")
@@ -36,9 +32,6 @@ public class OcrLargeFileProcessor {
 
     @Value("${app.ocr.temp-dir:/tmp/ocr}")
     private String tempDir;
-
-    @Value("${app.ocr.max-threads:4}")
-    private int maxThreads;
 
     @Value("${app.ocr.parallel.timeout-minutes:60}")
     private int timeoutMinutes;
@@ -49,58 +42,14 @@ public class OcrLargeFileProcessor {
     @Value("${app.ocr.dpi:300}")
     private float dpi;
 
-    public OcrLargeFileProcessor(OcrService ocrService) {
+    public OcrLargeFileProcessor(OcrService ocrService, ThreadPoolManager threadPoolManager) {
         this.ocrService = ocrService;
+        this.threadPoolManager = threadPoolManager;
     }
 
-    @PostConstruct
-    protected void initialize() {
-        // Create a bounded thread pool with a work queue
-        ThreadFactory threadFactory = new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r);
-                thread.setName("ocr-large-processor-" + threadNumber.getAndIncrement());
-                thread.setDaemon(true);
-                return thread;
-            }
-        };
-
-        // Using a custom ThreadPoolExecutor for better control
-        this.executorService = new ThreadPoolExecutor(
-                Math.max(1, maxThreads / 2),  // Core pool size
-                maxThreads,                   // Max pool size
-                60, TimeUnit.SECONDS,         // Keep-alive time for idle threads
-                new LinkedBlockingQueue<>(maxThreads * 2), // Work queue size
-                threadFactory,
-                new ThreadPoolExecutor.CallerRunsPolicy() // If queue is full, execute in the calling thread
-        );
-
-        log.info("Initialized large file OCR processor with {} threads", maxThreads);
-    }
-
-    @PreDestroy
-    public void shutdown() {
-        if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown();
-            try {
-                // Wait for tasks to complete
-                if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
-                    executorService.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executorService.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-            log.info("Large file OCR processor thread pool shut down");
-        }
-    }
-
-    public String processLargePdf(Path pdfPath) throws IOException, TesseractException {
+    public String processLargeFile(Path pdfPath) throws IOException, TesseractException {
         if (Objects.isNull(pdfPath)) {
-            throw new IllegalArgumentException("PDF path cannot be null");
+            throw new IllegalArgumentException("Large file path cannot be null");
         }
 
         File tempDirectory = createTempDirectory();
@@ -116,11 +65,11 @@ public class OcrLargeFileProcessor {
             // Try text extraction first - this is a quick check
             String extractedText = ocrService.extractTextFromPdf(pdfPath);
             if (isTextSufficient(extractedText)) {
-                log.info("Using direct text extraction for large PDF - sufficient text found");
+                log.info("Using direct text extraction for large file - sufficient text found");
                 return extractedText;
             }
 
-            log.info("Starting parallel OCR processing for large PDF with {} pages in chunks of {}",
+            log.info("Starting parallel OCR processing for large file with {} pages in chunks of {}",
                     totalPages, chunkSize);
 
             return processPageImagesInChunks(pageImageFiles, totalPages);
@@ -205,7 +154,7 @@ public class OcrLargeFileProcessor {
             int startIndex,
             int totalPages) {
 
-        return CompletableFuture.supplyAsync(() -> {
+        return threadPoolManager.submitOcrTask(() -> {
             StringBuilder chunkText = new StringBuilder();
 
             // Create a dedicated Tesseract instance for this chunk
@@ -248,7 +197,7 @@ public class OcrLargeFileProcessor {
                 log.error("Error processing chunk starting at page {}", startIndex, e);
                 throw new CompletionException(e);
             }
-        }, executorService);
+        });
     }
 
     protected File createTempDirectory() throws IOException {

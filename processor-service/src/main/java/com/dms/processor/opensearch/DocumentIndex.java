@@ -35,5 +35,6 @@ public class DocumentIndex {
     private Instant updatedAt;
     private DocumentReportStatus reportStatus;
     private Integer recommendationCount;
+    private Integer favoriteCount;
     private Integer currentVersion;
 }

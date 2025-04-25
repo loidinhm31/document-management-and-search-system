@@ -2,15 +2,9 @@ import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 
 class DocumentRecommendationService extends BaseService {
-  async recommendDocument(documentId: string) {
+  async recommendDocument(documentId: string, recommend: boolean) {
     return this.handleApiResponse(
-      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/recommendations`),
-    );
-  }
-
-  async unrecommendDocument(documentId: string) {
-    return this.handleApiResponse(
-      axiosInstance.delete(`/document-interaction/api/v1/documents/${documentId}/recommendations`),
+      axiosInstance.post(`/document-interaction/api/v1/documents/${documentId}/recommendations?recommend=${recommend}`),
     );
   }
 

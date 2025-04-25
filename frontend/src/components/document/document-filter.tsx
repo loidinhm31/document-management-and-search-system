@@ -113,7 +113,7 @@ export const DocumentFilter = ({
       <div className="space-y-2">
         <Label>{t("document.commonSearch.majorLabel")}</Label>
         <TagInput
-          value={majors.includes("all") ? [] : majors}
+          value={majors}
           onChange={(values) => onMajorsChange(values.length > 0 ? values : [])}
           recommendedTags={availableMajors?.map((major) => major.code) || []}
           getTagDisplay={getTagDisplay}
@@ -126,12 +126,12 @@ export const DocumentFilter = ({
       <div className="space-y-2">
         <Label>{t("document.commonSearch.courseCodeLabel")}</Label>
         <TagInput
-          value={courseCodes.includes("all") ? [] : courseCodes}
+          value={courseCodes}
           onChange={(values) => onCourseCodesChange(values.length > 0 ? values : [])}
-          recommendedTags={filteredCourseCodes?.map((course) => course.code) || []}
+          recommendedTags={filteredCourseCodes?.map((course) => course.code)}
           getTagDisplay={getTagDisplay}
           placeholder={t("document.commonSearch.courseCodePlaceholder")}
-          disabled={!filteredCourseCodes || majors.length === 0 || majors.includes("all")}
+          disabled={!filteredCourseCodes || filteredCourseCodes.length === 0 || majors.length === 0}
         />
       </div>
 
@@ -156,7 +156,7 @@ export const DocumentFilter = ({
       <div className="space-y-2">
         <Label>{t("document.commonSearch.categoryLabel")}</Label>
         <TagInput
-          value={categories.includes("all") ? [] : categories}
+          value={categories}
           onChange={(values) => onCategoriesChange(values.length > 0 ? values : [])}
           recommendedTags={availableCategories?.map((category) => category.code) || []}
           getTagDisplay={getTagDisplay}

@@ -3,7 +3,6 @@ app:
   ocr:
     data-path: /usr/share/tesseract-ocr/5/tessdata
     chunk-size: 10
-    max-threads: 4
     temp-dir: /tmp/ocr
     dpi: 300
     image-type: RGB

@@ -368,7 +368,7 @@ public class DocumentEmailServiceImpl extends EmailService implements DocumentEm
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    private String getUsernameById(String userId) {
+    protected String getUsernameById(String userId) {
         Optional<User> user = userRepository.findById(UUID.fromString(userId));
         return user.map(User::getUsername).orElse("Unknown");
     }
@@ -377,7 +377,7 @@ public class DocumentEmailServiceImpl extends EmailService implements DocumentEm
         return userRepository.findById(UUID.fromString(userId)).orElse(null);
     }
 
-    private Set<User> findUsersToNotify(DocumentInformation document, User triggerUser) {
+    protected Set<User> findUsersToNotify(DocumentInformation document, User triggerUser) {
         // Get user IDs from document favorites
         Set<UUID> favoriteUserIds = documentFavoriteRepository.findUserIdsByDocumentId(document.getId());
 
@@ -400,7 +400,7 @@ public class DocumentEmailServiceImpl extends EmailService implements DocumentEm
         return new HashSet<>(userRepository.findUsersByUserIdIn(favoriterUserIds));
     }
 
-    private Map<String, User> createEmailToUserMap(Set<User> users) {
+    protected Map<String, User> createEmailToUserMap(Set<User> users) {
         return users.stream()
                 .filter(user -> user.getEmail() != null && !user.getEmail().isEmpty())
                 .collect(Collectors.toMap(User::getEmail, user -> user));

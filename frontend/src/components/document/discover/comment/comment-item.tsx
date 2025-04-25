@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Comment, CommentEditData, User } from "@/types/comment";
+import { Comment, CommentEditData } from "@/types/comment";
 import { formatDateMoment } from "@/lib/utils";
+import { User } from "@/types/auth";
 
 interface CommentItemProps {
   comment: Comment;
@@ -51,10 +52,11 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   }, [comment.reportedByUser, isReportedByUser]);
 
   const handleEditSubmit = async (): Promise<void> => {
-    if (!editedContent.trim()) return;
+    const trimmedContent = editedContent.trim();
+    if (!trimmedContent || trimmedContent.length > 200 || trimmedContent.length === 0) return;
 
     try {
-      await onEdit(comment.id, { content: editedContent });
+      await onEdit(comment.id, { content: trimmedContent });
       setIsEditing(false);
       toast({
         title: t("common.success"),
@@ -95,7 +97,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <span className="font-medium">{comment.username}</span>
-            <span className="text-sm text-muted-foreground">{formatDateMoment(comment.updatedAt ?  comment.updatedAt.toString() : comment.createdAt.toString())}</span>
+            <span className="text-sm text-muted-foreground">
+              {formatDateMoment(comment.updatedAt ? comment.updatedAt.toString() : comment.createdAt.toString())}
+            </span>
             {comment.edited && <span className="text-xs text-muted-foreground">({t("document.comments.edited")})</span>}
             {isCommentResolved && (
               <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">
@@ -106,17 +110,29 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
           {isEditing ? (
             <div className="space-y-2">
-              <Textarea
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="min-h-[100px]"
-              />
+              <div className="relative">
+                <Textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  maxLength={200}
+                />
+                <div className="flex justify-end mt-1 text-xs text-muted-foreground">
+                  <span className={editedContent.length > 200 || editedContent.length === 0 ? "text-red-500" : ""}>
+                    {editedContent.length}/200
+                  </span>
+                </div>
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant="default"
                   size="sm"
                   onClick={handleEditSubmit}
-                  disabled={!editedContent.trim() || editedContent === comment.content}
+                  disabled={
+                    !editedContent.trim() ||
+                    editedContent === comment.content ||
+                    editedContent.length > 200 ||
+                    editedContent.length === 0
+                  }
                 >
                   <Check className="mr-2 h-4 w-4" />
                   {t("document.comments.save")}
@@ -140,7 +156,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 {t("document.comments.reply")}
               </Button>
 
-              {(!isAuthor && !currentUser.roles.includes("ROLE_ADMIN")) && (
+              {!isAuthor && !currentUser.roles.includes("ROLE_ADMIN") && (
                 <ReportCommentDialog
                   documentId={documentId}
                   commentId={comment.id}

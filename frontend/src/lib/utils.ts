@@ -66,5 +66,7 @@ export const getDescriptionType = (type: string) => {
       return i18n["t"]("document.preferences.analytics.contentTypes.json");
     case "MARKDOWN":
       return i18n["t"]("document.preferences.analytics.contentTypes.markdown");
+    default:
+      return "UNKNOWN";
   }
 };

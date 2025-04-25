@@ -1,11 +1,8 @@
-package com.dms.processor.service.impl;
+package com.dms.processor.extraction;
 
-import com.dms.processor.dto.ExtractedText;
-import com.dms.processor.dto.PdfTextMetrics;
-import com.dms.processor.service.OcrService;
+import com.dms.processor.dto.TextMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,14 +12,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
 
-
+/**
+ * Service that analyzes content quality and makes decisions about text extraction strategies.
+ * It handles the assessment of text quality for all document types and determines
+ * when OCR is necessary based on quality metrics.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class SmartPdfExtractor {
-
-    private final OcrService ocrService;
-
+public class ContentQualityAnalyzer {
     @Value("${app.pdf.quality-threshold:0.8}")
     private double qualityThreshold;
 
@@ -39,41 +37,31 @@ public class SmartPdfExtractor {
     private static final Pattern MEANINGFUL_TEXT_PATTERN =
             Pattern.compile("[a-zA-Z]{2,}\\s+([a-zA-Z]{2,}\\s+){2,}");
 
-    public ExtractedText extractText(Path pdfPath) throws IOException, TesseractException {
+    /**
+     * Calculates text quality metrics for a sample of pages from a PDF.
+     */
+    public TextMetrics calculateMetricsForSample(Path pdfPath, int samplePages) throws IOException {
         try (PDDocument document = PDDocument.load(pdfPath.toFile())) {
             int pageCount = document.getNumberOfPages();
+            int pagesToCheck = Math.min(samplePages, pageCount);
 
-            // Extract text and calculate metrics
+            // Only extract text from the first few pages as a sample
             PDFTextStripper textStripper = new PDFTextStripper();
-            String pdfText = textStripper.getText(document);
+            textStripper.setStartPage(1);
+            textStripper.setEndPage(pagesToCheck);
+            String sampleText = textStripper.getText(document);
 
-            PdfTextMetrics metrics = calculateTextMetrics(pdfText, pageCount);
-            log.debug("PDF metrics - Density: {}, Quality: {}, HasMeaningfulText: {}",
-                    metrics.getTextDensity(), metrics.getTextQuality(), metrics.isHasMeaningfulText());
-
-            // Decide whether to use OCR based on metrics and text length
-            if (!shouldUseOcr(metrics, pdfText)) {
-                log.info("Using PDFTextStripper - Density: {}, Quality: {}",
-                        metrics.getTextDensity(), metrics.getTextQuality());
-                return new ExtractedText(pdfText, false);
-            }
-
-            // Use OCR if needed
-            log.info("Using OCR - Low text metrics - Density: {}, Quality: {}",
-                    metrics.getTextDensity(), metrics.getTextQuality());
-
-            // Use OCR with Tesseract
-            String ocrText = ocrService.processWithOcr(pdfPath, document.getNumberOfPages());
-            return new ExtractedText(ocrText, true);
+            // Calculate metrics based on the sample
+            return calculateTextMetrics(sampleText, pagesToCheck);
         }
     }
 
-    protected PdfTextMetrics calculateTextMetrics(String text, int pageCount) {
+    public TextMetrics calculateTextMetrics(String text, int pageCount) {
         double textDensity = calculateTextDensity(text, pageCount);
         double textQuality = assessTextQuality(text);
         boolean hasMeaningfulText = detectMeaningfulText(text);
 
-        return new PdfTextMetrics(textDensity, textQuality, hasMeaningfulText);
+        return new TextMetrics(textDensity, textQuality, hasMeaningfulText);
     }
 
     protected double calculateTextDensity(String text, int pageCount) {
@@ -101,7 +89,11 @@ public class SmartPdfExtractor {
         return MEANINGFUL_TEXT_PATTERN.matcher(text).find();
     }
 
-    protected boolean shouldUseOcr(PdfTextMetrics metrics, String text) {
+    /**
+     * Determines if OCR should be used based on text metrics
+     * Implemented from TextQualityAnalyzer interface for reuse by other components
+     */
+    public boolean shouldUseOcr(TextMetrics metrics, String text) {
         // First check if content have enough text at all
         if (text == null || text.trim().length() < minimumTextLength) {
             return true;
@@ -111,5 +103,17 @@ public class SmartPdfExtractor {
         return !metrics.isHasMeaningfulText() ||
                !(metrics.getTextDensity() >= minTextDensity) ||
                !(metrics.getTextQuality() >= qualityThreshold);
+    }
+
+    /**
+     * Analyze text quality for any type of content, not just PDFs
+     * Allows reuse of this logic for non-PDF documents
+     */
+    public TextMetrics analyzeTextQuality(String text, int estimatedPages) {
+        double textDensity = calculateTextDensity(text, estimatedPages);
+        double textQuality = assessTextQuality(text);
+        boolean hasMeaningfulText = detectMeaningfulText(text);
+
+        return new TextMetrics(textDensity, textQuality, hasMeaningfulText);
     }
 }

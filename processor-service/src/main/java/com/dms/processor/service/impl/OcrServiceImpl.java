@@ -1,29 +1,36 @@
 package com.dms.processor.service.impl;
 
+import com.dms.processor.config.ThreadPoolManager;
 import com.dms.processor.service.OcrService;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.poi.hslf.usermodel.HSLFSlide;
+import org.apache.poi.hslf.usermodel.HSLFSlideShow;
+import org.apache.poi.xslf.usermodel.XMLSlideShow;
+import org.apache.poi.xslf.usermodel.XSLFSlide;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.exception.TikaException;
+import org.apache.tika.mime.MimeTypeException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.xml.sax.SAXException;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.*;
 
 @Service
 @Slf4j
@@ -34,9 +41,6 @@ public class OcrServiceImpl implements OcrService {
     @Value("${app.ocr.image-type:RGB}")
     private String imageType;
 
-    @Value("${app.ocr.parallel.max-threads:0}")
-    private int maxThreads;
-
     @Value("${app.ocr.data-path}")
     private String tessdataPath;
 
@@ -44,42 +48,12 @@ public class OcrServiceImpl implements OcrService {
     private int ocrPageThreshold;
 
     private final Tesseract tesseract;
-    private ExecutorService executorService;
+    private final ThreadPoolManager threadPoolManager;
 
     @Autowired
-    public OcrServiceImpl(Tesseract tesseract) {
+    public OcrServiceImpl(Tesseract tesseract, ThreadPoolManager threadPoolManager) {
         this.tesseract = tesseract;
-    }
-
-    @PostConstruct
-    protected void initialize() {
-        // If maxThreads is 0 or negative, use available processors
-        int threads = maxThreads <= 0 ?
-                Runtime.getRuntime().availableProcessors() :
-                maxThreads;
-
-        // Create a named thread factory for better debugging
-        ThreadFactory threadFactory = new ThreadFactory() {
-            private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread thread = new Thread(r, "ocr-worker-" + threadNumber.getAndIncrement());
-                thread.setDaemon(true);
-                return thread;
-            }
-        };
-
-        this.executorService = Executors.newFixedThreadPool(threads, threadFactory);
-        log.info("Initialized OCR thread pool with {} threads", threads);
-    }
-
-    @PreDestroy
-    public void shutdown() {
-        if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown();
-            log.info("OCR thread pool shut down");
-        }
+        this.threadPoolManager = threadPoolManager;
     }
 
     @Override
@@ -96,6 +70,35 @@ public class OcrServiceImpl implements OcrService {
             String extractedText = processWithParallelOcr(pdfPath, pageCount);
             log.info("PDF processing completed with parallel OCR. Pages: {}", pageCount);
             return extractedText;
+        }
+    }
+
+    @Override
+    public String extractTextFromRegularFile(Path filePath) throws IOException, TesseractException {
+        log.info("Processing non-PDF file with OCR: {}", filePath.getFileName());
+
+        // Create temp directory for extracted images
+        Path tempDir = Files.createTempDirectory("ocr_non_pdf_");
+        List<Path> imageFiles = new ArrayList<>();
+
+        try {
+            // Convert the file to images
+            if (isImageFile(filePath)) {
+                // It's already an image, just use it directly
+                imageFiles.add(filePath);
+            } else {
+                // For other formats (currently only support PPT, PPTX) we need to convert to images
+                imageFiles = convertFileToImages(filePath, tempDir);
+            }
+
+            // Process all these images
+            return processImagesWithOcr(imageFiles);
+
+        } catch (TikaException | SAXException | IOException e) {
+            throw new RuntimeException("Failed to process file: " + filePath, e);
+        } finally {
+            // Clean up temporary files
+            cleanupTempFiles(tempDir, imageFiles);
         }
     }
 
@@ -120,19 +123,165 @@ public class OcrServiceImpl implements OcrService {
     }
 
     /**
+     * Determines if the file is an image file based on its MIME type
+     */
+    protected boolean isImageFile(Path filePath) throws IOException {
+        String mimeType = Files.probeContentType(filePath);
+        return mimeType != null && mimeType.startsWith("image/");
+    }
+
+    /**
+     * Converts a non-PDF document to a series of images for OCR processing
+     * This is a simplified implementation - actual implementation would depend on the file type
+     */
+    private List<Path> convertFileToImages(Path filePath, Path outputDir) throws IOException, TikaException, SAXException {
+        String mimeType = Files.probeContentType(filePath);
+        List<Path> imageFiles = new ArrayList<>();
+
+        if (mimeType != null && (mimeType.contains("powerpoint") || mimeType.contains("presentation"))) {
+            // For PowerPoint files - use Apache POI to extract slides as images
+            try (InputStream is = Files.newInputStream(filePath)) {
+                // Handle both PPTX and PPT formats
+                if (mimeType.contains("openxmlformats")) {
+                    // PPTX format
+                    XMLSlideShow pptx = new XMLSlideShow(is);
+                    return extractSlidesFromPPTX(pptx, outputDir);
+                } else {
+                    // PPT format
+                    HSLFSlideShow ppt = new HSLFSlideShow(is);
+                    return extractSlidesFromPPT(ppt, outputDir);
+                }
+            }
+        }
+        return imageFiles;
+    }
+
+    // Helper methods for PowerPoint processing
+    private List<Path> extractSlidesFromPPTX(XMLSlideShow pptx, Path outputDir) throws IOException {
+        List<Path> slideImages = new ArrayList<>();
+        Dimension pgsize = pptx.getPageSize();
+        if (pgsize == null) {
+            log.warn("Page size is null, using default dimensions");
+            pgsize = new Dimension(720, 540); // Default size
+        }
+        List<XSLFSlide> slides = pptx.getSlides();
+
+        for (int i = 0; i < slides.size(); i++) {
+            BufferedImage img = new BufferedImage(pgsize.width, pgsize.height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = img.createGraphics();
+
+            // Set rendering hints for better quality
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+            // Draw the slide
+            graphics.setPaint(Color.WHITE);
+            graphics.fill(new Rectangle2D.Float(0, 0, pgsize.width, pgsize.height));
+            slides.get(i).draw(graphics);
+
+            // Save the image
+            Path imagePath = outputDir.resolve("slide_" + (i + 1) + ".png");
+            ImageIO.write(img, "PNG", imagePath.toFile());
+            slideImages.add(imagePath);
+
+            // Clean up
+            graphics.dispose();
+            img.flush();
+        }
+
+        return slideImages;
+    }
+
+    private List<Path> extractSlidesFromPPT(HSLFSlideShow ppt, Path outputDir) throws IOException {
+        List<Path> slideImages = new ArrayList<>();
+        Dimension pgsize = ppt.getPageSize();
+        List<HSLFSlide> slides = ppt.getSlides();
+
+        for (int i = 0; i < slides.size(); i++) {
+            BufferedImage img = new BufferedImage(pgsize.width, pgsize.height, BufferedImage.TYPE_INT_RGB);
+            Graphics2D graphics = img.createGraphics();
+
+            // Set rendering hints for better quality
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+            // Fill with white background
+            graphics.setPaint(Color.WHITE);
+            graphics.fill(new Rectangle2D.Float(0, 0, pgsize.width, pgsize.height));
+
+            // Draw the slide
+            slides.get(i).draw(graphics);
+
+            // Save the image
+            Path imagePath = outputDir.resolve("slide_" + (i + 1) + ".png");
+            ImageIO.write(img, "PNG", imagePath.toFile());
+            slideImages.add(imagePath);
+
+            // Clean up
+            graphics.dispose();
+            img.flush();
+        }
+
+        return slideImages;
+    }
+
+    /**
+     * Process a list of images using OCR
+     */
+    private String processImagesWithOcr(List<Path> imageFiles) throws IOException, TesseractException {
+        StringBuilder combinedText = new StringBuilder();
+
+        for (Path imagePath : imageFiles) {
+            BufferedImage image = ImageIO.read(imagePath.toFile());
+            if (image != null) {
+                String pageText = performOcrOnImage(image);
+                if (pageText != null && !pageText.trim().isEmpty()) {
+                    combinedText.append(pageText).append("\n");
+                }
+                image.flush(); // Release memory
+            }
+        }
+
+        return combinedText.toString();
+    }
+
+    /**
+     * Clean up temporary files after processing
+     */
+    protected void cleanupTempFiles(Path tempDir, List<Path> imageFiles) {
+        for (Path file : imageFiles) {
+            try {
+                // Only delete the file if it's in the temp directory
+                if (file.startsWith(tempDir)) {
+                    Files.deleteIfExists(file);
+                }
+            } catch (IOException e) {
+                log.warn("Failed to delete temporary file: {}", file, e);
+            }
+        }
+
+        try {
+            Files.deleteIfExists(tempDir);
+        } catch (IOException e) {
+            log.warn("Failed to delete temporary directory: {}", tempDir, e);
+        }
+    }
+
+    /**
      * Process a PDF document using parallel OCR.
      *
      * @param pdfPath Path to the PDF file
      * @param pageCount Number of pages in the PDF
      * @return Extracted text from all pages
      * @throws IOException If an error occurs during PDF processing
-     * @throws TesseractException If an error occurs during OCR
      */
     protected String processWithParallelOcr(Path pdfPath, int pageCount)
-            throws IOException, TesseractException {
+            throws IOException {
         log.debug("Performing parallel OCR on PDF with {} pages", pageCount);
 
-        // We need to save PDF pages as images to process them in parallel
+        // Save PDF pages as images to process them in parallel
         // to avoid PDFBox thread safety issues
         List<Path> pageImages = new ArrayList<>();
         Path tempDir = Files.createTempDirectory("ocr_parallel_");
@@ -187,7 +336,7 @@ public class OcrServiceImpl implements OcrService {
             final int pageNum = i;
             final Path imagePath = pageImages.get(i);
 
-            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<String> future = threadPoolManager.submitOcrTask(() -> {
                 try {
                     log.debug("Processing page {} in parallel", pageNum + 1);
 
@@ -206,7 +355,7 @@ public class OcrServiceImpl implements OcrService {
                     log.error("Error processing page {} in parallel", pageNum + 1, e);
                     return ""; // Return empty string on error
                 }
-            }, executorService);
+            });
 
             futures.add(future);
         }

@@ -97,7 +97,7 @@ public class RabbitMQConfig {
         Map<String, Object> args = new HashMap<>();
         args.put("x-dead-letter-exchange", deadLetterExchange);
         args.put("x-dead-letter-routing-key", deadLetterRoutingKey + ".document");
-        args.put("x-message-ttl", 300000); // 5 minutes
+        args.put("x-message-ttl", 1800000); // 30 minutes
         args.put("x-max-length", 10000);
         return new Queue(documentProcessQueue, true, false, false, args);
     }

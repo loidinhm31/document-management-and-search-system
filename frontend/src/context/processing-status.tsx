@@ -47,6 +47,7 @@ export function ProcessingStatus() {
       const interval = setInterval(checkStatuses, 5000);
       return () => clearInterval(interval);
     }
+    return () => {};
   }, [items, dispatch]);
 
   // Auto-remove completed items after delay

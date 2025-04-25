@@ -15,7 +15,6 @@ import com.dms.processor.repository.DocumentRepository;
 import com.dms.processor.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -139,7 +138,7 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
         log.info("Successfully processed reverted document: {}", document.getId());
     }
 
-    private void processFullDocument(DocumentInformation document, Path tempFile) throws IOException {
+    private void processFullDocument(DocumentInformation document, Path tempFile) {
         Integer versionNumber = document.getCurrentVersion();
         if (Objects.isNull(versionNumber)) {
             throw new DocumentProcessingException("No version number provided");
