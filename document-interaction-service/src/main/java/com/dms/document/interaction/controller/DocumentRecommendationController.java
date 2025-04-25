@@ -18,26 +18,16 @@ import org.springframework.web.bind.annotation.*;
 public class DocumentRecommendationController {
     private final DocumentRecommendationService documentRecommendationService;
 
-    @Operation(summary = "Recommend document",
-            description = "Mark a document as recommended by a mentor")
+    @Operation(summary = "Recommend/ Unrecommend document",
+            description = "Mark/ Remove a document as recommended by a mentor")
     @PostMapping
     @PreAuthorize("hasRole('MENTOR')")
     public ResponseEntity<Void> recommendDocument(
             @PathVariable String id,
+            @RequestParam(required = false) boolean recommend,
             @AuthenticationPrincipal Jwt jwt) {
-        boolean recommended = documentRecommendationService.recommendDocument(id, jwt.getSubject());
+        boolean recommended = documentRecommendationService.recommendDocument(id, recommend, jwt.getSubject());
         return recommended ? ResponseEntity.ok().build() : ResponseEntity.noContent().build();
-    }
-
-    @Operation(summary = "Unrecommend document",
-            description = "Remove a recommendation for a document by a mentor")
-    @DeleteMapping
-    @PreAuthorize("hasRole('MENTOR')")
-    public ResponseEntity<Void> unrecommendDocument(
-            @PathVariable String id,
-            @AuthenticationPrincipal Jwt jwt) {
-        boolean unrecommended = documentRecommendationService.unrecommendDocument(id, jwt.getSubject());
-        return unrecommended ? ResponseEntity.ok().build() : ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Check recommendation status",

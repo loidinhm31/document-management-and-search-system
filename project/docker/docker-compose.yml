@@ -215,9 +215,11 @@ services:
         max_attempts: 3
       resources:
         limits:
-          memory: 1536M
+          cpus: '2'
+          memory: 8G
         reservations:
-          memory: 768M
+          cpus: '1'
+          memory: 4G
       update_config:
         parallelism: 1
         delay: 10s

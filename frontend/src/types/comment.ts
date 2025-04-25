@@ -1,7 +1,3 @@
-export interface User {
-  username: string;
-}
-
 export interface Comment {
   id?: number;
   content?: string;

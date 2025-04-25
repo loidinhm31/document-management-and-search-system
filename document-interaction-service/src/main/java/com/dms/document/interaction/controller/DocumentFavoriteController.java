@@ -1,6 +1,7 @@
 package com.dms.document.interaction.controller;
 
 import com.dms.document.interaction.constant.ApiConstant;
+import com.dms.document.interaction.dto.DocumentFavoriteCheck;
 import com.dms.document.interaction.service.DocumentFavoriteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,32 +18,23 @@ import org.springframework.web.bind.annotation.*;
 public class DocumentFavoriteController {
     private final DocumentFavoriteService documentFavoriteService;
 
-    @Operation(summary = "Add document to favorites",
-            description = "Mark a document as favorite for the current user")
+    @Operation(summary = "Add/ Remove document to favorites",
+            description = "Mark/ Remove a document as favorite for the current user")
     @PostMapping
     public ResponseEntity<Void> favoriteDocument(
             @PathVariable String id,
+            @RequestParam(required = false) boolean favorite,
             @AuthenticationPrincipal Jwt jwt) {
-        documentFavoriteService.favoriteDocument(id, jwt.getSubject());
+        documentFavoriteService.favoriteDocument(id, favorite, jwt.getSubject());
         return ResponseEntity.ok().build();
-    }
-
-    @Operation(summary = "Remove document from favorites",
-            description = "Remove a document from user's favorites")
-    @DeleteMapping
-    public ResponseEntity<Void> unfavoriteDocument(
-            @PathVariable String id,
-            @AuthenticationPrincipal Jwt jwt) {
-        documentFavoriteService.unfavoriteDocument(id, jwt.getSubject());
-        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Check favorite status",
             description = "Check if a document is in user's favorites")
     @GetMapping("/status")
-    public ResponseEntity<Boolean> isDocumentFavorited(
+    public ResponseEntity<DocumentFavoriteCheck> isDocumentFavorited(
             @PathVariable String id,
             @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(documentFavoriteService.isDocumentFavorited(id, jwt.getSubject()));
+        return ResponseEntity.ok(documentFavoriteService.checkDocumentFavorited(id, jwt.getSubject()));
     }
 }

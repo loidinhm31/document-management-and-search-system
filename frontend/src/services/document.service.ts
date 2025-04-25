@@ -2,7 +2,7 @@ import axiosInstance from "@/services/axios.config";
 import { BaseService } from "@/services/base.service";
 import { CommentCreateData } from "@/types/comment";
 import { DocumentInformation, DocumentMetadataUpdate } from "@/types/document";
-import { UpdatePreferencesRequest } from "@/types/document-preference";
+import { DocumentFavoriteCheck, UpdatePreferencesRequest } from "@/types/document-preference";
 import { UserDocumentActionType, UserHistoryFilter, UserHistoryPage } from "@/types/document-user-history";
 import { UserSearchResponse } from "@/types/user";
 
@@ -109,16 +109,12 @@ class DocumentService extends BaseService {
     );
   }
 
-  favoriteDocument(id: string) {
-    return this.handleApiResponse(axiosInstance.post(`/document-interaction/api/v1/documents/${id}/favorites`));
+  favoriteDocument(id: string, favorite: boolean) {
+    return this.handleApiResponse(axiosInstance.post(`/document-interaction/api/v1/documents/${id}/favorites?favorite=${favorite}`));
   }
 
-  unfavoriteDocument(id: string) {
-    return this.handleApiResponse(axiosInstance.delete(`/document-interaction/api/v1/documents/${id}/favorites`));
-  }
-
-  async isDocumentFavorited(id: string) {
-    return axiosInstance.get(`/document-interaction/api/v1/documents/${id}/favorites/status`);
+  async checkDocumentFavorited(id: string) {
+    return axiosInstance.get<DocumentFavoriteCheck>(`/document-interaction/api/v1/documents/${id}/favorites/status`);
   }
 
   downloadDocumentVersion(payload: { documentId: string; versionNumber: number; action?: string; history?: boolean }) {

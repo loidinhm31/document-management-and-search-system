@@ -1,5 +1,6 @@
 package com.dms.processor.service.impl;
 
+import com.dms.processor.config.ThreadPoolManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -8,55 +9,36 @@ import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.ToTextContentHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.xml.sax.ContentHandler;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
 public class LargeFileProcessor {
-    private final ExecutorService executorService;
-    private final ConcurrentHashMap<String, CompletableFuture<String>> processingTasks;
-    private final AtomicInteger threadCounter = new AtomicInteger(1);
+    private final ThreadPoolManager threadPoolManager;
 
     @Value("${app.document.chunk-size-mb:5}")
     private int chunkSizeMB;
 
-    public LargeFileProcessor() {
-        this.executorService = Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors(),
-                r -> {
-                    Thread thread = new Thread(r);
-                    thread.setName("large-file-handler-" + threadCounter.getAndIncrement());
-                    thread.setDaemon(true);
-                    return thread;
-                }
-        );
-        this.processingTasks = new ConcurrentHashMap<>();
+    public LargeFileProcessor(ThreadPoolManager threadPoolManager) {
+        this.threadPoolManager = threadPoolManager;
     }
 
     public CompletableFuture<String> processLargeFile(Path filePath) {
-        String fileId = filePath.getFileName().toString();
-
-        return processingTasks.computeIfAbsent(fileId, id -> {
-            CompletableFuture<String> future = new CompletableFuture<>();
-
-            CompletableFuture.runAsync(() -> {
-                try {
-                    String result = processFileInChunks(filePath);
-                    future.complete(result);
-                } catch (Exception e) {
-                    log.error("Error processing file: {}", filePath, e);
-                    future.completeExceptionally(e);
-                } finally {
-                    processingTasks.remove(fileId);
-                }
-            }, executorService);
-
-            return future;
+        return threadPoolManager.submitDocumentTask(() -> {
+            try {
+                log.info("Starting large file processing for: {}", filePath.getFileName());
+                String result = processFileInChunks(filePath);
+                log.info("Completed large file processing for: {}", filePath.getFileName());
+                return result;
+            } catch (Exception e) {
+                log.error("Error processing file: {}", filePath, e);
+                throw new CompletionException(e);
+            }
         });
     }
 
@@ -95,13 +77,13 @@ public class LargeFileProcessor {
     protected String processChunk(byte[] buffer, int bytesRead, Parser parser, ParseContext context)
             throws IOException {
         try {
-            ToTextContentHandler handler = new ToTextContentHandler();
-            Metadata metadata = new Metadata();
+            ContentHandler handler = new ToTextContentHandler();
+            Metadata tikaMetadata = new Metadata();
 
             parser.parse(
                     new ByteArrayInputStream(buffer, 0, bytesRead),
                     handler,
-                    metadata,
+                    tikaMetadata,
                     context
             );
 
@@ -110,19 +92,5 @@ public class LargeFileProcessor {
             log.error("Error processing chunk", e);
             throw new IOException("Failed to process file chunk", e);
         }
-    }
-
-    public void cancelProcessing(String fileId) {
-        CompletableFuture<String> task = processingTasks.get(fileId);
-        if (task != null) {
-            task.cancel(true);
-            processingTasks.remove(fileId);
-        }
-    }
-
-    public double getProcessingProgress(String fileId) {
-        // Implementation for progress tracking
-        // This could be enhanced with a more sophisticated progress tracking mechanism
-        return processingTasks.containsKey(fileId) ? -1 : 100;
     }
 }

@@ -4,6 +4,8 @@ import com.dms.document.interaction.model.DocumentFavorite;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,4 +17,7 @@ public interface DocumentFavoriteRepository extends JpaRepository<DocumentFavori
     void deleteByUserIdAndDocumentId(UUID userId, String documentId);
     Page<DocumentFavorite> findByUserId(UUID userId, Pageable pageable);
     List<DocumentFavorite> findByDocumentId(String documentId);
+
+    @Query("SELECT COUNT(df) FROM DocumentFavorite df WHERE df.documentId = :documentId")
+    long countByDocumentId(@Param("documentId") String documentId);
 }

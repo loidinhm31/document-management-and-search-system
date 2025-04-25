@@ -185,7 +185,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
 
   const handleSubmitComment = async () => {
     const commentTrim = commentText.trim();
-    if (!commentTrim || loading) return;
+    if (!commentTrim || loading || commentTrim.length > 200 || commentTrim.length === 0) return;
 
     setLoading(true);
     try {
@@ -399,7 +399,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
       throw error;
     }
   };
-  console.log("c", currentUser);
 
   return (
     <div className="space-y-6" key={documentId}>
@@ -407,11 +406,20 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
       <div className="space-y-4">
         {!currentUser?.roles.includes("ROLE_ADMIN") && (
           <div className="space-y-2">
-            <Textarea
-              placeholder={t("document.comments.placeholder")}
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-            />
+            <div className="relative">
+              <Textarea
+                placeholder={t("document.comments.placeholder")}
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                maxLength={200}
+              />
+              <div className="flex justify-end mt-1 text-xs text-muted-foreground">
+                <span className={commentText.length > 200 || commentText.length === 0 ? "text-red-500" : ""}>
+                  {commentText.length}/200
+                </span>
+              </div>
+            </div>
+
             {replyTo && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>{t("document.comments.replyingTo", { username: replyTo.username })}</span>
@@ -420,7 +428,10 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ documentId }) =>
                 </Button>
               </div>
             )}
-            <Button onClick={handleSubmitComment} disabled={!commentText.trim()}>
+            <Button
+              onClick={handleSubmitComment}
+              disabled={!commentText.trim() || commentText.length > 200 || commentText.length === 0}
+            >
               {t("document.comments.submit")}
             </Button>
           </div>

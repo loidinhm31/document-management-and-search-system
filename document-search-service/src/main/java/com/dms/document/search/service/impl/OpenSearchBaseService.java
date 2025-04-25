@@ -1,7 +1,6 @@
 package com.dms.document.search.service.impl;
 
 import com.dms.document.search.dto.DocumentResponseDto;
-import com.dms.document.search.dto.RoleResponse;
 import com.dms.document.search.dto.SearchContext;
 import com.dms.document.search.enums.*;
 import com.dms.document.search.model.DocumentPreferences;
@@ -343,13 +342,28 @@ public abstract class OpenSearchBaseService {
         FieldValueFactorFunctionBuilder recommendationFactor = new FieldValueFactorFunctionBuilder("recommendationCount")
                 .factor(1.0f)
                 .modifier(FieldValueFactorFunction.Modifier.LOG1P) // Use log(1 + x) to smooth the curve
-                .missing(0); // Default value if field is missing
+                .missing(0); // Default value if the field is missing
         queryBuilder.should(
                 QueryBuilders.functionScoreQuery(
                                 QueryBuilders.rangeQuery("recommendationCount").gt(0),
                                 recommendationFactor
                         ).boostMode(CombineFunction.MULTIPLY)
                         .boost(5.0f)
+        );
+    }
+
+    protected void addFavoriteCountBoost(BoolQueryBuilder queryBuilder) {
+        // Boost documents based on favorite count
+        FieldValueFactorFunctionBuilder favoriteCountFactor = new FieldValueFactorFunctionBuilder("favoriteCount")
+                .factor(1.0f)
+                .modifier(FieldValueFactorFunction.Modifier.LOG1P) // Use log(1 + x) to smooth the curve
+                .missing(0);  // Default value if the field is missing
+        queryBuilder.should(
+                QueryBuilders.functionScoreQuery(
+                                QueryBuilders.rangeQuery("favoriteCount").gt(0),
+                                favoriteCountFactor
+                        ).boostMode(CombineFunction.MULTIPLY)
+                        .boost(3.0f)
         );
     }
 

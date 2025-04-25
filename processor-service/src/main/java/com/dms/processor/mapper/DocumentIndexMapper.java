@@ -30,6 +30,7 @@ public class DocumentIndexMapper {
                 .updatedAt(doc.getUpdatedAt())
                 .reportStatus(doc.getReportStatus())
                 .recommendationCount(doc.getRecommendationCount() != null ? doc.getRecommendationCount() : 0)
+                .favoriteCount(doc.getFavoriteCount() != null ? doc.getFavoriteCount() : 0)
                 .currentVersion(doc.getCurrentVersion() != null ? doc.getCurrentVersion() : 0)
                 .build();
     }

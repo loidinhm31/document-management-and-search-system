@@ -39,3 +39,8 @@ export enum InteractionType {
   COMMENT = "COMMENT",
   SHARE = "SHARE",
 }
+
+export interface DocumentFavoriteCheck {
+  isFavorited: boolean;
+  favoriteCount: number;
+}

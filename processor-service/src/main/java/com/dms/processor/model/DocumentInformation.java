@@ -123,6 +123,9 @@ public class DocumentInformation {
     @Field("recommendation_count")
     private Integer recommendationCount;
 
+    @Field("favorite_count")
+    private Integer favoriteCount;
+
     public Optional<DocumentVersion> getLatestVersion() {
         if (CollectionUtils.isEmpty(versions)) {
             return Optional.empty();
