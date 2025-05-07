@@ -269,7 +269,7 @@ public class UserServiceImplTest {
         // Arrange
         UserDetails userDetails = Mockito.mock(UserDetails.class);
         when(userDetails.getUsername()).thenReturn("testuser");
-        // Use a simpler approach for mocking authorities
+
         when(userDetails.getUsername()).thenReturn("testuser");
         when(userDetails.getAuthorities()).thenAnswer(invocation -> {
             List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
