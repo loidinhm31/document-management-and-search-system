@@ -33,7 +33,7 @@ public class OcrLargeFileProcessor {
     @Value("${app.ocr.temp-dir:/tmp/ocr}")
     private String tempDir;
 
-    @Value("${app.ocr.parallel.timeout-minutes:60}")
+    @Value("${app.ocr.parallel.timeout-minutes:30}")
     private int timeoutMinutes;
 
     @Value("${app.ocr.data-path}")
