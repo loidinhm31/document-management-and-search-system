@@ -1,0 +1,6 @@
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Simple J-shaped icon for the tray -->
+  <rect width="16" height="16" fill="#2d3748" rx="2"/>
+  <path d="M4 3 L4 8 A3 3 0 0 0 7 11 L9 11 A3 3 0 0 0 12 8 L12 6 L10 6 L10 8 A1 1 0 0 1 9 9 L7 9 A1 1 0 0 1 6 8 L6 3 Z" fill="#ffffff"/>
+  <circle cx="8" cy="2" r="1" fill="#4299e1"/>
+</svg>
