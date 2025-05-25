@@ -41,7 +41,6 @@ public class PublishEventServiceImpl implements PublishEventService {
 
             log.info("Publishing OTP email for user: {}", user.getUsername());
 
-            // Using new routing key structure: notification.email.otp
             rabbitMQMessageProducer.publish(
                     payload,
                     notificationExchange,

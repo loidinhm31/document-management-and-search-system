@@ -122,6 +122,7 @@ public class OtpServiceImpl extends BaseService implements OtpService {
             );
         }
 
+        // Increase attempt times
         verification.setAttemptCount(verification.getAttemptCount() + 1);
 
         if (verification.hasExceededMaxAttempts()) {
