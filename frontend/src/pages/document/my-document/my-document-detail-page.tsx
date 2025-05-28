@@ -201,7 +201,16 @@ export default function MyDocumentDetailPage() {
   };
 
   const handleVersionUpdate = (updatedDocument: DocumentInformation) => {
+    // Check if the current version has changed (indicating a revert operation)
+    const versionChanged = documentData && documentData.currentVersion !== updatedDocument.currentVersion;
+    console.log("document change", documentData.currentVersion, updatedDocument.currentVersion);
+
     setDocumentData(updatedDocument);
+
+    // If version changed (revert operation), trigger file reload in DocumentViewer
+    if (versionChanged) {
+      setFileChange(true);
+    }
   };
 
   if (loading) {
