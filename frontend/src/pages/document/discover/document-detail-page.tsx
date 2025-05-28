@@ -120,15 +120,26 @@ export default function DocumentDetailPage() {
         setDocumentData(docResponse.data);
         dispatch(setCurrentDocument(docResponse.data));
 
-        const documentFavoriteCheck = await documentService.checkDocumentFavorited(documentId);
-        setIsFavorited(documentFavoriteCheck?.data?.isFavorited);
+        // Only check favorites and statistics for non-admin users
+        if (!currentUser?.roles.includes("ROLE_ADMIN")) {
+          const documentFavoriteCheck = await documentService.checkDocumentFavorited(documentId);
+          setIsFavorited(documentFavoriteCheck?.data?.isFavorited);
 
-        documentService.getDocumentStatistics(documentId).then((statisticsResponse) => {
-          setStatistics({
-            ...statisticsResponse.data,
-            favoriteCount: documentFavoriteCheck?.data?.favoriteCount || 0,
+          documentService.getDocumentStatistics(documentId).then((statisticsResponse) => {
+            setStatistics({
+              ...statisticsResponse.data,
+              favoriteCount: documentFavoriteCheck?.data?.favoriteCount || 0,
+            });
           });
-        });
+        } else {
+          // For admin users, just get statistics without favorite info
+          documentService.getDocumentStatistics(documentId).then((statisticsResponse) => {
+            setStatistics({
+              ...statisticsResponse.data,
+              favoriteCount: 0, // Set to 0 for admins
+            });
+          });
+        }
 
         if (isFirstView) {
           // Mark this document as viewed in this session
@@ -154,14 +165,19 @@ export default function DocumentDetailPage() {
     return () => {
       dispatch(setCurrentDocument(null));
     };
-  }, [documentId]);
+  }, [documentId, currentUser]); // Add currentUser to dependencies
 
   const handleDownloadSuccess = async () => {
     const statisticsResponse = await documentService.getDocumentStatistics(documentId);
-    const favCount = statisticsResponse.data?.favoriteCount || 0;
+
+    // For admin users, don't try to get favorite count
+    const favCount = currentUser?.roles.includes("ROLE_ADMIN")
+      ? 0
+      : statisticsResponse.data?.favoriteCount || 0;
+
     setStatistics({
       ...statisticsResponse.data,
-      favoriteCount: favCount, // Keep it as it was
+      favoriteCount: favCount,
     });
   };
 
