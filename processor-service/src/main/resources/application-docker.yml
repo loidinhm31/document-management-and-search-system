@@ -23,7 +23,7 @@ app:
 spring:
   data:
     mongodb:
-      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
+      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
   # Database Configuration
   datasource:
     url: jdbc:postgresql://${POSTGRES_URL}/postgres?currentSchema=dms
