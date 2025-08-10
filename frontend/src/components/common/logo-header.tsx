@@ -16,7 +16,7 @@ export function LogoHeader() {
       {/*/>*/}
       {/* Or if using text logo */}
 
-      <p className={`font-semibold ${isCollapsed ? "text-sm" : "text-base"}`}>DMS FUNiX</p>
+      <p className={`font-semibold ${isCollapsed ? "text-sm" : "text-base"}`}>DMS</p>
     </div>
   );
 }
