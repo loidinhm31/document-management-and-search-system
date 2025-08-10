@@ -61,7 +61,7 @@ class DocumentProcessServiceImplTest {
     private DocumentEmailService documentEmailService;
 
     @Mock
-    private S3Service s3Service;
+    private FileStorageService fileStorageService;
 
     @InjectMocks
     private DocumentProcessServiceImpl documentProcessService;
@@ -131,7 +131,7 @@ class DocumentProcessServiceImplTest {
         byte[] thumbnailData = "thumbnail data".getBytes();
 
         // Mock S3 download
-        when(s3Service.downloadToTemp(document.getFilePath())).thenReturn(tempFile);
+        when(fileStorageService.downloadToTemp(document.getFilePath())).thenReturn(tempFile);
 
         // Mock content extraction
         when(contentExtractorService.extractContent(tempFile)).thenReturn(extractContent);
@@ -144,7 +144,7 @@ class DocumentProcessServiceImplTest {
                 .thenReturn(thumbnailData);
 
         // Mock S3 upload for thumbnail
-        when(s3Service.uploadFile(any(Path.class), eq("thumbnails"), eq("image/png")))
+        when(fileStorageService.uploadFile(any(Path.class), eq("thumbnails"), eq("image/png")))
                 .thenReturn("thumbnails/123-thumbnail.png");
 
         // Mock document index mapper
@@ -154,7 +154,7 @@ class DocumentProcessServiceImplTest {
         documentProcessService.processDocument(document, 1, EventType.SYNC_EVENT);
 
         // Assert
-        verify(s3Service).downloadToTemp(document.getFilePath());
+        verify(fileStorageService).downloadToTemp(document.getFilePath());
         verify(contentExtractorService).extractContent(tempFile);
         verify(languageDetectionService).detectLanguage("Extracted content");
         verify(documentContentService).saveVersionContent(
@@ -163,7 +163,7 @@ class DocumentProcessServiceImplTest {
         // The method is called once when setting to PROCESSING, and once when setting to COMPLETED
         verify(documentIndexMapper, times(2)).toDocumentIndex(document);
         verify(documentIndexRepository, times(2)).save(documentIndex);
-        verify(s3Service).cleanup(tempFile);
+        verify(fileStorageService).cleanup(tempFile);
 
         assertEquals(DocumentStatus.COMPLETED, document.getStatus());
         assertEquals("Extracted content", document.getContent());
@@ -183,7 +183,7 @@ class DocumentProcessServiceImplTest {
         // The method is called once when setting to PROCESSING, and once when setting to COMPLETED
         verify(documentIndexMapper, times(2)).toDocumentIndex(document);
         verify(documentIndexRepository, times(2)).save(documentIndex);
-        verify(s3Service, never()).downloadToTemp(anyString());
+        verify(fileStorageService, never()).downloadToTemp(anyString());
         verify(contentExtractorService, never()).extractContent(any(Path.class));
 
         assertEquals(DocumentStatus.COMPLETED, document.getStatus());
@@ -220,7 +220,7 @@ class DocumentProcessServiceImplTest {
         byte[] thumbnailData = "thumbnail data".getBytes();
 
         // Mock S3 download
-        when(s3Service.downloadToTemp(document.getFilePath())).thenReturn(tempFile);
+        when(fileStorageService.downloadToTemp(document.getFilePath())).thenReturn(tempFile);
 
         // Mock content extraction
         when(contentExtractorService.extractContent(tempFile)).thenReturn(extractContent);
@@ -233,7 +233,7 @@ class DocumentProcessServiceImplTest {
                 .thenReturn(thumbnailData);
 
         // Mock S3 upload for thumbnail
-        when(s3Service.uploadFile(any(Path.class), eq("thumbnails"), eq("image/png")))
+        when(fileStorageService.uploadFile(any(Path.class), eq("thumbnails"), eq("image/png")))
                 .thenReturn("thumbnails/123-thumbnail.png");
 
         // Mock document index mapper
@@ -243,7 +243,7 @@ class DocumentProcessServiceImplTest {
         documentProcessService.processDocument(document, 1, EventType.UPDATE_EVENT_WITH_FILE);
 
         // Assert
-        verify(s3Service).downloadToTemp(document.getFilePath());
+        verify(fileStorageService).downloadToTemp(document.getFilePath());
         verify(contentExtractorService).extractContent(tempFile);
         verify(languageDetectionService).detectLanguage("Extracted content");
         verify(documentContentService).saveVersionContent(
@@ -252,7 +252,7 @@ class DocumentProcessServiceImplTest {
         // The method is called once when setting to PROCESSING, and once when setting to COMPLETED
         verify(documentIndexMapper, times(2)).toDocumentIndex(document);
         verify(documentIndexRepository, times(2)).save(documentIndex);
-        verify(s3Service).cleanup(tempFile);
+        verify(fileStorageService).cleanup(tempFile);
 
         assertEquals(DocumentStatus.COMPLETED, document.getStatus());
         assertEquals("Extracted content", document.getContent());
@@ -261,7 +261,7 @@ class DocumentProcessServiceImplTest {
     @Test
     void processDocument_whenExtractionFails_shouldHandleError() throws IOException {
         // Arrange
-        when(s3Service.downloadToTemp(document.getFilePath())).thenReturn(tempFile);
+        when(fileStorageService.downloadToTemp(document.getFilePath())).thenReturn(tempFile);
         // Using RuntimeException instead of IOException since we're mocking an interface method
         // that doesn't declare checked exceptions
         when(contentExtractorService.extractContent(tempFile))
@@ -273,12 +273,12 @@ class DocumentProcessServiceImplTest {
                 documentProcessService.processDocument(document, 1, EventType.SYNC_EVENT)
         );
 
-        verify(s3Service).downloadToTemp(document.getFilePath());
+        verify(fileStorageService).downloadToTemp(document.getFilePath());
         verify(contentExtractorService).extractContent(tempFile);
         // The method is called once when setting to PROCESSING, and once when setting to FAILED
         verify(documentIndexMapper, times(2)).toDocumentIndex(document);
         verify(documentIndexRepository, times(2)).save(documentIndex);
-        verify(s3Service).cleanup(tempFile);
+        verify(fileStorageService).cleanup(tempFile);
 
         assertEquals(DocumentStatus.FAILED, document.getStatus());
         assertNotNull(document.getProcessingError());

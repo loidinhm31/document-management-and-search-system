@@ -36,7 +36,7 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
     private final DocumentIndexMapper documentIndexMapper;
     private final DocumentContentService documentContentService;
     private final DocumentEmailService documentEmailService;
-    private final S3Service s3Service;
+    private final FileStorageService fileStorageService;
 
 
     @Transactional
@@ -55,7 +55,7 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
             // Download file to temp location if needed
             if (eventType == EventType.SYNC_EVENT ||
                 eventType == EventType.UPDATE_EVENT_WITH_FILE) {
-                tempFile = s3Service.downloadToTemp(document.getFilePath());
+                tempFile = fileStorageService.downloadToTemp(document.getFilePath());
                 processFullDocument(document, tempFile);
             } else if (eventType == EventType.UPDATE_EVENT) {
                 processMetadataUpdate(document);
@@ -69,7 +69,7 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
             throw new DocumentProcessingException("Failed to process document", e);
         } finally {
             if (tempFile != null) {
-                s3Service.cleanup(tempFile);
+                fileStorageService.cleanup(tempFile);
             }
         }
     }
@@ -265,7 +265,7 @@ public class DocumentProcessServiceImpl implements DocumentProcessService {
 
         try {
             // Upload thumbnail to S3
-            String thumbnailKey = s3Service.uploadFile(tempThumb, "thumbnails", "image/png");
+            String thumbnailKey = fileStorageService.uploadFile(tempThumb, "thumbnails", "image/png");
 
             // Update document with S3 thumbnail path
             document.setThumbnailPath(thumbnailKey);

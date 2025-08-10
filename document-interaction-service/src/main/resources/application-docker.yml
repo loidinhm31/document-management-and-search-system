@@ -8,6 +8,10 @@ app:
     placeholder:
       processing: classpath:placeholders/processing-thumbnail.png
       error: classpath:placeholders/error-thumbnail.png
+  file-storage:
+    type: LOCAL  # Use local storage for development
+    local:
+      upload-dir: "uploads"
 
 spring:
   servlet:
@@ -33,7 +37,7 @@ spring:
     show-sql: true
   data:
     mongodb:
-      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
+      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
   rabbitmq:
     host: ${RABBITMQ_URL}
     port: 5672

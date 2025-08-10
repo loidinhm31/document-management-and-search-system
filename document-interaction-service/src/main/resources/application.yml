@@ -18,3 +18,14 @@ spring:
   cloud:
     discovery:
       enabled: true
+
+app:
+  file-storage:
+    type: S3  # Options: LOCAL, S3
+    local:
+      upload-dir: "uploads"
+    s3:
+      bucket-name: ${AWS_S3_BUCKET_NAME:dms-doc-s3-dev}
+      region: ${AWS_REGION:ap-southeast-1}
+      access-key: ${AWS_ACCESS_KEY:test}
+      secret-key: ${AWS_SECRET_KEY:test}

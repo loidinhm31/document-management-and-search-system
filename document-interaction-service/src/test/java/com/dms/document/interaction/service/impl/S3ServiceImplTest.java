@@ -32,7 +32,7 @@ public class S3ServiceImplTest {
     private S3Properties s3Properties;
 
     @InjectMocks
-    private S3ServiceImpl s3Service;
+    private S3FileStorageService s3FileStorageService;
 
     private final String bucketName = "test-bucket";
     private final String testFileContent = "This is a test file content";
@@ -56,7 +56,7 @@ public class S3ServiceImplTest {
         );
 
         // Act
-        String s3Key = s3Service.uploadFile(mockFile, testPrefix);
+        String s3Key = s3FileStorageService.uploadFile(mockFile, testPrefix);
 
         // Assert
         verify(s3Client).putObject((PutObjectRequest) any(), any(RequestBody.class));
@@ -83,7 +83,7 @@ public class S3ServiceImplTest {
         when(s3Client.getObject((GetObjectRequest) any())).thenReturn(responseInputStream);
 
         // Act
-        byte[] actualContent = s3Service.downloadFile(testKey);
+        byte[] actualContent = s3FileStorageService.downloadFile(testKey);
 
         // Assert
         verify(s3Client).getObject((GetObjectRequest) any());
@@ -98,7 +98,7 @@ public class S3ServiceImplTest {
                 .thenThrow(S3Exception.builder().message("S3 Error").build());
 
         // Act & Assert
-        assertThrows(IOException.class, () -> s3Service.downloadFile(testKey));
+        assertThrows(IOException.class, () -> s3FileStorageService.downloadFile(testKey));
         verify(s3Client).getObject((GetObjectRequest) any());
     }
 
@@ -108,7 +108,7 @@ public class S3ServiceImplTest {
         String testKey = "test-key";
 
         // Act
-        s3Service.deleteFile(testKey);
+        s3FileStorageService.deleteFile(testKey);
 
         // Assert
         verify(s3Client).deleteObject((DeleteObjectRequest) any());
@@ -122,7 +122,7 @@ public class S3ServiceImplTest {
                 .when(s3Client).deleteObject((DeleteObjectRequest) any());
 
         // Act & Assert
-        assertDoesNotThrow(() -> s3Service.deleteFile(testKey));
+        assertDoesNotThrow(() -> s3FileStorageService.deleteFile(testKey));
         verify(s3Client).deleteObject((DeleteObjectRequest) any());
     }
 
@@ -137,7 +137,7 @@ public class S3ServiceImplTest {
         );
 
         // Act
-        s3Service.uploadFile(mockFile, testPrefix);
+        s3FileStorageService.uploadFile(mockFile, testPrefix);
 
         // Assert - Verify correct parameters are used
         verify(s3Properties).getBucketName();
@@ -165,7 +165,7 @@ public class S3ServiceImplTest {
         when(s3Client.getObject((GetObjectRequest) any())).thenReturn(responseInputStream);
 
         // Act
-        s3Service.downloadFile(testKey);
+        s3FileStorageService.downloadFile(testKey);
 
         // Assert - Verify correct parameters are used
         verify(s3Properties).getBucketName();
@@ -183,7 +183,7 @@ public class S3ServiceImplTest {
         String testKey = "test-key";
 
         // Act
-        s3Service.deleteFile(testKey);
+        s3FileStorageService.deleteFile(testKey);
 
         // Assert - Verify correct parameters are used
         verify(s3Properties).getBucketName();

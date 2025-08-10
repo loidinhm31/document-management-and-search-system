@@ -1,8 +1,7 @@
 app:
   base-url: http://localhost:3000
   ocr:
-    data-path: /usr/share/tesseract-ocr/5/tessdata
-    minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
+    data-path: G:\ws\tesseract-ocr\5\tessdata
     chunk-size: 10
     temp-dir: /tmp/ocr
     dpi: 300
@@ -15,7 +14,11 @@ app:
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
   email:
     batch-size: 50  # Number of emails per batch
-
+  file-storage:
+    type: LOCAL  # Use local storage for development
+    local:
+      upload-dir: "uploads"
+      temp-dir: "temp"
 spring:
   data:
     mongodb:
@@ -46,10 +49,10 @@ spring:
     publisher-returns: true
 
   mail:
-    host:
+    host: email-smtp.ap-southeast-1.amazonaws.com
     port: 587
-    username:
-    password:
+    username: AKIASVLKCKITWH7P7RHL
+    password: BJG3JMOTUOlAVYDingckfbExIRTmGQfR8pWm0MZ39J9f
     properties:
       mail:
         smtp:

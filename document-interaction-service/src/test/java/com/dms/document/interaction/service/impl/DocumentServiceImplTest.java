@@ -14,8 +14,8 @@ import com.dms.document.interaction.repository.DocumentRepository;
 import com.dms.document.interaction.repository.DocumentUserHistoryRepository;
 import com.dms.document.interaction.service.DocumentNotificationService;
 import com.dms.document.interaction.service.DocumentPreferencesService;
+import com.dms.document.interaction.service.FileStorageService;
 import com.dms.document.interaction.service.PublishEventService;
-import com.dms.document.interaction.service.S3Service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,7 +56,7 @@ public class DocumentServiceImplTest {
     private DocumentNotificationService documentNotificationService;
 
     @Mock
-    private S3Service s3Service;
+    private FileStorageService s3Service;
 
     @Mock
     private PublishEventService publishEventService;

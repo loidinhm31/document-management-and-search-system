@@ -1,6 +1,7 @@
 package com.dms.processor.service.impl;
 
-import com.dms.processor.config.S3Properties;
+import com.dms.processor.config.FileStorageProperties;
+import com.dms.processor.service.FileStorageService;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -18,7 +18,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -36,10 +35,10 @@ public class S3ServiceImplTest {
     private S3Client s3Client;
 
     @Mock
-    private S3Properties s3Properties;
+    private FileStorageProperties fileStorageProperties;
 
     @InjectMocks
-    private S3ServiceImpl s3Service;
+    private FileStorageService fileStorageService;
 
     @TempDir
     Path tempDir;
@@ -68,14 +67,14 @@ public class S3ServiceImplTest {
         String prefix = "documents";
 
         // Setup mocks for this specific test
-        when(s3Properties.getBucketName()).thenReturn(bucketName);
+        when(fileStorageProperties.getS3().getBucketName()).thenReturn(bucketName);
 
         // Mock the PutObjectResponse
         PutObjectResponse putObjectResponse = PutObjectResponse.builder().build();
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenReturn(putObjectResponse);
 
         // Act
-        String resultKey = s3Service.uploadFile(testFile, prefix, contentType);
+        String resultKey = fileStorageService.uploadFile(testFile, prefix, contentType);
 
         // Assert
         verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
@@ -90,8 +89,8 @@ public class S3ServiceImplTest {
         String s3Key = "documents/2023/04/01/123456-test-file.txt";
 
         // Setup mocks for this specific test
-        when(s3Properties.getBucketName()).thenReturn(bucketName);
-        when(s3Properties.getTempDir()).thenReturn(tempDir.toString());
+        when(fileStorageProperties.getS3().getBucketName()).thenReturn(bucketName);
+        when(fileStorageProperties.getLocal().getTempDir()).thenReturn(tempDir.toString());
 
         // Create mock response
         GetObjectResponse getObjectResponse = GetObjectResponse.builder().build();
@@ -102,7 +101,7 @@ public class S3ServiceImplTest {
         when(s3Client.getObject(any(GetObjectRequest.class))).thenReturn(responseInputStream);
 
         // Act
-        Path downloadedFile = s3Service.downloadToTemp(s3Key);
+        Path downloadedFile = fileStorageService.downloadToTemp(s3Key);
 
         // Assert
         verify(s3Client).getObject(any(GetObjectRequest.class));
@@ -125,14 +124,14 @@ public class S3ServiceImplTest {
         String s3Key = "documents/non-existent-file.txt";
 
         // Setup mocks for this specific test
-        when(s3Properties.getBucketName()).thenReturn(bucketName);
-        when(s3Properties.getTempDir()).thenReturn(tempDir.toString());
+        when(fileStorageProperties.getS3().getBucketName()).thenReturn(bucketName);
+        when(fileStorageProperties.getLocal().getTempDir()).thenReturn(tempDir.toString());
 
         when(s3Client.getObject(any(GetObjectRequest.class)))
                 .thenThrow(S3Exception.builder().message("File not found").build());
 
         // Act & Assert
-        assertThrows(IOException.class, () -> s3Service.downloadToTemp(s3Key));
+        assertThrows(IOException.class, () -> fileStorageService.downloadToTemp(s3Key));
         verify(s3Client).getObject(any(GetObjectRequest.class));
     }
 
@@ -142,13 +141,13 @@ public class S3ServiceImplTest {
         String s3Key = "documents/test-file.txt";
 
         // Setup mock for this specific test
-        when(s3Properties.getBucketName()).thenReturn(bucketName);
+        when(fileStorageProperties.getS3().getBucketName()).thenReturn(bucketName);
 
         DeleteObjectResponse deleteObjectResponse = DeleteObjectResponse.builder().build();
         when(s3Client.deleteObject(any(DeleteObjectRequest.class))).thenReturn(deleteObjectResponse);
 
         // Act
-        s3Service.deleteFile(s3Key);
+        fileStorageService.deleteFile(s3Key);
 
         // Assert
         verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
@@ -160,13 +159,13 @@ public class S3ServiceImplTest {
         String s3Key = "documents/test-file.txt";
 
         // Setup mock for this specific test
-        when(s3Properties.getBucketName()).thenReturn(bucketName);
+        when(fileStorageProperties.getS3().getBucketName()).thenReturn(bucketName);
 
         when(s3Client.deleteObject(any(DeleteObjectRequest.class)))
                 .thenThrow(S3Exception.builder().message("Error deleting file").build());
 
         // Act - should not throw exception
-        s3Service.deleteFile(s3Key);
+        fileStorageService.deleteFile(s3Key);
 
         // Assert
         verify(s3Client).deleteObject(any(DeleteObjectRequest.class));
@@ -180,7 +179,7 @@ public class S3ServiceImplTest {
         Files.write(testTempFile, "test content".getBytes(StandardCharsets.UTF_8));
 
         // Act
-        s3Service.cleanup(testTempFile);
+        fileStorageService.cleanup(testTempFile);
 
         // Assert
         assertFalse(Files.exists(tempPath));
@@ -203,7 +202,7 @@ public class S3ServiceImplTest {
         }).when(tempFileSpy).getParent();
 
         // Act - this should not throw exception despite the IOException
-        s3Service.cleanup(tempFileSpy);
+        fileStorageService.cleanup(tempFileSpy);
 
         // Verify the test doesn't throw an exception
 
@@ -219,7 +218,7 @@ public class S3ServiceImplTest {
 
         // Fix: Removed unnecessary stub for getBucketName()
 
-        generateS3KeyMethod = S3ServiceImpl.class.getDeclaredMethod("generateS3Key", String.class, String.class);
+        generateS3KeyMethod = S3FileStorageServiceImpl.class.getDeclaredMethod("generateS3Key", String.class, String.class);
         generateS3KeyMethod.setAccessible(true);
 
         // Arrange
@@ -227,7 +226,7 @@ public class S3ServiceImplTest {
         String prefix = "documents";
 
         // Act
-        String key = (String) generateS3KeyMethod.invoke(s3Service, filename, prefix);
+        String key = (String) generateS3KeyMethod.invoke(fileStorageService, filename, prefix);
 
         // Assert
         LocalDate now = LocalDate.now();

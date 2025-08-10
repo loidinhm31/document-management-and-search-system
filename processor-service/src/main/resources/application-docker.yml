@@ -14,11 +14,16 @@ app:
     minimum-text-length: 50  # Minimum text length to consider a PDF as text-based
   email:
     batch-size: 50  # Number of emails per batch
+  file-storage:
+    type: LOCAL  # Use local storage for development
+    local:
+      upload-dir: "uploads"
+      temp-dir: "temp"
 
 spring:
   data:
     mongodb:
-      uri: mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
+      uri: mongodb+srv://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_URL}/dms?authSource=admin
   # Database Configuration
   datasource:
     url: jdbc:postgresql://${POSTGRES_URL}/postgres?currentSchema=dms

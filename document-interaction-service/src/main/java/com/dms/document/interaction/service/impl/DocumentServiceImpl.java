@@ -53,7 +53,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentRepository documentRepository;
     private final DocumentUserHistoryRepository documentUserHistoryRepository;
     private final DocumentNotificationService documentNotificationService;
-    private final S3Service s3Service;
+    private final FileStorageService fileStorageService;
     private final PublishEventService publishEventService;
     private final DocumentPreferencesService documentPreferencesService;
     private final UserClient userClient;
@@ -82,14 +82,14 @@ public class DocumentServiceImpl implements DocumentService {
         validateDocument(file);
         DocumentType documentType = DocumentUtils.determineDocumentType(file.getContentType());
 
-        // Upload new file to S3
-        String s3Key = s3Service.uploadFile(file, "documents");
+        // Upload file using the configured storage service
+        String filePathOrKey = fileStorageService.uploadFile(file, "documents");
 
         // Create new version metadata
         int nextVersion = 0;
         DocumentVersion newVersion = DocumentVersion.builder()
                 .versionNumber(nextVersion)
-                .filePath(s3Key)
+                .filePath(filePathOrKey)
                 .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
@@ -109,7 +109,7 @@ public class DocumentServiceImpl implements DocumentService {
         DocumentInformation document = DocumentInformation.builder()
                 .status(DocumentStatus.PENDING)
                 .filename(file.getOriginalFilename())
-                .filePath(s3Key)
+                .filePath(filePathOrKey)
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
                 .documentType(documentType)
@@ -208,7 +208,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         try {
-            byte[] thumbnailData = s3Service.downloadFile(document.getThumbnailPath());
+            byte[] thumbnailData = fileStorageService.downloadFile(document.getThumbnailPath());
             return ThumbnailResponse.builder()
                     .data(thumbnailData)
                     .status(HttpStatus.OK)
@@ -241,7 +241,7 @@ public class DocumentServiceImpl implements DocumentService {
                     .orElseThrow(() -> new InvalidDocumentException("Document not found"));
         }
 
-        byte[] fileContent = s3Service.downloadFile(documentInformation.getFilePath());
+        byte[] fileContent = fileStorageService.downloadFile(documentInformation.getFilePath());
         if (Objects.nonNull(fileContent) && StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
             CompletableFuture.runAsync(() -> {
                 // History
@@ -371,14 +371,14 @@ public class DocumentServiceImpl implements DocumentService {
 
         DocumentType documentType = DocumentUtils.determineDocumentType(file.getContentType());
 
-        // Upload new file to S3
-        String s3Key = s3Service.uploadFile(file, "documents");
+        // Upload new file using the configured storage service
+        String filePathOrKey = fileStorageService.uploadFile(file, "documents");
 
         // Create new version metadata
         int nextVersion = (document.getCurrentVersion() != null ? document.getCurrentVersion() : 0) + 1;
         DocumentVersion newVersion = DocumentVersion.builder()
                 .versionNumber(nextVersion)
-                .filePath(s3Key)
+                .filePath(filePathOrKey)
                 .filename(file.getOriginalFilename())
                 .fileSize(file.getSize())
                 .mimeType(file.getContentType())
@@ -391,7 +391,7 @@ public class DocumentServiceImpl implements DocumentService {
         // Update document information
         document.setStatus(DocumentStatus.PENDING); // Reset to pending for reprocessing
         document.setFilename(file.getOriginalFilename());
-        document.setFilePath(s3Key);
+        document.setFilePath(filePathOrKey);
         document.setThumbnailPath(null); // Reset thumbnail - will be generated for new version
         document.setFileSize(file.getSize());
         document.setMimeType(file.getContentType());
@@ -523,7 +523,7 @@ public class DocumentServiceImpl implements DocumentService {
         DocumentVersion targetVersion = documentInformation.getVersion(versionNumber)
                 .orElseThrow(() -> new InvalidDocumentException("Version not found"));
 
-        byte[] fileContent = s3Service.downloadFile(targetVersion.getFilePath());
+        byte[] fileContent = fileStorageService.downloadFile(targetVersion.getFilePath());
         if (Objects.nonNull(fileContent) && StringUtils.equals(action, "download") && BooleanUtils.isTrue(history)) {
             // History
             documentUserHistoryRepository.save(DocumentUserHistory.builder()
