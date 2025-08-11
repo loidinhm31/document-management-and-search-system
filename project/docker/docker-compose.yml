@@ -2,7 +2,7 @@ networks:
   dms-network:
     driver: overlay
     attachable: true  # Allow external connections
-
+ 
 services:
   eureka-discovery-server:
     image: ${DOCKER_HUB_USERNAME}/dms-eureka:latest
@@ -219,7 +219,7 @@ services:
           memory: 8G
         reservations:
           cpus: '1'
-          memory: 4G
+          memory: 2G
       update_config:
         parallelism: 1
         delay: 10s

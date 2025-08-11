@@ -17,7 +17,7 @@ app:
   file-storage:
     type: LOCAL  # Use local storage for development
     local:
-      upload-dir: "uploads"
+      upload-dir: "/app/uploads"
       temp-dir: "temp"
 
 spring:
