@@ -18,7 +18,7 @@ import java.util.Set;
 public class LanguageDetectionServiceImpl implements LanguageDetectionService {
     private LanguageDetector languageDetector;
 
-    private final Set<String> SUPPORT_LANGUAGES = Set.of("en", "vi");
+    private final Set<String> SUPPORT_LANGUAGES = Set.of("en", "vi", "ko");
 
     @PostConstruct
     public void init() {

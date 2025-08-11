@@ -8,6 +8,7 @@ import com.dms.document.search.model.DocumentPreferences;
 import com.dms.document.search.repository.DocumentPreferencesRepository;
 import com.dms.document.search.service.DocumentFavoriteService;
 import com.dms.document.search.service.DocumentSearchService;
+import com.dms.document.search.service.LanguageDetectionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -45,19 +46,22 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
     private final UserClient userClient;
     private final DocumentPreferencesRepository documentPreferencesRepository;
     private final DocumentFavoriteService documentFavoriteService;
+    private final LanguageDetectionService languageDetectionService;
 
     private static final int MIN_SEARCH_LENGTH = 2;
 
-    private float getMinScore(String query, SearchContext context) {
+    private float getMinScore(String query, SearchContext context, String detectedLanguage) {
         int length = query.trim().length();
-        float baseScore;
+        float baseScore = switch (detectedLanguage) {
+            case "vi" -> // Vietnamese
+                    context.queryType() == QueryType.DEFINITION ? 6.0f : 10.0f;
+            case "ko" -> // Korean
+                    context.queryType() == QueryType.DEFINITION ? 5.0f : 8.0f;
+            default -> // English and others
+                    context.queryType() == QueryType.DEFINITION ? 8.0f : 15.0f;
+        };
 
-        // Adjust base scores for Vietnamese text
-        if (containsVietnameseCharacters(query)) {
-            baseScore = context.queryType() == QueryType.DEFINITION ? 6.0f : 10.0f;
-        } else {
-            baseScore = context.queryType() == QueryType.DEFINITION ? 8.0f : 15.0f;
-        }
+        // Adjust base score based on detected language and query type
 
         // Adjust score based on query length
         if (length <= 3) return baseScore * 0.4f;
@@ -65,10 +69,6 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         if (length <= 10) return baseScore * 0.8f;
 
         return baseScore;
-    }
-
-    private boolean containsVietnameseCharacters(String text) {
-        return text.matches(".*[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ].*");
     }
 
     @Override
@@ -125,6 +125,10 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
 
         // Add search conditions if search query exists
         if (StringUtils.isNotEmpty(context.originalQuery())) {
+            // Detect language of search query
+            String detectedLanguage = languageDetectionService.detectLanguage(context.originalQuery());
+            log.debug("Detected language '{}' for query: '{}'", detectedLanguage, context.originalQuery());
+
             // Look up user preferences for document
             DocumentPreferences preferences = documentPreferencesRepository.findByUserId(userId.toString())
                     .orElse(null);
@@ -134,15 +138,15 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
                 addBasicPreferenceBoosts(queryBuilder, preferences);
             }
 
-            // Add search-specific query conditions
+            // Add language-aware search conditions
             if (context.queryType() == QueryType.DEFINITION) {
-                addDefinitionSearchConditions(queryBuilder, context);
+                addDefinitionSearchConditions(queryBuilder, context, detectedLanguage);
             } else {
-                addGeneralSearchConditions(queryBuilder, context);
+                addGeneralSearchConditions(queryBuilder, context, detectedLanguage);
             }
 
-            // Set minimum score for search queries
-            searchSourceBuilder.minScore(getMinScore(request.getSearch(), context));
+            // Set minimum score with language-aware adjustment
+            searchSourceBuilder.minScore(getMinScore(request.getSearch(), context, detectedLanguage));
         }
 
         searchSourceBuilder.query(queryBuilder);
@@ -164,18 +168,35 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         return searchRequest;
     }
 
-    private void addDefinitionSearchConditions(BoolQueryBuilder queryBuilder, SearchContext context) {
-        // Higher boost for phrase matches in content
-        queryBuilder.should(QueryBuilders.matchPhraseQuery("content", context.originalQuery())
-                .boost(15.0f));
+    private void addDefinitionSearchConditions(BoolQueryBuilder queryBuilder, SearchContext context, String detectedLanguage) {
+        String query = context.originalQuery();
 
-        // Search in analyzed fields for better Vietnamese text handling
-        queryBuilder.should(QueryBuilders.matchQuery("content", context.originalQuery())
-                .analyzer("vietnamese_analyzer")
-                .boost(10.0f));
+        // Higher boost for phrase matches in content with language-specific field
+        switch (detectedLanguage) {
+            case "ko": // Korean
+                queryBuilder.should(QueryBuilders.matchPhraseQuery("content.korean", query)
+                        .boost(18.0f));
+                queryBuilder.should(QueryBuilders.matchQuery("content.korean", query)
+                        .boost(12.0f));
+                break;
+            case "vi": // Vietnamese
+                queryBuilder.should(QueryBuilders.matchPhraseQuery("content.vietnamese", query)
+                        .boost(15.0f));
+                queryBuilder.should(QueryBuilders.matchQuery("content.vietnamese", query)
+                        .analyzer("vietnamese_analyzer")
+                        .boost(10.0f));
+                break;
+            default: // English and others
+                queryBuilder.should(QueryBuilders.matchPhraseQuery("content", query)
+                        .boost(15.0f));
+                queryBuilder.should(QueryBuilders.matchQuery("content", query)
+                        .analyzer("universal_analyzer")
+                        .boost(10.0f));
+                break;
+        }
 
         // Cross-field matching
-        queryBuilder.should(QueryBuilders.multiMatchQuery(context.originalQuery())
+        queryBuilder.should(QueryBuilders.multiMatchQuery(query)
                 .field("filename", 4.0f)
                 .field("content", 3.0f)
                 .type(MultiMatchQueryBuilder.Type.CROSS_FIELDS)
@@ -186,67 +207,106 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         queryBuilder.minimumShouldMatch(1);
     }
 
-    private void addGeneralSearchConditions(BoolQueryBuilder queryBuilder, SearchContext context) {
-        // Primary content matching - stricter
+    private void addGeneralSearchConditions(BoolQueryBuilder queryBuilder, SearchContext context, String detectedLanguage) {
+        String originalQuery = context.originalQuery();
+        String lowercaseQuery = context.lowercaseQuery();
+        String uppercaseQuery = context.uppercaseQuery();
+
+        // Primary content matching with language-specific handling
         BoolQueryBuilder contentQuery = QueryBuilders.boolQuery();
 
-        // Case variations for content
-        contentQuery.should(QueryBuilders.matchPhraseQuery("content", context.originalQuery())
-                .analyzer("vietnamese_analyzer")
-                .slop(1)  // Allow slight variations for Vietnamese phrases
-                .boost(10.0f));
-        contentQuery.should(QueryBuilders.matchPhraseQuery("content", context.lowercaseQuery())
-                .analyzer("vietnamese_analyzer")
-                .slop(1)
-                .boost(9.0f));
-        contentQuery.should(QueryBuilders.matchPhraseQuery("content", context.uppercaseQuery())
-                .analyzer("vietnamese_analyzer")
-                .slop(1)
-                .boost(9.0f));
+        switch (detectedLanguage) {
+            case "ko": // Korean
+                // Korean-optimized field with higher boost
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content.korean", originalQuery)
+                        .slop(1)
+                        .boost(12.0f));
+                contentQuery.should(QueryBuilders.matchQuery("content.korean", originalQuery)
+                        .minimumShouldMatch("60%")
+                        .boost(8.0f));
 
-        // Standard content match
-        contentQuery.should(QueryBuilders.matchQuery("content", context.originalQuery())
-                .analyzer("vietnamese_analyzer")
-                .minimumShouldMatch("70%")
-                .boost(4.0f));
+                // Fallback to universal field
+                contentQuery.should(QueryBuilders.matchQuery("content", originalQuery)
+                        .analyzer("universal_analyzer")
+                        .minimumShouldMatch("70%")
+                        .boost(4.0f));
+                break;
+
+            case "vi": // Vietnamese
+                // Vietnamese-optimized field with higher boost
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content.vietnamese", originalQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .slop(1)
+                        .boost(10.0f));
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content.vietnamese", lowercaseQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .slop(1)
+                        .boost(9.0f));
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content.vietnamese", uppercaseQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .slop(1)
+                        .boost(9.0f));
+                contentQuery.should(QueryBuilders.matchQuery("content.vietnamese", originalQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .minimumShouldMatch("70%")
+                        .boost(4.0f));
+                break;
+
+            default: // English and others
+                // Universal field for English and other languages
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content", originalQuery)
+                        .analyzer("universal_analyzer")
+                        .slop(1)
+                        .boost(10.0f));
+                contentQuery.should(QueryBuilders.matchQuery("content", originalQuery)
+                        .analyzer("universal_analyzer")
+                        .minimumShouldMatch("70%")
+                        .boost(4.0f));
+
+                // Case variations
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content", lowercaseQuery)
+                        .analyzer("universal_analyzer")
+                        .slop(1)
+                        .boost(9.0f));
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content", uppercaseQuery)
+                        .analyzer("universal_analyzer")
+                        .slop(1)
+                        .boost(9.0f));
+                break;
+        }
 
         queryBuilder.should(contentQuery);
 
-        // Filename matching with case variations
+        // Filename matching with language-aware handling
         BoolQueryBuilder filenameQuery = QueryBuilders.boolQuery();
 
-        // Vietnamese-analyzed filename variations
-        filenameQuery.should(QueryBuilders.matchQuery("filename.analyzed", context.originalQuery())
+        switch (detectedLanguage) {
+            case "ko": // Korean
+                filenameQuery.should(QueryBuilders.matchQuery("filename.korean", originalQuery)
+                        .minimumShouldMatch("60%")
+                        .boost(6.0f));
+                break;
+            case "vi": // Vietnamese
+                filenameQuery.should(QueryBuilders.matchQuery("filename.vietnamese", originalQuery)
+                        .minimumShouldMatch("60%")
+                        .boost(5.0f));
+                break;
+        }
+
+        // Universal filename matching for all languages
+        filenameQuery.should(QueryBuilders.matchQuery("filename", originalQuery)
                 .minimumShouldMatch("60%")
                 .boost(5.0f));
-        filenameQuery.should(QueryBuilders.matchQuery("filename.analyzed", context.lowercaseQuery())
-                .minimumShouldMatch("60%")
-                .boost(4.5f));
-        filenameQuery.should(QueryBuilders.matchQuery("filename.analyzed", context.uppercaseQuery())
-                .minimumShouldMatch("60%")
-                .boost(4.5f));
-
-        // Simple analyzer with case variations
-        filenameQuery.should(QueryBuilders.matchQuery("filename.search", context.originalQuery())
+        filenameQuery.should(QueryBuilders.matchQuery("filename.search", originalQuery)
                 .minimumShouldMatch("60%")
                 .boost(4.0f));
-        filenameQuery.should(QueryBuilders.matchQuery("filename.search", context.lowercaseQuery())
-                .minimumShouldMatch("60%")
-                .boost(3.5f));
-        filenameQuery.should(QueryBuilders.matchQuery("filename.search", context.uppercaseQuery())
-                .minimumShouldMatch("60%")
-                .boost(3.5f));
 
         // Exact matches with case variations
-        filenameQuery.should(QueryBuilders.termQuery("filename.raw", context.originalQuery())
-                .boost(6.0f));
-        filenameQuery.should(QueryBuilders.termQuery("filename.raw", context.lowercaseQuery())
-                .boost(5.5f));
-        filenameQuery.should(QueryBuilders.termQuery("filename.raw", context.uppercaseQuery())
-                .boost(5.5f));
+        filenameQuery.should(QueryBuilders.termQuery("filename.raw", originalQuery).boost(6.0f));
+        filenameQuery.should(QueryBuilders.termQuery("filename.raw", lowercaseQuery).boost(5.5f));
+        filenameQuery.should(QueryBuilders.termQuery("filename.raw", uppercaseQuery).boost(5.5f));
 
         queryBuilder.should(filenameQuery);
-
         queryBuilder.minimumShouldMatch(1);
     }
 
@@ -384,21 +444,58 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
         String originalQuery = context.originalQuery();
         String lowercaseQuery = context.lowercaseQuery();
         String uppercaseQuery = context.uppercaseQuery();
+        String detectedLanguage = languageDetectionService.detectLanguage(originalQuery);
 
         // Content matching with broader acceptance
         BoolQueryBuilder contentQuery = QueryBuilders.boolQuery();
 
-        // Phrase matching with increased slop for more flexibility
-        contentQuery.should(QueryBuilders.matchPhraseQuery("content", originalQuery)
-                .analyzer("vietnamese_analyzer")
-                .slop(3)  // Increased slop for more flexible phrase matching
-                .boost(4.0f));
+        switch (detectedLanguage) {
+            case "ko": // Korean
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content.korean", originalQuery)
+                        .slop(3)
+                        .boost(5.0f));
+                contentQuery.should(QueryBuilders.matchQuery("content.korean", originalQuery)
+                        .minimumShouldMatch("30%")
+                        .boost(4.0f));
+                contentQuery.should(QueryBuilders.matchQuery("content.korean", originalQuery)
+                        .fuzziness(Fuzziness.AUTO)
+                        .prefixLength(1)
+                        .boost(3.0f));
+                break;
 
-        // Broad content matching with reduced minimum match
-        contentQuery.should(QueryBuilders.matchQuery("content", originalQuery)
-                .analyzer("vietnamese_analyzer")
-                .minimumShouldMatch("30%")
-                .boost(3.5f));
+            case "vi": // Vietnamese
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content.vietnamese", originalQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .slop(3)
+                        .boost(4.0f));
+                contentQuery.should(QueryBuilders.matchQuery("content.vietnamese", originalQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .minimumShouldMatch("30%")
+                        .boost(3.5f));
+
+                // Case variations
+                contentQuery.should(QueryBuilders.matchQuery("content", lowercaseQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .minimumShouldMatch("30%")
+                        .boost(2.0f));
+
+                contentQuery.should(QueryBuilders.matchQuery("content", uppercaseQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .minimumShouldMatch("30%")
+                        .boost(2.0f));
+                break;
+
+            default: // English and others
+                contentQuery.should(QueryBuilders.matchPhraseQuery("content", originalQuery)
+                        .analyzer("universal_analyzer")
+                        .slop(3)
+                        .boost(4.0f));
+                contentQuery.should(QueryBuilders.matchQuery("content", originalQuery)
+                        .analyzer("universal_analyzer")
+                        .minimumShouldMatch("30%")
+                        .boost(3.5f));
+                break;
+        }
 
         // Fuzzy matching for typo tolerance
         contentQuery.should(QueryBuilders.matchQuery("content", originalQuery)
@@ -406,63 +503,49 @@ public class DiscoverDocumentSearchServiceImpl extends OpenSearchBaseService imp
                 .prefixLength(2)
                 .boost(2.5f));
 
-        // Case variations
-        contentQuery.should(QueryBuilders.matchQuery("content", lowercaseQuery)
-                .analyzer("vietnamese_analyzer")
-                .minimumShouldMatch("30%")
-                .boost(2.0f));
-
-        contentQuery.should(QueryBuilders.matchQuery("content", uppercaseQuery)
-                .analyzer("vietnamese_analyzer")
-                .minimumShouldMatch("30%")
-                .boost(2.0f));
-
         queryBuilder.should(contentQuery);
 
-        // Filename matching
+        // Filename matching with language awareness
         BoolQueryBuilder filenameQuery = QueryBuilders.boolQuery();
+
+        switch (detectedLanguage) {
+            case "ko":
+                filenameQuery.should(QueryBuilders.matchPhraseQuery("filename.korean", originalQuery)
+                        .slop(2)
+                        .boost(5.5f));
+                filenameQuery.should(QueryBuilders.matchQuery("filename.korean", originalQuery)
+                        .minimumShouldMatch("30%")
+                        .boost(5.0f));
+                break;
+            case "vi":
+                filenameQuery.should(QueryBuilders.matchPhraseQuery("filename.vietnamese", originalQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .slop(2)
+                        .boost(4.5f));
+                filenameQuery.should(QueryBuilders.matchQuery("filename.vietnamese", originalQuery)
+                        .analyzer("vietnamese_analyzer")
+                        .minimumShouldMatch("30%")
+                        .boost(4.0f));
+                break;
+        }
 
         // Exact matches with case variations
         filenameQuery.should(QueryBuilders.termQuery("filename.raw", originalQuery)
                 .boost(5.0f));
-
-        // Analyzed filename matching
-        filenameQuery.should(QueryBuilders.matchPhraseQuery("filename.analyzed", originalQuery)
-                .analyzer("vietnamese_analyzer")
-                .slop(2)
-                .boost(4.5f));
-
-        // Partial matches on analyzed field
-        filenameQuery.should(QueryBuilders.matchQuery("filename.analyzed", originalQuery)
-                .analyzer("vietnamese_analyzer")
+        filenameQuery.should(QueryBuilders.matchQuery("filename", originalQuery)
                 .minimumShouldMatch("30%")
                 .boost(4.0f));
-
-        // Simple analyzer matching
         filenameQuery.should(QueryBuilders.matchQuery("filename.search", originalQuery)
                 .minimumShouldMatch("30%")
                 .boost(3.5f));
-
-        // Prefix matching for typeahead-style suggestions
         filenameQuery.should(QueryBuilders.prefixQuery("filename.raw", lowercaseQuery)
                 .boost(3.0f));
-
-        // Fuzzy matching for error tolerance
-        filenameQuery.should(QueryBuilders.fuzzyQuery("filename.raw", lowercaseQuery)
+        filenameQuery.should(QueryBuilders.fuzzyQuery("filename.raw", uppercaseQuery)
                 .fuzziness(Fuzziness.AUTO)
                 .prefixLength(2)
                 .boost(2.5f));
 
-        // Case variations
-        filenameQuery.should(QueryBuilders.matchQuery("filename.analyzed", lowercaseQuery)
-                .minimumShouldMatch("30%")
-                .boost(2.0f));
-        filenameQuery.should(QueryBuilders.matchQuery("filename.analyzed", uppercaseQuery)
-                .minimumShouldMatch("30%")
-                .boost(2.0f));
-
         queryBuilder.should(filenameQuery);
-
         queryBuilder.minimumShouldMatch(1);
     }
 }

@@ -10,7 +10,8 @@ RUN mkdir -p /usr/share/tessdata
 # Download specific versions of language training data and osd
 RUN wget -O /usr/share/tessdata/eng.traineddata https://github.com/tesseract-ocr/tessdata_best/raw/main/eng.traineddata && \
     wget -O /usr/share/tessdata/vie.traineddata https://github.com/tesseract-ocr/tessdata_best/raw/main/vie.traineddata && \
-    wget -O /usr/share/tessdata/osd.traineddata https://github.com/tesseract-ocr/tessdata_best/raw/main/osd.traineddata
+    wget -O /usr/share/tessdata/osd.traineddata https://github.com/tesseract-ocr/tessdata_best/raw/main/osd.traineddata && \
+    wget -O /usr/share/tessdata/kor.traineddata https://github.com/tesseract-ocr/tessdata_best/raw/main/kor.traineddata
 
 # Stage 2: Build the application
 FROM maven:3.9.5-amazoncorretto-17 AS builder

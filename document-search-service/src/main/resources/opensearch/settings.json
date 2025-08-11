@@ -11,6 +11,24 @@
           "vietnamese_word_delimiter"
         ]
       },
+      "universal_analyzer": {
+        "type": "custom",
+        "tokenizer": "icu_tokenizer",
+        "filter": [
+          "lowercase",
+          "icu_folding",
+          "icu_normalizer"
+        ]
+      },
+      "korean_analyzer": {
+        "type": "custom",
+        "tokenizer": "nori_tokenizer",
+        "filter": [
+          "lowercase",
+          "nori_part_of_speech",
+          "nori_readingform"
+        ]
+      },
       "filename_analyzer": {
         "type": "custom",
         "tokenizer": "standard",
@@ -26,65 +44,18 @@
         "filter": ["lowercase", "asciifolding"]
       }
     },
+    "tokenizer": {
+      "nori_tokenizer": {
+        "type": "nori_tokenizer",
+        "decompound_mode": "mixed",
+        "discard_punctuation": true
+      }
+    },
     "filter": {
       "vietnamese_stop": {
         "type": "stop",
         "stopwords": [
-          "và",
-          "của",
-          "có",
-          "được",
-          "trong",
-          "đã",
-          "là",
-          "lúc",
-          "với",
-          "theo",
-          "tới",
-          "về",
-          "làm",
-          "để",
-          "từ",
-          "những",
-          "hay",
-          "khi",
-          "sau",
-          "như",
-          "trên",
-          "vào",
-          "phải",
-          "bị",
-          "cho",
-          "đến",
-          "nếu",
-          "tại",
-          "nhưng",
-          "mà",
-          "thì",
-          "hoặc",
-          "vẫn",
-          "bởi",
-          "này",
-          "các",
-          "nhiều",
-          "thêm",
-          "vừa",
-          "cũng",
-          "nên",
-          "việc",
-          "nói",
-          "nhất",
-          "đều",
-          "theo",
-          "cùng",
-          "đang",
-          "chỉ",
-          "vì",
-          "còn",
-          "giữa",
-          "thuộc",
-          "quá",
-          "sẽ"
+          "và", "của", "có", "được", "trong", "đã", "là", "lúc", "với", "theo", "tới", "về", "làm", "để", "từ", "những", "hay", "khi", "sau", "như", "trên", "vào", "phải", "bị", "cho", "đến", "nếu", "tại", "nhưng", "mà", "thì", "hoặc", "vẫn", "bởi", "này", "các", "nhiều", "thêm", "vừa", "cũng", "nên", "việc", "nói", "nhất", "đều", "theo", "cùng", "đang", "chỉ", "vì", "còn", "giữa", "thuộc", "quá", "sẽ"
         ]
       },
       "vietnamese_word_delimiter": {
@@ -97,6 +68,23 @@
         "split_on_case_change": true,
         "split_on_numerics": true,
         "stem_english_possessive": false
+      },
+      "nori_part_of_speech": {
+        "type": "nori_part_of_speech",
+        "stoptags": [
+          "E", "IC", "J", "MAG", "MAJ", "MM", "SP", "SSC", "SSO", "SC", "SE", "XPN", "XSA", "XSN", "XSV", "UNA", "NA", "VSV"
+        ]
+      },
+      "nori_readingform": {
+        "type": "nori_readingform"
+      },
+      "icu_normalizer": {
+        "type": "icu_normalizer",
+        "name": "nfc",
+        "mode": "compose"
+      },
+      "icu_folding": {
+        "type": "icu_folding"
       }
     }
   }

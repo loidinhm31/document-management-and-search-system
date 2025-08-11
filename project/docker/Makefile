@@ -76,7 +76,7 @@ build-all: get-username
 		exit 1; \
 	fi
 	@echo "Building all services using username: $(DOCKER_HUB_USERNAME)"
-	DOCKER_HUB_USERNAME=$(DOCKER_HUB_USERNAME) docker compose -f docker-compose.build.yml build
+	DOCKER_HUB_USERNAME=$(DOCKER_HUB_USERNAME) docker compose --env-file .env -f docker-compose.build.yml build
 
 # Push all services
 .PHONY: push-all
@@ -175,6 +175,7 @@ deploy-frontend:
 	  -p $(FRONTEND_HOST_PORT):$(FRONTEND_CONTAINER_PORT) \
 	  -e NODE_ENV=production \
 	  --restart always \
+	  --platform linux/arm64 \
 	  $(FRONTEND_IMAGE_NAME):$(FRONTEND_IMAGE_TAG)
 	@echo "Frontend deployment complete. Running at http://localhost:$(FRONTEND_HOST_PORT)"
 

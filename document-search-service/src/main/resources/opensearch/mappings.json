@@ -2,15 +2,20 @@
   "properties": {
     "filename": {
       "type": "text",
-      "analyzer": "vietnamese_analyzer",
+      "analyzer": "universal_analyzer",
       "fields": {
         "raw": {
           "type": "keyword",
           "ignore_above": 256
         },
-        "analyzed": {
+        "vietnamese": {
           "type": "text",
           "analyzer": "vietnamese_analyzer",
+          "term_vector": "with_positions_offsets"
+        },
+        "korean": {
+          "type": "text",
+          "analyzer": "korean_analyzer",
           "term_vector": "with_positions_offsets"
         },
         "search": {
@@ -26,9 +31,40 @@
     },
     "content": {
       "type": "text",
-      "analyzer": "vietnamese_analyzer",
+      "analyzer": "universal_analyzer",
       "term_vector": "with_positions_offsets",
       "fields": {
+        "vietnamese": {
+          "type": "text",
+          "analyzer": "vietnamese_analyzer",
+          "term_vector": "with_positions_offsets"
+        },
+        "korean": {
+          "type": "text",
+          "analyzer": "korean_analyzer",
+          "term_vector": "with_positions_offsets"
+        },
+        "keyword": {
+          "type": "keyword",
+          "ignore_above": 256
+        }
+      }
+    },
+    "summary": {
+      "type": "text",
+      "analyzer": "universal_analyzer",
+      "term_vector": "with_positions_offsets",
+      "fields": {
+        "vietnamese": {
+          "type": "text",
+          "analyzer": "vietnamese_analyzer",
+          "term_vector": "with_positions_offsets"
+        },
+        "korean": {
+          "type": "text",
+          "analyzer": "korean_analyzer",
+          "term_vector": "with_positions_offsets"
+        },
         "keyword": {
           "type": "keyword",
           "ignore_above": 256
@@ -43,17 +79,6 @@
     },
     "documentType": {
       "type": "keyword"
-    },
-    "summary": {
-      "type": "text",
-      "analyzer": "vietnamese_analyzer",
-      "term_vector": "with_positions_offsets",
-      "fields": {
-        "keyword": {
-          "type": "keyword",
-          "ignore_above": 256
-        }
-      }
     },
     "majors": {
       "type": "keyword"
@@ -98,6 +123,9 @@
       "type": "integer"
     },
     "favoriteCount": {
+      "type": "integer"
+    },
+    "currentVersion": {
       "type": "integer"
     }
   }
