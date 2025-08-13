@@ -113,6 +113,8 @@ services:
 
   document-interaction-service:
     image: ${DOCKER_HUB_USERNAME}/dms-interaction:latest
+    volumes:
+      - document-storage:/app/uploads
     networks:
       - dms-network
     ports:
@@ -199,6 +201,8 @@ services:
 
   document-processor-service:
     image: ${DOCKER_HUB_USERNAME}/dms-processor:latest
+    volumes:
+      - document-storage:/app/uploads  
     networks:
       - dms-network
     ports:
@@ -219,7 +223,7 @@ services:
           memory: 8G
         reservations:
           cpus: '1'
-          memory: 2G
+          memory: 4G
       update_config:
         parallelism: 1
         delay: 10s
