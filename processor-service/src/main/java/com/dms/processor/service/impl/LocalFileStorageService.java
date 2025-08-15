@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -28,7 +29,10 @@ public class LocalFileStorageService implements FileStorageService {
     @Override
     public String uploadFile(Path filePath, String prefix, String contentType) throws IOException {
         String fileName = filePath.getFileName().toString();
-        String storagePath = generateFilePath(fileName, prefix);
+        String cleanFilename = Normalizer.normalize(fileName, Normalizer.Form.NFD)
+                .replaceAll("[^\\p{ASCII}]", "")
+                .replaceAll("[^a-zA-Z0-9._-]", "_");
+        String storagePath = generateFilePath(cleanFilename, prefix);
 
         Path targetLocation = getUploadPath().resolve(storagePath);
 
