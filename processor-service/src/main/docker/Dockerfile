@@ -37,6 +37,7 @@ RUN apk add --no-cache \
     graphicsmagick \
     tini \
     tzdata \
+    musl-locales \
     && rm -rf /var/cache/apk/*
 
 # Copy tessdata from first stage
@@ -48,9 +49,13 @@ COPY --from=builder /app/target/*.jar app.jar
 # Set environment variables
 ENV TESSDATA_PREFIX=/usr/share/tessdata \
     APP_OCR_DATA_PATH=/usr/share/tessdata \
-    LC_ALL=C \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
     TZ=UTC \
-    JAVA_OPTS="-XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+    JAVA_OPTS="-XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 \
+               -Dfile.encoding=UTF-8 \
+               -Dsun.jnu.encoding=UTF-8 \
+               -Dclient.encoding.override=UTF-8"
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /tmp/ocr  && \
