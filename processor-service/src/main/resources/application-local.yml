@@ -1,5 +1,5 @@
 app:
-  base-url: http://localhost:3000
+  base-url: http://192.168.1.249:3000
   ocr:
     data-path: G:\ws\tesseract-ocr\5\tessdata
     chunk-size: 10
@@ -18,7 +18,7 @@ app:
     type: LOCAL  # Use local storage for development
     local:
       upload-dir: "uploads"
-      temp-dir: "temp"
+      temp-dir: "tmp/downloads"
 spring:
   data:
     mongodb:

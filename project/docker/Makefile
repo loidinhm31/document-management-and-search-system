@@ -175,7 +175,6 @@ deploy-frontend:
 	  -p $(FRONTEND_HOST_PORT):$(FRONTEND_CONTAINER_PORT) \
 	  -e NODE_ENV=production \
 	  --restart always \
-	  --platform linux/arm64 \
 	  $(FRONTEND_IMAGE_NAME):$(FRONTEND_IMAGE_TAG)
 	@echo "Frontend deployment complete. Running at http://localhost:$(FRONTEND_HOST_PORT)"
 

@@ -1,0 +1,254 @@
+networks:
+  dms-network:
+    driver: overlay
+    attachable: true  # Allow external connections
+ 
+services:
+  eureka-discovery-server:
+    image: ${DOCKER_HUB_USERNAME}/dms-eureka:latest
+    networks:
+      - dms-network
+    ports:
+      - target: 8081
+        published: 8081
+        protocol: tcp
+        mode: host  # Using host mode for discovery service
+    deploy:
+      mode: global  # Ensures one instance per node
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 192M
+      update_config:
+        parallelism: 1
+        delay: 10s
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+      - EUREKA_HOST=${EUREKA_HOST}
+      - EUREKA_URI=${EUREKA_URI}
+
+  api-gateway:
+    image: ${DOCKER_HUB_USERNAME}/dms-gateway:latest
+    networks:
+      - dms-network
+    ports:
+      - target: 8086
+        published: 8086
+        protocol: tcp
+        mode: host
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 192M
+      update_config:
+        parallelism: 1
+        delay: 10s
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+      - EUREKA_HOST=${EUREKA_HOST}
+      - EUREKA_URI=${EUREKA_URI}
+      - FRONTEND_URL=${FRONTEND_URL}
+    depends_on:
+      - eureka-discovery-server
+
+  auth-service:
+    image: ${DOCKER_HUB_USERNAME}/dms-auth:latest
+    networks:
+      - dms-network
+    ports:
+      - target: 8082
+        published: 8082
+        protocol: tcp
+        mode: host
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 192M
+      update_config:
+        parallelism: 1
+        delay: 10s
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+      - EUREKA_HOST=${EUREKA_HOST}
+      - EUREKA_URI=${EUREKA_URI}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - GATEWAY_URL=${GATEWAY_URL}
+      - POSTGRES_URL=${POSTGRES_URL}
+      - POSTGRES_USERNAME=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - MONGO_URL=${MONGO_URL}
+      - MONGO_USERNAME=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+    depends_on:
+      - eureka-discovery-server
+
+  document-interaction-service:
+    image: ${DOCKER_HUB_USERNAME}/dms-interaction:latest
+    volumes:
+      - ~/document-storage/uploads:/app/uploads
+    networks:
+      - dms-network
+    ports:
+      - target: 8085
+        published: 8085
+        protocol: tcp
+        mode: host
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+      update_config:
+        parallelism: 1
+        delay: 10s
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+      - EUREKA_HOST=${EUREKA_HOST}
+      - EUREKA_URI=${EUREKA_URI}
+      - AUTH_SERVICE_ENDPOINT_URL=${AUTH_SERVICE_ENDPOINT_URL}
+      - POSTGRES_URL=${POSTGRES_URL}
+      - POSTGRES_USERNAME=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - MONGO_URL=${MONGO_URL}
+      - MONGO_USERNAME=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+    depends_on:
+      - eureka-discovery-server
+
+  document-search-service:
+    image: ${DOCKER_HUB_USERNAME}/dms-search:latest
+    networks:
+      - dms-network
+    ports:
+      - target: 8083
+        published: 8083
+        protocol: tcp
+        mode: host
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+      update_config:
+        parallelism: 1
+        delay: 10s
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+      - EUREKA_HOST=${EUREKA_HOST}
+      - EUREKA_URI=${EUREKA_URI}
+      - AUTH_SERVICE_ENDPOINT_URL=${AUTH_SERVICE_ENDPOINT_URL}
+      - POSTGRES_URL=${POSTGRES_URL}
+      - POSTGRES_USERNAME=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - MONGO_URL=${MONGO_URL}
+      - MONGO_USERNAME=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - OPENSEARCH_URL=${OPENSEARCH_URL}
+      - OPENSEARCH_USERNAME=${OPENSEARCH_USERNAME}
+      - OPENSEARCH_PASSWORD=${OPENSEARCH_PASSWORD}
+    depends_on:
+      - eureka-discovery-server
+
+  document-processor-service:
+    image: ${DOCKER_HUB_USERNAME}/dms-processor:latest
+    volumes:
+      - ~/document-storage/uploads:/app/uploads
+      - ~/document-storage/tmp:/tmp/downloads
+    networks:
+      - dms-network
+    ports:
+      - target: 8084
+        published: 8084
+        protocol: tcp
+        mode: host
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+      update_config:
+        parallelism: 1
+        delay: 10s
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+      - EUREKA_HOST=${EUREKA_HOST}
+      - EUREKA_URI=${EUREKA_URI}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - POSTGRES_URL=${POSTGRES_URL}
+      - POSTGRES_USERNAME=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - MONGO_URL=${MONGO_URL}
+      - MONGO_USERNAME=${MONGO_USERNAME}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - OPENSEARCH_URL=${OPENSEARCH_URL}
+      - OPENSEARCH_USERNAME=${OPENSEARCH_USERNAME}
+      - OPENSEARCH_PASSWORD=${OPENSEARCH_PASSWORD}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - MAIL_SERVER_HOST=${MAIL_SERVER_HOST}
+      - MAIL_SERVER_USERNAME=${MAIL_SERVER_USERNAME}
+      - MAIL_SERVER_PASSWORD=${MAIL_SERVER_PASSWORD}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
